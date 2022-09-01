@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1250" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="hr-hr"
+    Language="1050">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Postavljanje</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Koje dodatne zadatke treba obaviti?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Dodatni zadaci</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Postavljanje</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Koje dodatne zadatke treba obaviti?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Dodatni zadaci</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Napravi prečace</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">S&amp;tart Izbornik</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Napravi kraticu na desktopu</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Ostale akcije</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Uključi @@PRODUCT_NAME_TITLECASE@@ prilikom pokretanja</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Pridruženi protokoli</String>
+
+  <String Id="WelcomeText1" Overridable="yes">Razvoj ovog softwarea: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">Početna web stranica: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Pokreće jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ nije podržan na ovoj verziji Windowsa. Zahtjeva barem Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Pokreni @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

@@ -1,0 +1,7 @@
+Bundle-Description: Checks for software updates
+Bundle-Name: Update Service
+Bundle-Vendor: jitsi.org
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: net.java.sip.communicator.service.analytics
+Export-Package: net.java.sip.communicator.service.update

@@ -1,0 +1,8 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+runConfigurations.xml
+modules.xml
+misc.xml
+vcs.xml

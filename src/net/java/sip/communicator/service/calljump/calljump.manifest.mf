@@ -1,0 +1,10 @@
+Bundle-Name: Call Jump
+Bundle-Description: A bundle that defines the call jump service
+Bundle-Vendor: Metaswitch
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: org.osgi.framework,
+ org.json.simple,
+ org.json.simple.parser,
+ net.java.sip.communicator.util
+Export-Package: net.java.sip.communicator.service.calljump

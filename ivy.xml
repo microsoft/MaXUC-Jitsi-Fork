@@ -1,0 +1,218 @@
+<!-- This file describes every dependency that we need to download for our builds. -->
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra" >
+    <info organisation="default" module="Main" />
+    <configurations>
+
+        <!-- Dependencies needing ivy:retrieve to specific download locations -->
+        <conf name="buildtools" /> <!-- buildtools downloads to buildtools -->
+        <conf name="bundle" /> <!-- bundle conf downloads JARs that already have OSGi bundle information in their manifests to jitsi/lib/bundle without going via jitsi/lib/installer-exclude. -->
+        <conf name="fileloc" /> <!-- fileloc conf downloads to [filelocation] as specified by the e:filelocation extra attribute. -->
+        <conf name="instexcl" /> <!-- instexcl conf downloads to jitsi/lib/installer-exclude.  The build process copies these files to jitsi/lib/bundle. -->
+        <conf name="jitsilib" /> <!-- jitsilib conf downloads to jitsi/lib. -->
+        <conf name="jitsisrcnative" /> <!-- jitsisrcnative conf downloads to [filelocation] as specified by the e:filelocation extra attribute when building native components such as AOS. -->
+        <conf name="osspecific" /> <!-- osspecific conf downloads to jitsi/lib/installer-exclude/os-specific -->
+
+        <!-- Scopes -->
+        <conf name="runtime" />
+        <conf name="test" extends="runtime" />
+    </configurations>
+    <dependencies defaultconfmapping="fileloc->default" >
+        <!--
+            **************************************************************************
+            * remote-repos dependencies                                              *
+            **************************************************************************
+        -->
+
+        <dependency org="ant-contrib" name="ant-contrib" rev="1.0b3" conf="test,buildtools->default" >
+            <!-- Provides ant-contrib.jar and transitive dependency ant.jar in buildtools -->
+        </dependency>
+        <dependency org="ant-contrib" name="cpptasks" rev="1.0b5" conf="test,buildtools->default" >
+            <!-- Provides cpptasks.jar and transitive dependencies ant.jar and xercesImpl.jar in buildtools -->
+        </dependency>
+        <dependency org="commons-codec" name="commons-codec" rev="1.15" conf="runtime,instexcl->default" >
+            <!-- Provides commons-codec.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="ch.imvs" name="sdes4j" rev="1.1.5" conf="runtime,instexcl->default" >
+            <!-- Provides sdes4j.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="ca.weblite" name="java-objc-bridge" rev="1.0.0" conf="runtime,instexcl->default" >
+            <!-- Provides java-objc-bridge.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="com.drewnoakes" name="metadata-extractor" rev="2.16.0" conf="runtime,instexcl->default" >
+            <!-- Provides metadata-extractor.jar and transitive dependency xmpcore.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="com.explodingpixels" name="mac_widgets" rev="0.9.5" conf="runtime,instexcl->default" >
+            <!-- Provides mac_widgets.jar and transitive dependency forms.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="com.google.code.gson" name="gson" rev="2.8.9" conf="runtime,instexcl->default" >
+            <!-- Provides gson.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="com.google.guava" name="guava" rev="31.0.1-jre" conf="runtime,instexcl->default" >
+            <!-- Provides guava.jar and transitive dependencies checker-qual.jar, error_prone_annotations.jar, failureaccess.jar, j2objc-annotations.jar and jsr305.jar in jitsi/lib/installer-exclude.
+            com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava is a dummy library, so we don't want it - more info at https://repo1.maven.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom -->
+            <exclude org="com.google.guava" module="listenablefuture" />
+        </dependency>
+        <dependency org="com.googlecode.json-simple" name="json-simple" rev="1.1.1" conf="runtime,instexcl->default" transitive="false" >
+            <!-- Provides json-simple.jar in jitsi/lib/installer-exclude.
+            transitive="false" to exclude junit, which json-simple's POM file erroneously declares as a compile dependency. -->
+        </dependency>
+        <dependency org="com.google.protobuf" name="protobuf-java" rev="3.19.3" conf="runtime,bundle->default" >
+            <!-- This version should be kept in sync with the version used to create protobuf-wispa here:
+            https://git.datcon.co.uk/accession/Desktop/protobuf-wispa/-/blob/master/.gitlab-ci.yml -->
+            <!-- Provides protobuf-java.jar in jitsi/lib/bundle -->
+        </dependency>
+        <dependency org="com.microsoft" name="credential-secure-storage" rev="1.0.0" conf="runtime,instexcl->default" >
+            <!-- Provides credential-secure-storage.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="commons-codec" name="commons-codec" rev="1.15" conf="runtime,instexcl->default" >
+            <!-- Provides commons-codec.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="commons-io" name="commons-io" rev="2.11.0" conf="runtime,instexcl->default" >
+            <!-- Provides commons-io.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="commons-logging" name="commons-logging" rev="1.2" conf="runtime,instexcl->default" >
+            <!-- Provides commons-logging.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.apache.commons" name="commons-text" rev="1.9" conf="runtime,instexcl->default" >
+            <!-- Provides commons-text.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="dnsjava" name="dnsjava" rev="3.4.2" conf="runtime,instexcl->default" >
+            <!-- Provides dnsjava.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="net.java.dev.jna" name="jna-platform" rev="5.9.0" conf="runtime,instexcl->default" >
+            <!-- Provides jna-platform.jar and transitive dependency jna.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.apache.commons" name="commons-collections4" rev="4.4" conf="runtime,instexcl->default" >
+            <!-- Provides commons-collections4.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.apache.commons" name="commons-lang3" rev="3.12.0" conf="runtime,instexcl->default" >
+            <!-- Provides commons-lang3.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.apache.commons" name="commons-math3" rev="3.6.1" conf="runtime,instexcl->default" >
+            <!-- Provides commons-math3.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.apache.felix" name="org.apache.felix.bundlerepository" rev="2.0.10" conf="runtime,bundle->default" >
+            <!-- Provides org.apache.felix.bundlerepository.jar in jitsi/lib/bundle. -->
+            <!-- Exclude transitive dependency on org.osgi.core as its classes are already bundled in org.apache.felix.main.jar. -->
+            <exclude org="org.osgi" module="org.osgi.core" />
+        </dependency>
+        <dependency org="org.apache.felix" name="org.apache.felix.main" rev="7.0.1" conf="runtime,jitsilib->default" >
+            <!-- Provides org.apache.felix.main.jar in jitsi/lib.
+            Exclude transitive dependency org.apache.felix.framework.jar because all its classes are already bundled in org.apache.felix.main.jar. -->
+            <exclude org="org.apache.felix" module="org.apache.felix.framework" />
+        </dependency>
+        <dependency org="org.apache.httpcomponents" name="httpcore-osgi" rev="4.4.14" conf="runtime,instexcl->default" >
+            <!-- Provides httpcore-osgi.jar in jitsi/lib/installer-exclude
+            Also provides transitive dependencies httpcore.jar and httpcore-nio with same groupId
+            org.apache.httpcomponents and same version number.  These JAR files are not used because their contents are already bundled into
+            httpclient-osgi.jar, but they are scanned. -->
+        </dependency>
+        <dependency org="org.apache.httpcomponents" name="httpmime" rev="4.5.13" conf="runtime,instexcl->default">
+            <!-- Provides httpmime.jar and httpclient.jar in jitsi/lib/installer-exclude.
+            This jar is bundled along with commons-codec@1.15 & httpclient@4.5.13 to make up httpclient-osgi jar. -->
+        </dependency>
+        <dependency org="org.bouncycastle" name="bcpkix-jdk15on" rev="1.69" conf="runtime,instexcl->default" >
+            <!-- Provides bcpkix-jdk15on.jar and transitive dependency bcprov-jdk15on.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.bouncycastle" name="bcutil-jdk15on" rev="1.69" conf="runtime,instexcl->default" >
+            <!-- Provides bcutil-jdk15on.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+
+        <dependency org="org.bytedeco" name="ffmpeg" rev="4.4-1.5.6" transitive="false" conf="runtime,osspecific->default" >
+            <!-- Provides ffmpeg-windows-x86.jar and ffmpeg-macosx-x86_64.jar in jitsi/lib/installer-exclude/os-specific.
+            Set transitive="false" because classifiers don't work transitively.  The transitive dependencies with the same classifiers
+            within org.bytedeco:javacpp are downloaded explicitly using a separate dependency declaration. -->
+            <artifact name="ffmpeg" type="jar" ext="jar" e:classifier="macosx-x86_64" />
+            <artifact name="ffmpeg" type="jar" ext="jar" e:classifier="windows-x86" />
+        </dependency>
+        <dependency org="org.bytedeco" name="javacpp" rev="1.5.6" conf="runtime,osspecific->default" >
+            <!-- Provides javacpp-windows-x86.jar and javacpp-macosx-x86_64.jar in jitsi/lib/installer-exclude/os-specific -->
+            <artifact name="javacpp" type="jar" ext="jar" e:classifier="macosx-x86_64" />
+            <artifact name="javacpp" type="jar" ext="jar" e:classifier="windows-x86" />
+        </dependency>
+        <dependency org="org.eclipse.swt" name="org.eclipse.swt.win32.win32.x86" rev="4.3" conf="runtime,osspecific->default" >
+            <!-- Provides org.eclipse.swt.win32.win32.x86.jar in jitsi/lib/installer-exclude/os-specific-->
+        </dependency>
+        <dependency org="org.eclipse.swt" name="org.eclipse.swt.cocoa.macosx.x86_64" rev="4.3" conf="runtime,osspecific->default" >
+            <!-- Provides org.eclipse.swt.cocoa.macosx.x86_64.jar in jitsi/lib/installer-exclude/os-specific-->
+        </dependency>
+        <dependency org="org.hsqldb" name="hsqldb" rev="2.6.1" conf="runtime,instexcl->default" >
+            <!-- Provides hsqldb.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.java-websocket" name="Java-WebSocket" rev="1.5.2" conf="runtime,instexcl->default" >
+            <!-- Provides Java-WebSocket.jar and transitive dependency slf4j-api.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.nanohttpd" name="nanohttpd" rev="2.3.1" conf="runtime,instexcl->default" >
+            <!-- Provides nanohttpd.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-fxml" rev="11.0.2" transitive="false" conf="runtime,osspecific->default" >
+            <!-- Provides javafx-fxml-win.jar and javafx-fxml-mac.jar in jitsi/lib/installer-exclude/os-specific.
+            The javafx-fxml library is a top-level JavaFX dependency used for the Standalone Meeting client mode GUI.
+            Exclude transitive dependencies because the classifiers don't carry through. -->
+            <artifact name="javafx-fxml" type="win" ext="jar" e:classifier="win" />
+            <artifact name="javafx-fxml" type="mac" ext="jar" e:classifier="mac" />
+            <exclude name="javafx-fxml" type="jar" />
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-swing" rev="11.0.2" transitive="false" conf="runtime,osspecific->default" >
+            <!-- Provides javafx-swing-win.jar and javafx-swing-mac.jar in jitsi/lib/installer-exclude/os-specific.
+            The javafx-swing library is a top-level JavaFX dependency used for the Standalone Meeting client mode GUI.
+            Exclude transitive dependencies because the classifiers don't carry through. -->
+            <artifact name="javafx-swing" type="win" ext="jar" e:classifier="win" />
+            <artifact name="javafx-swing" type="mac" ext="jar" e:classifier="mac" />
+            <exclude name="javafx-swing" type="jar" />
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-controls" rev="11.0.2" transitive="false" conf="runtime,osspecific->default" >
+            <!-- Provides javafx-controls-win.jar and javafx-controls-mac.jar in jitsi/lib/installer-exclude/os-specific.
+            The javafx-controls library is a transitive dependency of the javafx-fxml library.
+            Exclude transitive dependencies because the classifiers don't carry through. -->
+            <artifact name="javafx-controls" type="win" ext="jar" e:classifier="win" />
+            <artifact name="javafx-controls" type="mac" ext="jar" e:classifier="mac" />
+            <exclude name="javafx-controls" type="jar" />
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-graphics" rev="11.0.2" transitive="false" conf="runtime,osspecific->default" >
+            <!-- Provides javafx-graphics-win.jar and javafx-graphics-mac.jar in jitsi/lib/installer-exclude/os-specific.
+            The javafx-graphics library is a transitive dependency of the javafx-controls and javafx-swing libraries.
+            Note that javafx-graphics JAR files include embdedded native libraries.  For Windows these are 64-bit libraries
+            that we can't use in our 32-bit application, for Mac they are fine.
+            Exclude transitive dependencies because the classifiers don't carry through. -->
+            <artifact name="javafx-graphics" type="win" ext="jar" e:classifier="win" />
+            <artifact name="javafx-graphics" type="mac" ext="jar" e:classifier="mac" />
+            <exclude name="javafx-graphics" type="jar" />
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-base" rev="11.0.2" conf="runtime,osspecific->default" >
+            <!-- Provides javafx-base-win.jar and javafx-base-mac.jar in jitsi/lib/installer-exclude/os-specific.
+            The javafx-base library is a transitive dependency of the javafx-graphics library. -->
+            <artifact name="javafx-base" type="win" ext="jar" e:classifier="win" />
+            <artifact name="javafx-base" type="mac" ext="jar" e:classifier="mac" />
+            <exclude name="javafx-base" type="jar" />
+        </dependency>
+        <dependency org="org.simpleframework" name="simple" rev="5.1.6" conf="runtime,instexcl->default" >
+            <!-- Provides simple.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+        <dependency org="org.slf4j" name="slf4j-jdk14" rev="1.7.32" conf="runtime,instexcl->default" >
+            <!-- Provides slf4j-jdk14.jar and slf4j-api.jar (same version) in jitsi/lib/installer-exclude -->
+        </dependency>
+
+        <dependency org="org.bytedeco" name="ffmpeg" rev="4.4-1.5.6" conf="runtime,instexcl->default" >
+            <!-- Provides ffmpeg.jar and its transitive dependency javacpp.jar in jitsi/lib/installer-exclude -->
+        </dependency>
+
+        <dependency org="org.igniterealtime.smack" name="smack-java8-full" rev="4.4.4" conf="runtime,bundle->default" >
+            <exclude org="org.igniterealtime.smack" module="smack-bosh" />
+            <exclude org="org.igniterealtime.smack" module="smack-omemo" />
+            <exclude org="org.igniterealtime.smack" module="smack-openpgp" />
+            <exclude org="org.igniterealtime.smack" module="smack-resolver-javax" />
+            <exclude org="org.igniterealtime.smack" module="smack-resolver-minidns" />
+            <exclude org="org.igniterealtime.smack" module="smack-resolver-minidns-dox" />
+            <exclude org="org.hsluv" module="hsluv" />
+        </dependency>
+        <dependency org="org.igniterealtime.smack" name="smack-resolver-dnsjava" rev="4.4.4" conf="runtime,bundle->default" />
+
+        <dependency org="javax.sip" name="jain-sip-api" rev="1.2" conf="runtime,instexcl->default">
+            <artifact name="jain-sip-api" type="jar" ext="jar"/>
+        </dependency>
+        <dependency org="javax.sip" name="jain-sip-ri" rev="1.2.344" conf="runtime,instexcl->default">
+            <artifact name="jain-sip-ri" type="jar" ext="jar"/>
+        </dependency>
+    </dependencies>
+</ivy-module>

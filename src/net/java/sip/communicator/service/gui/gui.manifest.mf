@@ -1,0 +1,23 @@
+Bundle-Activator: net.java.sip.communicator.service.gui.internal.GuiServiceActivator
+Bundle-Name: UI Service
+Bundle-Description:  The User Interface Service.
+Bundle-Vendor: jitsi.org
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: org.osgi.framework,
+ org.jitsi.service.resources,
+ org.jitsi.util,
+ org.jxmpp.jid,
+ net.java.sip.communicator.service.resources,
+ net.java.sip.communicator.util,
+ net.java.sip.communicator.service.contactsource,
+ net.java.sip.communicator.service.contactlist,
+ net.java.sip.communicator.service.imageloader,
+ net.java.sip.communicator.service.protocol,
+ net.java.sip.communicator.service.commportal,
+ net.java.sip.communicator.service.browserpanel,
+ net.java.sip.communicator.plugin.desktoputil
+Export-Package: net.java.sip.communicator.service.gui,
+ net.java.sip.communicator.service.gui.call,
+ net.java.sip.communicator.service.gui.event,
+ net.java.sip.communicator.service.shutdown

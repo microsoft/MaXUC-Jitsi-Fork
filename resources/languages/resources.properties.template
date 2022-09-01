@@ -1,0 +1,2281 @@
+# Note to translators:
+# - For a string that is used n times in the codebase, the context string should be made up of n "usage" detail sections, and one "requirement" section. These are detailed below:
+#   Usage:
+#      Scenario n: [what is the user doing when they see this]
+#      Use n: [where in the client it appears, e.g. on a button, in a pop-up, as a title]
+#      Purpose n: [what does the text achieve e.g. purely there for layout purposes, informative, helps with decision-making (i.e. if user needs to select one of two buttons)]
+#   Requirements:
+#      Max length: [N/A or maximum length, enforced by where it appears on the app, or max button size etc.]
+# - {0}, {1}... are parameters which will be replaced by the
+#   actual text at runtime, place them as you wish
+# - \ at the end of a line means that the translation is continued
+#   in the next line
+# - you cannot use single quotes when a parameter is used in the sentence.
+#   For example, <You can't move contact {0}>, <Contact {0} doesn't exist>,
+#   or <Accept '{0}'> does not display correctly. In such cases, you need
+#   to use double quotes (''):
+#   <You can''t move contact {0}>, <Contact {0} doesn''t exist>, or
+#   <Accept ''{0}''>
+# - Ampersand characters in many strings that appear on buttons and menus are used to indicate the
+#   character to be used as the mnemonic accelerator for that action.  This is often the first character
+#   of the string, but can be a later one if that makes more sense (say a subsequent word is a better match
+#   for the whole action, or simply to avoid a character that has already been used by another visible item).
+# - if a string contains a visible ampersand (&) character for another reason, then the first (and only
+#   the first) instance of the & in the string should be doubled (&&)
+#   UNLESS the string starts with an ampersand, in which case no ampersands
+#   in that string need to be doubled.
+# - Values starting and ending with '@@' (e.g. '@@PRODUCT_NAME_TITLECASE@@')
+#   are parameters that will be replaced by the branding script (brand-client.py).
+#   The branding script will correctly handle doubling any &s in the replacement
+#   value of the parameter (see above comment), as long as only one parameter
+#   whose value contains any &s is present in the string.  If multiple instances
+#   of the same parameter are present in the string, this will be handled correctly.
+#   However, if more than one different parameter whose value contains any &s is
+#   present in the string, all but the first parameter will incorrectly be updated
+#   to contain double &s.  For example, if
+#   @@PRODUCT_NAME_TITLECASE@@ = "A & B Communicator" and @@PRODUCT_NAME_SHORT@@ = "A & B",
+#   "Please re-enter your @@PRODUCT_NAME_TITLECASE@@ credentials and restart @@PRODUCT_NAME_TITLECASE@@"
+#   would be converted correctly to
+#   "Please re-enter your A && B Communicator credentials and restart A & B Communicator".
+#   However,
+#   "Please re-enter your @@PRODUCT_NAME_TITLECASE@@ credentials and restart @@PRODUCT_NAME_SHORT@@"
+#   would be converted incorrectly to
+#   "Please re-enter your A && B Communicator credentials and restart A && B".
+#   This currently isn't a problem as there are currently no resource strings
+#   containing 2 different branding parameters.
+#
+# To start  with a language that is different
+# from your system's language, pass the language code to ant:
+# ant -Duser.language=xx run
+
+service.macospermissions.MAC_MICROPHONE_USAGE_STRING=This app requires access to the microphone in order to make and receive calls.
+service.macospermissions.MAC_CAMERA_USAGE_STRING=This app requires access to the camera in order to make and receive video calls.
+service.macospermissions.MAC_CONTACTS_USAGE_STRING=This app requires access to your address book so that you can view and edit contacts within the app.
+service.macospermissions.MAC_DOWNLOADS_USAGE_STRING=This app requires access to this folder if you wish to save or load files from it.
+service.macospermissions.MAC_DESKTOP_USAGE_STRING=This app requires access to this folder if you wish to save or load files from it.
+service.macospermissions.MAC_DOCUMENTS_USAGE_STRING=This app requires access to this folder if you wish to save or load files from it.
+service.macospermissions.MAC_NETWORK_DRIVES_USAGE_STRING=This app requires access to this folder if you wish to save or load files from it.
+service.macospermissions.MAC_REMOVABLE_DRIVES_USAGE_STRING=This app requires access to this folder if you wish to save or load files from it.
+service.macospermissions.MAC_LOCATION_USAGE_STRING=Location information is needed to pass your location on an emergency call.
+
+service.gui.CONNECTION_EXPIRED_MSG=You are currently disconnected from the server.
+service.gui.HISTORY_CONTACT=History - {0}
+service.gui.HOME=Home
+service.gui.INITIATING_CALL_STATUS=Initiating call
+service.gui.ENTER_MESSAGE_TEXT=<html>Send - Enter</html>
+service.gui.ALT_ENTER_MESSAGE_TEXT=<html>Send - Ctrl-Enter</html>
+service.gui.REFERRED_STATUS=Referred
+service.gui.SEARCH_FIELD_DESCRIPTION=Start typing to search for a contact or phone number
+service.gui.SPEED=Speed:
+service.gui.PER_SECOND=/sec
+service.gui.BYTES=B
+service.gui.KILOBYTES=KB
+service.gui.MEGABYTES=MB
+service.gui.GIGABYTES=GB
+service.gui.RECONNECTION_LIMIT_EXCEEDED=Your account has been temporarily blocked. Please wait for a short period before attempting to reconnect.
+# Max length - N/A
+service.gui.STATUS_CHANGE_NETWORK_FAILURE=We were unable to change your status. Please check your connection.
+
+service.gui.ABOUT=&About
+service.gui.ACCEPT=&Accept
+service.gui.ACCOUNT=Account
+service.gui.ACCOUNT_ME=Me
+service.gui.ACCOUNT_REGISTRATION_WIZARD=Account Registration Wizard
+service.gui.ACCOUNTS=Accounts
+service.gui.ADD=&Add
+service.gui.ADD_DESCRIPTION=Add a new chat account
+service.gui.ADD_ACCOUNT=Add account
+service.gui.ADD_NEW_CONTACT=Add &Contact
+service.gui.ADD_CONTACT=Add to '&Contacts'
+# String displayed on a pop-up asking the user whether they want to add someone to their contacts
+service.gui.ADD_AUTHORIZED_CONTACT=Add {0} to ''Contacts''
+service.gui.ADD_CONTACT_TO=&Add contact to
+service.gui.ADD_CONTACT_ERROR=Failed to add {0}
+service.gui.ADD_CONTACT_ERROR_TITLE=Add Contact Error
+service.gui.ADD_CONTACT_EXIST_ERROR={0} already exists in your contact list.
+service.gui.ADD_CONTACT_NETWORK_ERROR=Unable to contact the server. {0} was not added.
+
+service.gui.ADDRESS=Address
+service.gui.ADMINISTRATOR=administrator
+service.gui.ADVANCED=&Advanced
+service.gui.ALL=&All
+service.gui.ALL_CONTACTS=&All Sources
+service.gui.APPLY=&Apply
+service.gui.ANONYMOUS=Anonymous
+
+service.gui.AUTHORIZE=&Accept
+service.gui.AUTHORIZATION_ACCEPTED=contact has accepted your authorization request.
+service.gui.AUTHENTICATION_FAILED=Authentication failed for {0}. The password you entered is not valid.
+service.gui.AUTHENTICATION_FAILED.sip=Authentication failed for {0}. This may be because you have too many devices connected.  If this error persists, please contact your service provider.
+service.gui.AUTHENTICATION_REQUESTED=Authentication requested
+service.gui.AUTHENTICATION_REQUESTED_SERVER=Please enter your {0} login details.
+service.gui.AUTHENTICATION_REJECTED=contact has rejected your authorization request.
+service.gui.AUTHENTICATION_WINDOW_TITLE=Login
+service.gui.AUTHORIZATION_REQUESTED=Chat Contact Request
+service.gui.AUTHORIZATION_REQUESTED_INFO={0} requests your authorization for chat and presence.
+service.gui.AUTHORIZATION_RESPONSE=Authorization response
+service.gui.AUTO_AUTH_CHAT=Auto-accept chat contact requests
+service.gui.AWAY_STATUS=Away
+
+service.gui.BROWSE=Browse
+
+service.gui.BUSY_STATUS=Busy
+# Text used as a title with a limited amount of space (10-15 characters)
+service.gui.CALLS=Calls
+service.gui.CALL=Call
+service.gui.CALL_TITLE=Call
+service.gui.CALL_CONTACT=Call Contact
+service.gui.CALL_CONTACT_NO_PHONE=No Phone Number
+service.gui.CALL_CONTACT_NO_SERVICE=No Phone Service
+service.gui.CALL_FAILED=Call failed
+service.gui.UPLIFTING=Uplifting
+service.gui.UPLIFT_FAILED=Uplift Failed
+
+service.gui.CALL_VIA=Call via
+service.gui.CALL_NAME_OR_NUMBER=Call name or number
+service.gui.CALL_NOT_SUPPORTING_PARTICIPANT=This call only supports participants from the {0} network and your {1} account. {2} does not contain any address for this network or account.
+service.gui.CALL_WITH=Call with
+
+service.gui.CALL_NO_AUDIO_DEVICE=You have no audio device configured.
+service.gui.CALL_NO_AUDIO_CODEC=You have no audio codecs enabled.
+service.gui.CALL_NO_DEVICE_CODECS_Q=Would you like to continue the call?
+
+service.gui.CALL_PARK_OPTIONS_HINT=You can access your call park orbits from the Profile menu. A call park button will also be added to the call window.
+service.gui.CALL_PARK_OPTIONS_TEXT=Enable call park
+service.gui.CALL_PARK_PARK=Park Call Here
+service.gui.CALL_PARK_PICK_UP=Pick Up Call
+service.gui.CALL_PARK_CHOOSE=Select call to park
+service.gui.CALL_PARK_SUBTITLE=Call Park Orbits
+service.gui.CALL_PARK_TITLE=Call Par&k
+service.gui.CALL_PARK_NO_CALLS=No calls available to park
+service.gui.CALL_PARK_NO_ACTIONS=No actions available
+service.gui.PARK_BUTTON_TOOL_TIP=Park Call (Ctrl-Alt-P)
+
+service.gui.CALL_PARK_ALL_USED=- All orbits in use
+service.gui.CALL_PARK_SOME_USED=- {0} orbits in use
+service.gui.CALL_PARK_ONE_USED=- 1 orbit in use
+
+service.gui.CALL_RECORDING_CHOOSE_FOLDER_FAILURE_TEXT=You do not have the correct permissions to save files in this folder. Please choose a different folder.
+service.gui.CALL_RECORDING_CHOOSE_FOLDER_FAILURE_TITLE=Error Choosing Folder
+service.gui.CALL_RECORDING_SHOW_RECORDED_CALLS=Open Folder
+service.gui.CALL_RECORDING_START_FAILED_TEXT=Failed to begin recording call audio.
+service.gui.CALL_RECORDING_START_FAILED_TITLE=Error Starting Recording
+service.gui.CALL_RECORDING_STOP_FAILED_TEXT=Your call recording could not be saved. Please check you have the correct permissions to save files in this folder.
+service.gui.CALL_RECORDING_STOP_FAILED_TITLE=Error Saving Recording
+service.gui.CALL_RECORDING_SAVE_TEXT={0}\nClick here to view.
+service.gui.CALL_RECORDING_SAVE_TITLE=Recording saved successfully
+service.gui.CALL_RECORDING_TIMEOUT_TITLE=Record limit reached
+service.gui.CALL_RECORDING_TIMEOUT_TEXT=Your call recording has reached the maximum length. To record the rest of this call please start a new recording.
+service.gui.CALL_RECORDING_SHOW_RECORDED_CALLS_DESCRIPTION=Open recorded calls folder
+
+service.gui.CREATE_CONFERENCE_CALL=Add participant
+service.gui.CREATE_GROUP_CHAT=Create Group Chat
+service.gui.CANCEL=&Cancel
+service.gui.CHAT=Chat
+
+service.gui.chat.SIGN_OUT_CHAT=&Sign Out of Chat
+service.gui.chat.SIGN_IN_CHAT=&Sign into Chat
+service.gui.chat.SIGN_IN_OUT_CHAT=&Sign into/out of Chat
+service.gui.chat.DISABLE_CHAT_SMS=&Disable Chat and SMS
+service.gui.chat.ENABLE_CHAT_SMS=&Enable Chat and SMS
+service.gui.chat.ENABLE_DISABLE_CHAT_SMS=&Enable/Disable Chat and SMS
+
+service.gui.chat.CHAT_OFFLINE=Chat Offline
+service.gui.chat.ERROR_CONTACTING_SERVER=Error Contacting Chat Server
+
+service.gui.chat.CHAT_WRITE_PANEL_DESCRIPTION=Use CTRL U and CTRL D to move up and down the chat history
+
+service.gui.chat.CHAT_WRITE_PANEL_PREV_KEY=U
+service.gui.chat.CHAT_WRITE_PANEL_NEXT_KEY=D
+
+service.gui.chat.NO_CHAT_MESSAGES=No chat history
+service.gui.chat.NO_CHAT_ACCOUNT=Add a chat account to start chatting to your contacts
+service.gui.chat.CHAT_ACCOUNT_OFFLINE=Your chat account is offline
+service.gui.chat.MUTE_CHAT=Mute Chat
+service.gui.chat.UNMUTE_CHAT=Unmute Chat
+
+service.gui.chat.ADD_PARTICIPANTS_TITLE=Add Participants
+service.gui.chat.ADD_PARTICIPANTS_TO=Add a subject
+service.gui.chat.ADD_SELECTED_CONTACTS=Add selected
+service.gui.chat.ADD_PARTICIPANT_TIMEOUT=<b>{0}</b> could not be added to ''{1}''.<br><br>Their @@PRODUCT_NAME_TITLECASE@@ client does not currently have group chat enabled.
+
+service.gui.chat.CHANGE_GROUP_NAME=Update Subject
+service.gui.chat.LEAVE_GROUP_CHAT=Leave Group Chat
+service.gui.chat.FAILED_TO_LEAVE_GROUP_CHAT_TITLE=Failed to leave group chat.
+service.gui.chat.FAILED_TO_LEAVE_GROUP_CHAT=The server is currently uncontactable. Please try to leave the group chat again later.
+service.gui.chat.FAILED_TO_CHANGE_SUBJECT_TITLE=Failed to change the group chat subject.
+service.gui.chat.FAILED_TO_CHANGE_SUBJECT_CHAT=The server is currently uncontactable. Please try to change the group chat subject again later.
+
+service.gui.chat.LEAVE_GROUP_CHAT_DESCRIPTION=You will not be able to rejoin this chat if you leave. However, the history of your conversation will remain in the recents tab.
+service.gui.chat.LEAVE=Leave
+
+service.gui.call.ACCEPT=Accept
+service.gui.call.CALL_FROM=Call from {0}
+
+service.gui.conf.SCHEDULED_CONFERENCES=View &Upcoming Meetings
+service.gui.conf.RECORDED_CONFERENCES=View &Recorded Meetings
+service.gui.conf.INVITE_IM_NOT_IN_CONFERENCE=Invite to Meeting
+service.gui.conf.INVITE_NON_IM_NOT_IN_CONFERENCE=Invite (IM only)
+service.gui.conf.INVITE_IM_IN_CONFERENCE=Invite to Current Meeting
+service.gui.conf.INVITE_NON_IM_IN_CONFERENCE=Invite (IM only)
+service.gui.conf.INVITE_IM_FROM_CALL=Start Meeting
+service.gui.conf.INVITE_NON_IM_FROM_CALL=Start Meeting (IM only)
+service.gui.conf.INVITE_IM_FROM_CALL_IN_CONFERENCE=Add to Current Meeting
+service.gui.conf.INVITE_NON_IM_FROM_CALL_IN_CONFERENCE=Add to Meeting (IM only)
+service.gui.conf.INVITE_OTHERS_IM=Select Others && Invite…
+service.gui.conf.INVITE_OTHERS_IM_FROM_CALL=Select Others && Start…
+service.gui.conf.INVITE_OTHERS_IM_FROM_CALL_IN_CONFERENCE=Select Others && Add…
+service.gui.conf.INVITE_OTHERS_NON_IM=Create Meeting URL…
+service.gui.conf.INVITE_OTHERS_NON_IM_IN_CONFERENCE=Share Current Meeting URL…
+service.gui.conf.CREATE_NEW_CONFERENCE=&Create a Meeting…
+service.gui.conf.CREATE_NEW_CONFERENCE_TITLE=Create a Meeting
+service.gui.conf.SCHEDULE_CONFERENCE=&Schedule a Meeting…
+service.gui.conf.JOIN_CONFERENCE=&Join a Meeting…
+service.gui.conf.JOIN_CONFERENCE_TITLE=Join a Meeting
+service.gui.conf.STANDALONE_CREATE_CONFERENCE_BUTTON=Create
+service.gui.conf.STANDALONE_SCHEDULE_CONFERENCE_BUTTON=Schedule
+service.gui.conf.STANDALONE_JOIN_CONFERENCE_BUTTON=&Join a Meeting
+service.gui.conf.STANDALONE_UPCOMING_CONFERENCE_BUTTON=View &Upcoming Meetings
+service.gui.conf.STANDALONE_RECORDED_CONFERENCE_BUTTON=View &Recorded Meetings
+service.gui.conf.STANDALONE_JOIN_CONFERENCE_HINT_TEXT=If you received an invitation link, tap on the link again to join the meeting.
+service.gui.conf.JOIN_CONFERENCE_LABEL=Enter Meeting ID or Personal Link Name
+service.gui.conf.JOIN_CONFERENCE_LINK_HINT=If you received an invitation link, click the link to join the meeting
+service.gui.conf.JOIN_CONFERENCE_INVALID_HINT=Meeting IDs and Personal Link Names must only contain letters, numbers and periods (.)
+service.gui.conf.DISCONNECT_AUDIO_ON_JOIN_LABEL=Disconnect audio when joining
+service.gui.conf.START_CONFERENCE=Start Meeting
+service.gui.conf.INVITE_AND_START_CONFERENCE=Invite ({0}) and Start Meeting
+service.gui.conf.ADD_TO_CONFERENCE=Add ({0})
+service.gui.conf.ADD_TO_CONFERENCE_DISABLED=Add
+service.gui.conf.ADD_CONFERENCE_PARTICIPANTS=Invite Others to Current Meeting…
+service.gui.conf.ADD_CONFERENCE_PARTICIPANTS_TITLE=Invite Others to Meeting
+service.gui.conf.CONFERENCE_INVITE=Meeting
+service.gui.conf.CONFERENCE_INVITE_TITLE=@@ACCESSION_MEETING_MEETING_NAME@@ Invite
+service.gui.conf.CONFERENCE_INVITE_DESCRIPTION=Meeting Invite
+service.gui.conf.ACCEPT=Join
+service.gui.conf.APP_CONFERENCE_INVITE_HEADING=@@ACCESSION_MEETING_MEETING_NAME@@ Invite
+service.gui.conf.WAITING_FOR_PARTICIPANTS=Waiting for Participants
+service.gui.conf.INVITE_EMAIL_BODY_MESSAGE={0} invites you to attend this @@ACCESSION_MEETING_MEETING_NAME@@.
+service.gui.conf.INVITE_EMAIL_BODY_LINK=\n\nJoin by URL:\n\n\t{0}
+service.gui.conf.INVITE_EMAIL_BODY_DIAL_1=\n\nOr join by phone:\n\n\t{0}\n\tMeeting ID: {1}
+service.gui.conf.INVITE_EMAIL_BODY_DIAL_2=\n\nOr join by phone:\n\n\t{0} or {1}\n\tMeeting ID: {2}
+service.gui.conf.INVITE_EMAIL_BODY_ROOM_1=\n\nOr join from a H.323/SIP room system:\n\n\tDial: {0}\n\tMeeting ID: {1}
+service.gui.conf.INVITE_EMAIL_BODY_ROOM_2=\n\nOr join from a H.323/SIP room system:\n\n\tDial: {0} or {1}\n\tMeeting ID: {2}
+service.gui.conf.START_NOW=Start Now
+service.gui.conf.CONFERENCE_INVITE_FAILED=Meeting Invite Failed
+service.gui.conf.INVITE_TIMEOUT_MESSAGE_START=@@PRODUCT_NAME_SHORT@@ could not reach the following contacts:\n\n
+service.gui.conf.INVITE_TIMEOUT_MESSAGE_END=\nShare the invite by copying the URL or sending the URL by email.\n\n
+service.gui.conf.INVITE_OTHER=Invite via URL
+service.gui.conf.CONFERENCES=&Meetings
+service.gui.conf.CREATE_CONFERENCE=Create Meeting
+service.gui.conf.CREATE_CONFERENCE_DESCRIPTION_ACCESSIBILITY=Clicking this button opens a menu to allow you to create a new meeting room
+service.gui.conf.SEND_CONFERENCE_INVITE=Send Invite
+service.gui.conf.SEND_CONFERENCE_INVITE_DESCRIPTION=Clicking this button opens a menu to allow you to invite contacts to a meeting room
+service.gui.conf.CREATE_CONFERENCE_DESCRIPTION=Select your IM contacts and invite directly from within @@PRODUCT_NAME_SHORT@@.  Other contacts that do not have IM can be invited via email or using the meeting URL.
+service.gui.conf.CREATE_CONFERENCE_DESCRIPTION_NO_IM=You are only able to send invites via Email or by using the meeting URL when you don't have an active chat account.
+service.gui.conf.CREATE_CONFERENCE_DESCRIPTION_IM_HIDDEN=You are able to send invites via Email or by using the meeting URL.
+service.gui.conf.INVITE_OTHERS_TAB=Invite Others
+service.gui.conf.INVITE_BY_LINK_TITLE=Invite by Link
+service.gui.conf.INVITE_IM_TAB=Invite IM Contacts
+service.gui.conf.INVITE_ROOM_SYSTEM_TAB=Invite Room System
+service.gui.conf.INVITE_OTHERS_FOOTER_STARTING=Once you have shared the meeting invite return here to create the meeting.
+service.gui.conf.INVITE_OTHERS_FOOTER_ADDING=Once you have shared the meeting invite return here to add more participants to the meeting.
+service.gui.conf.INVITE_BY_EMAIL_TITLE=Send Email Invite
+service.gui.conf.INVITE_BY_EMAIL_DESCRIPTION=Opens the default email client with a prepopulated invite email.
+service.gui.conf.INVITE_BY_COPY_TITLE=Copy Meeting Link
+service.gui.conf.INVITE_BY_COPIED_TITLE=Copied to clipboard
+service.gui.conf.INVITE_BY_COPY_DESCRIPTION=Copies the meeting URL so that you can send via other means.
+service.gui.conf.ROOM_DIAL_IN_TITLE=From your Room System
+service.gui.conf.ROOM_DIAL_1=Dial
+service.gui.conf.ROOM_DIAL_2=Dial one of the following
+service.gui.conf.ROOM_ENTER_ID=Enter meeting ID
+service.gui.conf.ROOM_WAITING_ID=Waiting for ID
+service.gui.conf.ROOM_ENTER_PAIRING_CODE=Or enter code shown on room system
+service.gui.conf.ROOM_PAIRING_FIELD=Room Invite Code
+service.gui.conf.PAIRING_BUTTON=Invite
+service.gui.conf.ROOM_CALL_OUT_TITLE=Call a Room System
+service.gui.conf.ROOM_ENTER_NUMBER=Type the IP address or phone number of the room system you want to invite
+service.gui.conf.ROOM_CALLOUT_FIELD=IP Address or Phone Number
+service.gui.conf.CALLOUT_BUTTON=Call Out
+service.gui.conf.H323_RADIO=H.323
+service.gui.conf.SIP_RADIO=SIP
+service.gui.conf.TITLE_INVALID_PAIRING_ERROR=Invalid Invite Code
+service.gui.conf.INVALID_PAIRING_ERROR=Please enter the {0} character invite code to continue. The invite code is displayed in the room system once you have dialled in.
+service.gui.conf.TITLE_INVALID_ROOM_CALLOUT_ERROR=Invalid Call Out Details
+service.gui.conf.INVALID_ROOM_CALLOUT_ERROR=Please enter a valid IP address or phone number to continue.
+service.gui.conf.FAILED_TO_JOIN_TEXT=An error occurred when joining the meeting. Please try again.
+service.gui.conf.FAILED_TO_JOIN_TITLE=Failed to Join
+# DO NOT TRANSLATE
+service.gui.conf.PLACEHOLDER_MEETING_ID=000 000 0000
+#DO NOT TRANSLATE
+service.gui.conf.PLACEHOLDER_MEETING_URL=/j/0000000000
+#DO NOT TRANSLATE
+service.gui.conf.PLACEHOLDER_MEETING_ROOM_IP=0.0.0.0
+
+service.gui.conf.DIAL_OUT_TITLE=Invite by Phone
+service.gui.conf.DIAL_OUT_IN_PROGRESS=Calling…
+service.gui.conf.DIAL_OUT_SUCCEEDED=Success!
+service.gui.conf.DIAL_OUT_CANCELLING=Canceling…
+service.gui.conf.DIAL_OUT_NUMBER_HINT=Enter Number
+service.gui.conf.DIAL_OUT_DISPLAY_NAME_HINT=Enter Display Name
+service.gui.conf.DIAL_OUT_BUTTON=Call Out
+service.gui.conf.DIAL_OUT_HELP_TEXT=Select a contact or enter someone's name and number to invite them to the meeting.
+service.gui.conf.DIAL_OUT_DISABLED_TEXT=You must start the meeting before you can invite by phone.
+service.gui.conf.DIAL_OUT_CONTACT_PICKER_TITLE=Invite by Phone
+service.gui.conf.DIAL_OUT_CONTACT_PICKER_ERROR=Invalid Selection
+
+service.gui.conf.QUIT_DIALOG_TITLE=Are you sure?
+service.gui.conf.QUIT_DIALOG_MESSAGE=You are in a meeting.<br><br>If you quit @@PRODUCT_NAME_SHORT@@ you will leave the meeting automatically.
+service.gui.conf.QUIT_DIALOG_CONFIRM_BUTTON=Leave Meeting and Quit
+
+service.gui.conf.JOIN_HEADER=Join
+service.gui.conf.MEETING_HEADER=Meeting
+service.gui.conf.INVITE_HEADER=Invite
+service.gui.conf.INVITE_AND_SCHEDULING_HEADER=Scheduling && Invites
+service.gui.conf.PLUGIN_HEADER=Outlook Plugin
+service.gui.conf.PLUGIN_BUTTON=Download Outlook Plugin
+service.gui.conf.PLUGIN_DESCRIPTION=Create and schedule online meetings from within Outlook.
+service.gui.conf.PLUGIN_COMPATIBILITY=Outlook 2010 or higher (2007 with limited features).
+service.gui.conf.WEBINAR_SETTINGS=Manage &Webinars…
+service.gui.conf.ADVANCED_SETTINGS=Advanced &Settings
+service.gui.conf.DIAL_IN_NUMBERS_MESSAGE_1=Dial-in number: {0}
+service.gui.conf.DIAL_IN_NUMBERS_MESSAGE_2=Dial-in numbers: {0} or {1}
+
+service.gui.conf.ASSISTANTS_LIST_TITLE=Scheduling Assistants
+service.gui.conf.ADD_ASSISTANT_BUTTON=Add Assistant
+service.gui.conf.ASSISTANTS_HELP_TEXT=A scheduling assistant can schedule meetings on your behalf.
+
+service.gui.conf.REMOVE_ASSISTANT_CONFIRMATION_DIALOG_TITLE=Are you sure?
+service.gui.conf.REMOVE_ASSISTANT_CONFIRMATION_DIALOG_TEXT={0} will no longer be able to schedule meetings on your behalf.
+service.gui.conf.REMOVE_ASSISTANT_CONFIRMATION_DIALOG_REMOVE_BUTTON=Remove Assistant
+
+service.gui.conf.ADD_ASSISTANT_ERROR_TITLE=Error Selecting Contact
+service.gui.conf.REMOVE_ASSISTANT_ERROR_TITLE=Error Removing Assistant
+# Message for a dialog warning the user that an error occurred while adding an assistant
+service.gui.conf.ADD_ASSISTANT_ERROR=Make sure that you have selected a contact within your organisation and that they have an account enabled to use @@ACCESSION_MEETING_MEETING_NAME@@.
+service.gui.conf.ADD_ASSISTANT_RETRY=Try Again
+service.gui.conf.REMOVE_ASSISTANT_ERROR=An error occurred while removing this assistant. If the problem persists, contact your service provider.
+service.gui.conf.NO_CONNECTION_ASSISTANT_ERROR=Unable to contact server. Please ensure that you are connected to the internet and contact your service provider if the problem persists.
+
+service.gui.conf.EMAIL_INVITATIONS=Email invitation
+service.gui.conf.CUSTOMISE_EMAIL=Edit
+service.gui.conf.CUSTOMISE_EMAIL_TITLE=Edit Email Template
+service.gui.conf.EMAIL_SUBJECT=Subject
+service.gui.conf.EMAIL_INVITE_MESSAGE=Message
+service.gui.conf.EMAIL_TEMPLATE_EDITING_HINT=Your custom email template will be used when creating meetings from @@PRODUCT_NAME_TITLECASE@@. Scheduled meetings will continue to use the default email template.\nMeeting information is added to the end of the email and is not editable.
+service.gui.conf.PREVIEW=Preview
+service.gui.conf.SAVE=Save
+#This string should be kept a similar length to the English translation.
+service.gui.conf.RESTORE_DEFAULTS=Reset to Default
+service.gui.conf.CANCEL=Cancel
+service.gui.conf.CUSTOM_LANGUAGE_INFO=Changing the email language will not affect custom messages.
+
+service.gui.conf.CONNECT_AUDIO_ON_JOIN=Connect audio when starting or joining
+service.gui.conf.MUTE_MIC_ON_JOIN=Mute my microphone when joining
+service.gui.conf.DISABLE_VIDEO_ON_JOIN=Turn off my video when joining
+service.gui.conf.HIDE_NON_VIDEO_PARTICIPANTS=Hide non-video participants
+service.gui.conf.AUTO_COPY_URL=Copy the meeting URL to Clipboard when starting
+service.gui.conf.CONFIRM_ON_LEAVE=Confirm before leaving meetings
+service.gui.conf.FULL_SCREEN_VIDEO=Enter full screen when starting or joining
+service.gui.conf.FULL_SCREEN_SHARE=Enter full screen when viewing the shared screen
+service.gui.conf.FIT_TO_WINDOW=Scale the shared screen to fit window
+service.gui.conf.DUAL_MONITOR_STREAMING=Use dual monitors
+
+service.gui.groupcontact.EDIT_GROUP_DESCRIPTION=Only IM contacts can be added to groups
+service.gui.groupcontact.EDIT_GROUP_OK_TEXT=Save
+service.gui.groupcontact.VIEW_GROUP_OK_TEXT=Edit
+service.gui.groupcontact.ADD_GROUP_TITLE=Add Group
+service.gui.groupcontact.EDIT_GROUP_TITLE=Edit Group
+service.gui.groupcontact.VIEW_GROUP_TITLE=Group Info
+service.gui.groupcontact.ADD_GROUP_NAME_HINT=Enter Group Name
+service.gui.groupcontact.EDIT_GROUP_CONTACT_COUNT_TEXT_ONE={0} contact selected
+service.gui.groupcontact.EDIT_GROUP_CONTACT_COUNT_TEXT_MANY={0} contacts selected
+service.gui.groupcontact.VIEW_GROUP_CONTACT_COUNT_TEXT_ONE={0} contact
+service.gui.groupcontact.VIEW_GROUP_CONTACT_COUNT_TEXT_MANY={0} contacts
+service.gui.groupcontact.ERROR_NO_GROUP_CONTACT_NAME_TITLE=No Group Name
+service.gui.groupcontact.ERROR_NO_GROUP_CONTACT_NAME_MSG=You must enter a group name to continue.
+service.gui.groupcontact.MENU_ITEM_ADD=Add to Group Contact
+service.gui.groupcontact.MENU_ITEM_ADD_ALL=Add Participants to a Group Contact
+service.gui.groupcontact.MENU_ITEM_ADD_NO_IM=Add to Group Contact (IM Only)
+service.gui.groupcontact.MENU_ITEM_CREATE=Create New
+service.gui.groupcontact.MENU_ITEM_CREATE_NEWBUTTON=Add Group Contact
+service.gui.groupcontact.MENU_ITEM_VIEW=View Group Contact
+service.gui.groupcontact.MENU_ITEM_EDIT=Edit Group Contact
+service.gui.groupcontact.MENU_ITEM_DELETE=Delete Group Contact
+service.gui.groupcontact.CANNOT_ADD_TITLE=Not all contacts will be added
+service.gui.groupcontact.CANNOT_ADD_MESSAGE_START=The following participants will not be added to the group, as they are not one of your existing contacts:\n\n
+service.gui.groupcontact.CANNOT_ADD_MESSAGE_END=\nReturn to the group chat to add them individually before continuing.\n\n
+service.gui.groupcontact.presence.NO_ONLINE=No Contacts Online
+service.gui.groupcontact.presence.ALL_ONLINE=All Contacts Online
+service.gui.groupcontact.presence.ONE_ONLINE=1 Contact Online
+service.gui.groupcontact.presence.MULTI_ONLINE={0} Contacts Online
+
+service.gui.chat.CREATE_NEW_GROUP=New &Group Chat
+service.gui.chat.ERROR_INVALID_CHAT_NAME=Invalid Subject
+service.gui.chat.ERROR_ENTER_CHAT_NAME=You must add a subject to continue.
+service.gui.chat.DORMANT_CHAT_LABEL=You are no longer in this conversation
+service.gui.chat.REMOVE_USER=Remove From Group
+service.gui.chat.REMOVE_USER_CONFIRM=Are you sure you want to remove {0} from the conversation?
+service.gui.chat.REMOVE_CONFIRM=Remove
+service.gui.chat.REMOVE_USER_ERROR_TITLE=Participant Not Removed
+service.gui.chat.REMOVE_USER_ERROR=Failed to remove {0} from the conversation. If this error persists, please contact your service provider.
+
+service.gui.chat.LOST_CONTACT_CHAT_LABEL=Lost connection with group
+service.gui.chat.LOST_CONTACT_BUTTON=Reconnect
+
+service.gui.chat.ACTIVE_PARTICIPANTS=Active Participants
+service.gui.chat.PAST_PARTICIPANTS=Past Participants
+service.gui.chat.MORE=More
+service.gui.chat.INVITED_TO_CHAT_ROOM=You have been added to a group chat
+service.gui.chat.DEFAULT_CHAT_ROOM_NAME=Group Chat
+
+service.gui.CHAT_ROOM_USER_JOINED=<b>You</b> joined the conversation
+service.gui.CHAT_ROOM_OTHER_USER_JOINED=<b>%s</b> joined the conversation
+service.gui.CHAT_ROOM_USER_LEFT=<b>You</b> left the conversation
+service.gui.CHAT_ROOM_OTHER_USER_LEFT=<b>%s</b> left the conversation
+service.gui.CHAT_ROOM_USER_SUBJECT_CHANGED=<b>You</b> changed the subject to ''{0}''
+service.gui.CHAT_ROOM_OTHER_USER_SUBJECT_CHANGED=<b>%s</b> changed the subject to ''{0}''
+service.gui.CHAT_ROOM_USER_REMOVED_YOU=<b>{0}</b> removed <b>you</b> from the conversation
+service.gui.CHAT_ROOM_OTHER_USER_REMOVED=<b>{0}</b> removed <b>%s</b> from the conversation
+# Text displayed in a message that informs the user that they forced the user whose name will replace '<b>%s</b>' in the string to leave the group chat.
+service.gui.CHAT_ROOM_YOU_REMOVED_OTHER_USER=<b>You</b> removed <b>%s</b> from the conversation
+# Text displayed in a message that informs the user they have been forced to leave the group chat by an unknown user.
+service.gui.CHAT_ROOM_UNKNOWN_REMOVED_YOU=<b>You</b> were removed from the conversation
+# Text displayed on a pop-up that informs the user that someone has left the group chat.  The other user's display name will replace '<b>%s</b>' in this string.
+service.gui.CHAT_ROOM_USER_QUIT=<b>%s</b> quit
+
+# Text on button to export chat history to a file
+service.gui.chat.export.BUTTON_TEXT=Export Chat History
+# Window title when a user is attempting to overwrite an existing file
+service.gui.chat.export.FILE_ALREADY_EXISTS_TITLE=Existing File
+# Text displayed when a user is attempting to overwrite an existing file
+service.gui.chat.export.FILE_ALREADY_EXISTS_TEXT=This file already exists, would you like to overwrite it?
+# Displayed in a drop down of the file chooser when only showing .txt files
+service.gui.chat.export.TEXT_FILES=Text Files
+# Default file name. Will be suffixed by '.txt'
+service.gui.chat.export.DEFAULT_FILE_NAME=history
+# Text displayed in chat history export file:
+# 0: Name of contact
+# 1: Name of file transferred
+# 2: State of transfer e.g. successful, failed, pending
+service.gui.chat.export.FILE_TRANSFER={0} transferred {1} - Delivery {2}
+
+# Text used to save the subject of a group chat in the message history if the actual subject can't be discovered
+service.gui.DEFAULT_GROUP_CHAT_SUBJECT=New Group Chat
+
+impl.protocol.jabber.URI_FAIL_TITLE=Unable to start chat
+impl.protocol.jabber.URI_FAIL_NO_IM_PROVIDER=Please sign into your chat account to send a message to {0}
+impl.protocol.jabber.URI_FAIL_INVALID_IM_ADDRESS=Invalid chat address provided: {0}
+
+service.gui.CHANGE_PASSWORD=Change password
+
+service.gui.CHOOSE_CONTACT=Choose number
+service.gui.CHOOSE_ACCOUNT=Please select one of the listed accounts.
+service.gui.CHOOSE_SOUND_FILE=Choose a sound file
+service.gui.CITY=City
+service.gui.COUNTRY=Country
+service.gui.SHOW_MORE_TOOLTIP=Click to show more results
+service.gui.CLEAR=Clear
+service.gui.CLOSE=Cl&ose
+service.gui.CLOSE_CHAT_AFTER_NEW_MESSAGE=You have received a new message less than 2 seconds ago. Are you sure you want to close this chat?
+service.gui.CLOSE_CHAT_ACTIVE_FILE_TRANSFER=You have active file transfers. Are you sure you want to close this chat?
+service.gui.CONFERENCE=Conference
+service.gui.CONFIRM=Confirm
+service.gui.CONNECTED_STATUS=Connected
+service.gui.CONNECTING=Connecting…
+service.gui.CONNECTING_STATUS=Connecting
+service.gui.CONNECTING_EARLY_MEDIA_STATUS=Connecting
+service.gui.CONNECTION=Connection
+
+# Text displayed when we do not know the presence of a contact.
+service.gui.CONTACT_IM_NOT_SUPPORTED=No Presence Info
+
+service.gui.CONTACT_NOT_IN_CONTACTS=Directory search result
+
+service.gui.CONTACT_PAUSED_TYPING={0} paused typing
+service.gui.CONTACT_TYPING={0} is typing
+
+service.gui.CONTACT_INFO=&Contact info
+
+service.gui.CONTACTS=Contacts
+service.gui.CONTACT_LIST_DESCRIPTION=Right click to perform actions on this contact
+service.gui.CONTACTS_WITH_NUMBERS=Contacts with numbers
+service.gui.COPY=&Copy
+service.gui.COPY_LINK=Copy &link
+service.gui.CREATE=C&reate
+service.gui.CREATE_CALL_FAILED=Failed to create the call.
+
+# A short description used by screen readers of a button that allows the user to create new items, such as contacts and group chats
+service.gui.CREATE_NEW=Create New
+# A long description used by screen readers of a button that allows the user to create new items, such as contacts and group chats
+service.gui.CREATE_NEW_DESCRIPTION=Clicking this button opens a menu to allow you to create new items, such as contacts and group chats
+
+service.gui.CTRL_KEY=Ctrl
+service.gui.CUT=C&ut
+service.gui.DATE=Date
+service.gui.DEFAULT=Default
+service.gui.DELETE=Delete
+service.gui.DELETE_DESCRIPTION=Delete your chat account
+service.gui.DENY=&Reject
+
+service.gui.DIALPAD=Dial Pad
+service.gui.DIALPAD_DESCRIPTION=Clicking this button opens a dialpad for entering digits into the search field
+service.gui.DISPLAY_NAME=Display name
+service.gui.DISCONNECTED_STATUS=Disconnected
+service.gui.DND_STATUS=Do not disturb
+# Text which appears in a popup next to a checkbox.  Selecting this checkbox will ensure that the user does not get asked the question in the popup again
+service.gui.DO_NOT_ASK_AGAIN=Don't ask again
+# Text which appears in a popup next to a checkbox.  Selecting this checkbox will ensure that the user does not get shown the popup again
+service.gui.DO_NOT_SHOW_AGAIN=Don't show this message again
+service.gui.DOWNLOAD_NOW=&Download now
+service.gui.DRAG_FOR_SHARING=Drag here anything you want to share…
+service.gui.DURATION=duration
+service.gui.EDIT=&Edit
+service.gui.EDITED_AT=
+service.gui.EMAIL=Email
+service.gui.EMAILS=Emails
+service.gui.END_CALL=End Call
+service.gui.ENTER_KEY=Enter
+service.gui.ENTER_PHONE_NUMBER=Enter phone number
+service.gui.ENTER_NAME_OR_NUMBER=Enter name or number
+# Hint text used in a search field that allows the user to search for a contact by their name
+service.gui.ENTER_NAME=Enter name
+
+service.gui.ERROR=Error
+service.gui.ERROR_CHANGING_RINGTONE=Error changing ringtone
+service.gui.ERROR_CHANGING_RINGTONE_MESSAGE=There was an error when loading the ringtone you provided. Please try again.
+
+service.gui.ESTIMATED_TIME=Estimated time
+service.gui.EVENTS=Events
+service.gui.EXAMPLE_DOMAIN=example.com
+service.gui.EXIT=E&xit
+
+service.gui.GENERAL=General
+service.gui.GENERAL_ERROR=Error
+
+service.gui.FAILED_STATUS=Call failed
+
+service.gui.FAVORITES_ADD=Add to Favorites
+service.gui.FAVORITES_REMOVE=Remove from Favorites
+service.gui.FAX=Fax
+
+service.gui.FILE=&File
+service.gui.FILE_WAITING_TO_ACCEPT=Waiting for {0} to accept
+service.gui.FILE_UNABLE_TO_SEND=An error occurred while sending file
+service.gui.FILE_RECEIVE_FAILED=An error occurred while transferring file
+service.gui.FILE_SENDING_TO=Sending file to {0}
+service.gui.FILE_RECEIVING_FROM=Receiving file from {0}
+service.gui.FILE_SEND_COMPLETED=File transfer complete
+service.gui.FILE_RECEIVE_COMPLETED=File transfer complete
+service.gui.FILE_TRANSFER_CANCELED=File transfer has been canceled
+service.gui.FILE_SEND_FAILED=Failed to send file
+service.gui.FILE_TOO_BIG=Your file has not been sent. Maximum file size: {0}
+service.gui.FILE_SEND_REFUSED={0} has rejected this file.
+service.gui.FILE_TRANSFER_REFUSED=File transfer has been rejected.
+service.gui.FILE_TRANSFER_NOT_SUPPORTED=File transfer is not supported.
+service.gui.FILE_TRANSFER_PREPARING=Preparing file transfer
+service.gui.FILE_TRANSFER_WAITING_FOR_ACCEPT=Waiting for {0} to accept…
+service.gui.FILE_TRANSFER_REQUEST_RECIEVED={0} is sharing a file with you.
+service.gui.FILE_TRANSFER_NO_RESPONSE={0} did not accept the file transfer.
+service.gui.FILE_TRANSFER_NOT_ONLINE=This contact cannot accept file transfers at this time.
+service.gui.FILE_DOES_NOT_EXIST=Could not find file.
+service.gui.FILE_OPEN_FAILED=Failed to open file.
+
+service.gui.FILE_OPEN_NO_PERMISSION=You don't have the correct permissions to open this file.
+service.gui.FILE_OPEN_NO_APPLICATION=We couldn't find the application associated with this type of file.
+service.gui.FINISH=&Finish
+
+service.gui.FOLDER_DOES_NOT_EXIST=The folder containing this file could not be found.
+service.gui.FOLDER_OPEN_FAILED=Failed to open folder.
+service.gui.FOLDER_OPEN_NO_PERMISSION=You don't have enough permissions to open this folder.
+service.gui.FOLDER_OPEN_NO_APPLICATION=We couldn't find an application to open this folder.
+service.gui.FONT=Font
+service.gui.FONT_BOLD=Bold
+service.gui.FONT_COLOR=Color
+service.gui.FONT_FAMILY=Family
+service.gui.FONT_ITALIC=Italic
+service.gui.FONT_SIZE=Size
+service.gui.FONT_STYLE=Style
+service.gui.FONT_UNDERLINE=Underline
+service.gui.FORWARDING_STATUS=Forwarding
+
+service.gui.HANG_UP=Hang up
+service.gui.HD_QUALITY=HD video
+service.gui.HELP=&Help
+service.gui.HIDE=Hide
+service.gui.HIDE_OFFLINE_CONTACTS=Hide offline contacts
+service.gui.HIDE_MAIN_WINDOW=<DIV>Closing the application will only hide it. If you wish \
+to exit fully, choose File/Quit.</DIV>
+service.gui.HISTORY=&History
+service.gui.HISTORY_INCOMING=Received
+service.gui.HISTORY_OUTGOING=Dialed
+service.gui.HISTORY_MISSED=Missed
+
+service.gui.HOUR=Hour
+service.gui.HOURS=hrs
+
+service.gui.EMAIL_IDENTIFIER=Phone / Email
+service.gui.IDENTIFIER=Phone Number
+service.gui.IDENTIFIER.jabber=Username
+service.gui.IM_IDENTIFIER=Username
+service.gui.IGNORE=&Ignore
+service.gui.INFORMATION=Information
+service.gui.INSERT_SMILEY=Insert Smiley
+service.gui.INCOMING_CALL=Incoming call - {0}
+# Descriptive text on a dialog that is displayed when we receive an incoming call.
+service.gui.INCOMING_CALL_STATUS=Incoming Call
+# The title of a dialog that is displayed when we receive an incoming call.
+service.gui.INCOMING_CALL_TITLE=@@PRODUCT_NAME_SHORT@@ Call
+service.gui.INSTANT_MESSAGINGS=Chats
+
+service.gui.INVALID_AUDIO_FILE=Invalid audio file
+service.gui.INVALID_AUDIO_FILE_MESSAGE=Failed to open the specified audio file. The file could be corrupted or be in an invalid format.
+# Text for a tooltip for a button in the individual chat panel that allows the user to add new people into the chat to turn it into a group chat.
+service.gui.INVITE=&Add Participants
+
+service.gui.IS_CALLING={0} is calling…
+service.gui.IS_NOW={0} is now {1}
+
+service.gui.JOB_TITLE=Job title
+
+service.gui.LAST=Last
+service.gui.LAST_NAME=Last name
+
+service.gui.LOADING=Loading…
+service.gui.LOCAL_CONTACT_SOURCE_ERROR_TITLE=Contact Source Error
+service.gui.LOCAL_CONTACT_SOURCE_ERROR_TEXT=@@PRODUCT_NAME_SHORT@@ cannot connect to Outlook contacts.  \
+If you don't have Outlook installed, please switch to using @@PRODUCT_NAME_SHORT@@ as your contact source.\n\n \
+Go to Tools > Options > General > Contacts
+service.gui.LOCALLY_ON_HOLD_STATUS=On hold
+service.gui.LOGIN=Log in
+# Text displayed when an authentication/log in attempt failed and it appears to be the result of a network error.
+service.gui.LOGIN_NETWORK_ERROR=Unable to log in. Please check your network connection and try again.
+service.gui.LOGIN_GENERAL_ERROR=An error occurred while logging in. Please try again.
+service.gui.LOGIN_INTERNAL_ERROR=An error occurred while logging in. If this error persists, please contact your service provider.
+service.gui.LOGIN_INVALID_PROPERTIES_ERROR=Unable to log in. Please check your details and try again.
+service.gui.LOGOFF_NOT_SUCCEEDED=An error occurred while logging off. Please try again.
+service.gui.LOW_QUALITY=Low quality
+service.gui.LOW_AUDIO=Low Mic Volume
+service.gui.LOW_AUDIO_MUTED=Mic Muted
+# Text for the 'Log Out' entry on the File menu.
+service.gui.LOG_OUT=&Log Out
+
+#Tooltip when there is disruption to a call due to the network
+service.gui.OUTBOUND_PACKET_LOSS=Network interference
+#Tooltip when there is disruption to a call due to the network
+service.gui.INBOUND_PACKET_LOSS=Network interference
+
+service.gui.MERGE_TO_CALL=Merge calls
+service.gui.MESSAGE=Chat
+
+# Text used in the tooltip for unread messages
+service.gui.MESSAGE_HISTORY_UNREAD=Unread
+# Text used in the tooltip for IM messages
+service.gui.MESSAGE_HISTORY_IM=IM
+# Text used in the tooltip for SMS messages
+service.gui.MESSAGE_HISTORY_SMS=SMS
+# Text used in the tooltip for group IM messages
+service.gui.MESSAGE_HISTORY_GROUP=Group IM
+
+service.gui.MINUTES=mins
+
+service.gui.MORE=See more
+service.gui.MORE_ACTIONS=More
+
+service.gui.MSG_DELIVERY_NOT_SUPPORTED=Offline messages are not supported.
+service.gui.MSG_DELIVERY_INTERNAL_ERROR=An error occurred. Please contact your service provider.
+# Error message displayed in the chat window when sending an IM or SMS fails.
+service.gui.MSG_DELIVERY_ERROR=Message delivery failed
+service.gui.MSG_DELIVERY_UNKNOWN_ERROR=An error occurred. Please contact your service provider.
+service.gui.MSG_NOT_DELIVERED=Your message could not be delivered. Please check your network connection and try again.
+service.gui.MSG_NOT_POSSIBLE=Messaging to this contact is not possible.
+service.gui.MSG_RECEIVED={0}
+service.gui.MSG_SEND_CONNECTION_PROBLEM=Your message could not be delivered. Please check your network connection and try again.
+service.gui.MSG_REMOTE_DOES_NOT_SUPPORT=This contact cannot accept file transfers at this time.
+service.gui.MSG_OFFLINE=This contact is currently offline and may not receive your message.
+service.gui.MSG_OFFLINE_FULL=This contact will not receive any more messages sent while they're offline.
+service.gui.MSG_OFFLINE_UNSUPPORTED=Sending messages to offline contacts is not supported.
+
+service.gui.MULTI_PARTY_CALL=MultiPartyCall
+service.gui.MUTE=Mute
+# Text displayed in file menu to mute sound notifications
+service.gui.MUTE_NOTIFICATIONS=&Mute Notification Sounds
+# Text displayed in file menu to unmute sound notifications
+service.gui.UNMUTE_NOTIFICATIONS=&Unmute Notification Sounds
+service.gui.MUTUALLY_ON_HOLD_STATUS=On Hold
+service.gui.NAME=Name
+service.gui.NETWORK_FAILURE=Network failure
+service.gui.NEXT=&Next
+service.gui.NEW_ACCOUNT=Add &New Chat Account
+
+service.gui.NO=No
+service.gui.NONE=None
+service.gui.NO_CAMERA_AVAILABLE=No camera available
+
+service.gui.NO_VIDEO_ENCODINGS=Video is not configured correctly
+service.gui.NO_VIDEO_FOR_PROTOCOL=Video is not supported
+
+service.gui.NO_CONTACTS_FOUND=No matching contacts. Press Enter to call.
+service.gui.NO_CONTACTS_FOUND_SHORT=No matching contacts
+
+service.gui.NO_ONLINE_TELEPHONY_ACCOUNT=Unable to connect to your telephone service.  Please ensure you are connected to the internet and try again. If the problem persists, please contact your service provider.
+service.gui.NOT_AUTHORIZED=Not authorized
+service.gui.NON_EMPTY_CHAT_WINDOW_CLOSE=You have an unsent message. Are you sure you want to close?
+service.gui.NON_EXISTING_USER_ID=Account was not recognised - please check your details and try again.
+
+# Text that appears below a button in the options window that describes what clicking the button will do (i.e. the button disables the phone functionality of the client)
+service.gui.VOIP_HINT=Turning off Direct Calling provides a better experience when using @@PRODUCT_NAME_SHORT@@ with a twinned desk phone. Incoming calls will not ring in @@PRODUCT_NAME_SHORT@@ and outgoing calls will be made using Click-to-Dial.
+# Text on a button in the options window that disables the phone functionality of the client
+service.gui.VOIP_DISABLE_BUTTON=Turn off Direct Calling
+# Text in the pop-up that is displayed when the user clicks the button in the options window that disables the phone functionality of the client
+service.gui.VOIP_DISABLE_DIALOG_TEXT=Turning off Direct Calling means you will no longer be able to make or receive calls from @@PRODUCT_NAME_SHORT@@ directly, instead calls will be made using Click-to-Dial.<br><br>@@PRODUCT_NAME_SHORT@@ needs to restart for your change to take effect.
+# Text on a button in a pop-up that, when pressed, will restart the client
+service.gui.VOIP_DISABLE_DIALOG_CONFIRM=Turn off Direct Calling \\& Restart
+# Text on a button in the options window enables the phone functionality of the client
+service.gui.VOIP_ENABLE_BUTTON=Turn on Direct Calling
+# Text in the pop-up that is displayed when the user clicks the button in the call options that enables the phone functionality of the client
+service.gui.VOIP_ENABLE_DIALOG_TEXT=Turning on Direct Calling means you will start being able to make and receive calls from @@PRODUCT_NAME_SHORT@@ directly.<br><br>@@PRODUCT_NAME_SHORT@@ needs to restart for your change to take effect.
+# Text on a button in a pop-up that, when pressed, will restart the client
+service.gui.VOIP_ENABLE_DIALOG_CONFIRM=Turn on Direct Calling \\& Restart
+# Heading of the pop-up that is displayed when the user clicks the button in the options window that disables the phone functionality of the client
+service.gui.VOIP_DIALOG_TITLE=Are you sure?
+
+service.gui.SD_QUALITY=Standard quality
+service.gui.OFFLINE=Offline
+service.gui.OK=&OK
+
+service.gui.ONLINE=Online
+service.gui.OPEN=Open
+service.gui.OPEN_FILE_FROM_IMAGE=Double click to open file.
+service.gui.OPEN_FOLDER=Open folder
+service.gui.OPEN_IN_BROWSER=Open in &browser
+service.gui.OPTIONS=&Options
+service.gui.OR=or
+service.gui.OR_ENTER_PHONE_NUMBER=Or enter phone number here…
+service.gui.ORGANIZATION=Organization
+service.gui.OTHER=Other
+service.gui.PASSWORD=Password
+service.gui.PASSWORD_ACCESS_NAME=Password
+service.gui.PASSWORD_ACCESS_DESCRIPTION=Type your password in this text box
+service.gui.PASTE=&Paste
+service.gui.PERSONAL=Personal
+# Text for a menu item that allows the user to personalize their client (e.g. change the colour)
+service.gui.PERSONALIZE=&Personalize
+service.gui.PORT=Port
+
+service.gui.PREFERENCES=Preferences
+service.gui.PREFIX=Prefix
+service.gui.PRESENCE=Presence
+
+service.gui.PRESS_FOR_CALL_INFO=Press for call info
+service.gui.PREVIEW_RINGTONE=Preview ringtone
+service.gui.PREVIOUS=Previous
+
+service.gui.PRINT=&Print
+
+service.gui.PROTOCOL=Protocol
+service.gui.PUT_OFF_HOLD=Put off hold
+service.gui.PUT_ON_HOLD=Put on hold
+service.gui.QUIT=&Quit
+service.gui.READY=Ready
+service.gui.REASON=Reason
+service.gui.RECEIVED=received
+
+service.gui.RECORD_CALL=Record Call
+service.gui.RECORDING=Recording
+service.gui.RECORDINGS=Recordings
+# Name of the directory that stores recorded calls
+service.gui.RECORDED_CALLS=Recorded Calls
+# Name of the directory that stores recorded conferences
+service.gui.RECORDED_CONFERENCES=Recorded Meetings
+
+service.gui.RE_REQUEST_AUTHORIZATION=Re-send Chat Request
+
+service.gui.REFRESH_NETWORK_CONFIG_DIALOG_TEXT=Your network configuration is out of date. Please restart your client to refresh.\n\nIf you are still not able to make calls, please contact your service provider for more assistance.
+
+# Text on a button on the incoming conference invite dialog that, when pressed, will cause the user to reject the conference invite.
+service.gui.conf.REJECT=&Ignore
+# Text on a button on the incoming call dialog that, when pressed, will cause the user to reject the call.
+service.gui.call.REJECT=&Reject
+service.gui.REJECT=&Reject
+service.gui.REJECT_CALL_HINT=Reject with message
+service.gui.REJECT_CALL_0="Can't talk now. Call me later?"
+service.gui.REJECT_CALL_1="Can't talk now. What's up?"
+service.gui.REJECT_CALL_2="I'll call you back"
+service.gui.REJECT_CALL_3=Custom Message…
+service.gui.REMIND_ME_LATER=Remind me later
+service.gui.REMEMBER_PASSWORD=Remember my password
+service.gui.REMEMBER_DETAILS=Remember my details
+service.gui.REMOVE=&Delete
+service.gui.REMOVE_ACCOUNT=&Delete account
+service.gui.REMOVE_ACCOUNT_MESSAGE=Are you sure you want to delete this account?
+service.gui.REMOVE_CONTACT=&Delete Contact
+service.gui.REMOVE_CONTACT_TEXT=<DIV>Are you sure you want to delete <B> {0} </B>?</DIV>
+service.gui.REMOVE_CONTACT_NOT_CONNECTED=You need to be connected in order to remove this contact. Please sign in and try again.
+
+service.gui.REMOTELY_ON_HOLD_STATUS=Remotely on hold
+
+# Text for section header from Tools, Options dialog that allows user data to be deleted.
+service.gui.RESET_HEADER=Reset
+# Text for button from Tools, Options dialog that allows user data to be deleted.
+service.gui.RESET_BUTTON=Clear User Data
+# Text for Radiobutton on Reset/Clear User Data dialog that selects delete of just current user's data
+service.gui.RESET_DIALOG_USER=Clear your own user data only
+# Text for Radiobutton on Reset/Clear User Data dialog that selects delete all users and global data
+service.gui.RESET_DIALOG_ALL=Clear user data for all users on this computer
+service.gui.RESET_DIALOG_TITLE=Are you sure?
+# Text for Reset/Clear user data confirmation dialog indicating what will happen if the user continues
+service.gui.RESET_DIALOG_TEXT=Clearing user data will remove all preferences and personal data related to your account from this computer.
+# Text for Reset/Clear user data confirmation dialog where we are also capable of relaunching Accession.
+service.gui.RESET_DIALOG_RELAUNCH=@@PRODUCT_NAME_SHORT@@ will relaunch if you continue.
+service.gui.RESET_DIALOG_CONFIRM=Clear user data \\& Relaunch
+
+service.gui.RINGING_STATUS=Ringing
+service.gui.RINGTONES=Ringtones
+service.gui.RINGTONE_SELECTOR_LABEL=Choose a ringtone
+service.gui.RINGTONE_SELECTOR_LABEL_DESCRIPTION=Use the drop down box to the right to select a ringtone
+service.gui.RINGTONE_NAME_1=@@PRODUCT_NAME_SHORT@@
+service.gui.RINGTONE_NAME_2=Bass
+service.gui.RINGTONE_NAME_3=Campfire
+service.gui.RINGTONE_NAME_4=Canon
+service.gui.RINGTONE_NAME_5=Cave
+service.gui.RINGTONE_NAME_6=Chimes
+service.gui.RINGTONE_NAME_7=Cosmic
+service.gui.RINGTONE_NAME_8=Crescendo
+service.gui.RINGTONE_NAME_9=Encounter
+service.gui.RINGTONE_NAME_10=Enigma
+service.gui.RINGTONE_NAME_11=Guitar
+service.gui.RINGTONE_NAME_12=Journey
+service.gui.RINGTONE_NAME_13=Morse
+service.gui.RINGTONE_NAME_14=Notify
+service.gui.RINGTONE_NAME_15=Provence
+service.gui.RINGTONE_NAME_16=Suspense
+service.gui.RINGTONE_NAME_17=Telephone
+service.gui.RINGTONE_NAME_18=Tension
+service.gui.REQUEST=&Request
+service.gui.REQUEST_AUTHORIZATION=&Send chat request
+service.gui.REQUEST_AUTHORIZATION_MSG=Before you add {0} to your contact list, they must first authorize you. Please enter your authorization request below.
+service.gui.RETRY=Retry
+
+service.gui.SAVE=&Save
+service.gui.SAVE_AS_DEFAULT=Save as default
+service.gui.SEARCH=&Search
+
+service.gui.SECONDS=secs
+
+service.gui.DURATION_ZERO=
+service.gui.DURATION_SECONDS= - {2} secs
+service.gui.DURATION_MINUTES= - {1} mins
+service.gui.DURATION_MINUTES_SECONDS= - {1} mins, {2} secs
+service.gui.DURATION_HOURS= - {0} hours
+service.gui.DURATION_HOURS_SECONDS= - {0} hours, {2} secs
+service.gui.DURATION_HOURS_MINUTES= - {0} hours, {1} mins
+service.gui.DURATION_HOURS_MINUTES_SECONDS= - {0} hours, {1} mins, {2} secs
+
+service.gui.SELECT_ACCOUNT=Select account
+service.gui.SELECT_FILE=Choose file…
+service.gui.SELECT_FOLDER=Choose folder…
+
+service.gui.SEND=&Send
+# Text displayed on a menu item on a contact that opens a new email to that contact
+service.gui.SEND_EMAIL=Send Email
+service.gui.SEND_FILE=Send &File
+service.gui.SEND_FILE_UNAVAILABLE=Sending files is only available for online IM contacts
+service.gui.SEND_FILE_TITLE=Send file
+
+# Hint text displayed in the text box where group IMs are typed to indicate that a message sent from there will be an group chat
+service.gui.SEND_GROUP_CHAT_TO=Send Group Chat
+
+service.gui.SEND_MESSAGE=Send Chat
+# Hint text displayed in the text box where SMSs are typed to indicate that a message sent from there will be an SMS to the given number
+service.gui.SEND_SMS_TO=Send SMS to
+service.gui.SEND_MESSAGE_NO_ADDRESS=No Chat Address
+service.gui.SEND_MESSAGE_NO_SERVICE=Chat Offline
+
+service.gui.SENT=sent
+
+service.gui.SET_STATUS_MESSAGE=Set status message
+service.gui.SETTINGS=&Options
+
+service.gui.SKIP=Skip
+
+service.gui.SHOW=Show
+service.gui.SHOW_HIDE_DIALPAD=Show/Hide Dialpad
+# Text for a button which lets the user sign into their account.
+service.gui.SIGN_IN=Log In
+service.gui.SHOW_MORE=Show more
+# Short string which is used next to a checkbox which determines if the call rating screen should be shown
+service.gui.SHOW_CALL_RATING=Show the call rating window after every call
+
+service.gui.SPECIFY_SERVER=Please use your full chat address including the domain. For example: phonenumber@{0}
+
+service.gui.SOUND_FILE_FORMAT_TEXT=Sound files (.wav)
+service.gui.SOUND_OFF=Turn Sound Off
+service.gui.SOUND_ON=Turn Sound On
+
+service.gui.STOP_PREVIEW=Stop preview
+service.gui.STOP_RECORDING=Stop Recording
+
+service.gui.STREET=Street
+service.gui.SUBJECT=Subject
+service.gui.SUMMARY=Summary
+service.gui.SYNCING=Synchronizing contacts
+service.gui.TELEPHONY=Telephony
+service.gui.TODAY=Today
+service.gui.TOOLS=&Tools
+service.gui.TRANSFER=Trans&fer
+service.gui.TO=&To
+service.gui.TRANSFER_CALL_MSG=Select the name of the contact you would like to transfer to and then click Transfer.
+service.gui.TRANSFER_CALL_TITLE=Transfer Call
+service.gui.TRANSFER_CALL_TO=Transfer to
+
+service.gui.UC_SERVICES=Web Apps
+service.gui.UC_SERVICES.HEADING=Web Services
+service.gui.UC_SERVICES.ENABLED=Enabled
+service.gui.UC_SERVICES.DISABLED=Disabled
+service.gui.UC_SERVICES.SERVICE_LAUNCH={0}
+service.gui.UC_SERVICES.SEARCH_SERVICE=Search {0}
+service.gui.UC_SERVICES.WEBCONF.HEADING=Conferencing
+service.gui.UC_SERVICES.WEBCONF.DESCRIPTION=Your chosen web conferencing service is added as an option in the Profile > App integrations menu. The conferencing service will launch in your web browser.
+service.gui.UC_SERVICES.WEBCONF.SELECTION=Web conferencing site
+service.gui.UC_SERVICES.FILESHARE.HEADING=File sharing
+service.gui.UC_SERVICES.FILESHARE.DESCRIPTION=Your chosen file sharing service is added as an option in the Profile > App integrations menu. The file sharing service will launch in your web browser.
+service.gui.UC_SERVICES.FILESHARE.SELECTION=File sharing site
+# Title label for an option on the settings page. "Customer Relationship (CRM)" is a type of web service that provides contact management for businesses.
+service.gui.UC_SERVICES.CRM.HEADING=Customer Relationship (CRM)
+service.gui.UC_SERVICES.CRM.DESCRIPTION=Select how to perform searches of your Customer Relationship Manager (CRM). The results will be displayed in your web browser.
+# Title label for a dropdown menu on the settings page. The dropdown allows users to select their preferred CRM service.
+service.gui.UC_SERVICES.CRM.SELECTION=CRM site
+service.gui.UC_SERVICES.CRM.BUTTON_HELP_TEXT=Manually search from the call windows using the lookup button.
+# Title label for a dropdown menu on the settings page. The dropdown allows users to choose whether the CRM site is automatically launched when they answer calls.
+service.gui.UC_SERVICES.CRM.AUTO_LAUNCH=Auto-search
+# Option label for a dropdown menu on the settings page. Limited space - translated string must be no longer than the English string. The dropdown allows users to choose whether the CRM site is automatically launched when they answer calls or meeting invitations. Option: Always search CRM when answering calls or meeting invitations.
+service.gui.UC_SERVICES.CRM.AUTO_LAUNCH_ALWAYS_CONF=When accepting calls or meetings
+# Option label for a dropdown menu on the settings page. Limited space - translated string must be no longer than the English string. The dropdown allows users to choose whether the CRM site is automatically launched when they answer calls. Option: Always search CRM when answering calls.
+service.gui.UC_SERVICES.CRM.AUTO_LAUNCH_ALWAYS=When accepting calls
+# Option label for a dropdown menu on the settings page. Limited space - translated string must be no longer than the English string. The dropdown allows users to choose whether the CRM site is automatically launched when they answer calls or meeting invitations. Option: Search CRM when answering calls or meeting invitations but only from people outside the user's company.
+service.gui.UC_SERVICES.CRM.AUTO_LAUNCH_EXTERNAL_CONF=When accepting external calls or meetings
+# Option label for a dropdown menu on the settings page. Limited space - translated string must be no longer than the English string. The dropdown allows users to choose whether the CRM site is automatically launched when they answer calls. Option: Search CRM when answering calls but only from people outside the user's company.
+service.gui.UC_SERVICES.CRM.AUTO_LAUNCH_EXTERNAL=When accepting external calls
+service.gui.UC_SERVICES.CRM.AUTO_LAUNCH_NEVER=Never
+service.gui.UC_SERVICES.URL_ERROR.INVALID.TITLE=Invalid URL
+service.gui.UC_SERVICES.URL_ERROR.INVALID.TEXT="{0}" is an invalid URL. Contact your network administrator to update the web address for this service.
+service.gui.UC_SERVICES.URL_ERROR.FAILED.TITLE=Unable to launch URL
+service.gui.UC_SERVICES.URL_ERROR.FAILED.TEXT=@@PRODUCT_NAME_SHORT@@ was unable to launch "{0}".\nContact your network administrator if this issue persists.
+service.gui.UC_SERVICES.CRM_LAUNCH_BUTTON_TEXT_ACCESSION=Search Online
+
+service.gui.UNMUTE=Unmute
+service.gui.USER_IDENTIFIER=Username
+
+service.gui.USERNAME_NULL=Please enter your username and password.
+service.gui.USERNAME_ACCESS_NAME=Telephone Number
+service.gui.USERNAME_ACCESS_DESCRIPTION=Type your telephone number in this text box
+
+service.gui.USERNAME_EMAIL_ACCESS_NAME=Telephone Number and Email
+service.gui.USERNAME_EMAIL_ACCESS_DESCRIPTION=Type your telephone number or email in this text box
+
+service.gui.ACCOUNT_CREATION_FAILED=An error occurred, and your account was not created successfully. Please try again.
+service.gui.UNKNOWN=No Name
+service.gui.UNKNOWN_PEER=Unknown
+service.gui.UNKNOWN_STATUS=Unknown state
+service.gui.UNREGISTERED_MESSAGE=Unable to connect. You are currently offline.
+
+service.gui.CUSTOM_STATUS={0} - {1}
+
+service.gui.INVITE_TO_MEETING=Invite to Meeting
+service.gui.VIDEO_CALL=&Video Call
+service.gui.VIA=via
+
+service.gui.VIEW=&View
+service.gui.VIEW_HISTORY=View Chat &History
+
+service.gui.VOLUME_CONTROL_TOOL_TIP=Adjust volume
+service.gui.WAITING_AUTHORIZATION=Waiting for authorization
+service.gui.WARNING=Warning
+service.gui.YES=Yes
+service.gui.YESTERDAY=Yesterday
+service.gui.EXISTING_ACCOUNT_ERROR=This account already exists.
+
+service.gui.ACTIVATE=Activate
+service.gui.DEACTIVATE=Deactivate
+service.gui.NEW=New
+service.gui.ENTER_FULL_SCREEN_TOOL_TIP=Enter Fullscreen
+service.gui.EXIT_FULL_SCREEN_TOOL_TIP=Exit Fullscreen
+service.gui.HOLD_BUTTON_TOOL_TIP=Toggle Hold
+
+service.gui.MUTE_BUTTON_TOOL_TIP=In Call Output Volume
+
+service.gui.MICROPHONE_BUTTON_TOOL_TIP=In Call Microphone Volume
+
+service.gui.LOCAL_VIDEO_BUTTON_TOOL_TIP=Toggle Video
+
+service.gui.TRANSFER_BUTTON_TOOL_TIP=Transfer Call
+service.gui.TRANSFER_TO=Another number…
+
+service.gui.XMPP_MESSAGE_TOO_LONG=Your message could not be delivered. The maximum message length is {0} characters.
+
+service.gui.UPDATE=Update
+service.gui.MOBILE_PHONE=Mobile
+service.gui.OTHER_PHONE=Other
+service.gui.INTERCOM_PHONE=Intercom
+service.gui.VIDEO_PHONE=Video
+service.gui.WORK_PHONE=Work
+service.gui.PHONE=Home
+service.gui.PHONES=Phones
+
+service.gui.MAX_CHAT_ACCOUNTS_CONFIGURED=You already have an account.
+
+service.gui.TAB_CONTACTS=Contacts
+service.gui.TAB_HISTORY=Recent
+# The heading used for search results from call history
+service.gui.CALL_HISTORY=Recent Calls
+# The heading used for search results from chat history
+service.gui.MESSAGE_HISTORY=Recent Chats
+# The label on the sub-tab of the 'Recent' tab that displays both call and chat history
+service.gui.ALL_HISTORY_BUTTON=All
+service.gui.CALLS_HISTORY_BUTTON=Calls
+service.gui.CHATS_HISTORY_BUTTON=Chats
+service.gui.TAB_FAVORITES=Favorites
+service.gui.NO_FAVORITES_TITLE=You don't have any favorites yet
+service.gui.NO_FAVORITES_TEXT=To add to favorites, right click on a contact and choose from the menu.
+
+service.gui.smiley.LAUGH_TEXT=Laugh
+service.gui.smiley.SAD_TEXT=Sad
+service.gui.smiley.SLEEPY_TEXT=Sleepy
+service.gui.smiley.WINK_TEXT=Wink
+service.gui.smiley.ANGRY_TEXT=Angry
+service.gui.smiley.THINKING_TEXT=Thinking
+service.gui.smiley.SMILE_TEXT=Smile
+service.gui.smiley.CONFUSED_TEXT=Confused
+service.gui.smiley.TONGUEOUT_TEXT=Tongue Out
+service.gui.smiley.BIGSMILE_TEXT=Big Smile
+service.gui.smiley.SHOCKED_TEXT=Shocked
+service.gui.smiley.BYE_TEXT=Bye
+service.gui.smiley.BLANK_TEXT=Blank
+service.gui.smiley.COOLDUDE_TEXT=Cool
+service.gui.smiley.CRY_TEXT=Crying
+service.gui.smiley.EVIL_TEXT=Evil
+
+service.gui.transfer.ERROR=Unable to Transfer
+service.gui.add.ERROR=Unable to Add
+service.gui.ERROR_INVALID_NUMBER=The number you have entered is not a valid phone number.
+service.gui.ERROR_INVALID_NUMBER_DIALED=The number you have tried to dial is not a valid phone number.
+service.gui.ERROR_NO_NUMBER=Please enter a phone number or select a contact from the list.
+service.gui.SELECT_NUMBER=This contact has multiple phone numbers, select a number below.
+service.gui.SELECT_NUMBER_TITLE=Select Number
+service.gui.NO_NUMBER=This contact does not have a valid phone number.
+# Message for an error dialog that is shown when the user has not selected a contact in a contact picker dialog
+service.gui.NO_CONTACT_SELECTED=You must select a contact.
+
+service.gui.addparticipant.TEXT=Add participant
+service.gui.addparticipant.TITLE=Add Participant
+service.gui.addparticipant.OK_BUTTON=Add
+
+service.gui.JANUARY=Jan
+service.gui.FEBRUARY=Feb
+service.gui.MARCH=Mar
+service.gui.APRIL=Apr
+# The abbreviated name of the month May
+service.gui.MAY=May
+service.gui.JUNE=Jun
+service.gui.JULY=Jul
+service.gui.AUGUST=Aug
+service.gui.SEPTEMBER=Sep
+service.gui.OCTOBER=Oct
+service.gui.NOVEMBER=Nov
+service.gui.DECEMBER=Dec
+
+# Title of a dialog which shows when a users IM presence information has been updated to show that they are in a meeting (according to Outlook)
+service.gui.presence.IN_MEETING_DIALOG_TITLE=In a meeting
+# Message on a dialog which informs the user that their IM presence information has been updated automatically because their Outlook Calendar indicates that they are in a meeting.
+service.gui.presence.IN_MEETING_DIALOG_MSG=Your status was changed because @@PRODUCT_NAME_SHORT@@ noticed you have a meeting in your Outlook Calendar set to busy.  You can choose whether @@PRODUCT_NAME_SHORT@@ uses calendar events from Options.\n\nTools > Options > Chat
+# Title button in a dialog which shows when a users IM presence information has been updated to show that they are in a meeting (according to Outlook).  Pressing it will override the information provided by Outlook
+service.gui.presence.IN_MEETING_DIALOG_LEAVE=Leave Meeting State
+# String which appears next to a checkbox on a settings page.  The checkbox controls whether or not the user appears as in a meeting based on Outlook calendar events.
+service.gui.presence.IN_MEETING_SETTING=Change my status based on Outlook calendar events
+
+service.gui.contactavailable.NOTIFY_WHEN_AVAILABLE=Notify when available
+service.gui.contactavailable.STOP_NOTIFY_WHEN_AVAILABLE=Stop watching availability
+service.gui.contactavailable.TITLE=Contact Status Notification
+# This string is used in the "alert when contact is available" feature.
+# This is a feature where the user can ask the application to tell them when a
+# contact is available to talk to.  They do so by right-clicking on that contact
+# and selecting the item with string "Tell me when Available" from the menu.
+# When the contact is available a pop-up with title "Contact Status Notification"
+# is shown.  This pop-up has text "<contact name> is available"
+service.gui.contactavailable.IS_AVAILABLE={0} is now "Online"
+
+service.gui.ALWAYS_TRUST=Always trust this certificate
+service.gui.CERT_DIALOG_TITLE=Verify Certificate
+service.gui.CERT_DIALOG_DESCRIPTION_TXT=<html>{0} can''t verify the identity \
+of the server when connecting to<br>\
+<b>{1}</b>.<br><br> \
+The certificate is not trusted, which means that the server''s \
+identity cannot be automatically verified.<br><br> \
+Do you want to continue connecting?<br> \
+For more information, click "Show Certificate".</html>
+service.gui.CERT_DIALOG_DESCRIPTION_TXT_NOHOST=<html>{0} can''t verify the \
+identity of the server''s certificate.<br><br> \
+The certificate is not trusted, which means that the server''s \
+identity cannot<br> be automatically verified. \
+Do you want to continue connecting?<br><br> \
+For more information, click "Show Certificate".</html>
+service.gui.CERT_DIALOG_CLIENT_DESCRIPTION_TXT=<html>{0} can''t verify the identity \
+of the connecting client.<br><br> \
+The certificate is not trusted, which means that the client''s \
+identity cannot<br> be automatically verified. \
+Do you want to accept the connection?<br><br> \
+For more information, click "Show Certificate".</html>
+service.gui.CERT_DIALOG_PEER_DESCRIPTION_TXT=<html>{0} can''t verify the identity \
+of the peer {1}.<br><br> \
+The certificate is not trusted, which means that the peer''s \
+identity cannot<br> be automatically verified. \
+Do you want to continue connecting?<br><br> \
+For more information, click "Show Certificate".</html>
+service.gui.CONTINUE_ANYWAY=Continue anyway
+service.gui.CERT_INFO_ISSUED_TO=<html><b>Issued To</b></html>
+service.gui.CERT_INFO_CN=Common Name:
+service.gui.CERT_INFO_O=Organization:
+service.gui.CERT_INFO_C=Country Name:
+service.gui.CERT_INFO_ST=State or Province Name:
+service.gui.CERT_INFO_L=Locality Name:
+service.gui.CERT_INFO_ISSUED_BY=<html><b>Issued By</b></html>
+service.gui.CERT_INFO_OU=Organizational Unit:
+service.gui.CERT_INFO_VALIDITY=<html><b>Validity</b></html>
+service.gui.CERT_INFO_ISSUED_ON=Issued On:
+service.gui.CERT_INFO_EXPIRES_ON=Expires On:
+service.gui.CERT_INFO_FINGERPRINTS=<html><b>Fingerprints</b></html>
+service.gui.CERT_INFO_CERT_DETAILS=<html><b>Certificate Info</b></html>
+service.gui.CERT_INFO_SER_NUM=Serial Number:
+service.gui.CERT_INFO_VER=Version:
+service.gui.CERT_INFO_SIGN_ALG=Signature Algorithm:
+service.gui.CERT_INFO_PUB_KEY_INFO=<html><b>Public Key Info</b></html>
+service.gui.CERT_INFO_ALG=Algorithm:
+service.gui.CERT_INFO_PUB_KEY=Public Key:
+service.gui.CERT_INFO_KEY_BYTES_PRINT={0} bytes: {1}
+service.gui.CERT_INFO_KEY_BITS_PRINT={0} bits
+service.gui.CERT_INFO_EXP=Exponent:
+service.gui.CERT_INFO_KEY_SIZE=Key Size:
+service.gui.CERT_INFO_SIGN=Signature:
+service.gui.CONTINUE=Continue
+service.gui.SHOW_CERT=Show Certificate
+service.gui.HIDE_CERT=Hide Certificate
+
+service.gui.avatar.AVATAR_MENU_NAME=Select avatar
+service.gui.avatar.CHOOSE_ICON=Change avatar
+service.gui.avatar.REMOVE_ICON=Remove current avatar
+service.gui.avatar.CLEAR_RECENT=Clear recent avatars
+service.gui.avatar.AVATAR_CHANGE_ERROR_TITLE=Avatar change failed
+service.gui.avatar.AVATAR_CHANGE_ERROR_MSG_GENERIC=Failed to update your avatar. Please try again later.<br />If the problem persists, please contact your service provider.
+service.gui.avatar.AVATAR_CHANGE_ERROR_MSG_REJECTED=Your avatar could not be changed, as your service provider has disabled this feature.
+# The title for an error popup that we show when the user selects an image that is too large
+service.gui.avatar.AVATAR_TOO_BIG_ERROR_TITLE=Image too big
+# The message body for an error popup that we show when the user selects an image that is too large
+service.gui.avatar.AVATAR_TOO_BIG_ERROR_MSG=The image you selected is too big, please choose a new one.
+service.gui.avatar.NOT_SIGNED_IN_TITLE=Unable to change avatar
+service.gui.avatar.NOT_SIGNED_IN_MSG=You cannot change your avatar as you are not currently signed in to chat.<br />Please sign in to chat and try again.
+# service.gui.avatar.imagepicker
+service.gui.avatar.imagepicker.CANCEL=Cancel
+service.gui.avatar.imagepicker.CHOOSE_FILE=Choose …
+service.gui.avatar.imagepicker.CLICK=Click and Smile
+service.gui.avatar.imagepicker.IMAGE_FILES=Image files
+service.gui.avatar.imagepicker.IMAGE_PICKER=Picture
+service.gui.avatar.imagepicker.IMAGE_SIZE=Image size
+service.gui.avatar.imagepicker.INITIALIZING=Initializing
+service.gui.avatar.imagepicker.RESET=Reset
+service.gui.avatar.imagepicker.SET=Save
+service.gui.avatar.imagepicker.TAKE_PHOTO=Take a photo
+service.gui.avatar.imagepicker.WEBCAM_ERROR=Webcam error
+
+# Strings for chat account changes
+service.gui.CHAT_DISABLED=Your service provider has disabled your chat account.
+service.gui.CHAT_ACTIVATED=Your service provider has activated chat on your account.
+service.gui.CHAT_REPLACED=Your service provider has updated your chat configuration.
+service.gui.PLEASE_RESTART=Please restart {0}.
+
+# DO NOT TRANSLATE
+# Currently internal only for when the service provider wants to move a user to a new chat account
+service.gui.CHAT_MIGRATED=Your service provider has migrated you to a new chat account. Please log in to your new account and then restart {0} to complete the migration.
+
+# Strings for SIP account changes
+service.gui.VOIP_DISABLED=Your service provider has disabled VoIP on your account. You will no longer be able to make calls from @@PRODUCT_NAME_SHORT@@ directly.  Please restart.
+service.gui.VOIP_ACTIVATED=Your service provider has activated VoIP on your account. Please restart to start making calls from @@PRODUCT_NAME_SHORT@@ directly.
+service.gui.FORCE_QUIT=Quit @@PRODUCT_NAME_SHORT@@
+
+# String displayed in the edit custom status text box. Shouldn't be too long.
+service.protocol.status.CUSTOM_STATUS_PLACEHOLDER=add a custom message
+# Strings for presence statuses
+# An IM presence status which indicates that the user is online - is a widely used term in IM
+service.protocol.status.AVAILABLE=Online
+service.protocol.status.AVAILABLE_FOR_CALLS=Deskphone online
+service.protocol.status.AVAILABLE_FOR_CALLS_LSM=Deskphone available for calls
+service.protocol.status.AWAY=Away
+# An IM presence status which indicates that the user is busy - is a widely used term in IM
+service.protocol.status.BUSY=Busy
+# An IM presence status which indicates that the user is in a meeting.  Should be short as there is a limited amount of space
+service.protocol.status.MEETING=In a Meeting
+# An IM presence status which indicates that the user is busy and does not want to be contacted - is a widely used term in IM
+service.protocol.status.DO_NOT_DISTURB=Do Not Disturb
+service.protocol.status.DO_NOT_DISTURB_LSM=Deskphone do not disturb
+service.protocol.status.EXTENDED_AWAY=Extended Away
+service.protocol.status.FREE_FOR_CHAT=Free For Chat
+service.protocol.status.OFFLINE=Offline
+service.protocol.status.ONLINE=Online
+service.protocol.status.ON_THE_PHONE=In a call
+service.protocol.status.ON_THE_PHONE_LSM=Deskphone in a call
+service.gui.OFFLINE_LSM=Deskphone offline
+service.protocol.status.UNKNOWN=Unknown
+# Title of a menu which allows the user to control their IM presence - this is a widely used term in IM
+service.protocol.status.gui.PRESENCE_MENU=Presence
+# An option in a menu which allows the user to control their IM presence.  This option means that the user will appear as Online but in a meeting
+service.protocol.status.gui.MEETING=Online (In a Meeting)
+service.protocol.status.gui.PHONE=Online (In a Call)
+service.protocol.status.gui.CONFERENCE=Online (In a Call)
+# This text indicates that the user can't update their presence information because they have "Do not Disturb" turned on.  "Do not disturb" is a term that is used elsewhere in the app.
+service.protocol.status.gui.NO_PRESENCE_DND=Manual presence is disabled while in Do Not Disturb
+# This text indicates that the user can't update their presence information because they are offline
+service.protocol.status.gui.NO_PRESENCE_OFFLINE=Manual presence is disabled while chat account is offline
+# This text indicates that the user can't update their presence information because they have signed out of their chat account
+service.protocol.status.gui.NO_PRESENCE_SIGNED_OUT=Manual presence is disabled while signed out of chat
+# This text appears on a button when the user is in a meeting.  Clicking this button shows a dialog which allows the user to exit the meeting state if they want
+service.protocol.status.gui.NOT_IN_MEETING=Not in meeting?
+
+# impl.protocol.ssh
+#Contact Details Seperator(must not be part of contact data stored as persistent
+# data)
+impl.protocol.ssh.DETAILS_SEPARATOR=~
+
+# systray
+impl.systray.SET_STATUS=Set Status
+impl.systray.FAILED_TO_OPEN_ADD_CONTACT_DIALOG=Failed to open the "Add Contact" dialog.
+impl.systray.POPUP_MESSAGE_HANDLER=System tray balloon messages
+impl.swingnotification.POPUP_MESSAGE_HANDLER={0} popups
+impl.galagonotification.POPUP_MESSAGE_HANDLER=freedesktop.org Desktop Notifications
+
+# New Account Dialog
+
+impl.gui.main.account.DUMMY_PROTOCOL_NAME=Select network
+impl.gui.main.account.DUMMY_PROTOCOL_DESCRIPTION=Select network
+
+# Addrbook plugin
+plugin.addrbook.ADDRESS_BOOKS=Address book
+plugin.addrbook.ENABLE_MACOSX_ADDRESSBOOK=Enable Apple Contacts search
+plugin.addrbook.ENABLE_MICROSOFT_OUTLOOK=Enable Microsoft Outlook search
+plugin.addrbook.DESCRIPTION=If enabled everything you type in the search field \
+ of the contact list will be also searched in your system address book and all \
+ matching contacts from your address book will appear in your contact list.
+plugin.addrbook.PREFIX=Specific phone number prefix
+plugin.addrbook.PREFIX_EXAMPLE=Ex.: 00
+plugin.addrbook.FAVORITE=@@PRODUCT_NAME_SHORT@@ Favorite
+
+# AddressBook plugin
+plugin.addressbook.SYNCING=Synchronizing with Outlook
+plugin.addressbook.FAVORITE=@@PRODUCT_NAME_SHORT@@ Favorite
+
+# CommPortal Contacts
+impl.protocol.sip.commportal.OTHER=Other
+impl.protocol.sip.commportal.HOME=Home
+impl.protocol.sip.commportal.JOB_TITLE=Title
+impl.protocol.sip.commportal.SMS=SMS
+impl.protocol.sip.commportal.PREFERRED_EMAIL=Preferred email
+impl.protocol.sip.commportal.PREFERRED_NUMBER=Preferred number
+impl.protocol.sip.commportal.COUNTRY=Country
+
+impl.protocol.commportal.CallingPhoneRinging=@@PRODUCT_NAME_SHORT@@ service is calling you on…
+impl.protocol.commportal.CallingPhoneAnswered=Answered
+impl.protocol.commportal.CalledPhoneRinging=Answered. Now calling…
+impl.protocol.commportal.CalledPhoneAnswered=Call Connected
+impl.protocol.commportal.CallEnded=Call Ended
+impl.protocol.commportal.CallFailed=Call Failed - {0}
+impl.protocol.commportal.CallFailed.UNKNOWN=Call Failed
+
+impl.protocol.commportal.failure.BUSY_SOURCE=Your phone is busy
+impl.protocol.commportal.failure.BUSY_TARGET=Caller's phone is busy
+impl.protocol.commportal.failure.NO_ANSWER_SOURCE=No answer
+impl.protocol.commportal.failure.NO_ANSWER_TARGET=No answer
+impl.protocol.commportal.failure.INVALID_SOURCE='My Phone' number invalid
+impl.protocol.commportal.failure.INVALID_TARGET=Caller's number invalid
+impl.protocol.commportal.failure.CALL_ENDED=Call ended
+# Error message when a call fails because an existing 'Click-to-Dial' is already in progress. 'Click-to-Dial' is a common metaswitch term and must match our other products.
+impl.protocol.commportal.CTD_IN_PROGRESS=A Click-to-Dial is already in progress.  Please finish that call before starting a new one.
+impl.protocol.commportal.NETWORK_ERROR_TITLE=Unable to make the call - Network error
+impl.protocol.commportal.NETWORK_ERROR_TEXT=Please ensure you are connected to the internet and try again. If the problem persists, contact your service provider.
+impl.protocol.commportal.MAKE_CALL_FROM=Make call from
+# Label for a field allowing the user to select a method of making calls.
+impl.protocol.commportal.MAKE_CALLS_USING=Make calls using
+# Label for a field where the user can select a phone number to use with Click-to-Dial
+impl.protocol.commportal.CALL_ME_ON=Call me on
+impl.protocol.commportal.MY_PHONE=Account Phone
+# Title label for a setting in the option panel that allows users to view and edit their saved phone numbers to use with 'Click-to-Dial'. 'Click-to-Dial' is a common metaswitch term and must match our other products.
+impl.protocol.commportal.MY_PHONES=Click-to-Dial Phones
+impl.protocol.commportal.SIP=@@PRODUCT_NAME_SHORT@@
+# Title label. Click-to-Dial' is a common metaswitch term and must match our other products.
+impl.protocol.commportal.CTD_CommPortal=Click-to-Dial
+# Title label. Click-to-Dial' is a common metaswitch term and must match our other products.
+impl.protocol.commportal.CTD=Click-to-Dial
+impl.protocol.commportal.ALWAYS_ASK=Always Ask
+impl.protocol.commportal.SELECT_CALLING_METHOD=Make call using
+impl.protocol.commportal.ENTER_NAME=Enter Name
+impl.protocol.commportal.ENTER_NEW_NUMBER=Enter a new number
+
+# multiple contact strings
+impl.protocol.sip.OTHER=other
+impl.protocol.sip.OTHERS=others
+impl.protocol.sip.X_OR_1_OTHER={0} or 1 other
+impl.protocol.sip.X_OR_N_OTHERS={0} or {1} others
+impl.protocol.sip.X_AND_1_OTHER={0} and {1} other
+impl.protocol.sip.X_AND_N_OTHERS={0} and {1} others
+
+# call park
+impl.protocol.sip.CALL_PARK_FRIENDLY_NAME_DEPT={0} orbit {1}
+impl.protocol.sip.CALL_PARK_FRIENDLY_NAME_NO_DEPT=Orbit {0}
+impl.protocol.sip.CALL_PARK_FAILED_BUSY_TITLE=Call park failed
+impl.protocol.sip.CALL_PARK_FAILED_BUSY_TEXT={0} is already in use.  Your call is still active.
+impl.protocol.sip.CALL_PARK_FAILED_ERROR_TITLE=Call Park
+impl.protocol.sip.CALL_PARK_FAILED_ERROR_TEXT=There was an error parking the call on {0}.  Your call is still active.
+impl.protocol.sip.CALL_PARK_SUCCEEDED_TITLE=Call Park
+impl.protocol.sip.CALL_PARK_SUCCEEDED_TEXT=Call parked on {0}
+
+# account info
+plugin.accountinfo.TITLE=Account Info
+plugin.accountinfo.EXTENDED=Extended
+plugin.accountinfo.NOT_SUPPORTED=Account info not available.
+plugin.accountinfo.FIRST_NAME=First Name
+plugin.accountinfo.MIDDLE_NAME=Middle Name
+plugin.accountinfo.LAST_NAME=Last Name
+plugin.accountinfo.AGE=Age
+plugin.accountinfo.BDAY=Birth Date
+plugin.accountinfo.GENDER=Gender
+plugin.accountinfo.EMAIL=E-mail
+plugin.accountinfo.PHONE=Phone
+plugin.accountinfo.USER_PICTURES=User Pictures
+plugin.accountinfo.CHANGE=Change
+plugin.accountinfo.ONLY_MESSAGE=Only messages
+
+# branding
+plugin.branding.ABOUT_WINDOW_TITLE=About {0}
+plugin.branding.LOADING=Loading
+plugin.branding.ABOUT_MENU_ENTRY=&About
+plugin.branding.LOGO_MESSAGE=@@TAGLINE@@
+# DO NOT TRANSLATE
+# Welcome message displayed on the splash screen that is displayed as the client starts up. HTML tags and new line markers must be left unchanged in the translation. Do not put any other company's name in this string - for advice on copyright statements, see [indeterminate link]
+plugin.branding.WELCOME_MESSAGE=<DIV color={0}>Copyright 2012-2022 \
+          <a href="https://www.metaswitch.com">Metaswitch Networks</a>. All rights reserved.\
+          </DIV>
+plugin.branding.LICENSE=<DIV color={0}>Powered by <a href="https://jitsi.org">jitsi.org</a>. <br /> Open source <a href="licenses">license attribution</a></DIV>
+# DO NOT TRANSLATE
+# Copyright notification displayed on the splash screen that is displayed as the client starts up.  HTML tags and new line markers must be left unchanged in the translation. Do not put any other company's name in this string - for advice on copyright statements, see [indeterminate link]
+plugin.branding.COPYRIGHT=<DIV color={0}>Copyright 2012-2022 \
+          <a href="https://www.metaswitch.com">Metaswitch Networks</a>. All rights reserved.\
+          </DIV>
+plugin.branding.OPEN_SOURCE_ATTRIBUTION_TITLE=Open Source Attributions
+# DO NOT TRANSLATE
+# The instruction for when emergency location is missing for the current network. This defaults to an empty string, but can be branded to be non-empty.
+BRAND_EMERGENCY_LOCATION_INSTRUCTIONS=
+
+# generalconfig
+# Text used for the button that opens a colour chooser where the user can configure the colours of the app
+plugin.generalconfig.COLOR.CHOOSE_COLOR=Choose Color
+# Text used in the colour chooser panel (where the user can choose the colours of the app). The colour of the app is a gradient so there are two radio buttons allowing them to pick the top and bottom colours of the gradient.
+plugin.generalconfig.COLOR.COLOR_1=Top Color
+# Text used in the colour chooser panel (where the user can choose the colours of the app). The colour of the app is a gradient so there are two radio buttons allowing them to pick the top and bottom colours of the gradient.
+plugin.generalconfig.COLOR.COLOR_2=Bottom Color
+
+plugin.generalconfig.CONTACT_CONFIG=Contacts
+plugin.generalconfig.CONTACT_STORE_LABEL=Use contacts from
+plugin.generalconfig.CONTACT_STORE_HINT=Edits to contacts will appear in both @@PRODUCT_NAME_SHORT@@ and the contact source.
+plugin.generalconfig.CONTACT_STORE_COMMPORTAL=@@PRODUCT_NAME_SHORT@@
+plugin.generalconfig.CONTACT_STORE_OUTLOOK=Outlook
+plugin.generalconfig.CONTACT_STORE_ADDRESS_BOOK=Apple Contacts
+plugin.generalconfig.CONTACT_STORE_LABEL_NAME=Choose contact store
+plugin.generalconfig.CONTACT_STORE_LABEL_DESCRIPTION=Use the drop down box to the right to choose your contact store
+plugin.generalconfig.DEFAULT_OUTLOOK_INTEGRATION_APP=Integrate with Outlook for calls, messaging and presence.
+plugin.generalconfig.DEFAULT_OUTLOOK_INTEGRATION_APP_NO_IM=Integrate with Outlook for calls.
+plugin.generalconfig.DEFAULT_OUTLOOK_INTEGRATION_APP_NO_CALLS=Integrate with Outlook for messaging and presence.
+plugin.generalconfig.URL_PROTOCOL_HANDLER_APP=Use @@PRODUCT_NAME_SHORT@@ to call phone number links in emails and web pages.
+plugin.generalconfig.DOUBLE_CLICK_ACTION=Double click action in main window
+plugin.generalconfig.DOUBLE_CLICK_CALL=Call contact immediately
+plugin.generalconfig.DOUBLE_CLICK_IM=Open a chat window
+plugin.generalconfig.DOUBLE_CLICK_VIEW=View contact details
+# Selecting this text from a dropdown menu in the general options window will mean that when the user double-clicks on a contact, this will create an online meeting with this contact
+plugin.generalconfig.DOUBLE_CLICK_CONF=Invite to Meeting
+plugin.generalconfig.AUTO_START=Launch @@PRODUCT_NAME_SHORT@@ on startup
+plugin.generalconfig.DEFAULT_AUTO_LOG_IN=Automatically log in to @@PRODUCT_NAME_SHORT@@
+# Text used for a checkbox in the general options page that allows the user to choose whether a chat window will be opened automatically when a new chat message is received
+plugin.generalconfig.OPEN_WINDOW_ON_NEW_CHAT=Open the chat window when new messages are received
+plugin.generalconfig.HISTORY_SIZE=Load {0} messages when opening new chat windows
+plugin.generalconfig.SEND_MESSAGES_WITH=Send messages with
+plugin.generalconfig.BRING_WINDOW_TO_FRONT=Bring chat windows to the front when there are new messages
+plugin.generalconfig.ERROR_PERMISSION=You don't have enough privileges to remove autostart
+plugin.generalconfig.TRANSPARENCY=Transparency
+plugin.generalconfig.ENABLE_TRANSPARENCY=Enable transparency
+plugin.generalconfig.DEFAULT_LANGUAGE=Language
+plugin.generalconfig.DEFAULT_LANGUAGE_RESTART_WARN=Your changes will take effect on next restart
+plugin.generalconfig.SIP_CLIENT_PORT=SIP client port
+plugin.generalconfig.SIP_CLIENT_SECURE_PORT=SIP client secure port
+plugin.generalconfig.SIP_SSL_PROTOCOLS=Enabled SSL/TLS protocols
+plugin.generalconfig.ERROR_PORT_NUMBER=Wrong port number
+plugin.generalconfig.STARTUP_CONFIG=Startup
+plugin.generalconfig.LEAVE_CHATROOM_ON_WINDOW_CLOSE=Leave chat rooms when closing window
+plugin.generalconfig.REMOVE_SPECIAL_PHONE_SYMBOLS=Remove special symbols before calling phone numbers
+plugin.generalconfig.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS=Convert letters in phone numbers
+plugin.generalconfig.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS_EXAMPLE=e.g. +1-800-MYPHONE -> +1-800-694663
+plugin.generalconfig.SIP_CALL_CONFIG=SIP
+plugin.generalconfig.RESTORE=Restore defaults
+plugin.generalconfig.DEVICE_TYPE_LAPTOP=Laptop
+plugin.generalconfig.DEVICE_TYPE_DESKTOP=Desktop
+plugin.generalconfig.DEVICE_TYPE_CONFIG=Device Type - requires restart
+plugin.generalconfig.PRIVACY=Analytics
+plugin.generalconfig.ANALYTICS_OPT_OUT=Help to improve the application by sending anonymous usage data
+plugin.generalconfig.CALL_ALWAYS_ON_TOP=Always keep call windows on top
+plugin.generalconfig.HEADSET_BUTTONS=Headset Buttons
+plugin.generalconfig.HEADSET_BUTTONS_HINT=Click 'Detect' below then press the button on your headset that you would like to use to answer or hang up calls.
+plugin.generalconfig.HEADSET_ANSWER_BUTTON=Answer Button
+plugin.generalconfig.HEADSET_HANGUP_BUTTON=Hang-up Button
+plugin.generalconfig.HEADSET_SAME_BUTTON=Use the same button for both answer and hang-up
+plugin.generalconfig.HEADSET_DETECT=Detect
+plugin.generalconfig.HEADSET_DETECTING=Detecting…
+plugin.generalconfig.HEADSET_STORED=Stored
+plugin.generalconfig.HEADSET_NOT_STORED=Not Stored
+
+service.gui.ringtone.WAV_ERROR_MSG_UNSUPPORTED_SAMPLE_RATE=The ringtone you selected is in an unsupported format, and cannot be used. The sample rate of the ringtone is {0} Hz; supported values are: {1}.
+service.gui.ringtone.WAV_ERROR_MSG_UNSUPPORTED_BIT_DEPTH=The ringtone you selected is in an unsupported format, and cannot be used. The bit depth of the ringtone is {0}; supported values are: {1}.
+service.gui.ringtone.WAV_ERROR_MSG_UNSUPPORTED_NUM_CHANNELS=The ringtone you selected is in an unsupported format, and cannot be used. The ringtone contains {0} audio channels; only values between {1} and {2} are permitted.
+service.gui.ringtone.WAV_ERROR_MSG_UNSUPPORTED_ENCODING=The ringtone you selected is in an unsupported format, and cannot be used: @@PRODUCT_NAME_SHORT@@ does not support compressed audio.
+service.gui.ringtone.WAV_ERROR_MSG_UNSUPPORTED_GENERIC=The ringtone you selected is in an unsupported format, and cannot be used.
+service.gui.ringtone.WAV_ERROR_MSG_INVALID_OR_CORRUPT=The ringtone file you selected is not a valid wav file.
+service.gui.ringtone.WAV_ERROR_MSG_IO_FAILURE=The selected ringtone could not be loaded.
+
+# jabber accregwizz
+plugin.jabberaccregwizz.PROTOCOL_NAME=XMPP
+plugin.jabberaccregwizz.PROTOCOL_DESCRIPTION=chat account
+plugin.jabberaccregwizz.USERNAME=Username
+
+plugin.jabberaccregwizz.USERNAME_DESCRIPTION=Use the text entry field on the right to enter your chat account username
+plugin.jabberaccregwizz.PASSWORD_DESCRIPTION=Use the text entry field on the right to enter your chat account password
+plugin.jabberaccregwizz.ENTER_USERNAME=Enter your chat account username. This will take the form of an email address.
+plugin.jabberaccregwizz.ENTER_PASSWORD=Enter your chat account password
+plugin.jabberaccregwizz.USER_ID_EXAMPLE_DESCRIPTION=Your chat account username should match this format
+
+plugin.jabberaccregwizz.NOT_SAME_PASSWORD=Your passwords did not match.
+plugin.jabberaccregwizz.ADVANCED_OPTIONS=Advanced options
+
+plugin.jabberaccregwizz.EXISTING_ACCOUNT=Existing XMPP account
+plugin.jabberaccregwizz.CHANGE_PASSWORD=Change account password
+plugin.jabberaccregwizz.NEW_PASSWORD=New password
+plugin.jabberaccregwizz.NEW_PASSWORD_CONFIRM=Confirm new password
+plugin.jabberaccregwizz.HAS_TO_BE_LOGGED_IN=The account has to be signed in before changing a password.
+plugin.jabberaccregwizz.PASSWORD_EMPTY=The password is empty.
+plugin.jabberaccregwizz.PASSWORD_CHANGED=The password has been successfully changed
+plugin.jabberaccregwizz.SERVER_NOT_SUPPORT_PASSWORD_CHANGE=Your XMPP server does not support password changes.
+plugin.jabberaccregwizz.PASSWORD_NOT_STORED=The password has been changed on the server, but local configuration was not updated
+plugin.jabberaccregwizz.ENCODINGS=Encodings
+plugin.jabberaccregwizz.AUDIO=Audio
+plugin.jabberaccregwizz.VIDEO=Video
+plugin.jabberaccregwizz.RESET=Reset
+plugin.jabberaccregwizz.INVALID_USERNAME=Unable to connect to server for account {0}.  Please check that your username is correct and try again.
+
+# first run wizard
+plugin.firstrunwizz.TITLE=@@PRODUCT_NAME_TITLECASE@@ Setup
+plugin.firstrunwizz.PAGE_NUMBER=Step {0} of {1}
+plugin.firstrunwizz.ENABLE_PHONE=Log into your phone account
+plugin.firstrunwizz.ENABLE_CHAT=Log into your chat account (optional)
+plugin.firstrunwizz.ENABLE_CHAT_HINT=To enable chat and presence please enter the username and password of your chat account.
+plugin.firstrunwizz.CONFIGURE_AUDIO=Configure audio devices
+plugin.firstrunwizz.CONFIGURE_AUDIO_HINT=Please select and test the audio devices you would like to use with @@PRODUCT_NAME_TITLECASE@@.
+plugin.firstrunwizz.SETUP_COMPLETE=Setup complete
+plugin.firstrunwizz.SUCCESS_MESSAGE=Success! You are now set up to make and receive calls with your {0} account from this computer.
+plugin.firstrunwizz.END_MESSAGE=Press 'Finish' to launch the app and start connecting with your contacts.
+
+# status update
+plugin.autoaway.AUTO_STATUS=Auto Away
+plugin.autoaway.ENABLE_CHANGE_STATUS=Change my status to away when I''m inactive for {0} minutes
+
+# updatechecker
+plugin.updatechecker.DIALOG_TITLE=New version available
+plugin.updatechecker.DIALOG_TITLE_FORCE=Update to continue
+plugin.updatechecker.DIALOG_MESSAGE=A new version of {0} is available for download.
+plugin.updatechecker.DIALOG_MESSAGE_FORCE=A new version of {0} is available for download. This update is required - if you do not install it the app will quit.
+plugin.updatechecker.DIALOG_MESSAGE_2={0} ({1})
+plugin.updatechecker.BUTTON_DOWNLOAD=Download
+plugin.updatechecker.BUTTON_CLOSE=Close
+plugin.updatechecker.BUTTON_INSTALL=Install
+plugin.updatechecker.UPDATE_MENU_ENTRY=Check for &Updates
+plugin.updatechecker.DIALOG_WARN=If you continue with the update, @@PRODUCT_NAME_TITLECASE@@ will be shut down. Are you sure?
+plugin.updatechecker.DIALOG_NOUPDATE=Your version ({0}) is up to date.
+plugin.updatechecker.DIALOG_NOUPDATE_TITLE=No new version
+plugin.updatechecker.DIALOG_MISSING_UPDATE=Failed to download the update file. Please try again later.
+# The text displayed on a pop-up shown when the user tries to check for updates to the app but it fails
+plugin.updatechecker.DIALOG_NOCONN=Could not check for updates.  Please check your network connection and try again.
+# The title of the pop-up shown when the user tries to check for updates to the app but it fails
+plugin.updatechecker.DIALOG_NOCONN_TITLE=Check for updates failed
+plugin.updatechecker.DIALOG_UPDATE_FAILED_TITLE=Download Error
+# The text displayed on a pop-up shown when the user tries to upgrade the app but it fails.
+plugin.updatechecker.DIALOG_UPDATE_FAILED_BODY=This update failed to download. Please try again.
+
+# Notification Configuration Form
+plugin.notificationconfig.POPUP_NOTIF_HANDLER=Notifications type
+
+# Strings for the conference service
+# Error message shown when the user was temporarily unable to join the conference
+# Error message shown when the user was temporarily unable to start a conference
+# Error message shown when the user was unable to join the conference because it has already ended
+# Error message shown when the user was unable to start the conference because it has already ended
+# Error message shown when the user was unable to join the conference because it is full
+# Error message shown when the user was unable to start the conference because it is full
+# Error message shown when the user was unable to join a conference because there is already a conference in progress
+# Error message shown when the user was unable to start a conference because there is already a conference in progress
+# Error message shown when the user was unable to join the conference because of an error with the users internet connection
+# Error message shown when the user was unable to join the conference because it is locked
+# Error message shown when the user was unable to start the conference because of an error with the users internet connection
+# Error message shown when the user has attempted to join a conference which doesn't exist
+# Error message shown when the user was unable to start a conference which doesn't exist
+# Error message shown when the user was unable to join the conference because of an error with the users internet connection
+# Error message shown when the user can't create a conference due to an error in how the service provider has configured the network
+# Error message shown when the user is not allowed to create conferences because their service level doesn't allow it
+# Title on an error message shown when an H.323/SIP system has failed to be added to the conference.
+# Error message shown when an H.323/SIP system has failed to be added to the conference using an invite code.
+# Error message shown when the user has entered an invalid invite code.
+# Error message shown when a room system invite has failed because the conference doesn't support H.323.
+# Error message shown when an H.323/SIP system has failed to be added to the conference using call-out.
+
+# Title on an error message shown when an attempt to invite a user to a meeting by phone has failed.
+# Title on an error message shown when an attempt to cancel a dial-out attempt has failed.
+# Error message shown when an attempt to invite a user to a meeting by phone has failed.
+# Reason shown in a status message when an attempt to invite a user to a meeting by phone has failed.
+# Reason shown in a status message when an attempt to invite a user to a meeting by phone has failed because the user is busy.
+# Reason shown in a status message when an attempt to invite a user to a meeting by phone has failed because the user is unavailable.
+# Error message shown when an attempt to invite a user to a meeting by phone has failed because of a time out.
+# Reason shown in a status message when an attempt to invite a user to a meeting by phone has failed because of a time out.
+# Error message shown when an attempt to invite a user to a meeting by phone has failed because the user hung up the phone.
+# Reason shown when an attempt to invite a user to a meeting by phone has failed because the user hung up the phone.
+# Error message shown when an attempt to cancel a dial-out request failed.
+
+# Message on the dialog that is shown to the user, informing them that there is a new feature available.  {0} is replaced by the name of the feature.
+# Text on a button which the user presses in order to download and install the collaboration client
+# Title that displays on a dialog that appears when the collaboration feature failed to install
+# Message that displays on a dialog that appears when the collaboration feature failed to install
+# Title that displays on a dialog that appears when the collaboration client failed to upgrade
+# Message that displays on a dialog that appears when the collaboration feature failed to upgrade
+
+# Profiler4J
+impl.media.configform.AUDIO=&Device type
+impl.media.configform.AUDIO_IN=Microphone
+impl.media.configform.AUDIO_NOTIFY=Ringtone
+impl.media.configform.AUDIO_OUT=In-call Audio
+impl.media.configform.AUDIO_OUT_MEETINGS=In-meeting Audio
+impl.media.configform.RESPOND_TO_BUTTON_PRESSES=Respond to headset button presses
+impl.media.configform.RESPOND_TO_BUTTON_PRESSES_HINT=Control @@PRODUCT_NAME_SHORT@@ using supported Jabra and Plantronics headsets. The mute status is synced between the app and the device.
+impl.media.configform.RESPOND_TO_BUTTON_PRESSES_HINT_UNSUPPORTED_MAC=This feature is not supported on this version of MacOS. Headset button integration requires MacOS 10.11 (El Capitan) or later.
+impl.media.configform.ALWAYS=Always
+impl.media.configform.NEVER=Never
+# Max length 30 chars
+impl.media.configform.WHILE_UNLOCKED=While Unlocked
+impl.media.configform.DENOISE=Enable noise suppression
+impl.media.configform.DEVICES=Devices
+impl.media.configform.DOWN=&Down
+impl.media.configform.ECHOCANCEL=Enable echo cancellation
+impl.media.configform.ENCODINGS=Encodings
+impl.media.configform.NO_AVAILABLE_AUDIO_DEVICE=No available audio device. Please connect one.
+# Text displayed in the panel that allows the user to select devices when there are no available devices to use as headphones/microphone for making calls.
+impl.media.configform.NO_DEVICE=No device
+# Text displayed when the preview of the selected video device cannot be shown
+impl.media.configform.NO_PREVIEW=Preview not available
+impl.media.configform.UP=&Up
+impl.media.configform.VIDEO=&Camera:
+
+impl.media.configform.VIDEO_RESET=Reset defaults
+impl.media.configform.AUDIO_DEVICE_CONNECTED=Connected device:
+impl.media.configform.AUDIO_DEVICE_DISCONNECTED=Disconnected device:
+impl.media.configform.AUDIO_DEVICE_SELECTED_AUDIO_IN=New selected device for audio in:
+impl.media.configform.AUDIO_DEVICE_SELECTED_AUDIO_OUT=New selected device for audio out:
+impl.media.configform.AUDIO_DEVICE_SELECTED_AUDIO_NOTIFICATIONS=New selected device for notifications:
+impl.media.configform.VIDEO_DEVICE_SELECTED=New selected device for video:
+impl.media.configform.VIDEO_FRAME_RATE=Custom frame rate (per sec.)
+impl.media.configform.VIDEO_BITRATE=Video bitrate (kilobits/s)
+impl.media.configform.VIDEO_PACKETS_POLICY=RTP pacing threshold (kBytes/s)
+
+impl.media.configform.VIDEO_RESOLUTION=Video resolution
+impl.media.configform.VIDEO_MORE_SETTINGS=More settings
+impl.media.configform.AUDIO_DEVICE_CONFIG_MANAGMENT_CLICK=Click here for device management
+
+impl.neomedia.configform.AUDIO=Audio
+impl.neomedia.configform.VIDEO=Video
+
+impl.neomedia.configform.PLAYBACK_DESCRIPTION=Select your preferred device for playback
+impl.neomedia.configform.NOTIFY_DESCRIPTION=Select your preferred device for notifications
+impl.neomedia.configform.AUDIO_DESCRIPTION=Choose audio device
+impl.neomedia.configform.VIDEO_DESCRIPTION=Choose video device
+
+impl.neomedia.configform.TEST_MIC=Test Mic
+impl.neomedia.configform.RETEST_MIC=Retest Mic
+impl.neomedia.configform.SAMPLE_RECORDING=Speak Now
+impl.neomedia.configform.SAMPLE_PLAYING=Playing
+
+impl.neomedia.device.audiosystem.diagnosticscontrolmonitor.MESSAGE=The following audio devices appear to have malfunctioned:\n{0} If the devices do not recover automatically, please disconnect and reconnect the devices to resolve the problem.
+impl.neomedia.device.audiosystem.diagnosticscontrolmonitor.TITLE=@@PRODUCT_NAME_SHORT@@ Audio Device Diagnostics
+impl.neomedia.device.WASAPISystem.AUDIO_SERVICE_NOT_RUNNING=The Windows audio system is not running. Please restart your computer to resolve the problem.
+
+# plugin reconnect
+plugin.reconnectplugin.CONNECTION_FAILED_MSG=Failed to connect to your account.\nPlease check your account settings and try again.
+plugin.reconnectplugin.NETWORK_DOWN=Lost network connection
+impl.protocol.sip.CONNECTION_LOST=Lost network connection
+
+# Strings for error pop-ups
+
+# Strings for error pop-ups
+service.protocol.media.NO_VALID_MEDIA_DESCS=Offer contained no valid media descriptions.
+service.protocol.media.NO_AUDIO_VIDEO_DEVICES=No active Audio/Video devices found.
+service.protocol.media.INSECURE_MEDIA_REJECTED=Offer contained no valid media descriptions.  Insecure media was rejected (only RTP/AVP instead of RTP/SAVP).
+# Inform the user that a specific webcam is not available.  The name of the webcam will replace the {0} in this string.  The "\n\n" separates the string onto two lines, separated by a blank line, for better readability.
+service.protocol.media.ERROR_READING_WEBCAM=Your webcam is unavailable. Please ensure it''s not already in use and try again.\n\nWebcam: {0}
+impl.protocol.sip.ERROR_STARTING_CALL=An error occurred while starting the call.=======
+impl.protocol.sip.MEDIA_ERROR=An error occurred connecting to your audio device.  Please check it and try again.
+impl.protocol.sip.TIMEOUT_MESSAGE=No response from the server.  Please try again.
+
+##################################################
+# Note that the real content of
+#   plugin.branding.OPEN_SOURCE_ATTRIBUTION_TEXT
+# has been moved to the separate file
+#   resources/licences/licences.html
+##################################################
+# DO NOT TRANSLATE
+plugin.branding.OPEN_SOURCE_ATTRIBUTION_TEXT=.
+
+#Strange strings - we should find them better homes.
+plugin.provisioning.ERROR_BAD_SUBSCRIBER=You are not permitted to use this application. Contact your service provider to enable this service.
+plugin.provisioning.PASSWORD_CHANGED_REMOTELY=You have been logged out of {0} because your password was changed. Please enter your new password to log in.
+impl.media.configform.AUDIO_DEVICE_CONNECTED_REMOVED=You have connected or removed an audio device from your computer. Please select which audio devices you would like to use with @@PRODUCT_NAME_TITLECASE@@.
+plugin.provisioning.ERROR_SERVER_ERROR=An error occurred while logging in. If this error persists, please contact your service provider.
+plugin.provisioning.ERROR_SUBSCRIBER_BLOCKED=Account locked out. Contact customer services to re-enable access.
+service.gui.CALL_CONTACT_MULTIPLE_NUMBERS=Multiple Numbers
+plugin.provisioning.ERROR_AUTH_FAILED=You have entered the wrong login details. Your account will be locked if you repeatedly enter the wrong PIN/password.
+plugin.provisioning.ERROR_CLIENT_OUT_OF_DATE=Please update the application to log into your account.
+plugin.provisioning.ERROR_MISSING_PARAMETER=You must enter a PIN/password.
+plugin.provisioning.LDAP_NAME=Directory Lookup
+
+impl.media.configform.AUDIO_DEVICE_CONFIG=Audio device configuration
+service.gui.CHAT_SETTINGS=Settings
+plugin.provisioning.ERROR_MISSING_USERNAME=You must enter a phone number.
+plugin.provisioning.ERROR_MISSING_USERNAME_EMAIL=You must enter a phone number or email.
+plugin.commportal.PASSWORD_REQUIRED=Please re-enter your @@PRODUCT_NAME_TITLECASE@@ credentials
+plugin.commportal.COS_FAILED_TITLE=Not permitted
+plugin.commportal.COS_FAILED_MESSAGE=You are not permitted to use this application. Contact your service provider to enable this service.
+service.gui.APPLICATION_NAME=@@PRODUCT_NAME_TITLECASE@@
+# DO NOT TRANSLATE!
+service.gui.APPLICATION_NAME_ASCII=@@PRODUCT_NAME_ASCII@@
+service.gui.APPLICATION_SHORT_NAME=
+plugin.provisioning.DELETE_CREDENTIALS=Delete credentials
+service.gui.NOT_APPLICABLE=Not applicable
+
+
+
+
+
+
+
+
+service.gui.BUTTON_SEND_MESSAGE=Send a message
+
+
+
+
+# Error message shown if the user tries to add a contact when the maximum number of contacts was already reached.
+plugin.callmanager.SEND_FAILED_TITLE=Unable to change status
+plugin.callmanager.SEND_FAILED_TEXT=Please ensure that you are connected to the internet or try again later.\n\nIf the problem keeps occurring, report it to your service provider
+plugin.callmanager.status.AVAILABLE=Available
+plugin.callmanager.status.DND=Do Not Disturb
+plugin.callmanager.status.FORWARDING=Forwarding
+plugin.callmanager.title=Call Manager Status
+plugin.callmanager.forward.TITLE=Forwarding
+plugin.callmanager.forward.TEXT=Please enter a forwarding number
+plugin.callmanager.forward.INVALID_NUMBER=The forwarding number must be a valid phone number
+plugin.callmanager.moreoptions.TITLE=View all settings
+plugin.callmanager.bcm.ALLOW_PRIORITY=Allow calls from the Priority Callers list
+plugin.callmanager.bcm.RING_ACCOUNT_PHONE=Ring account phone
+plugin.callmanager.bcm.RING_NUMBERS_TOGETHER=Ring your phones together
+plugin.callmanager.bcm.RING_NUMBERS_IN_ORDER=Ring your phones in order
+plugin.callmanager.bcm.FORWARD_CALLS_IMMEDIATELY=Forward calls immediately
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+
+
+plugin.devicetypeprompter.DEVICE_TYPE_TITLE=Device Type
+plugin.devicetypeprompter.DEVICE_TYPE_PROMPT=Select the type of device you are using.
+plugin.devicetypeprompter.DESKTOP=&Desktop
+plugin.devicetypeprompter.LAPTOP=&Laptop
+
+
+
+# The EULA MUST NOT be translated unless a correct legal translation is obtained
+# This string should remain as basic HTML - no need for inline styles, nor should it use proprietary markup,
+# since it is displayed in a JAVA component rather than a fully featured browser.
+
+plugin.nativebrowser.menuitem.VOICEMAILS=View Voicemails
+plugin.nativebrowser.unavailable.TITLE=@@PRODUCT_NAME_SHORT@@ Loading Error
+plugin.nativebrowser.unavailable.SUBTITLE=This page is currently unavailable
+plugin.toolsmenuoptions.menu.MY_MOBILE=My &Mobile
+plugin.toolsmenuoptions.menu.GROUPS=&Groups
+plugin.toolsmenuoptions.menu.APPLICATIONS=&Apps
+plugin.toolsmenuoptions.menu.SETTINGS=&View Account
+plugin.toolsmenuoptions.menu.CONFERENCE=Con&ference Manager
+plugin.toolsmenuoptions.menu.ICM=&Call Manager
+plugin.toolsmenuoptions.menu.ICM_DESCRIPTION=Choose how your calls are handled. Press space to open options.
+
+plugin.voicemail.VOICEMAIL_DESCRIPTION={0} unread voicemail messages
+plugin.voicemail.VOICEMAIL_DESCRIPTION.SINGULAR={0} unread voicemail message
+
+
+
+plugin.sipregistrationnotifier.TITLE.SIP=Not Receiving Calls
+plugin.sipregistrationnotifier.TITLE.Jabber=Not Receiving Chats
+plugin.sipregistrationnotifier.TITLE.MANY=Not receiving Calls and Chats
+# Title of a pop-up shown when the user has lost connection to the network
+plugin.sipregistrationnotifier.TITLE.GENERAL=Not connected
+plugin.sipregistrationnotifier.MESSAGE.SIP=@@PRODUCT_NAME_TITLECASE@@ cannot establish a connection to your phone service.\n\nPlease ensure that you are connected to the internet and if the problem persists, contact your service provider.
+plugin.sipregistrationnotifier.MESSAGE.Jabber=@@PRODUCT_NAME_TITLECASE@@ cannot establish a connection to your chat service.\n\nPlease ensure that you are connected to the internet and if the problem persists, contact your service provider.
+plugin.sipregistrationnotifier.MESSAGE.MANY=@@PRODUCT_NAME_TITLECASE@@ cannot establish a connection to your chat and phone service.\n\nPlease ensure that you are connected to the internet and if the problem persists, contact your service provider.
+# Message displayed in a pop-up shown when the user has lost connection to the network
+plugin.sipregistrationnotifier.MESSAGE.GENERAL=@@PRODUCT_NAME_TITLECASE@@ cannot establish a connection.\n\nPlease ensure that you are connected to the internet and if the problem persists, contact your service provider.
+plugin.sipregistrationnotifier.MAIN_WINDOW.SIP=No phone connection
+plugin.sipregistrationnotifier.MAIN_WINDOW.Jabber=No chat connection
+plugin.sipregistrationnotifier.MAIN_WINDOW.MANY=No phone or chat connection
+plugin.sipregistrationnotifier.MAIN_WINDOW.GENERAL=No connection
+plugin.sipregistrationnotifier.MAIN_WINDOW.LOCATION=No location set for emergency calls
+plugin.sipregistrationnotifier.LOCATION_TITLE=Emergency Calling
+plugin.sipregistrationnotifier.LOCATION_TEXT=Location information not configured for this network.
+
+plugin.sipregistrationnotifier.REQUEST_PERMISSION_DESCRIPTION=\
+This app will attempt to share your location when making emergency calls by matching locations configured by your service provider with your network information.\n\n\
+This network information is provided by the macOS location permission.\n\n\
+The permission will not be used for any other reason.\n\n\
+If you make an emergency call without granting this permission, we advise you to tell the emergency services where you are.
+plugin.sipregistrationnotifier.REQUEST_PERMISSION=Request permission
+plugin.sipregistrationnotifier.GO_TO_PRIVACY_SETTINGS_DESCRIPTION=\
+Allow the app permission to share network location information when making emergency calls.\n\n\
+Network information is provided by the macOS location Privacy setting in System Preferences.\n\n\
+Please grant this permission to both @@PRODUCT_NAME_SHORT@@ services.\n\n\
+If you deny this access, we advise you to tell the emergency services where you are.
+plugin.sipregistrationnotifier.GO_TO_PRIVACY_SETTINGS=Go to Privacy Settings
+
+#Text for the 'more information' button which appears when the user is restricted by a captive wifi portal
+plugin.sipregistrationnotifier.MORE_INFORMATION=More information
+#Text for the pop-up that appears when the user is restricted by a captive wifi portal
+plugin.sipregistrationnotifier.CAPTIVE_PORTAL_TEXT=@@PRODUCT_NAME_TITLECASE@@ cannot establish a connection to your chat and phone service.\n\nYou're using public Wi-Fi with no internet connection. Use another network or press below for more information.
+#Title for the pop-up that appears when the user is restricted by a captive wifi portal
+plugin.sipregistrationnotifier.CAPTIVE_PORTAL_TITLE=No Connection
+
+plugin.sipregistrationnotifier.MAIN_WINDOW.FWD=Call Manager is forwarding calls
+plugin.sipregistrationnotifier.MAIN_WINDOW.DND=Call Manager is rejecting calls
+
+
+# The following strings are all for the network test tool.
+# The network test tool is a cut-down version of Accession Desktop, that runs a series of tests to determine how
+# many concurrent calls the user's broadband can support.
+# Title that appears at the top of the first screen
+# Explanatory text that explains to the user how to use the tool, and what will happen
+# Hint in the text box in which the user enters the name of their company
+# Hint in the text box in which the user enters the ID of their company
+# Hint in the text box in which the user enters the ID of their location
+# Text that appears on the button that starts the test
+# Explanatory text that appears while the test is running, explaining what the test is doing
+# Test that appears on the button that cancels the test
+# Text that appears above a progress bar for the current test, indicating how close to completion that test is
+# Text that appears above a progress bar for the entire test run, indicating how much longer the entire tool has left to run
+# Text that indicates how much more time is left for the test to run.  {0} is replaced by a time
+# Text that appears on the button that closes / exits the tool once all the tests are complete
+# Text that appears on the button that runs the test again
+# Text that appears once the test has run that explains that at most 1 call is supported
+# Text that appears once the test has run that explains that up to N calls are supported
+# Text that appears once the test has run that explains that at least N calls are supported
+# Text that appears in much larger font, indicating that 1 Call is supported
+# Text that appears in much larger font, indicating the number of concurrent calls
+# Text that explains that the results have been sent to the service provider
+# Text that appears if the test failed to make any calls at all for some reason.
+# Text that appears on the button that runs the test again
+# Text that appears on a pop-up if the user tries to quit while the test is running
+# Text that appears on a pop-up if the tool failed to start at all.
+# Text that appears on the configuration tool for the test tool, that allows the service provider to configure the minimum MOS score that is required for a call.  Note that MOS is a technical term
+# The name of the tool, can't be too long
+# End of test tool strings
+
+
+# Message on a dialog explaining that the call the user was trying to pull is no longer available
+
+# Title of a dialog informing the user that their attempt to pull a call has failed
+# Text of a dialog informing the user that their attempt to pull a call has failed
+
+# Call status text for a call in the process of being pushed
+service.gui.SWITCHING=Switching
+# Call status text for a call when a push has been attempted by the user but has failed
+service.gui.SWITCH_FAILED=Switch Failed
+
+# Start of dev only strings!
+# New dev strings must be given the context comment "# DO NOT TRANSLATE"
+# !!! Strings below here are only available in debug mode and are not seen by
+# real users so are not translated/XVTed.  All strings that will be seen by
+# real users must be entered above this point !!!
+
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PROTOCOL_NAME=SIP
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PROTOCOL_DESCRIPTION=The SIP protocol
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.USERNAME=SIP id
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.USERNAME_AND_PASSWORD=User name and password
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.CLIENT_CERTIFICATE=Client TLS certificate
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.REGISTRAR=Registrar
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SERVER_PORT=Server port
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PROXY=Proxy
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PROXY_PORT=Proxy port
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PREFERRED_TRANSPORT=Preferred transport
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ADVANCED_OPTIONS=Advanced options
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PROXY_OPTIONS=Proxy options
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PROXY_AUTO=Configure proxy automatically
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ENABLE_PRESENCE=Enable presence
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.FORCE_P2P_PRESENCE=Force peer-to-peer presence mode
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.OFFLINE_CONTACT_POLLING_PERIOD=Offline contacts polling period (in s.)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SUBSCRIPTION_EXPIRATION=Default subscription duration (in s.)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.PRESENCE_OPTIONS=Presence Options
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.KEEP_ALIVE=Keep alive
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.KEEP_ALIVE_METHOD=Keep alive method
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.KEEP_ALIVE_INTERVAL=Keep alive interval
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.KEEP_ALIVE_INTERVAL_INFO=Between 1 and 3600 seconds
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_MINIMAL_TONE_DURATION=Minimal RTP DTMF tone duration (ms)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_MINIMAL_TONE_DURATION_INFO=Default RTP DTMF duration is 70 ms
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF=DTMF
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_METHOD=DTMF method
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_AUTO=Auto: Choose automatically between RTP and Inband (no SIP INFO)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_RTP=RTP ( RFC2833 / RFC 4733 )
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_SIP_INFO=SIP INFO
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DTMF_INBAND=Inband
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.REGISTER=REGISTER
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.OVERRIDE_SERVER_DEFAULT_OPTIONS=Override server default options
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ENABLE_DEFAULT_ENCRYPTION=Enable support to encrypt calls
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ENABLE_SIPZRTP_ATTRIBUTE=Indicate support of ZRTP in SIP data
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.AUTH_NAME=Authorization name
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.DISPLAY_NAME=Display name
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.EXISTING_ACCOUNT=Existing SIP account
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.CREATE_ACCOUNT=Create a free SIP account
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.CREATE_ACCOUNT_TITLE=Create account
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.XCAP_OPTIONS=Contactlist Options
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.CLIST_TYPE=Type
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.XCAP_USE_SIP_CREDENTIALS=Use SIP credentials
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.XCAP_USER=User
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.XCAP_PASSWORD=Password
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.XCAP_SERVER_URI=Server URI/Address
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.VOICEMAIL=Voicemail
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.MWI=Message Waiting (MWI)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.VOICEMAIL_URI=Voicemail alias URI
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.VOICEMAIL_CHECK_URI=Voicemail check URI
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.NOT_SAME_PASSWORD=Your passwords did not match.
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.NO_CERTIFICATE=<none> (use regular authentication)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SAVP_OPTION=RTP/SAVP indication
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SAVP_OPTION_0=Off (indicate RTP/AVP only)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SAVP_OPTION_1=Mandatory (offer and accept only RTP/SAVP)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SAVP_OPTION_2=Optional (offer RTP/SAVP first, then RTP/AVP)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ENABLE_SDES_ATTRIBUTE=Enable S-Descriptor (also known as SDES or SRTP)
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ENCRYPTION_PROTOCOL_PREFERENCES=Choose enabled encryption protocols and their priority (top protocol first):
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.CIPHER_SUITES=Enabled cipher suites:
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SECURITY_WARNING=<html><div width=450>{0} will automatically try to secure all \
+your calls with ZRTP and you will both hear and see a notification once a secure \
+connection is established. You should only change the advanced settings below \
+if you are well aware what you are doing.</div></html>
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SHOW_ADVANCED=Advanced encryption settings
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.ZRTP_OPTION=ZRTP option
+# DO NOT TRANSLATE
+plugin.sipaccregwizz.SDES_OPTION=SDes option
+# DO NOT TRANSLATE
+plugin.notificationconfig.ENABLE_NOTIF=Enable
+# DO NOT TRANSLATE
+plugin.notificationconfig.DESCRIPTION=Description
+# DO NOT TRANSLATE
+plugin.notificationconfig.TURN_ON_ALL=Turn On All
+# DO NOT TRANSLATE
+plugin.notificationconfig.TURN_OFF_ALL=Turn Off All
+# DO NOT TRANSLATE
+plugin.notificationconfig.ACTIONS=Actions
+# DO NOT TRANSLATE
+plugin.notificationconfig.QUICK_CONTROLS=Quick Controls
+# DO NOT TRANSLATE
+plugin.notificationconfig.RESTORE=Restore Defaults
+# DO NOT TRANSLATE
+plugin.notificationconfig.PLAY_SOUND=Play a sound:
+# DO NOT TRANSLATE
+plugin.notificationconfig.EXEC_PROG=Execute a program:
+# DO NOT TRANSLATE
+plugin.notificationconfig.DISPLAY_POPUP=Show a message in a pop-up window
+# DO NOT TRANSLATE
+plugin.notificationconfig.SOUND_FILE=Sound file:
+# DO NOT TRANSLATE
+plugin.notificationconfig.PROGRAM_FILE=Program file:
+# DO NOT TRANSLATE
+plugin.notificationconfig.BROWSE_SOUND=Choose a sound file
+# DO NOT TRANSLATE
+plugin.notificationconfig.BROWSE_PROGRAM=Choose a program
+# DO NOT TRANSLATE
+plugin.notificationconfig.PLAY_BUTTON_NAME=Test device
+# DO NOT TRANSLATE
+plugin.notificationconfig.STOP_BUTTON_NAME=Stop recording
+# DO NOT TRANSLATE
+plugin.notificationconfig.SAMPLE_PLAY_BUTTON_NAME=Play recording
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.ENABLE=Enable or disable this feature
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.EXECUTE=Execute a program
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.POPUP=Display a messagebox
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.SOUND=Play a sound
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.PLAYBACK_SOUND=Play a sound through playback device
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.PCSPEAKER_SOUND=Play a sound through PC speaker device
+# DO NOT TRANSLATE
+plugin.notificationconfig.tableheader.DESCRIPTION=Description of event
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.IncomingCall=Incoming Call
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.CallWaiting=Call Waiting
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.SecurityMessage=Security Message
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.IncomingFile=Incoming File
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.LogFilesArchived=Log Files Archived
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.CallSecurityError=Call Security Error
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.NetworkNotifications=Network Notifications
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.Dialing=Dialing
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.ProactiveNotification=Proactive Typing Notifications
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.CallSecurityOn=Call Security On
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.IncomingMessage=Incoming Message
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.OutgoingCall=Outgoing Call
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.BusyCall=Busy Call
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.CallSaved=Call Saved
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.HangUp=Hang Up
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.A=DTMF tone A
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.B=DTMF tone B
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.C=DTMF tone C
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.D=DTMF tone D
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.0=DTMF tone 0
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.1=DTMF tone 1
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.2=DTMF tone 2
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.3=DTMF tone 3
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.4=DTMF tone 4
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.5=DTMF tone 5
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.6=DTMF tone 6
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.7=DTMF tone 7
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.8=DTMF tone 8
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.9=DTMF tone 9
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.*=DTMF tone *
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DTMFTone.#=DTMF tone #
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.DeviceConfigurationChanged=Device configuration has changed
+# DO NOT TRANSLATE
+plugin.notificationconfig.event.NewSelectedDevice=New selected device
+# DO NOT TRANSLATE
+plugin.provisioning.PROVISIONING=Provisioning
+# DO NOT TRANSLATE
+plugin.provisioning.ENABLE_DISABLE=Enable provisioning
+# DO NOT TRANSLATE
+plugin.provisioning.AUTO=Automatically discover a provisioning URI
+# DO NOT TRANSLATE
+plugin.provisioning.DHCP=DHCP
+# DO NOT TRANSLATE
+plugin.provisioning.DNS=DNS
+# DO NOT TRANSLATE
+plugin.provisioning.BONJOUR=Bonjour
+# DO NOT TRANSLATE
+plugin.provisioning.MANUAL=Manually specify a provisioning URI
+# DO NOT TRANSLATE
+plugin.provisioning.URI=URI
+# DO NOT TRANSLATE
+plugin.provisioning.RESTART_WARNING=Note that your changes will only take effect next time you start {0}!
+# DO NOT TRANSLATE
+plugin.provisioning.UUID=UUID
+# DO NOT TRANSLATE
+plugin.provisioning.COPYTOCLIPBOARD=Copy UUID to clipboard
+# DO NOT TRANSLATE
+plugin.provisioning.CLIPBOARD_FAILED=Failed to copy UUID to clipboard
+# DO NOT TRANSLATE
+plugin.provisioning.EXIT_ON_FAIL=Exit the application if the provisioning fails
+# DO NOT TRANSLATE
+plugin.provisioning.CREDENTIALS=Last stored provisioning credentials
+# DO NOT TRANSLATE
+plugin.provisioning.REMOVE_CREDENTIALS_MESSAGE=Are you sure you want to remove provisioning password?
+# DO NOT TRANSLATE
+plugin.provisioning.PROV_FAILED=Provisioning failed
+# DO NOT TRANSLATE
+plugin.provisioning.PROV_FAILED_MSG=<html>Provisioning failed. {0}! <br>Please, try again later or contact your administrator.</html>
+# DO NOT TRANSLATE
+plugin.provisioning.FORGET_PASSWORD=Forget password
+
+plugin.generalconfig.SAVE_CALLS=Save recordings to
+plugin.generalconfig.SAVE_CALLS_DESCRIPTION=Use the drop down box to the right to choose where to save recorded calls
+
+
+service.gui.accessibility.MENU_ITEM_SELECTED=checked {0}
+
+service.gui.accessibility.MAIN_TAB_SELECTED=selected {0} tab
+
+service.gui.accessibility.MAIN_TAB_NOT_SELECTED={0} tab
+
+service.gui.accessibility.MAIN_TAB_SELECTED_WITH_NOTIFICATION=selected {0} tab, {1} notification
+service.gui.accessibility.MAIN_TAB_SELECTED_WITH_NOTIFICATION.PLURAL=selected {0} tab, {1} notifications
+
+service.gui.accessibility.MAIN_TAB_NOT_SELECTED_WITH_NOTIFICATION={0} tab, {1} notification
+service.gui.accessibility.MAIN_TAB_NOT_SELECTED_WITH_NOTIFICATION.PLURAL={0} tab, {1} notifications
+
+service.gui.accessibility.SUB_TAB_SELECTED=selected {0} filter
+
+service.gui.accessibility.SUB_TAB_NOT_SELECTED={0} filter
+
+service.gui.accessibility.SUB_TAB_SELECTED_WITH_EVENTS=selected {0} filter, with new items
+
+service.gui.accessibility.SUB_TAB_NOT_SELECTED_WITH_EVENTS={0} filter, with new items
+
+service.gui.accessibility.INVITE_SUB_TAB_SELECTED=selected {0}
+
+service.gui.accessibility.INVITE_SUB_TAB_NOT_SELECTED={0}
+
+service.gui.accessibility.INCOMING_CALL=received call
+service.gui.accessibility.OUTGOING_CALL=dialed call
+service.gui.accessibility.MISSED_CALL=missed call
+service.gui.accessibility.UNKNOWN_CALL=unknown call
+
+service.gui.accessibility.CLOSED_GROUP=closed group message
+service.gui.accessibility.READ_GROUP=group message
+service.gui.accessibility.UNREAD_GROUP=unread group message
+service.gui.accessibility.READ_MESSAGE=message
+service.gui.accessibility.UNREAD_MESSAGE=unread message
+
+service.gui.accessibility.LIST_ITEM_COMBINED={2}, {0}, {1}
+
+service.gui.accessibility.LIST_ITEM_COMBINED_SELECTED={2}, {0}, {1}, selected
+
+service.gui.accessibility.LIST_ITEM_COMBINED_WITHOUT_ICON={0}, {1}
+
+service.gui.accessibility.LIST_ITEM_COMBINED_WITHOUT_ICON_SELECTED={0}, {1}, selected
+
+service.gui.accessibility.CONTACT_BUTTON_COMBINED={0}, {1}
+
+service.gui.accessibility.CALL_PULL_BANNER=Press ENTER to pull the call
+
+service.gui.accessibility.MICROPHONE_VOLUME=microphone volume {0}%
+
+service.gui.accessibility.OUTPUT_VOLUME=output volume {0}%
+
+service.gui.accessibility.STATUS_BUTTON={0}, {1}
+
+service.gui.accessibility.CHAT_MESSAGE={0}, {1}, {2}
+
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+# DO NOT TRANSLATE
+
+# DO NOT TRANSLATE
+plugin.securityconfig.TITLE=Security
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.TITLE=Passwords
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.CHANGE_MASTER_PASSWORD=Change Master Password…
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.USE_MASTER_PASSWORD=Use a master password
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.SAVED_PASSWORDS=Saved Passwords…
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.INFO_TEXT=A Master Password is used to protect saved account passwords. Please make sure you remember it.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.CURRENT_PASSWORD=Current password:
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.ENTER_PASSWORD=Enter new password:
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.REENTER_PASSWORD=Re-enter password:
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_TITLE=Master Password
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_NOT_SET=(not set)
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_CURRENT_EMPTY=You did not enter the correct current Master Password. Please try again.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_VERIFICATION_FAILURE_MSG=The Master Password is not correct!
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_CHANGE_FAILURE=Password Change Failed
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_CHANGE_SUCCESS=Password Change Succeeded
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_CHANGE_SUCCESS_MSG=Master Password successfully changed.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_CHANGE_FAILURE_MSG=The encrypted passwords cannot be decrypted with the provided Master Password.\nThe password storage file may be corrupted - please contact your service provider for more assistance.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_REMOVE_FAILURE=Failed to remove password.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_REMOVE_SUCCESS=Password successfully removed.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_REMOVE_SUCCESS_MSG=Master Password successfully removed.
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.COL_TYPE=Type
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.COL_NAME=Name
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.COL_PASSWORD=Password
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.PROTOCOL_UNKNOWN=(unknown)
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.CANNOT_DECRYPT=(cannot decrypt)
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.STORED_ACCOUNT_PASSWORDS=Stored passwords
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.REMOVE_PASSWORD_BUTTON=Remove
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.REMOVE_ALL_PASSWORDS_BUTTON=Remove All
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.REMOVE_ALL_CONFIRMATION=Are you sure you wish to remove all passwords?
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.REMOVE_ALL_TITLE=Remove all passwords
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.SHOW_PASSWORDS_BUTTON=Show Passwords
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.HIDE_PASSWORDS_BUTTON=Hide Passwords
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.PASSWORD_QUALITY_METER=Password quality meter
+# DO NOT TRANSLATE
+plugin.securityconfig.masterpassword.MP_INPUT=Please enter your master password:\n\n
+# DO NOT TRANSLATE
+service.gui.SECURITY=Security
+# DO NOT TRANSLATE
+service.gui.AND=and
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER=Auto Answer and Call Forwarding
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_LABEL=Auto Answer
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_ALL_CALLS=All calls
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_ALERT_INFO_FIELDS=Only calls that require it. (Those containing an \"Alert-Info\" field set to \"Auto Answer\")
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_CUSTOM_FIELDS=Calls with the following field and value
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_FIELD=Field/Header:
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_VALUE=Value:
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_DESCR_VLUE=leave empty for any
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_FWD_CALLS=Forward Calls
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_FWD_CALLS_TO=Forward all calls to the following number or URI:
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_VIDEO=Video
+# DO NOT TRANSLATE
+service.gui.AUTO_ANSWER_VIDEO_CALLS_WITH_VIDEO=Answer video calls with video
+# DO NOT TRANSLATE
+service.gui.MY_CHAT_ROOMS_TITLE=Group Chats
+# DO NOT TRANSLATE
+service.gui.ROOM_NAME=Group Name
+# DO NOT TRANSLATE
+service.gui.CHANGE_NICKNAME=Change Nickname
+# DO NOT TRANSLATE
+service.gui.CHANGE_NICKNAME_LABEL=Change Nickname label
+# DO NOT TRANSLATE
+service.gui.INVITE_CONTACT_TO_CHAT=Add Contact to Group
+# DO NOT TRANSLATE
+service.gui.CREATE_CHAT_ROOM_ERROR=Failed to create chat room
+
+# !!! Only add new dev strings down here.  Dev strings are not translated so
+# strings that will be seen by real users must be added above the
+# "Start of dev only strings!" line part way down the file.
+# New dev strings must be given the context comment "# DO NOT TRANSLATE"

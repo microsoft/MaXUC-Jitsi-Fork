@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="bg-bg"
+    Language="1026">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Настройка</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Какви допълнителни действия да бъдат извършени?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Допълнителни действия</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Настройка</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Какви допълнителни действия да бъдат извършени?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Допълнителни действия</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Създай Пряк път</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Стартирай меню</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Създаване на пряк път на работния плот</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Други действия</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Стартирай @@PRODUCT_NAME_TITLECASE@@ в Стартиране</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Свързани протоколи</String>
+
+  <String Id="WelcomeText1" Overridable="yes">Софтуерът е разработен от @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">Началната страница е на @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}се поддържа от jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ не поддържа тази версия на Windows. Нужна е поне Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Стартирай @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

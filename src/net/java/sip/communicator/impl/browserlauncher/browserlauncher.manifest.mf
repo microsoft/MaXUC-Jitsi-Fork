@@ -1,0 +1,11 @@
+Bundle-Activator: net.java.sip.communicator.impl.browserlauncher.BrowserLauncherActivator
+Bundle-Name: Browser Launcher
+Bundle-Description: An implementation of the BrowserLauncher service.
+Bundle-Vendor: jitsi.org
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Export-Package: net.java.sip.communicator.service.browserlauncher
+Import-Package: org.osgi.framework,
+ org.jitsi.util,
+ net.java.sip.communicator.util,
+ net.java.sip.communicator.service.browserlauncher

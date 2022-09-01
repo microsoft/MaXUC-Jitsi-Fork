@@ -1,0 +1,1904 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created by Emil Ivov on Jul 6, 2005 8:30:22 PM-->
+
+<project default="ant-usage" name="jitsi" xmlns:ivy="antlib:org.apache.ivy.ant" >
+    <!-- Java version to use.  We use the same version for everything. -->
+    <property name="javac.source" value="11"/>
+    <property name="javac.target" value="11"/>
+
+    <dirname property="sc.basedir" file="${ant.file.jitsi}"/>
+    <property environment="system"/>
+    <property name="ivy.version" value="2.5.0" />
+
+    <property name="jdk.home" value="/usr/java/java"/>
+    <property name="dest" value="classes"/>
+    <property name="bundles.dest" value="sc-bundles"/>
+    <property name="bundles.dest.mac" value="${bundles.dest}/os-specific/macosx"/>
+    <property name="bundles.dest.win" value="${bundles.dest}/os-specific/windows"/>
+    <property name="ext" value="${sc.basedir}/.."/> <!-- Note: the `ext` property is redefined on the command line for brandings -->
+    <property name="lib" value="${sc.basedir}/lib"/>
+    <property name="lib.win" value="${lib}/os-specific/windows"/>
+    <property name="lib.mac" value="${lib}/os-specific/mac"/>
+    <property name="lib.noinst" value="${lib}/installer-exclude"/>
+    <property name="native.libs" value="${lib}/native"/>
+    <property name="src" value="${sc.basedir}/src"/>
+    <property name="testsrc" value="${sc.basedir}/test"/>
+    <property name="home" value="${system.HOME}"/>
+    <property name="bin" value="sip-communicator.bin"/>
+    <property name="resources" value="${dest}/resources"/>
+    <property name="inst.resrc" value="${sc.basedir}/resources/install"/>
+    <property name="lang.resrc" value="${sc.basedir}/resources/languages"/>
+    <property name='j2se_api' value='https://docs.oracle.com/javase/8/docs/api' />
+    <property name='maxwarns' value='10000' />
+    <property name='java.net.preferIPv6Addresses' value='false' />
+
+    <!-- set the build label property and make it take the cc build into account -->
+    <condition property="build.label"
+               value="${label}">
+        <isset property="label"/>
+    </condition>
+
+    <!-- windows specific properties -->
+    <condition property="is.running.windows" value="${os.name}">
+        <os family="windows"/>
+    </condition>
+
+    <condition property="native.libs.osspecific" value="${native.libs}/windows" >
+        <isset property="is.running.windows" />
+    </condition>
+    <property name="native.libs.osspecific" value="${native.libs}/mac" />
+
+    <condition property="os.lib.home" value="${lib.win}">
+        <isset property="is.running.windows"/>
+    </condition>
+
+    <!-- Make sure we use the windows-64 natives if this is 64-bit Windows -->
+    <condition property="path"
+            value="${lib}/native/windows-64;${system.PATH}">
+        <and>
+            <isset property="is.running.windows"/>
+            <os arch="amd64" />
+        </and>
+    </condition>
+    <!-- Otherwise and if this is still Windows, go for the windows natives
+         (i.e. os.arch==i386) -->
+    <condition property="path"
+            value="${lib}/native/windows;${system.PATH}">
+        <isset property="is.running.windows"/>
+    </condition>
+    <!-- At last i.e. if this is not Windows, use the system PATH environment
+         variable -->
+    <property name="path" value="${system.PATH}"/>
+
+    <condition property="bundles.dest.os" value="${bundles.dest.win}">
+        <isset property="is.running.windows"/>
+    </condition>
+
+    <!-- mac specific properties -->
+    <condition property="is.running.macos" value="${os.name}">
+        <os family="mac"/>
+    </condition>
+
+    <condition property="os.lib.home" value="${lib}/os-specific/mac">
+        <isset property="is.running.macos"/>
+    </condition>
+
+    <condition property="dyld.library.path"
+        value="${lib}/native/mac:${system.DYLD_LIBRARY_PATH}">
+        <isset property="is.running.macos"/>
+    </condition>
+
+    <condition property="bundles.dest.os" value="${bundles.dest.mac}">
+        <isset property="is.running.macos"/>
+    </condition>
+
+    <condition property="native.libs.osspecific" value="${native.libs}/windows" >
+        <isset property="is.running.windows" />
+    </condition>
+    <property name="native.libs.osspecific" value="${native.libs}/mac" />
+
+    <!-- set the os.lib.home here in case it was not set before -->
+    <property name="os.lib.home" value="${lib}"/>
+
+    <property name="profiler.args" value="" />
+    <property name="profiler.bootdelegation" value="" />
+    <property name="profiler.autostart" value="" />
+
+    <tstamp>
+        <format property="build.date" pattern="dd-MM-yyyy"/>
+    </tstamp>
+
+    <path id="project.source.path">
+        <!-- refer to both main and test source files. -->
+        <pathelement location="${src}"/>
+        <pathelement location="${testsrc}"/>
+    </path>
+
+    <target name="-init-paths">
+        <path id="project.class.path" >
+            <pathelement location="${lib}" />
+
+            <pathelement location="${bundles.dest}/sc-launcher.jar" />
+            <!-- Add this bundle to the global class path as we need
+                the ScLogFormatter there-->
+            <pathelement location="${bundles.dest}/util.jar" />
+            <!-- for mac specific plugins -->
+            <pathelement location="/System/Library/Java" />
+
+            <!-- Include all JAR files found in lib and any of its subdirectories. -->
+            <fileset dir="${lib}" >
+                <include name="*.jar" />
+                <include name="installer-exclude/*.jar" />
+                <!-- Exclude slf4j-jdk14.jar to prevent SLF4J finding multiple bindings - this jar is also present in sc-bundles/util.jar -->
+                <exclude name="installer-exclude/slf4j-jdk14.jar" />
+                <include name="bundle/*.jar" />
+            </fileset>
+        </path>
+
+        <path id="compile.class.path" >
+            <path refid="project.class.path" />
+            <pathelement location="${dest}" />
+            <!-- Add swt.jar classes for both Windows and Mac to the compile class path to enable
+                cross compilation.  Runtime checks ensure that only platform-compatible methods are called. -->
+            <fileset dir="${lib}" >
+                <include name="installer-exclude/os-specific/javafx-*.jar" />
+                <include name="installer-exclude/os-specific/org.eclipse.swt.cocoa.macosx.x86_64.jar" />
+                <include name="installer-exclude/os-specific/org.eclipse.swt.win32.win32.x86.jar" />
+            </fileset>
+        </path>
+
+        <path id="debug.class.path" >
+            <!-- used by netbeans but might be useful elsewhere. -->
+            <path refid="project.class.path" />
+
+            <!-- Include all test JAR files . -->
+            <fileset dir="${bundles.dest}" >
+                <include name="**/*.jar" />
+            </fileset>
+        </path>
+    </target>
+
+    <!-- default Ant target does nothing except print helpful options -->
+    <!-- Ant-external target will appear in -projecthelp output       -->
+    <target name="ant-usage"
+       description="simply execute 'ant' to discover the most useful targets.">
+       <echo message="Useful ant commands for the Jitsi Project..." />
+       <echo message="'ant rebuild' for a safe clean/build sequence" />
+       <echo message="'ant rebuild run' for a safe clean/build/run" />
+       <echo message="'ant make run' for incremental build/run" />
+       <echo message="'ant run' to run the last build (use with care!)" />
+       <echo message="'ant test' to run the tests over the last build" />
+       <echo message="'ant rebuild test' for safe clean/build/test sequence" />
+       <echo message="'ant make test' for incremental build/test sequence" />
+       <echo message="'ant -projecthelp' for other useful build targets" />
+       <echo message="'ant -help' for Ant help" />
+    </target>
+
+
+    <!-- java compile -->
+    <target name="compile" depends="-init-paths,init">
+        <!--internal-target- compiles the entire project source tree -->
+        <javac classpathref="compile.class.path" debug="true"
+            deprecation="false" destdir="${dest}" nowarn="false"
+            includeantruntime="false"
+            source="${javac.source}" target="${javac.target}" memoryMaximumSize="400M" fork="true">
+                <src path="${src}"/>
+                <include name="**/*.java" />
+                <compilerarg line="-Xlint:all,-deprecation"/>
+        </javac>
+    </target>
+
+    <!-- clean -->
+    <target name="clean" depends="clean-bundle-repositories"
+        description="Remove all generated files and prepare for a clean build.">
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${dest}"/>
+            <fileset dir="${bundles.dest}"/>
+            <fileset dir="${lang.resrc}" includes="resources*.properties" excludes="resources_en_GB.properties"/>
+            <!-- hamcrest-core contains a definition of class org.hamcrest.CoreMatchers that clashes with the definition
+            of the same class in hamcrest-all, and this causes unit tests to fail.  So, make sure hamcrest-core is gone. -->
+            <fileset dir="${lib.noinst}" includes="hamcrest-core*.jar" />
+        </delete>
+    </target>
+
+    <!-- clean-bundles -->
+    <target name="clean-bundles"
+        description="Remove all existing bundles">
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${bundles.dest}"/>
+        </delete>
+    </target>
+
+    <!-- internal target - removes the OSGI repositories, so that next run
+         recreates them -->
+    <target name="clean-bundle-repositories">
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${bin}"/>
+        </delete>
+    </target>
+
+    <!-- resource -->
+    <!--internal-target- Copies all resource file to the ${dest} dir -->
+    <target name="resource">
+        <property name="resource.locale.sed.independent"
+            value="s/@@PRODUCT_NAME_ASCII@@/Accession Communicator/g;s/@@PRODUCT_NAME_SHORT@@/Accession/g;s/@@PRODUCT_NAME_TITLECASE@@/Accession Communicator/g;s/@@WEB_PAGE@@/https:\/\/www.metaswitch.com/g;s/@@COMPANY_NAME@@/Metaswitch Networks/g;s/@@ACCESSION_MEETING_APP_NAME@@/Accession Meeting/g;s/@@ACCESSION_MEETING_MEETING_NAME@@/Meeting/g" />
+
+        <exec executable="sed" output="resources/languages/resources.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_bg_BG.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_bg_BG.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_de.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Vereinheitlichter Kommunikations-Client/g"/>
+            <arg value="resources/languages/resources_de.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_de_DE.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Vereinheitlichter Kommunikations-Client/g"/>
+            <arg value="resources/languages/resources_de_DE.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_el_CY.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_el_CY.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_el_GR.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_el_GR.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_en_GB.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_en_GB.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_es.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Cliente de Comunicaciones Unificadas/g"/>
+            <arg value="resources/languages/resources_es.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_es_ES.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Cliente de Comunicaciones Unificadas/g"/>
+            <arg value="resources/languages/resources_es_ES.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_fr_CA.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Client de Communications Unifi\\u00e9/g"/>
+            <arg value="resources/languages/resources_fr_CA.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_fr_FR.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Client de communications unifi\\u00e9es/g"/>
+            <arg value="resources/languages/resources_fr_FR.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_hr_HR.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Ujedinjeni klijent za komunikacije/g"/>
+            <arg value="resources/languages/resources_hr_HR.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_in_ID.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_in_ID.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_it_IT.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Cliente di comunicazioni unificate/g"/>
+            <arg value="resources/languages/resources_it_IT.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_pl_PL.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_pl_PL.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_pt_AO.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Aplicativo de Comunica\\u00e7\\u00f5es Unificadas/g"/>
+            <arg value="resources/languages/resources_pt_AO.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_pt_BR.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Aplicativo de Comunica\\u00e7\\u00f5es Unificadas/g"/>
+            <arg value="resources/languages/resources_pt_BR.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_sl_SI.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_sl_SI.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_sk_SK.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_sk_SK.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_th_TH.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
+            <arg value="resources/languages/resources_th_TH.properties.template"/>
+        </exec>
+
+        <exec executable="sed" output="resources/languages/resources_zh_TW.properties" logError="true" failonerror="true">
+            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/\\u6574\\u5408\\u901a\\u8a0a\\u7528\\u6236\\u7aef/g"/>
+            <arg value="resources/languages/resources_zh_TW.properties.template"/>
+        </exec>
+
+        <copy todir="${dest}">
+            <fileset dir="${src}">
+                <include name="**/*.jpeg"/>
+                <include name="**/*.wav"/>
+                <include name="**/*.au"/>
+                <include name="**/*.gif"/>
+                <include name="**/*.png"/>
+                <include name="**/*.PNG"/>
+                <include name="**/*.jpg"/>
+                <include name="**/*.xml"/>
+                <include name="**/*.themerc"/>
+                <include name="**/gtkrc"/>
+                <include name="**/*.css"/>
+                <include name="**/*.properties"/>
+                <include name="**/*.licences"/>
+            </fileset>
+            <fileset dir="${testsrc}">
+                <include name="**/*.jpeg"/>
+                <include name="**/*.wav"/>
+                <include name="**/*.au"/>
+                <include name="**/*.gif"/>
+                <include name="**/*.png"/>
+                <include name="**/*.jpg"/>
+                <include name="**/*.xml"/>
+                <include name="**/*.properties"/>
+                <include name="**/*.licences"/>
+            </fileset>
+        </copy>
+        <copy todir="${resources}">
+            <fileset dir="${sc.basedir}/resources">
+                <include name="**/*"/>
+                <exclude name="**/languages/**"/>
+                <exclude name="**/*.svg"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <condition property="skip-resolve-jitsi-dependencies">
+        <or>
+            <istrue value="${resolve-jitsi-dependencies-done}" />
+            <istrue value="${offlineBuild}" />
+        </or>
+    </condition>
+
+    <target name="resolve-dependencies" description="Get our dependencies." unless="skip-resolve-dependencies" >
+        <ivy:settings file="${sc.basedir}/ivysettings.xml" />
+        <ivy:resolve file="${sc.basedir}/ivy.xml" transitive="true" />
+        <ivy:retrieve conf="bundle" pattern="${sc.basedir}/lib/bundle/[artifact](-[classifier]).[ext]" overwriteMode="different" />
+        <ivy:retrieve conf="instexcl" pattern="${lib.noinst}/[artifact](-[classifier]).[ext]" overwriteMode="different" />
+        <mkdir dir="${lib.noinst}/os-specific" />
+        <ivy:retrieve conf="osspecific" pattern="${lib.noinst}/os-specific/[artifact](-[classifier]).[ext]" overwriteMode="different" />
+        <ivy:retrieve conf="jitsilib" pattern="${sc.basedir}/lib/[artifact].[ext]" overwriteMode="different" />
+        <ivy:retrieve conf="fileloc" pattern="${sc.basedir}/../[filelocation]/[artifact].[ext]" overwriteMode="different"/>
+        <property name="resolve-jitsi-dependencies-done" value="true" />
+    </target>
+
+    <!--PACKAGE-->
+    <!--Copy resource files and update bundles jars. -->
+    <target name="package" depends="resource,bundles"/>
+
+    <!--MAKE-->
+    <target name="make" depends="clean-bundles,clean-bundle-repositories,resolve-dependencies,compile,package"
+        description="Incremental compile and package the project."/>
+
+    <!--REBUILD-->
+    <target name="rebuild" depends="clean,make"
+        description="Clean and make the project (including bundles).">
+        <echo message="ver=${sip-communicator.version}"/>
+    </target>
+
+    <!-- make and deploy target used in intellij idea -->
+    <target name="make-and-deploy"
+            depends="make"
+            description="make and deploy target used in intellij idea"/>
+
+    <target name="copy-nightly-build-id-file" if="build.label">
+        <!-- create a class that would contain our nightly build.id if any -->
+        <copy file="${src}/net/java/sip/communicator/impl/version/NightlyBuildID.java.tmpl"
+              tofile="${src}/net/java/sip/communicator/impl/version/NightlyBuildID.java"
+              overwrite="true"/>
+    </target>
+
+    <target name="find-electron-commit-from-variable">
+        <if>
+            <and>
+                <isset property="build.label"/>
+                <isset property="system.ELECTRON_COMMIT"/>
+            </and>
+            <then>
+                  <replace file="${src}/net/java/sip/communicator/impl/version/NightlyBuildID.java"
+                           token="build.electron_commit" value="${system.ELECTRON_COMMIT}"/>
+            </then>
+        </if>
+    </target>
+
+    <target name="find-electron-commit-from-file">
+        <if>
+            <and>
+                <isset property="build.label"/>
+                <not>
+                    <isset property="system.ELECTRON_COMMIT"/>
+                </not>
+            </and>
+            <then>
+                <trycatch>
+                    <try>
+                        <loadfile srcfile="../electron_version.txt" property="electronCommit"/>
+                        <replace file="${src}/net/java/sip/communicator/impl/version/NightlyBuildID.java"
+                                 token="build.electron_commit" value="${electronCommit}"/>
+                    </try>
+                    <catch>
+                        <echo>Cannot find electron_version.txt</echo>
+                    </catch>
+                </trycatch>
+            </then>
+        </if>
+    </target>
+
+    <!--INIT-->
+    <target name="init" depends="-init-paths">
+        <mkdir dir="${dest}"/>
+        <mkdir dir="${bundles.dest}"/>
+
+        <!-- create dirs for os specific bundles -->
+        <mkdir dir="${bundles.dest}/os-specific"/>
+        <mkdir dir="${bundles.dest.mac}"/>
+        <mkdir dir="${bundles.dest.win}"/>
+    </target>
+
+
+    <!-- - - - - - - - - - - - - - BUNDLE BUILDING TARGETS - - - - - - - -       -->
+    <!--ALL BUNDLES-->
+    <target name="bundles"
+        depends="bundle-sc-launcher,bundle-util,bundle-service-dns,bundle-impl-dns,
+        bundle-configuration,
+        bundle-messagehistory, bundle-calljump,
+        bundle-callhistory,
+        bundle-netaddr,
+        bundle-sip,bundle-fileaccess,
+        bundle-neomedia,bundle-hid,bundle-ldap,
+        bundle-resource-manager,bundle-resources-defaultpack,
+        bundle-protocol,bundle-protocol-media,
+        bundle-mock,
+        bundle-jabber,bundle-swing-ui,bundle-ui-service,bundle-mac-widgets,
+        bundle-jnalib,
+        bundle-contactlist,meta-contactlist,
+        bundle-plugin-jabberaccregwizz,
+        bundle-plugin-sipaccregwizz,
+        bundle-commons-codec,bundle-guava,bundle-httputil,
+        bundle-version-impl,bundle-shutdown-timeout,bundle-windows-clean-shutdown,
+        bundle-swingnotification,
+        bundle-sparkle, bundle-plugin-branding,
+        bundle-systemactivitynotifications,
+        bundle-osdependent,bundle-browserlauncher,
+        bundle-notification-service,bundle-notification-handlers,
+        bundle-notification-wiring,bundle-notification-config,
+        bundle-contacteventhandler,
+        bundle-keybindings,
+        bundle-plugin-globalproxyconfig,
+        bundle-update,bundle-plugin-updatewindows,
+        bundle-plugin-generalconfig,
+        bundle-argdelegation-service,
+        bundle-argdelegation,bundle-sdes4j,bundle-json,
+        bundle-filehistory,
+        bundle-metahistory,
+        bundle-bouncycastle,
+        bundle-contactsource,bundle-plugin-reconnect,
+        bundle-credentialsstorage,
+        bundle-replacement,bundle-emoticon,bundle-emoji,
+        bundle-certificate,bundle-packetlogging,
+        bundle-provisioning,
+        bundle-addressbook,
+        bundle-globalshortcut,bundle-plugin-msofficecomm,bundle-plugin-urlprotocolhandler,bundle-libjitsi,
+        bundle-customcontactactions,
+        bundle-managecontact-service, bundle-analytics-service, bundle-browserpanel-service,
+        bundle-diagnostics-service, bundle-desktoputil,
+        bundle-globaldisplaydetails, bundle-phonenumberutils-service, bundle-gson,
+        bundle-commportal-service, bundle-reset-service, bundle-image-loader, bundle-conference-service,
+        bundle-threading-service,
+        bundle-hsql, bundle-database,
+        bundle-headsetmanager-service, bundle-websocketserver-service, bundle-wispaservice,
+        bundle-metadata-extractor, bundle-websocket,
+        bundle-commons-lang, bundle-commons-logging, bundle-commons-io,bundle-commons-text,
+        bundle-nanohttpd" />
+
+    <!--BUNDLE-SC-LAUNCHER-->
+    <target name="bundle-sc-launcher">
+        <jar compress="false" destfile="${bundles.dest}/sc-launcher.jar">
+            <zipfileset dir="${dest}/net/java/sip/communicator/launcher"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/launcher"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-MESSAGEHISTORY-->
+    <target name="bundle-messagehistory">
+        <jar compress="false" destfile="${bundles.dest}/msghistory.jar"
+            manifest="${src}/net/java/sip/communicator/impl/msghistory/msghistory.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/msghistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/msghistory"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/msghistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/msghistory" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-CALLJUMP-->
+    <target name="bundle-calljump">
+        <jar compress="false" destfile="${bundles.dest}/calljump.jar"
+            manifest="${src}/net/java/sip/communicator/service/calljump/calljump.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/calljump"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/calljump"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-CALLHISTORY-->
+    <target name="bundle-callhistory">
+        <jar compress="false" destfile="${bundles.dest}/callhistory.jar"
+            manifest="${src}/net/java/sip/communicator/impl/callhistory/callhistory.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/callhistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/callhistory"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/callhistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/callhistory" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-FILEACCESS-->
+    <target name="bundle-fileaccess">
+        <jar compress="false" destfile="${bundles.dest}/fileaccess.jar"
+            manifest="${src}/net/java/sip/communicator/impl/fileaccess/fileaccess.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/fileaccess"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/fileaccess" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-UTIL
+        loads the application name from the install settings.
+     -->
+    <target name="bundle-util">
+        <!-- Create a properties file that the arg handler could use
+        to determine SC's version -->
+        <echo file="${dest}/net/java/sip/communicator/util/launchutils/version.properties"
+              message="APPLICATION_NAME=${application.name}${line.separator}" />
+        <echo file="${dest}/net/java/sip/communicator/util/launchutils/version.properties"
+              message="PACKAGE_NAME=${package.name}${line.separator}"
+              append="true"/>
+        <echo file="${dest}/net/java/sip/communicator/util/launchutils/version.properties"
+              message="APPLICATION_VERSION=${sip-communicator.version}${line.separator}"
+              append="true"/>
+        <!-- Create the util.jar-->
+        <jar compress="false" destfile="${bundles.dest}/util.jar"
+            manifest="${src}/net/java/sip/communicator/util/util.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/util"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/util">
+            </zipfileset>
+            <zipfileset src="${lib.noinst}/dnsjava.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/slf4j-api.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/slf4j-jdk14.jar" prefix=""/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-UTIL-DNS-->
+    <target name="bundle-service-dns">
+        <!-- Create the dns.jar-->
+        <jar compress="true" destfile="${bundles.dest}/dnsservice.jar"
+            manifest="${src}/net/java/sip/communicator/service/dns/dns.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/dns"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/dns"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-UTIL-DNS-->
+    <target name="bundle-impl-dns">
+        <!-- Create the dns.jar-->
+        <jar compress="true" destfile="${bundles.dest}/dns.jar"
+            manifest="${src}/net/java/sip/communicator/impl/dns/dns.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/dns"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/dns"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-CONFIGURATION-->
+    <target name="bundle-configuration">
+        <jar
+            compress="false"
+            destfile="${bundles.dest}/configuration.jar"
+            manifest="${src}/net/java/sip/communicator/impl/configuration/configuration.manifest.mf" >
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/configuration"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/configuration" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-CREDENTIALSSTORAGE-->
+    <target name="bundle-credentialsstorage">
+        <jar
+            compress="false"
+            destfile="${bundles.dest}/credentialsstorage.jar"
+            manifest="${src}/net/java/sip/communicator/impl/credentialsstorage/credentialsstorage.manifest.mf" >
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/credentialsstorage"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/credentialsstorage"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/credentialsstorage"
+                        excludes="**/Test*.class"
+                prefix="net/java/sip/communicator/impl/credentialsstorage" />
+            <zipfileset src="${lib.noinst}/credential-secure-storage.jar"  prefix=""/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-LIBJITSI -->
+    <target name="bundle-libjitsi">
+        <jar
+            compress="false"
+            destfile="${bundles.dest}/libjitsi.jar"
+            manifest="${src}/net/java/sip/communicator/impl/libjitsi/libjitsi.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/libjitsi"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/libjitsi"/>
+            <zipfileset src="${lib.noinst}/fmj.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/libjitsi.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/commons-math3.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/ffmpeg.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/javacpp.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/os-specific/javacpp-windows-x86.jar" prefix="" >
+                <exclude name="*.dll" />
+            </zipfileset>
+            <zipfileset src="${lib.noinst}/os-specific/javacpp-macosx-x86_64.jar" prefix="" >
+                <exclude name="*.dylib" />
+            </zipfileset>
+            <zipfileset src="${lib.noinst}/os-specific/ffmpeg-windows-x86.jar" prefix="" >
+                <exclude name="*.dll" />
+                <exclude name="ffmpeg.exe" />
+                <exclude name="ffprobe.exe" />
+            </zipfileset>
+            <zipfileset src="${lib.noinst}/os-specific/ffmpeg-macosx-x86_64.jar" prefix="" >
+                <exclude name="*.dylib" />
+                <exclude name="ffmpeg" />
+                <exclude name="ffprobe" />
+            </zipfileset>
+        </jar>
+        <!-- Copy *.DLL and *.EXE files to jitsi/lib/os-specific/windows folder to ensure they can be loaded. -->
+        <unzip src="${lib.noinst}/os-specific/javacpp-windows-x86.jar" dest="${lib.win}/temp" />
+        <unzip src="${lib.noinst}/os-specific/ffmpeg-windows-x86.jar" dest="${lib.win}/temp" />
+        <copy todir="${native.libs}/windows" overwrite="true" >
+           <fileset dir="${lib.win}/temp" >
+                <include name="**/*.dll" />
+                <include name="**/ffmpeg.exe" />
+                <include name="**/ffprobe.exe" />
+           </fileset>
+        </copy>
+        <delete failonerror="false" includeemptydirs="true" >
+            <fileset dir="${lib.win}/temp" />
+        </delete>
+        <!-- Copy *.DYLIB and executable files to jitsi/lib/os-specific/mac folder to ensure they can be loaded. -->
+        <unzip src="${lib.noinst}/os-specific/javacpp-macosx-x86_64.jar" dest="${lib.mac}/temp" />
+        <unzip src="${lib.noinst}/os-specific/ffmpeg-macosx-x86_64.jar" dest="${lib.mac}/temp" />
+        <copy todir="${native.libs}/mac" overwrite="true" >
+           <fileset dir="${lib.mac}/temp" >
+                <include name="**/*.dylib" />
+                <include name="**/ffmpeg" />
+                <include name="**/ffprobe" />
+           </fileset>
+        </copy>
+        <delete failonerror="false" includeemptydirs="true" >
+            <fileset dir="${lib.mac}/temp" />
+        </delete>
+    </target>
+
+    <!--BUNDLE-NEOMEDIA-->
+    <target name="bundle-neomedia">
+        <!-- Creates a bundle containing the impl of the neomedia package. -->
+        <jar
+            compress="false"
+            destfile="${bundles.dest}/neomedia.jar"
+            manifest="${src}/net/java/sip/communicator/impl/neomedia/neomedia.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/neomedia"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/neomedia"/>
+            <zipfileset dir="${resources}/images/impl/media"
+                        prefix="resources/images/impl/media"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-HID -->
+    <target name="bundle-hid">
+        <jar compress="false" destfile="${bundles.dest}/hid.jar"
+            manifest="${src}/net/java/sip/communicator/impl/hid/hid.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/hid"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/hid"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/hid"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/hid" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-LDAP-->
+    <target name="bundle-ldap">
+        <jar compress="false" destfile="${bundles.dest}/ldap.jar"
+            manifest="${src}/net/java/sip/communicator/impl/ldap/ldap.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/ldap"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/ldap"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/ldap"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/ldap" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-SERVICEBINDER -->
+    <target name="bundle-servicebinder">
+        <jar compress="true" destfile="lib/bundle/servicebinder.jar"
+            filesetmanifest="merge">
+
+            <zipfileset src="${lib}/servicebinder.jar" prefix=""/>
+            <manifest>
+                <attribute name="Import-Package" value="org.osgi.framework"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-NETADDR -->
+    <target name="bundle-netaddr">
+        <jar compress="false" destfile="${bundles.dest}/netaddr.jar"
+            manifest="${src}/net/java/sip/communicator/impl/netaddr/netaddr.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/netaddr"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/netaddr"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/netaddr"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/netaddr"/>
+            <zipfileset src="${lib.noinst}/java-objc-bridge.jar" prefix=""/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-SIP-->
+    <target name="bundle-sip">
+        <!--internal-target- Creates a bundle containing the sip implementation of the protocol provider package -->
+        <jar compress="false" destfile="${bundles.dest}/protocol-sip.jar"
+            manifest="${src}/net/java/sip/communicator/impl/protocol/sip/sip.provider.manifest.mf">
+            <zipfileset src="${lib.noinst}/jain-sip-ri.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/jain-sip-api.jar" prefix=""/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/protocol/sip"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/protocol/sip"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PROTOCOL -->
+    <target name="bundle-protocol">
+        <!-- Creates a bundle containing the protocol provider interfaces.-->
+        <jar compress="false" destfile="${bundles.dest}/protocol.jar"
+            manifest="${src}/net/java/sip/communicator/service/protocol/protocol.provider.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/protocol"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/protocol"/>
+            <zipfileset dir="${resources}/images"
+                prefix="resources/images">
+                <include name="protocol/jabber/**/*"/>
+                <!-- the media package lives in the protocol-media bundle -->
+                <exclude name="protocol/media/**/*"/>
+            </zipfileset>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PROTOCOL -->
+    <target name="bundle-protocol-media">
+        <!-- Creates a bundle containing the media dependent
+             protocol provider interfaces.-->
+        <jar compress="false" destfile="${bundles.dest}/protocol-media.jar"
+            manifest="${src}/net/java/sip/communicator/service/protocol/media/protocol.media.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/protocol/media"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/protocol/media"/>
+        </jar>
+    </target>
+
+    <target name="bundle-jnalib">
+        <!-- Creates a bundle containing the jna implementation.
+        Note: although this bundle provides the JNA classes, they are loaded by the framework classloader not the bundle classloader,
+        because the packages are listed in `org.osgi.framework.system.packages.extra`.  This is to issues caused by trying to load
+        native libraries in multiple classloaders. -->
+        <jar
+            compress="false" destfile="${bundles.dest}/jnalib.jar"
+            manifest="${lib.noinst}/jna.manifest.mf">
+
+            <zipfileset src="${lib.noinst}/jna.jar" prefix="" >
+                <!-- Exclude the embedded native libraries.  These go into ${native.libs}/windows and ${native.libs}/mac
+                to avoid problems caused by native libraries being extracted to temp directories.  Combine with `-Djna.nounpack=true` -->
+                <exclude name="com/sun/jna/*-*/*" />
+            </zipfileset>
+            <zipfileset src="${lib.noinst}/jna-platform.jar" prefix="" />
+            <zipfileset src="${lib.noinst}/java-objc-bridge.jar" includes="**/PointerTool.class" prefix="" />
+        </jar>
+        <unzip src="${lib.noinst}/jna.jar" dest="${native.libs}/windows" >
+            <patternset>
+                <include name="com/sun/jna/win32-x86/jnidispatch.dll" />
+            </patternset>
+            <mapper>
+                <globmapper from="com/sun/jna/win32-x86/*" to="*" />
+            </mapper>
+        </unzip>
+        <unzip src="${lib.noinst}/jna.jar" dest="${native.libs}/mac" >
+            <patternset>
+                <include name="com/sun/jna/darwin-x86-64/libjnidispatch.jnilib" />
+            </patternset>
+            <mapper>
+                <globmapper from="com/sun/jna/darwin-x86-64/*" to="*" />
+            </mapper>
+        </unzip>
+    </target>
+
+     <!--BUNDLE-MOCK-PROVIDER-->
+    <target name="bundle-mock">
+        <!--internal-target- Creates a bundle containing the mock implementation of the protocol provider package -->
+        <jar compress="false" destfile="${bundles.dest}/protocol-mock.jar"
+            manifest="${src}/net/java/sip/communicator/impl/protocol/mock/mock.provider.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/protocol/mock"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/protocol/mock"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-JABBER -->
+    <target name="bundle-jabber">
+        <!-- Creates a bundle containing the jabber impl of the protocol provider.-->
+        <jar compress="false" destfile="${bundles.dest}/protocol-jabber.jar"
+            manifest="${src}/net/java/sip/communicator/impl/protocol/jabber/jabber.provider.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/protocol/jabber"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/protocol/jabber"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-UI-SERVICE -->
+    <target name="bundle-ui-service">
+        <!-- Bundle Jitsi's UI.-->
+        <jar compress="false" destfile="${bundles.dest}/ui-service.jar"
+            manifest="${src}/net/java/sip/communicator/service/gui/gui.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/gui"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/gui"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/shutdown"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/shutdown"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-SWING-UI -->
+    <target name="bundle-swing-ui">
+        <!-- Bundle Jitsi's UI.-->
+        <jar compress="false" destfile="${bundles.dest}/swing-ui.jar"
+            manifest="${src}/net/java/sip/communicator/impl/gui/swing.ui.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/gui"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/gui"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-MAC-WIDGETS -->
+    <target name="bundle-mac-widgets">
+        <jar compress="true"
+             destfile="${bundles.dest}/mac_widgets.jar"
+             filesetmanifest="merge" >
+            <zipfileset src="lib/installer-exclude/mac_widgets.jar" prefix="" />
+            <zipfileset src="lib/installer-exclude/forms.jar" prefix="" />
+            <manifest>
+                <attribute name="Export-Package" value="com.explodingpixels.macwidgets" />
+                <attribute name="Import-Package" value="javax.swing,
+                                                        javax.swing.border,
+                                                        javax.swing.event,
+                                                        javax.swing.filechooser,
+                                                        javax.swing.plaf,
+                                                        javax.swing.plaf.basic,
+                                                        javax.swing.plaf.metal,
+                                                        javax.swing.table,
+                                                        javax.swing.text,
+                                                        javax.swing.text.html,
+                                                        javax.swing.tree,
+                                                        javax.swing.undo" />
+                <attribute name="Bundle-Name" value="Mac Widgets" />
+                <attribute name="Bundle-Description" value="Provides mac look and feel" />
+                <attribute name="System-Bundle" value="yes" />
+                <!-- Attributes corresponding to forms.jar - preserved from previously checked-in file jitsi/lib/installer-exclude/forms-1.2.1.jar!META-INF/MANIFEST.MF -->
+                <attribute name="Specification-Title" value="JGoodies Forms API Specification" />
+                <attribute name="Specification-Vendor" value="JGoodies Karsten Lentzsch" />
+                <attribute name="Specification-Version" value="1.2" />
+                <attribute name="Implementation-Title" value="JGoodies Forms" />
+                <attribute name="Implementation-Vendor" value="JGoodies Karsten Lentzsch" />
+                <attribute name="Implementation-Version" value="1.2.1 2008-07-25 08:51:31" />
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-CONTACTLIST -->
+    <target name="bundle-contactlist">
+        <!-- Creates a bundle containing the contactlist interfaces.-->
+        <jar compress="false" destfile="${bundles.dest}/contactlist.jar"
+            manifest="${src}/net/java/sip/communicator/service/contactlist/contactlist.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/contactlist"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/contactlist"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-META-CONTACTLIST -->
+    <target name="meta-contactlist">
+        <!-- Creates the meta contact list bundle.-->
+        <jar compress="false" destfile="${bundles.dest}/meta-cl.jar"
+            manifest="${src}/net/java/sip/communicator/impl/contactlist/meta.cl.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/contactlist"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/contactlist"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-JABBERACCREGWIZZ -->
+    <target name="bundle-plugin-jabberaccregwizz">
+        <!-- Creates a bundle for the plugin Jabber Account Registration Wizard.-->
+        <jar compress="false" destfile="${bundles.dest}/jabberaccregwizz.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/jabberaccregwizz/jabberaccregwizz.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/jabberaccregwizz"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/jabberaccregwizz"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-SIPACCREGWIZZ -->
+    <target name="bundle-plugin-sipaccregwizz">
+        <!-- Creates a bundle for the plugin SIP Account Registration Wizard.-->
+        <jar compress="false" destfile="${bundles.dest}/sipaccregwizz.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/sipaccregwizz/sipaccregwizz.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/sipaccregwizz"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/sipaccregwizz"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-VERSION-IMPL -->
+    <target name="bundle-version-impl">
+        <!-- Creates a bundle for the version service impl.-->
+        <jar compress="false" destfile="${bundles.dest}/version-impl.jar"
+            manifest="${src}/net/java/sip/communicator/impl/version/version.impl.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/version"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/version"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-SHUTDOWN-TIMEOUT -->
+    <target name="bundle-shutdown-timeout">
+        <!-- Creates a bundle for the shutdown-timeout plugin.-->
+        <jar compress="false" destfile="${bundles.dest}/shutdown-timeout.jar"
+            manifest="${src}/net/java/sip/communicator/impl/shutdowntimeout/shutdown.timeout.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/shutdowntimeout"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/shutdowntimeout"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-WINDOWS-CLEAN-SHUTDOWN -->
+    <target name="bundle-windows-clean-shutdown">
+        <!-- Creates a bundle for the windows-clean-shutdown plugin.-->
+        <jar compress="false" destfile="${bundles.dest.win}/windows-clean-shutdown.jar"
+             manifest="${src}/net/java/sip/communicator/plugin/windowscleanshutdown/cleanshutdown.manifest.mf">
+             <zipfileset dir="${dest}/net/java/sip/communicator/plugin/windowscleanshutdown"
+                         excludes="**/Test*.class"
+                         prefix="net/java/sip/communicator/plugin/windowscleanshutdown"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-SWINGNOTIFICATION-->
+    <target name="bundle-swingnotification">
+        <!-- Creates a bundle for the swingnotification plugin.-->
+        <jar compress="false" destfile="${bundles.dest}/swingnotification.jar"
+            manifest="${src}/net/java/sip/communicator/impl/swingnotification/swingnotification.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/swingnotification"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/swingnotification" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-SPARKLE-->
+    <target name="bundle-sparkle">
+        <!-- Creates a bundle for the sparkle activator plugin.-->
+        <jar compress="false" destfile="${bundles.dest.mac}/sparkle.jar"
+            manifest="${src}/net/java/sip/communicator/impl/sparkle/sparkle.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/sparkle"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/sparkle" />
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-EXAMPLE PLUGIN -->
+        <target name="bundle-plugin-exampleplugin">
+            <!-- Creates a bundle for the plugin SIP Account Registration Wizard.-->
+            <jar compress="false" destfile="${bundles.dest}/exampleplugin.jar"
+                manifest="${src}/net/java/sip/communicator/plugin/exampleplugin/exampleplugin.manifest.mf">
+                <zipfileset dir="${dest}/net/java/sip/communicator/plugin/exampleplugin"
+                            excludes="**/Test*.class"
+                            prefix="net/java/sip/communicator/plugin/exampleplugin"/>
+            </jar>
+        </target>
+
+    <!-- BUNDLE-PLUGIN-BRANDING -->
+        <target name="bundle-plugin-branding">
+            <!-- Creates a bundle for the Splash Screen plugin.-->
+        <jar compress="false" destfile="${bundles.dest}/branding.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/branding/branding.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/branding"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/branding"/>
+            </jar>
+        </target>
+
+    <!--BUNDLE-OSDEPENDENT-->
+    <target name="bundle-osdependent">
+        <!-- Creates a bundle for the OS dependent packages like systray and desktop."-->
+        <jar
+            compress="false" destfile="${bundles.dest}/osdependent.jar"
+            manifest="${src}/net/java/sip/communicator/impl/osdependent/osdependent.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/systray"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/systray"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/osdependent"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/osdependent"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-BROWSER LAUNCHER -->
+    <target name="bundle-browserlauncher">
+        <!-- Creates a bundle for the browser launcher.-->
+        <jar compress="false" destfile="${bundles.dest}/browserlauncher.jar"
+            manifest="${src}/net/java/sip/communicator/impl/browserlauncher/browserlauncher.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/browserlauncher"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/browserlauncher"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/browserlauncher"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/browserlauncher"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-NANOHTTPD -->
+    <target name="bundle-nanohttpd">
+        <jar compress="true" destfile="lib/bundle/nanohttpd.jar"
+            filesetmanifest="merge">
+
+            <zipfileset src="${lib.noinst}/nanohttpd.jar" prefix=""/>
+            <manifest>
+                <attribute name="Import-Package" value="javax.net.ssl"/>
+                <attribute name="Export-Package" value="fi.iki.elonen"/>
+                <attribute name="Bundle-Name" value="NanoHTTPD"/>
+                <attribute name="Bundle-Description" value="HTTP server."/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-WEBSOCKET -->
+    <target name="bundle-websocket">
+        <jar compress="true" destfile="lib/bundle/Java-WebSocket.jar"
+             filesetmanifest="merge">
+
+            <zipfileset src="${lib.noinst}/Java-WebSocket.jar" prefix=""/>
+            <manifest>
+                <attribute name="Import-Package" value="javax.net.ssl,
+                                                        org.slf4j"/>
+                <attribute name="Export-Package" value="org.java_websocket,
+                                                        org.java_websocket.framing,
+                                                        org.java_websocket.handshake,
+                                                        org.java_websocket.server"/>
+                <attribute name="Bundle-Name" value="Websocket"/>
+                <attribute name="Bundle-Description" value="Websocket server."/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-COMMONS-LOGGING -->
+    <target name="bundle-commons-logging">
+        <jar compress="true" destfile="lib/bundle/commons-logging.jar"
+                filesetmanifest="merge">
+            <zipfileset src="${lib.noinst}/commons-logging.jar"
+                prefix=""/>
+            <manifest>
+                <attribute name="Export-Package"
+                    value="org.apache.commons.logging"/>
+                <attribute name="Bundle-Name"
+                    value="Apache Commons Logging"/>
+                <attribute name="Bundle-Description"
+                    value="An ultra-thin bridge between different logging implementations."/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-COMMONS-CODEC -->
+    <target name="bundle-commons-codec">
+        <jar compress="true" destfile="${bundles.dest}/commons-codec.jar"
+            filesetmanifest="merge">
+
+            <zipfileset src="${lib.noinst}/commons-codec.jar" prefix=""/>
+            <manifest>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-COMMONS-LANG -->
+    <target name="bundle-commons-lang">
+        <jar compress="true" destfile="lib/bundle/commons-lang.jar"
+            filesetmanifest="merge">
+            <zipfileset src="${lib.noinst}/commons-lang3.jar" prefix=""/>
+            <manifest>
+                <attribute name="Export-Package" value="org.apache.commons.lang3,
+                                                        org.apache.commons.lang3.builder,
+                                                        org.apache.commons.lang3.time"/>
+                <attribute name="Bundle-Name" value="Apache Commons Lang"/>
+                <attribute name="Bundle-Description" value="Extra methods for manipulation of core java classes."/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-COMMONS-IO -->
+    <target name="bundle-commons-io">
+        <jar compress="true" destfile="lib/bundle/commons-io.jar"
+            filesetmanifest="merge">
+            <zipfileset src="${lib.noinst}/commons-io.jar" prefix=""/>
+            <manifest>
+                <attribute name="Export-Package" value="org.apache.commons.io,
+                                                        org.apache.commons.io.filefilter"/>
+                <attribute name="Bundle-Name" value="Apache Commons IO"/>
+                <attribute name="Bundle-Description" value="Extra methods for manipulation of core java classes."/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-COMMONS-TEXT -->
+    <target name="bundle-commons-text">
+        <jar compress="true" destfile="lib/bundle/commons-text.jar"
+            filesetmanifest="merge">
+            <zipfileset src="${lib.noinst}/commons-text.jar" prefix=""/>
+            <manifest>
+                <attribute name="Export-Package" value="org.apache.commons.text"/>
+                <attribute name="Bundle-Name" value="Apache Commons Text"/>
+                <attribute name="Bundle-Description" value="Extra methods for text handling in Java."/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-METADATA-EXTRACTOR -->
+    <target name="bundle-metadata-extractor">
+        <jar compress="true" destfile="lib/bundle/metadata-extractor.jar" filesetmanifest="merge" >
+            <zipfileset src="${lib.noinst}/metadata-extractor.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/xmpcore.jar" prefix="" />
+            <manifest>
+                <attribute name="Export-Package" value="com.drew.lang,com.drew.metadata,com.drew.metadata.exif,com.drew.imaging"/>
+                <attribute name="Bundle-Name" value="Metadata Extractor"/>
+                <attribute name="Bundle-Description" value="Extract EXIF Metadata"/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-GUAVA -->
+    <target name="bundle-guava">
+        <jar compress="true" destfile="${bundles.dest}/guava.jar"
+            manifest="${src}/net/java/sip/communicator/service/guava/guava.manifest.mf">
+            <zipfileset src="${lib.noinst}/guava.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/failureaccess.jar" prefix=""/>
+        </jar>
+    </target>
+
+
+    <!--BUNDLE-HTTPUTIL -->
+    <target name="bundle-httputil">
+        <!-- Create the httputil.jar-->
+        <jar compress="false" destfile="${bundles.dest}/httputil.jar"
+            manifest="${src}/net/java/sip/communicator/service/httputil/httputil.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/httputil"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/httputil">
+                <exclude name="httputilosgi/**"/>
+            </zipfileset>
+            <!-- Bundle the metatype files copied from the public httpclient-osgi package. -->
+            <fileset dir="${src}/net/java/sip/communicator/service/httputil/httputilosgi"/>
+            <zipfileset src="${lib.noinst}/httpclient.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/httpmime.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/commons-codec.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/httpcore-osgi.jar" prefix=""/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-NOTIFICATION -->
+    <target name="bundle-notification-service">
+        <!-- Creates a bundle for the notifications.-->
+        <jar compress="false" destfile="${bundles.dest}/notification-service.jar"
+            manifest="${src}/net/java/sip/communicator/service/notification/notification.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/notification"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/notification"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-NOTIFICATION-HANDLERS -->
+    <target name="bundle-notification-handlers">
+        <!-- Creates a bundle for the notifications.-->
+        <jar compress="false" destfile="${bundles.dest}/notification-handlers.jar"
+            manifest="${src}/net/java/sip/communicator/impl/notification/notification.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/notification"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/notification"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-NOTIFICATION-WIRING -->
+    <target name="bundle-notification-wiring">
+        <!-- Creates a bundle for the notifications.-->
+        <jar compress="false" destfile="${bundles.dest}/notification-wiring.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/notificationwiring/notificationwiring.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/notificationwiring"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/notificationwiring"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-CONTACT-EVENT-HANDLER -->
+    <target name="bundle-contacteventhandler">
+    <!-- Creates a bundle for the ContactEventHandler service.-->
+        <jar compress="false" destfile="${bundles.dest}/contacteventhandler.jar"
+           manifest="${src}/net/java/sip/communicator/service/contacteventhandler/contact.event.handler.manifest.mf">
+           <zipfileset dir="${dest}/net/java/sip/communicator/service/contacteventhandler"
+                       excludes="**/Test*.class"
+                       prefix="net/java/sip/communicator/service/contacteventhandler"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-ACCOUNTINFO -->
+    <target name="bundle-plugin-accountinfo">
+        <jar compress="false" destfile="${bundles.dest}/accountinfo.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/accountinfo/accountinfo.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/accountinfo"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/accountinfo"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-UPDATE-->
+    <target name="bundle-update">
+        <!-- Creates a bundle containing the provisioning discovery service.-->
+        <jar compress="false" destfile="${bundles.dest}/updateservice.jar"
+            manifest="${src}/net/java/sip/communicator/service/update/update.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/update"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/update"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-PLUGIN-WIN-UPDATE-->
+    <target name="bundle-plugin-updatewindows">
+        <jar compress="false" destfile="${bundles.dest}/updatewindows.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/updatewindows/updatewindows.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/updatewindows"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/updatewindows" />
+        </jar>
+    </target>
+
+   <!--BUNDLE-PLUGIN-PROFILER-->
+   <target name="bundle-plugin-profiler4j">
+        <jar compress="false" destfile="${bundles.dest}/profiler4j.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/profiler4j/profiler4j.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/profiler4j"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/profiler4j" />
+            <zipfileset src="${lib.noinst}/profiler4j-1.0-beta3-SC.jar"
+                prefix=""/>
+            <zipfileset src="${lib.noinst}/jdom.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/jcommon-1.0.0.jar" prefix=""/>
+            <zipfileset src="${lib.noinst}/jfreechart-1.0.1.jar" prefix=""/>
+            <fileset file="${lib.noinst}/p4j-exclusions.txt"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-General Config-->
+    <target name="bundle-plugin-generalconfig">
+        <jar compress="false" destfile="${bundles.dest}/generalconfig.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/generalconfig/generalconfig.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/generalconfig"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/generalconfig" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-KEYBINDINGS-->
+    <target name="bundle-keybindings">
+        <jar compress="false" destfile="${bundles.dest}/keybindings.jar"
+            manifest="${src}/net/java/sip/communicator/impl/keybindings/keybindings.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/keybindings"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/keybindings"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/keybindings"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/keybindings"/>
+            <zipfileset dir="${resources}/config/defaultkeybindings"
+                        prefix="resources/config/defaultkeybindings"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-DEFAULT-RESOURCES-->
+    <target name="bundle-resources-defaultpack">
+        <!-- Copy the default resources to english one, as our default
+            language is English and without the resource we cannot explicitly set it.-->
+        <copy file="${sc.basedir}/resources/languages/resources.properties"
+              tofile="${resources}/languages/resources_en.properties"/>
+        <!-- Creates a bundle for the default resource pack."-->
+        <jar
+            compress="false" destfile="${bundles.dest}/defaultresources.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/defaultresourcepack/defaultresourcepack.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/defaultresourcepack"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/defaultresourcepack"/>
+
+            <zipfileset dir="${resources}/colors"
+                    prefix="resources/colors"/>
+            <zipfileset dir="${resources}/config"
+                    prefix="resources/config"/>
+            <zipfileset dir="${resources}/images"
+                    prefix="resources/images" excludes="**/*.svg"/>
+            <zipfileset dir="${resources}/languages"
+                    prefix="resources/languages"/>
+            <zipfileset dir="${resources}/sounds"
+                    prefix="resources/sounds"/>
+            <zipfileset dir="${resources}/styles"
+                    prefix="resources/styles"/>
+          <zipfileset dir="${resources}/layouts"
+                  prefix="resources/layouts"/>
+        </jar>
+    </target>
+
+     <!--BUNDLE-RESOURCE-MANAGER-->
+    <target name="bundle-resource-manager">
+        <!-- Creates a bundle for the Resource Management Service Impl."-->
+        <jar
+            compress="false" destfile="${bundles.dest}/resourcemanager.jar"
+            manifest="${src}/net/java/sip/communicator/impl/resources/resourcemanagement.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/resources"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/resources"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/resources"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/resources"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-NOTIFICATION-CONFIG -->
+    <target name="bundle-notification-config">
+        <!-- Creates a bundle for the notifications.-->
+        <jar compress="false" destfile="${bundles.dest}/notificationconfig.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/notificationconfiguration/notificationconfiguration.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/notificationconfiguration"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/notificationconfiguration"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE Arg Delegation Service -->
+    <target name="bundle-argdelegation-service">
+        <!-- Creates a bundle for the notifications.-->
+        <jar compress="false" destfile="${bundles.dest}/argdelegation-service.jar"
+            manifest="${src}/net/java/sip/communicator/service/argdelegation/argdelegation.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/argdelegation/"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/argdelegation"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE Arg Delegation Implementation-->
+    <target name="bundle-argdelegation">
+        <!-- Creates a bundle for the notifications.-->
+        <jar compress="false" destfile="${bundles.dest}/argdelegation.jar"
+            manifest="${src}/net/java/sip/communicator/impl/argdelegation/argdelegation.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/argdelegation/"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/argdelegation/"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-SDES4J -->
+    <target name="bundle-sdes4j">
+        <jar compress="true" destfile="${bundles.dest}/sdes4j.jar"
+            filesetmanifest="merge">
+
+            <zipfileset src="${lib.noinst}/sdes4j.jar" prefix=""/>
+            <manifest>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-JSON -->
+    <target name="bundle-json">
+        <jar compress="true" destfile="${bundles.dest}/json.jar"
+            filesetmanifest="merge">
+
+            <zipfileset src="${lib.noinst}/json-simple.jar" prefix=""/>
+            <manifest>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-FILEHISTORY-->
+    <target name="bundle-filehistory">
+        <jar compress="false" destfile="${bundles.dest}/filehistory.jar"
+            manifest="${src}/net/java/sip/communicator/impl/filehistory/filehistory.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/filehistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/filehistory"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/filehistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/filehistory" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-METAHISTORY-->
+    <target name="bundle-metahistory">
+        <jar compress="false" destfile="${bundles.dest}/metahistory.jar"
+            manifest="${src}/net/java/sip/communicator/impl/metahistory/metahistory.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/metahistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/metahistory"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/metahistory"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/metahistory" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-BOUNCYCASTLE -->
+    <target name="bundle-bouncycastle">
+        <copy file="${lib.noinst}/bcprov-jdk15on.jar" tofile="${bundles.dest}/bouncycastle.jar"/>
+        <copy file="${lib.noinst}/bcpkix-jdk15on.jar" tofile="${bundles.dest}/bouncycastle-pkix.jar"/>
+        <copy file="${lib.noinst}/bcutil-jdk15on.jar" tofile="${bundles.dest}/bouncycastle-util.jar"/>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-GLOBALPROXYCONFIG -->
+    <target name="bundle-plugin-globalproxyconfig">
+        <!-- Creates a bundle for the global proxy configuration plugin.-->
+        <jar compress="false" destfile="${bundles.dest}/globalproxyconfig.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/globalproxyconfig/globalproxyconfig.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/globalproxyconfig"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/globalproxyconfig"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PROTOCOL -->
+    <target name="bundle-contactsource">
+        <!-- Creates a bundle containing the contact source interfaces.-->
+        <jar compress="false" destfile="${bundles.dest}/contactsource.jar"
+            manifest="${src}/net/java/sip/communicator/service/contactsource/contactsource.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/contactsource"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/contactsource"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-RECONNECT -->
+    <target name="bundle-plugin-reconnect">
+        <!-- Creates a bundle for the reconnect plugin.-->
+        <jar compress="false" destfile="${bundles.dest}/reconnectplugin.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/reconnectplugin/reconnectplugin.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/reconnectplugin"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/reconnectplugin"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-REPLACEMENT -->
+    <target name="bundle-replacement">
+        <!-- Creates a bundle containing the replacement service.-->
+        <jar compress="false" destfile="${bundles.dest}/replacement.jar"
+            manifest="${src}/net/java/sip/communicator/service/replacement/replacement.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/replacement"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/replacement"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-EMOTICON -->
+    <target name="bundle-emoticon">
+        <jar compress="false" destfile="${bundles.dest}/replacement-emoticon.jar"
+             manifest="${src}/net/java/sip/communicator/impl/replacement/emoticon/emoticon.source.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/replacement/emoticon"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/replacement/emoticon"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-EMOJI -->
+    <target name="bundle-emoji">
+        <jar compress="false" destfile="${bundles.dest}/replacement-emoji.jar"
+             manifest="${src}/net/java/sip/communicator/impl/replacement/emoji/emoji.source.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/replacement/emoji"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/replacement/emoji"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-PROVISIONING -->
+    <target name="bundle-provisioning">
+        <jar compress="false" destfile="${bundles.dest}/provisioning.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/provisioning/provisioning.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/provisioning"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/provisioning" />
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/provisioning"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/provisioning" />
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PLUGIN-ADDRESSBOOK -->
+    <target name="bundle-addressbook">
+        <!-- Creates a bundle which provides support for the OS-specific Address Book. -->
+        <jar compress="false" destfile="${bundles.dest}/addrbook.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/addressbook/addressbook.manifest.mf">
+            <zipfileset src="${lib.noinst}/simple.jar" prefix=""/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/addressbook"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/addressbook" />
+        </jar>
+    </target>
+
+    <target name="bundle-certificate">
+        <jar compress="false" destfile="${bundles.dest}/certificate.jar"
+            manifest="${src}/net/java/sip/communicator/impl/certificate/certificate.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/certificate"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/certificate" />
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/certificate"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/certificate" />
+        </jar>
+    </target>
+
+
+    <target name="bundle-packetlogging">
+        <jar compress="false" destfile="${bundles.dest}/packetlogging.jar"
+            manifest="${src}/net/java/sip/communicator/impl/packetlogging/packetlogging.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/packetlogging"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/packetlogging" />
+            <zipfileset src="${lib.noinst}/commons-collections4.jar" prefix=""/>
+        </jar>
+    </target>
+
+    <target name="bundle-systemactivitynotifications">
+        <jar compress="false" destfile="${bundles.dest}/sysactivitynotifications.jar"
+            manifest="${src}/net/java/sip/communicator/impl/sysactivity/sysactivity.impl.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/sysactivity"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/sysactivity" />
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/sysactivity"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/sysactivity"/>
+        </jar>
+    </target>
+
+    <target name="bundle-globalshortcut">
+        <jar compress="false" destfile="${bundles.dest}/globalshortcut.jar"
+            manifest="${src}/net/java/sip/communicator/impl/globalshortcut/globalshortcut.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/globalshortcut"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/globalshortcut" />
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/globalshortcut"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/globalshortcut"/>
+        </jar>
+    </target>
+
+    <target name="bundle-plugin-msofficecomm">
+        <jar compress="false" destfile="${bundles.dest}/plugin-msofficecomm.jar"
+                manifest="${src}/net/java/sip/communicator/plugin/msofficecomm/msofficecomm.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/msofficecomm"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/msofficecomm" />
+        </jar>
+    </target>
+
+    <target name="bundle-plugin-urlprotocolhandler">
+        <jar compress="false" destfile="${bundles.dest}/plugin-urlprotocolhandler.jar"
+                manifest="${src}/net/java/sip/communicator/plugin/urlprotocolhandler/urlprotocolhandler.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/urlprotocolhandler"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/urlprotocolhandler" />
+        </jar>
+    </target>
+
+    <!-- BUNDLE-CUSTOM-CONTACT-ACTIONS -->
+    <target name="bundle-customcontactactions">
+        <!-- Creates a bundle containing the contact source interfaces.-->
+        <jar compress="false" destfile="${bundles.dest}/customcontactactions.jar"
+            manifest="${src}/net/java/sip/communicator/service/customcontactactions/customcontactactions.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/customcontactactions"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/customcontactactions"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-ADD-CONTACT-SERVICE -->
+    <target name="bundle-managecontact-service">
+        <!-- Creates a bundle containing the contact details interfaces.-->
+        <jar compress="false" destfile="${bundles.dest}/managecontact.jar"
+            manifest="${src}/net/java/sip/communicator/service/managecontact/managecontact.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/managecontact"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/managecontact"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-ANALYTICS-SERVICE -->
+    <target name="bundle-analytics-service">
+        <!-- Creates a bundle containing the analytics interface. -->
+        <jar compress="false" destfile="${bundles.dest}/analyticsservice.jar"
+            manifest="${src}/net/java/sip/communicator/service/analytics/analytics.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/analytics"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/analytics"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-BROWSER-PANEL-SERVICE -->
+    <target name="bundle-browserpanel-service">
+        <!-- Creates a bundle containing the browser panel interface. -->
+        <jar compress="false" destfile="${bundles.dest}/browserpanelservice.jar"
+            manifest="${src}/net/java/sip/communicator/service/browserpanel/browserpanel.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/browserpanel"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/browserpanel"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-DIAGNOSTICS-SERVICE -->
+    <target name="bundle-diagnostics-service">
+        <jar compress="false"
+             destfile="${bundles.dest}/diagnosticsservice.jar"
+             manifest="${src}/net/java/sip/communicator/service/diagnostics/diagnostics.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/diagnostics"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/diagnostics"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-PHONE-NUMBER-UTILS-SERVICE -->
+    <target name="bundle-phonenumberutils-service">
+        <!-- Creates a bundle containing the phone number utils interface. -->
+        <jar compress="false" destfile="${bundles.dest}/phonenumberutilsservice.jar"
+           manifest="${src}/net/java/sip/communicator/service/phonenumberutils/phonenumberutils.manifest.mf">
+         <zipfileset dir="${dest}/net/java/sip/communicator/service/phonenumberutils"
+                     excludes="**/Test*.class"
+                     prefix="net/java/sip/communicator/service/phonenumberutils"/>
+        </jar>
+    </target>
+
+  <!-- BUNDLE-HEADSET-MANAGER-SERVICE -->
+    <target name="bundle-headsetmanager-service">
+        <!-- Creates a bundle for communicating with headsets. -->
+        <jar compress="false" destfile="${bundles.dest}/headsetmanager-service.jar"
+           manifest="${src}/net/java/sip/communicator/service/headsetmanager/headsetmanager.manifest.mf">
+         <zipfileset dir="${dest}/net/java/sip/communicator/service/headsetmanager"
+                     excludes="**/Test*.class"
+                     prefix="net/java/sip/communicator/service/headsetmanager"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-WEBSOCKETSERVER-SERVICE -->
+    <target name="bundle-websocketserver-service">
+        <!-- Creates a bundle exposing a websocket server API -->
+        <jar compress="false" destfile="${bundles.dest}/websocketserverservice.jar"
+             manifest="${src}/net/java/sip/communicator/service/websocketserver/websocket.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/websocketserver"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/websocketserver"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-WISPA-SERVICE -->
+    <target name="bundle-wispaservice">
+        <!-- Creates a bundle exposing the WISPA API -->
+        <jar compress="false" destfile="${bundles.dest}/wispaservice.jar"
+             manifest="${src}/net/java/sip/communicator/service/wispaservice/wispaservice.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/wispaservice"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/wispaservice"/>
+        </jar>
+    </target>
+
+     <!-- BUNDLE-SWING-UTIL -->
+    <target name="bundle-desktoputil">
+        <!-- Creates a bundle containing the swing utility packages.-->
+        <jar compress="false" destfile="${bundles.dest}/desktoputil.jar"
+            manifest="${src}/net/java/sip/communicator/plugin/desktoputil/desktoputil.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/desktoputil"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/plugin/desktoputil">
+                <exclude name="dns/**"/>
+            </zipfileset>
+        </jar>
+    </target>
+
+    <!--BUNDLE-GLOBALDISPLAYDETAILS-->
+    <target name="bundle-globaldisplaydetails">
+        <jar compress="false" destfile="${bundles.dest}/globaldisplaydetails.jar"
+            manifest="${src}/net/java/sip/communicator/impl/globaldisplaydetails/globaldisplaydetails.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/globaldisplaydetails"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/globaldisplaydetails"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/globaldisplaydetails"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/globaldisplaydetails" />
+        </jar>
+    </target>
+
+    <!--BUNDLE-GSON -->
+    <target name="bundle-gson">
+        <jar compress="true" destfile="${bundles.dest}/gson.jar"
+            filesetmanifest="merge">
+
+            <zipfileset src="${lib.noinst}/gson.jar" prefix=""/>
+            <manifest>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-COMMPORTAL_SERVICE -->
+    <target name="bundle-commportal-service">
+        <jar compress="false" destfile="${bundles.dest}/commportal-service.jar">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/commportal"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/commportal"/>
+            <manifest>
+                <attribute name="Export-Package"
+                        value="net.java.sip.communicator.service.commportal"/>
+                <attribute name="Import-Package"
+                        value="net.java.sip.communicator.util,org.json.simple,org.json.simple.parser,org.w3c.dom,net.java.sip.communicator.service.netaddr,net.java.sip.communicator.service.protocol,net.java.sip.communicator.service.protocol.emergencylocation"/>
+                <attribute name="Bundle-Name" value="CommPortal service"/>
+                <attribute name="Bundle-Description" value="Provides access to the CommPortal service"/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-CONFERENCE_SERVICE -->
+    <target name="bundle-conference-service">
+        <jar compress="false" destfile="${bundles.dest}/conference-service.jar">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/conference"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/conference"/>
+            <manifest>
+                <attribute name="Export-Package"
+                           value="net.java.sip.communicator.service.conference"/>
+                <attribute name="Import-Package"
+                           value="net.java.sip.communicator.plugin.desktoputil,net.java.sip.communicator.service.contactlist,net.java.sip.communicator.service.protocol"/>
+                <attribute name="Bundle-Name" value="Conference service"/>
+                <attribute name="Bundle-Description" value="Provides access to the Conference service"/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--BUNDLE-RESET-SERVICE-->
+    <target name="bundle-reset-service">
+        <jar compress="false" destfile="${bundles.dest}/reset-service.jar"
+            manifest="${src}/net/java/sip/communicator/service/reset/reset.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/reset"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/reset"/>
+        </jar>
+    </target>
+
+    <!--BUNDLE-IMAGE-LOADER-->
+    <target name="bundle-image-loader">
+        <jar compress="false" destfile="${bundles.dest}/imageloader.jar"
+            manifest="${src}/net/java/sip/communicator/service/imageloader/imageloader.manifest.mf">
+
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/imageloader"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/imageloader"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/imageloader"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/imageloader" />
+        </jar>
+    </target>
+
+    <!-- BUNDLE-THREADING-SERVICE -->
+    <target name="bundle-threading-service">
+        <jar compress="false" destfile="${bundles.dest}/threadingservice.jar" >
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/threading"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/threading"/>
+            <manifest>
+                <attribute name="Export-Package" value="net.java.sip.communicator.service.threading"/>
+                <attribute name="Bundle-Name" value="Threading service"/>
+                <attribute name="Bundle-Description" value="Provides access to the Threading Service"/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-HSQL (HyperSQL database).
+         This takes the hsqldb.jar from the download from http://hsqldb.org
+         and wraps it, exporting only what the DatabaseService needs. -->
+    <target name="bundle-hsql">
+        <copy file="${lib.noinst}/hsqldb.jar" tofile="${bundles.dest}/hsqldb.jar"/>
+        <jar compress="true" destfile="${bundles.dest}/hsqldb.jar" filesetmanifest="merge">
+            <zipfileset src="${lib.noinst}/hsqldb.jar" prefix=""/>
+            <manifest>
+                <attribute name="Import-Package" value="javax.naming,javax.sql"/>
+                <attribute name="Export-Package"
+                    value="org.hsqldb,
+                           org.hsqldb.jdbc,
+                           org.hsqldb.jdbc.JDBCDriver"/>
+                <attribute name="Bundle-Name"
+                    value="HSQLDB"/>
+                <attribute name="Bundle-Description"
+                    value="HyperSQL Lightweight 100% Java SQL Database Engine"/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-DATABASE -->
+    <target name="bundle-database">
+        <jar compress="false" destfile="${bundles.dest}/database.jar"
+            manifest="${src}/net/java/sip/communicator/impl/database/database.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/database"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/database"/>
+            <zipfileset dir="${dest}/net/java/sip/communicator/impl/database"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/impl/database"/>
+        </jar>
+    </target>
+</project>

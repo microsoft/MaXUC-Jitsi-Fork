@@ -1,0 +1,10 @@
+Bundle-Name: Diagnostics Service 
+Bundle-Description: Diagnostics Service.
+Bundle-Vendor: metaswitch.com
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: org.osgi.framework,
+ net.java.sip.communicator.util,
+ org.jitsi.service.resources
+Export-Package: 
+ net.java.sip.communicator.service.diagnostics

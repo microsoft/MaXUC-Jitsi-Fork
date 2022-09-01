@@ -1,0 +1,13 @@
+Bundle-Activator: net.java.sip.communicator.plugin.urlprotocolhandler.UrlProtocolHandlerActivator
+Bundle-Description: Microsoft Office Communicator
+Bundle-Name: Microsoft Office Communicator
+Bundle-Vendor: jitsi.org
+Bundle-Version: 0.0.1
+Bundle-SymbolicName: net.java.sip.communicator.plugin.urlprotocolhandler
+Import-Package: javax.swing,
+ com.sun.jna.platform.win32,
+ net.java.sip.communicator.util,
+ org.jitsi.service.configuration,
+ org.jitsi.service.resources,
+ org.jitsi.util,
+ org.osgi.framework

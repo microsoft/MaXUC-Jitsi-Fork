@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1252" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="it-it"
+    Language="1040">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Impostazioni</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Quali altre operazioni devono essere svolte?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Altre Operazioni</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">Installazione [ProductName]</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Quali altre operazioni devono essere svolte?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Altre Operazioni</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Crea collegamenti</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Menu di Avvio</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">e crea una scorciatoia del desktop</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Ulteriori Azioni</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Lanciare @@PRODUCT_NAME_TITLECASE@@ all avvio</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Protocolli associati</String>
+
+  <String Id="WelcomeText1" Overridable="yes">Questo software è sviluppato da: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">La home page è all'indirizzo: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Sviluppato con jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Setup non è supportata da questa versione di Windows. Si richiede minimo Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Lancia @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

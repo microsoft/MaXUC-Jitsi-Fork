@@ -1,0 +1,26 @@
+#include <windows.h>
+#include "../ProductName.h"
+
+1 VERSIONINFO
+    FILEVERSION    0,2,0,3
+    FILETYPE VFT_APP
+    PRODUCTVERSION 0,2,0,3
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "Comments", ""
+            VALUE "FileDescription", "Outlook contacts server"
+            VALUE "FileVersion", "0"
+            VALUE "InternalName", PRODUCT_NAME "OutlookServer32.exe"
+            VALUE "OriginalFilename", PRODUCT_NAME "OutlookServer32.exe"
+            VALUE "ProductName", PRODUCT_NAME
+            VALUE "ProductVersion", "0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1252
+    END
+END

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1252" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="fr-fr"
+    Language="1036">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">Installation de @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Quelles options souhaitez-vous ajouter ?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Options supplémentaires</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Installation</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Quelles options souhaitez-vous ajouter ?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Options supplémentaires</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Créer des Raccourcis</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">Créer un raccourci dans le Menu "Démarrer"</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Créer un raccourci sur le bureau</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">D'autres actions</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Lancer @@PRODUCT_NAME_TITLECASE@@ lors du démarrage</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Protocoles associés</String>
+
+  <String Id="WelcomeText1" Overridable="yes">Ce logiciel est developpé par @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">La page d'accueil est à: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Fourni par jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ n'est pas pris en charge par cette version de Windows. Il faut au moins Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Lancer @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

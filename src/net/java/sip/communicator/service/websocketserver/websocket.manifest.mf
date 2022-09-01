@@ -1,0 +1,17 @@
+Bundle-Name: Websocket Server Service
+Bundle-Description: Websocket Server Service.
+Bundle-Vendor: metaswitch.com
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: org.osgi.framework,
+ org.json.simple,
+ net.java.sip.communicator.util,
+ net.java.sip.communicator.service.protocol,
+ javax.net.ssl,
+ org.java_websocket,
+ org.java_websocket.framing,
+ org.java_websocket.handshake,
+ org.java_websocket.server,
+ org.jitsi.util,
+ org.json
+Export-Package: net.java.sip.communicator.service.websocketserver

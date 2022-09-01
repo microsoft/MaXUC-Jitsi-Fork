@@ -1,1 +1,11 @@
-TODO: Create a file called LICENSE (not LICENSE.TXT, LICENSE.md, etc.)…
+# jitsi
+
+# Requirements
+- Java 11
+
+# How to build
+See [building.md](docs/building.md)
+
+# License
+The license can be found in [LICENSE](LICENSE)
+See the [NOTICE](NOTICE) file for required notices and attributions.

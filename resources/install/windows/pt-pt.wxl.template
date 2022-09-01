@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1252" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="pt-pt"
+    Language="2070">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">Configuração da @@PRODUCT_NAME_TITLECASE@@.</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Quais as tarefas adicionais que devem ser feitas?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Tarefas Adicionais</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">Instalação da [ProductName]</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Quais as tarefas adicionais que devem ser feitas?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Tarefas Adicionais</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Criar Atalhos</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">Menu &amp;Iniciar</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Criar Atalho Desktop</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Outras Ações</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Iniciar @@PRODUCT_NAME_TITLECASE@@ no startup</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Associar Protocolos</String>
+
+  <String Id="WelcomeText1" Overridable="yes">Este software é desenvolvido por: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">A página inicial está em: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Desenvolvido por jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ não é suportado nesta versão do Windows. Requer pelo menos o Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Iniciar @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

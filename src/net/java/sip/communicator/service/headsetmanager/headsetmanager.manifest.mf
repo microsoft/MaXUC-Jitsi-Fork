@@ -1,0 +1,8 @@
+Bundle-Name: Headset Manager Service
+Bundle-Description: Headset Manager Service
+Bundle-Vendor: metaswitch.com
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: org.osgi.framework,
+ net.java.sip.communicator.util
+Export-Package: net.java.sip.communicator.service.headsetmanager

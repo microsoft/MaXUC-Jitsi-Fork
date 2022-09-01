@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="BIG5" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="zh-tw"
+    Language="1028">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ 安裝</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">哪一個附加的任務應被完成？</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}附加任務</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] 設定</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">哪一個附加的任務應被完成？</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}附加任務</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">建立捷徑</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">開&amp;機執行</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;創建桌面快捷鍵</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">其他</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;開啟時，自動執行 @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp; 關聯協議</String>
+
+  <String Id="WelcomeText1" Overridable="yes">本軟體由 @@COMPANY_NAME_LEGAL@@ 開發</String>
+  <String Id="WelcomeText2" Overridable="yes">首頁網址：@@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}是由jitsi.org 提供動力的</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ 不能在此Windows版本運行。 最低的運行版本為Windows 7。</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">執行@@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

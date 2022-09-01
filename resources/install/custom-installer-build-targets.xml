@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+    This file defines default ant targets that are used to build the installers. They can be replaced by custom
+    implementations.
+-->
+<project name="jitsi-installer-custom-targets" basedir="." default="ant-usage">
+    <target name="set-meeting-properties" />
+
+    <target name="windows-meeting" />
+
+    <target name="macosx-meeting" />
+
+    <target name="wix-template-replace" />
+
+    <target name="define-custom-cfbundleurltypes">
+        <property name="cfbundleurltypes.custom" value=""/>
+    </target>
+
+    <target name="windows-electron" />
+
+    <target name="mac-electron" />
+
+    <!-- Notarize the dmg -->
+    <target name="macosx-notarize-app" />
+</project>

@@ -1,0 +1,21 @@
+Bundle-Activator: net.java.sip.communicator.impl.database.DatabaseActivator
+Bundle-Name: Database Service Provider
+Bundle-Description: A bundle that implements the database service.
+Bundle-Vendor: Metaswitch
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: javax.xml.parsers,
+ net.java.sip.communicator.service.diagnostics,
+ net.java.sip.communicator.util,
+ org.jitsi.util,
+ org.jitsi.service.fileaccess,
+ org.hsqldb,
+ org.hsqldb.jdbc,
+ org.hsqldb.jdbc.JDBCDriver,
+ org.osgi.framework,
+ org.w3c.dom
+Export-Package: net.java.sip.communicator.service.database,
+ net.java.sip.communicator.impl.database.migration,
+ net.java.sip.communicator.service.database.schema,
+ net.java.sip.communicator.service.database.schemautil,
+ net.java.sip.communicator.service.database.util

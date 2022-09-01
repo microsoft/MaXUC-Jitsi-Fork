@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1250" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="sl-si"
+    Language="1060">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Nastavitev</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Katere dodatne naloge naj bodo še opravljene?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Dodatne naloge</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Nastavitev</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Katere dodatne naloge naj bodo še opravljene?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Dodatne naloge</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Ustvarite bližnjice</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Začetni Meni</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Ustvari bližnjico na namizju</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Ostala dejanja</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Zaženi @@PRODUCT_NAME_TITLECASE@@ na začetnih nastavitvah</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Pridruženi Protokoli</String>
+
+  <String Id="WelcomeText1" Overridable="yes">To programsko opremo je razvil: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">Domača spletna stran je na: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText} Poganja jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ ni podprt v tej različici sistema Windows. Zahteva vsaj Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Zaženi @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

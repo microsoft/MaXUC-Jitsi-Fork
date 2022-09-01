@@ -1,0 +1,40 @@
+/*
+ * Jitsi, the OpenSource Java VoIP and Instant Messaging client.
+ *
+ * Distributable under LGPL license.
+ * See terms of license at gnu.org.
+ */
+
+#include "cleansweep.h"
+
+#ifndef RT_MANIFEST
+#define RT_MANIFEST 24
+#endif /* #ifndef RT_MANIFEST */
+1 RT_MANIFEST "asInvoker.exe.manifest"
+
+SCLogoIcon ICON sc-logo.ico
+
+1 VERSIONINFO
+    FILEVERSION 0,0,0,0
+    FILETYPE VFT_APP
+    PRODUCTVERSION 0,0,0,0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "Comments", ""
+            VALUE "CompanyName", "jitsi.org"
+            VALUE "FileDescription", PRODUCTNAME " Setup Clean Sweep"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "cleansweep"
+            VALUE "OriginalFilename", "cleansweep.exe"
+            VALUE "ProductName", PRODUCTNAME
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1252
+    END
+END

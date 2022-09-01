@@ -1,0 +1,6 @@
+Bundle-Name: WISPA (Websocket Interface Simplification Plugin API) Sender Service
+Bundle-Description: For sending unprompted notify messages to the WISPA bundle
+Bundle-Vendor: Metaswitch
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Export-Package: net.java.sip.communicator.service.wispaservice

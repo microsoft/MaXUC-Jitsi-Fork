@@ -1,0 +1,6 @@
+Bundle-Name: Phone Number Utils service
+Bundle-Description: A service for validating and manipulating phone numbers
+Bundle-Vendor: jitsi.org
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Export-Package: net.java.sip.communicator.service.phonenumberutils

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="windows-1253" ?>
+<WixLocalization
+    xmlns="http://schemas.microsoft.com/wix/2006/localization"
+    Culture="el-gr"
+    Language="1032">
+
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Εγκατάσταση</String>
+  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Ποιά πρόσθετα καθήκοντα θα έπρεπε να ολοκληρωθούν;</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title} Πρόσθετα Καθήκοντα</String>
+
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Ρύθμιση</String>
+  <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Ποιά πρόσθετα καθήκοντα θα έπρεπε να ολοκληρωθούν;</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title} Πρόσθετα Καθήκοντα</String>
+
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Δημιουργία Συντομεύσεων</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">Α&amp;ρχικό Μενού</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Δημιουργία Συντόμευσης στην Επιφάνεια Εργασίας</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Άλλες Επιλογές</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Εκκινήστε το @@PRODUCT_NAME_TITLECASE@@ κατά την εκκίνηση των Windows</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Σχετικά Πρωτόκολλα</String>
+
+  <String Id="WelcomeText1" Overridable="yes">Αυτό το λογισμικό αναπτύχθηκε απο: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">Η αρχική σελίδα βρίσκεται στο: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Υποστηρίζεται από jitsi.org</String>
+
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ δεν υποστηρίζεται σε αυτήν την έκδοση των Windows. Απαιτεί τουλάχιστον Windows 7.</String>
+
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Εκκίνηση @@PRODUCT_NAME_TITLECASE@@</String>
+</WixLocalization>

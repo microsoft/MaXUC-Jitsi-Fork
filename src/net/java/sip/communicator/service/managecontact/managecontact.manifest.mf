@@ -1,0 +1,6 @@
+Bundle-Name: Manage Contact service
+Bundle-Description: A service for creating and using Contact windows
+Bundle-Vendor: jitsi.org
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Export-Package: net.java.sip.communicator.service.managecontact
