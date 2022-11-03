@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import net.java.sip.communicator.util.Logger;
 import org.jitsi.util.Hasher;
+
 import org.jivesoftware.smackx.debugger.xmpp.XmppDebugger;
 
 /**
@@ -25,30 +26,28 @@ public class SmackXmppLogger implements XmppDebugger.Logger
     private static final Pattern ACTIVATE_PATTERN = Pattern.compile("<activate>(.+)</activate>");
     private static final Pattern SUBJECT_PATTERN = Pattern.compile("<subject>(.+)</subject>");
     private static final Pattern STATUS_PATTERN = Pattern.compile("<status>(.+)</status>");
-    private static final String SUPPRESSED_MESSAGE = "*** details suppressed ***";
 
     @Override
-    public void log(String logString)
+    public void log(String str)
     {
-        String str = logString;
 
         // filter iq, presence, message logs
         if (ELEMENTS_TO_FILTER.stream().anyMatch(str::contains))
         {
             // example - peer id contained in "from", "to", "jid", "name" attributes
-            str = getRedactedString(str, ATTR_PATTERN, SmackXmppLogger::sanitisePeerId);
+            str = getRedactedString(str, ATTR_PATTERN, SmackXmppLogger::sanitiseJid);
 
             // example - <jid>12345678@domain.com/jitsi-abcd123</jid>
-            str = getRedactedString(str, JID_PATTERN, SmackXmppLogger::sanitisePeerId);
+            str = getRedactedString(str, JID_PATTERN, SmackXmppLogger::sanitiseJid);
 
             // example - <activate>12345678@domain.com/jitsi-abcd123</activate>
-            str = getRedactedString(str, ACTIVATE_PATTERN, SmackXmppLogger::sanitisePeerId);
+            str = getRedactedString(str, ACTIVATE_PATTERN, SmackXmppLogger::sanitiseJid);
 
             // example - <subject>abcdefg 12345</subject>
             str = getRedactedString(str, SUBJECT_PATTERN, Hasher::logHasher);
 
             // example - <status>Status - Custom Message</status>
-            str = getRedactedString(str, STATUS_PATTERN, s -> SUPPRESSED_MESSAGE);
+            str = getRedactedString(str, STATUS_PATTERN, Hasher::logHasher);
         }
 
         sWrappedLogger.info(str);
@@ -90,21 +89,38 @@ public class SmackXmppLogger implements XmppDebugger.Logger
     }
 
     /**
+     * Overload of sanitisePeerId where we don't hash the last component.
+     */
+    public static String sanitisePeerId(final Object value)
+    {
+        return sanitisePeerId(value, true);
+    }
+
+    /**
      * Returns a hashed String if the string value is one of the following formats:
      *      * 123456@domain
      *      * chatroom-123abc@domain
      *      * chatroom-123abc@domain/123456
      *      * chatroom-123abc
-     * @param stringValue value to be sanitised
+     * @param value value to be sanitised
+     * @param hashLastComponent - If there are multiple components (split by "/") should we hash the
+     * last one?  For XMPP JIDs we don't want to, in general, because the resource doesn't contain PII.
      * @return the Personal Data hashed string
      */
-    public static String sanitisePeerId(String stringValue)
+    public static String sanitisePeerId(final Object value, boolean hashLastComponent)
     {
-        if (stringValue != null)
+        if (value != null)
         {
             // PeerId can have 1-3 components divided by /, hash each component separately
-            final String[] components = stringValue.split("/");
-            for (int i=0; i<components.length; i++)
+            final String[] components = value.toString().split("/");
+            int numComponentsToHash = components.length;
+            if (!hashLastComponent)
+            {
+                numComponentsToHash = Math.max(components.length - 1, 1);
+            }
+
+            for (int i = 0; i < numComponentsToHash; i++)
+
             {
                 if (components[i].contains("@"))
                 {
@@ -120,5 +136,15 @@ public class SmackXmppLogger implements XmppDebugger.Logger
         }
 
         return null;
+    }
+
+    /**
+     * We don't need to hash the resource, because it consists of user-agent and then random string.
+     * @param jid
+     * @return Jid with relevant information hashed
+     */
+    private static String sanitiseJid(String jid)
+    {
+        return sanitisePeerId(jid, false);
     }
 }

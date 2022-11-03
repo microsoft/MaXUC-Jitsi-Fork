@@ -22,6 +22,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.bouncycastle.asn1.DERSequence;
@@ -29,11 +30,11 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -305,8 +306,8 @@ public class WISPACertificateInfo
     {
         // Set the certificate to expire a long time in the future (100 years).
         Instant now = Instant.now();
-        Date notBefore = Date.from(now);
-        Date notAfter = Date.from(now.plus(Duration.ofDays(36500)));
+        Date notBeforeDate = Date.from(now);
+        Date notAfterDate = Date.from(now.plus(Duration.ofDays(36500)));
         BigInteger serial = BigInteger.valueOf(now.toEpochMilli());
 
         // Self-signed certificate, so subject is the same as the issuer.
@@ -315,9 +316,18 @@ public class WISPACertificateInfo
         PublicKey publicKey = keyPair.getPublic();
         PrivateKey privateKey = keyPair.getPrivate();
 
+        // The default Calendar in some locales (e.g. Thai's Buddhist lunar Calendar) will view
+        // these Date objects as after the year 2050. That will cause the X509v3CertificateBuilder
+        // to convert them to ASN1GeneralizedTime objects (see org.bouncycastle.asn1.x509.Time's
+        // constructor), and will thus result in creating certificates with validFrom/To dates 'in
+        // the future according to the Gregorian calendar'. We should expect anyone viewing these
+        // certificates to interpret them using the Gregorian calendar, so should write dates using
+        // it. We can achieve that by specifying the English locale.
+        logger.info("Create certificate for " + commonName + " from " + notBeforeDate + " to " + notAfterDate);
+
         // Set up a minimum of required fields for the certificate,
-        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                issuer, serial, notBefore, notAfter, subject, publicKey);
+        X509v3CertificateBuilder certBuilder = new X509v3CertificateBuilder(
+                issuer, serial, notBeforeDate, notAfterDate, Locale.ENGLISH, subject, SubjectPublicKeyInfo.getInstance(publicKey.getEncoded()));
         JcaX509ExtensionUtils extensionUtils = new JcaX509ExtensionUtils();
         certBuilder.addExtension(Extension.subjectKeyIdentifier,
                                  false,
@@ -384,7 +394,14 @@ public class WISPACertificateInfo
 
         // Write the key store to disk.
         FileOutputStream stream = new FileOutputStream(keyStoreName);
-        keyStore.store(stream, pwdArray);
+        try
+        {
+            keyStore.store(stream, pwdArray);
+        }
+        finally
+        {
+            stream.close();
+        }
     }
 
     private void writePEMToFile(Object pemObj, String filename) throws IOException

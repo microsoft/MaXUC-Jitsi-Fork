@@ -114,7 +114,7 @@ public class ProvisioningServiceImpl
     /**
      * Name of the CDAP service provider ID in the configuration service.
      */
-    private static final String PROPERTY_CDAP_SP_ID
+    static final String PROPERTY_CDAP_SP_ID
         = "net.java.sip.communicator.plugin.cdap.service_provider_id";
 
     /**
@@ -126,7 +126,7 @@ public class ProvisioningServiceImpl
     /**
      * Name of the active user being used by configuration.
      */
-    private static final String PROPERTY_ACTIVE_USER =
+    static final String PROPERTY_ACTIVE_USER =
             "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER";
 
     /**
@@ -146,7 +146,7 @@ public class ProvisioningServiceImpl
      * Name of the encrypted provisioning password in the configuration
      * service.
      */
-    private static final String PROPERTY_PROVISIONING_ENCRYPTED_PASSWORD
+    static final String PROPERTY_PROVISIONING_ENCRYPTED_PASSWORD
         = "net.java.sip.communicator.plugin.provisioning.auth.ENCRYPTED_PASSWORD";
 
     /**
@@ -890,7 +890,7 @@ public class ProvisioningServiceImpl
             int usernameIx = -1;
             int passwordIx = -1;
 
-            if(args != null && args.length > 0)
+            if (args != null && args.length > 0)
             {
                 paramNames = new ArrayList<>(args.length);
                 paramValues = new ArrayList<>(args.length);
@@ -2076,6 +2076,7 @@ public class ProvisioningServiceImpl
     {
         logger.info("Removing username from config");
         mConfig.global().removeProperty(PROPERTY_PROVISIONING_USERNAME);
+        mConfig.global().removeProperty(PROPERTY_ACTIVE_USER);
 
         // If we're forgetting the credentials then we should forget the ones
         // we may have just received on a login URI, if we didn't clear them

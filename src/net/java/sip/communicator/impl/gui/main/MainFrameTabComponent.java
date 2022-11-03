@@ -537,6 +537,14 @@ public class MainFrameTabComponent extends JPanel
                          int messageWaitingNotifications)
     {
         sLog.debug("Received UI notification");
+        // There's a window at startup where we could come in here before we've even finished our
+        // constructor, and we'll hit exceptions if we try to update the UI.
+        if (GuiActivator.getUIService().getMainFrame() == null)
+        {
+            sLog.warn("Can't update UI before finished creating " + this);
+            return;
+        }
+
         synchronized (mNotificationsLock)
         {
             mCallsNotificationCount = callNotifications;

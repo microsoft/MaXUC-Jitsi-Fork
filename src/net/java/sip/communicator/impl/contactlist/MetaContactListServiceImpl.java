@@ -15,6 +15,8 @@ import org.jitsi.service.resources.*;
 import org.jitsi.util.xml.*;
 import org.osgi.framework.*;
 
+import com.drew.lang.annotations.NotNull;
+
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactlist.event.*;
 import net.java.sip.communicator.service.diagnostics.*;
@@ -214,6 +216,12 @@ public class MetaContactListServiceImpl
             {
                 ProtocolProviderService provider
                     = (ProtocolProviderService) bc.getService(providerRef);
+
+                if (provider == null)
+                {
+                    logger.warn("Provider with reference " + providerRef + " has already been unregistered.");
+                    continue;
+                }
 
                 this.handleProviderAdded(provider);
             }
@@ -2068,8 +2076,7 @@ public class MetaContactListServiceImpl
      *
      * @param provider the ProtocolProviderService that we've just detected.
      */
-    private synchronized void handleProviderAdded(
-                        ProtocolProviderService provider)
+    private synchronized void handleProviderAdded(@NotNull ProtocolProviderService provider)
     {
         logger.info("Adding protocol provider "
                     + provider.getAccountID().getAccountUniqueID());

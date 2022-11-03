@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="windows-1250" ?>
 <WixLocalization
     xmlns="http://schemas.microsoft.com/wix/2006/localization"
     Culture="sk-sk"
@@ -6,26 +6,26 @@
 
   <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Nastavenie</String>
   <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="CleanSweepDlgDescription" Overridable="yes">Ak√© ƒèal≈°ie √∫lohy by sa mali vykona≈•?</String>
-  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}ƒéal≈°ie √∫lohy</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">AkÈ Ôalöie ˙lohy by sa mali vykonaù?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}œalöie ˙lohy</String>
 
   <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Nastavenie</String>
   <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Ak√© ƒèal≈°ie √∫lohy by sa mali vykona≈•?</String>
-  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}ƒéal≈°ie √∫lohy</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">AkÈ Ôalöie ˙lohy by sa mali vykonaù?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}œalöie ˙lohy</String>
 
   <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Vytvorte skratky</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Ponuka ≈†tart</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Vytvori≈• skratku na pracovnej ploche</String>
-  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">In√© akcie</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Pri spusten√≠ spustite @@PRODUCT_NAME_TITLECASE@@</String>
-  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Pridru≈æen√© protokoly</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Ponuka ätart</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Vytvoriù skratku na pracovnej ploche</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">InÈ akcie</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Pri spustenÌ spustite @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;PridruûenÈ protokoly</String>
 
-  <String Id="WelcomeText1" Overridable="yes">Tento softv√©r vyvinula: @@COMPANY_NAME_LEGAL@@</String>
-  <String Id="WelcomeText2" Overridable="yes">Domovsk√° str√°nka je na adrese: @@WEB_PAGE@@</String>
-  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Pou≈æ√≠va jitsi.org</String>
+  <String Id="WelcomeText1" Overridable="yes">Tento softvÈr vyvinula: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">Domovsk· str·nka je na adrese: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}PouûÌva jitsi.org</String>
 
-  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ nie je v tejto verzii syst√©mu Windows podporovan√Ω. Vy≈æaduje si to aspo≈à Windows 7.</String>
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ nie je v tejto verzii systÈmu Windows podporovan˝. Vyûaduje si to aspoÚ Windows 7.</String>
 
-  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Spusti≈• @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Spustiù @@PRODUCT_NAME_TITLECASE@@</String>
 </WixLocalization>

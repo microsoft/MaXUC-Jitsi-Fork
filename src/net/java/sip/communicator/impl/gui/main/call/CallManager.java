@@ -1717,7 +1717,8 @@ public class CallManager
      * as a <tt>Contact</tt> instance or a <tt>String</tt> contact
      * address/identifier.
      */
-    private static class CreateCallThread
+    @VisibleForTesting
+    static class CreateCallThread
         extends Thread
     {
         private static final Pattern PHONE_NUMBER_VALIDATER =
@@ -1777,7 +1778,8 @@ public class CallManager
          * @param reformatNeeded whether the number needs to be reformatted
          *        as E164 or with the ELC
          */
-        private CreateCallThread(
+         @VisibleForTesting
+         CreateCallThread(
                 ProtocolProviderService protocolProvider,
                 Contact contact,
                 ContactResource contactResource,
@@ -1948,7 +1950,8 @@ public class CallManager
                                      stringContact,
                                      displayName,
                                      contactResource,
-                                     emergencyCallContext);
+                                     emergencyCallContext,
+                                     reformatting);
 
                     callSetupActions(call);
 
@@ -2069,7 +2072,8 @@ public class CallManager
                                              stringContact,
                                              displayName,
                                              contactResource,
-                                             null);
+                                             null,
+                                             reformatting);
                             callSetupActions(call);
 
                             // The equivalent Mobile analytic includes the SIP
@@ -2200,7 +2204,8 @@ public class CallManager
                              String stringContact,
                              String displayName,
                              ContactResource contactResource,
-                             EmergencyCallContext emergency)
+                             EmergencyCallContext emergency,
+                             Reformatting reformatting)
         throws  OperationFailedException,
                 ParseException
     {
@@ -2218,13 +2223,19 @@ public class CallManager
         // saved contacts. The existing code does not currently handle ELCs that
         // start with a hash "#" or an asterisk "*".
         //
-        // What this now means is that we should attempt to reformat *every* number
-        // that we pass to the caller, whether from a contact or not (i.e. E.164, ELCs etc.)
-        if (contact != null)
+        // A check needs to be made whether the number needs to be formatted
+        // as phone numbers dialed through the keypad should be dialed as is.
+        // This covers a special case with Italian numbers where fixed lines
+        // can have variable lengths and this might coincide with a mobile
+        // number with ELC of 0.
+        if (reformatting == Reformatting.NEEDED)
         {
-            stringContact = contact.getAddress();
+            if (contact != null)
+            {
+                stringContact = contact.getAddress();
+            }
+            stringContact = phoneNumberUtils.formatNumberForDialing(stringContact);
         }
-        stringContact = phoneNumberUtils.formatNumberForDialing(stringContact);
 
         if (resourceTelephony != null && contactResource != null)
         {
