@@ -819,21 +819,6 @@ public class ChatRoomJabberImpl implements ChatRoom
     }
 
     /**
-     * Joins this chat room so that the user would start receiving events and
-     * messages for it.
-     *
-     * @param password the password to use when authenticating on the
-     *   chatroom.
-     * @throws OperationFailedException with the corresponding code if an
-     *   error occurs while joining the room.
-     */
-    public void join(byte[] password)
-        throws OperationFailedException
-    {
-        joinAs(provider.getOurJid().toString(), password, null);
-    }
-
-    /**
      * Joins this chat room with the nickname of the local user so that the
      * user would start receiving events and messages for it.
      *

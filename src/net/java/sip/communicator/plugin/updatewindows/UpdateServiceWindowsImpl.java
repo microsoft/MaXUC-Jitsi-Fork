@@ -235,7 +235,7 @@ public class UpdateServiceWindowsImpl
 
                         new ErrorDialog(null, title, message).setVisible(true);
                     }
-                }
+                    }
                 finally
                 {
                     exitCheckForUpdates(null);
@@ -488,12 +488,12 @@ public class UpdateServiceWindowsImpl
                         }
                     });
                 }
-            }
+                            }
             else
-            {
+                            {
                 throw new Exception("No HTTP result found for url " + url);
-            }
-        }
+                            }
+                        }
         finally
         {
             try
@@ -977,21 +977,26 @@ public class UpdateServiceWindowsImpl
                 // confirm they are happy to proceed.  That is unless we have
                 // been asked to force upgrade, in which case we simply shut
                 // down, as the user has no choice.
-                boolean startUpgradeConfirmed = forceUpdate;
-                if (!startUpgradeConfirmed)
+                boolean[] startUpgradeConfirmed = new boolean[]{forceUpdate};
+                if (!startUpgradeConfirmed[0])
                 {
-                    startUpgradeConfirmed = UpdateWindowsActivator.getUIService()
-                        .getPopupDialog().showConfirmPopupDialog(
-                                resources.getI18NString(
-                                        "plugin.updatechecker.DIALOG_WARN"),
-                                resources.getI18NString(
-                                        "plugin.updatechecker.DIALOG_TITLE"),
-                                PopupDialog.YES_NO_OPTION,
-                                PopupDialog.QUESTION_MESSAGE)
-                        == PopupDialog.YES_OPTION;
+                    SwingUtilities.invokeAndWait(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            startUpgradeConfirmed[0] =
+                                UpdateWindowsActivator.getUIService().getPopupDialog().showConfirmPopupDialog(
+                                        resources.getI18NString("plugin.updatechecker.DIALOG_WARN"),
+                                        resources.getI18NString("plugin.updatechecker.DIALOG_TITLE"),
+                                        PopupDialog.YES_NO_OPTION,
+                                        PopupDialog.QUESTION_MESSAGE)
+                                == PopupDialog.YES_OPTION;
+                        }
+                    });
                 }
 
-                if(startUpgradeConfirmed)
+                if (startUpgradeConfirmed[0])
                 {
                     // Now build a command to execute the installer in a new process
                     // The command is built-up for the exe wrapping the msi installer,

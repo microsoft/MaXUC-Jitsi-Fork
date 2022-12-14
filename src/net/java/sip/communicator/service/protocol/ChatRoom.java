@@ -59,18 +59,6 @@ public interface ChatRoom extends CreateConferenceMenuContainer
         throws OperationFailedException;
 
     /**
-     * Joins this chat room so that the user would start receiving events and
-     * messages for it. The method uses the nickname of the local user and the
-     * specified password in order to enter the chatroom.
-     *
-     * @param password the password to use when authenticating on the chatroom.
-     * @throws OperationFailedException with the corresponding code if an error
-     * occurs while joining the room.
-     */
-    void join(byte[] password)
-        throws OperationFailedException;
-
-    /**
      * Joins this chat room with the specified nickname so that the user would
      * start receiving events and messages for it. If the chatroom already
      * contains a user with this nickname, the method would throw an

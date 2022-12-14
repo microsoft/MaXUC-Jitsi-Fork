@@ -1728,47 +1728,26 @@ public abstract class OperationSetPresenceSipImpl
     /**
      * Factory method for creating OperationSetPresenceSipImpl classes based
      * on presence type.
-     * @param presenceType the type of SIP presence being used e.g. SIMPLE or
-     * dialog
      * @param provider the ProtocolProviderServiceSipImpl instance that
      * created us.
      * @param presenceEnabled if we are activated or if we don't have to
      * handle the presence informations for contacts
-     * @param forceP2PMode if we should start in the p2p mode directly
      * @param pollingPeriod the period between two poll for offline contacts
      * @param subscriptionExpiration the default subscription expiration value
      * to use
      * @return an operation set for the type of SIP presence being used.
      */
     public static OperationSetPersistentPresence createOperationSetPresenceSipImpl(
-        SipPresenceTypeEnum presenceType,
         ProtocolProviderServiceSipImpl provider,
         boolean presenceEnabled,
-        boolean forceP2PMode,
         int pollingPeriod,
         int subscriptionExpiration)
     {
-        OperationSetPersistentPresence opSetPersPresence;
-
-        if (SipPresenceTypeEnum.DIALOG.equals(presenceType))
-        {
-            opSetPersPresence = new OperationSetPresenceSipDialogImpl(
-                provider,
-                presenceEnabled,
-                pollingPeriod,
-                subscriptionExpiration);
-        }
-        else
-        {
-            opSetPersPresence = new OperationSetPresenceSipSimpleImpl(
-                provider,
-                presenceEnabled,
-                forceP2PMode,
-                pollingPeriod,
-                subscriptionExpiration);
-        }
-
-        return opSetPersPresence;
+        return new OperationSetPresenceSipDialogImpl(
+            provider,
+            presenceEnabled,
+            pollingPeriod,
+            subscriptionExpiration);
     }
 
     /**

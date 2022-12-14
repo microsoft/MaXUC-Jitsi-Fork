@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.threading;
 
+import java.util.Date;
 import java.util.concurrent.*;
 
 /**
@@ -57,6 +58,11 @@ public interface ThreadingService
      * @param delay delay in milliseconds before task is to be executed.
      */
     void schedule(String name, CancellableRunnable runnable, long delay);
+
+    default void schedule(String name, CancellableRunnable runnable, Date date)
+    {
+        schedule(name, runnable, date.getTime() - System.currentTimeMillis());
+    }
 
     /**
      * Similar to schedule, this schedules the specified runnable for execution

@@ -1271,7 +1271,6 @@ public class ProvisioningServiceImpl
 
         // Turn on SIP Presence
         configFromServer = configFromServer.replace("IS_PRESENCE_ENABLED=false", "IS_PRESENCE_ENABLED=true");
-        configFromServer = configFromServer.concat(sipAccConfig + ".PRESENCE_TYPE=dialog\n");
 
         // Turn on BGContacts if need be.  Unfortunately, the PPS
         // doesn't pass us the info required to create the BG

@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.diagnostics;
 
+import java.util.Set;
+
 /**
  * A service which exposes various different diagnostic abilities to the rest
  * of the application
@@ -85,4 +87,9 @@ public interface DiagnosticsService
      * @return The list of user-suppressed errors
      */
     String getUserSuppressedErrors();
+
+    /**
+     * @return a set of all the registered state dumpers
+     */
+    Set<StateDumper> getDumpers();
 }

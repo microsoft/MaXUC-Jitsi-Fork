@@ -250,23 +250,11 @@ public abstract class ProtocolProviderFactory
     public static final String IS_PRESENCE_ENABLED = "IS_PRESENCE_ENABLED";
 
     /**
-     * The name of the property under which we store the type of presence
-     * mode.
-     */
-    public static final String PRESENCE_TYPE = "PRESENCE_TYPE";
-
-    /**
      * The name of the property under which we store if registration state can
      * be used to set the global status.
      */
     public static final String IS_REGISTRATION_STATUS_ENABLED =
         "IS_REGISTRATION_STATUS_ENABLED";
-
-    /**
-     * The name of the property under which we store if the p2p mode for SIMPLE
-     * should be forced.
-     */
-    public static final String FORCE_P2P_MODE = "FORCE_P2P_MODE";
 
     /**
      * The name of the property under which we store the offline contact polling

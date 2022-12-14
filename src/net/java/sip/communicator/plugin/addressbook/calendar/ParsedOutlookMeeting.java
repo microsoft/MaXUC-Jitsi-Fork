@@ -6,6 +6,8 @@ import static net.java.sip.communicator.plugin.addressbook.OutlookUtils.*;
 import java.text.*;
 import java.util.*;
 
+import org.jitsi.util.StringUtils;
+
 import net.java.sip.communicator.plugin.addressbook.*;
 import net.java.sip.communicator.util.*;
 
@@ -271,13 +273,26 @@ class ParsedOutlookMeeting
     @Override
     public String toString()
     {
-        return "\n\nParsedOutlookMeeting, busy = " + mBusyStatus +
+        StringBuilder sb = new StringBuilder("\n\nParsedOutlookMeeting, busy = " + mBusyStatus +
                                    ", response = " + mResponseStatus +
                                    ", start = " + mStartDate +
                                    ", end = " + mEndDate +
-                                   ", marked as left = " + mMarkedAsLeft +
-                                   ",\nreadable recurrence = " + mReadablePattern +
-                                   ",\n\nrecurrency pattern = \n" + mRecurrencyPattern;
+                                   ", marked as left = " + mMarkedAsLeft);
+        if (!StringUtils.isNullOrEmpty(mReadablePattern))
+        {
+            sb.append(",\nreadable recurrence = " + mReadablePattern);
+        }
+        if (mRecurrencyPattern != null)
+        {
+            sb.append(",\n\nrecurrency pattern = \n" + mRecurrencyPattern);
+        }
+        if (mCalendarItemScheduler != null)
+        {
+            sb.append(",\n\ncalendar item scheduler = " + mCalendarItemScheduler + "; " + mCalendarItemScheduler.getState());
+        }
+        sb.append("\n");
+
+        return sb.toString();
     }
 
     /**

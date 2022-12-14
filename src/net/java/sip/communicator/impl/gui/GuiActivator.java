@@ -25,7 +25,6 @@ import net.java.sip.communicator.impl.gui.main.AbstractMainFrame;
 import net.java.sip.communicator.impl.gui.main.CallPullButton;
 import net.java.sip.communicator.impl.gui.main.ContactSyncBarImpl;
 import net.java.sip.communicator.impl.gui.main.account.Account;
-import net.java.sip.communicator.impl.gui.main.authorization.AuthorizationHandlerImpl;
 import net.java.sip.communicator.impl.gui.main.call.CallManager;
 import net.java.sip.communicator.impl.gui.main.contactlist.AddContactDialog;
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
@@ -1000,16 +999,6 @@ public class GuiActivator implements BundleActivator, StateDumper
             authHandlerService = ServiceUtils.getService(
                                                     bundleContext,
                                                     AuthorizationHandler.class);
-
-            if (authHandlerService == null)
-            {
-                // There is no registered AuthorizationHandler service
-                // implementation, so create a new one using the default Jitsi
-                // GUI implementation.
-                logger.info("Starting default AuthorizationHandler Service");
-                authHandlerService =
-                    new AuthorizationHandlerImpl(getUIService().getMainFrame());
-            }
         }
 
         return authHandlerService;

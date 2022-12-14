@@ -13,7 +13,6 @@ import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Stanza;
-import org.jivesoftware.smack.provider.ProviderManager;
 import org.jxmpp.jid.impl.JidCreate;
 
 import net.java.sip.communicator.impl.protocol.jabber.ProtocolProviderServiceJabberImpl;
@@ -78,12 +77,6 @@ public class KeepAliveManager
         this.parentProvider = parentProvider;
 
         this.parentProvider.addRegistrationStateChangeListener(this);
-
-        // register the KeepAlive Extension in the smack library
-        // used only if somebody ping us
-        ProviderManager.addIQProvider(KeepAliveEvent.ELEMENT_NAME,
-                                      KeepAliveEvent.NAMESPACE,
-                                      new KeepAliveEventProvider());
     }
 
     /**
@@ -165,6 +158,7 @@ public class KeepAliveManager
         if (waitingForStanzaWithID != null && waitingForStanzaWithID.equals(stanza.getStanzaId()))
         {
             // We are no longer waiting for this stanza
+            logger.debug("Got ping response with stanza ID " + waitingForStanzaWithID);
             waitingForStanzaWithID = null;
         }
 
@@ -175,8 +169,7 @@ public class KeepAliveManager
 
             if (evt.getError() != null)
             {
-                logger.error("Error (" + evt.getError()
-                    + ") received processing stanza " + stanza);
+                logger.error("Error (" + evt.getError() + ") received processing stanza " + stanza);
             }
             else if (evt.getFrom() != null &&
                 evt.getFrom().equals(parentProvider.getAccountID().getService()))
@@ -223,13 +216,17 @@ public class KeepAliveManager
                 return;
             }
 
+            // This task runs every 30s. We only send a new request OR check we've got the response
+            // from the last one if we've received a response in the last 30s. Given it takes a
+            // non-zero amount of time to send the request and get a response, every other time this
+            // task runs we'll be inside the 30s interval, and so do nothing.
             if (System.currentTimeMillis() - lastReceiveActivity >
                 KEEP_ALIVE_CHECK_INTERVAL)
             {
                 if (waitingForStanzaWithID != null)
                 {
-                    logger.error("un-registering not received ping stanza " +
-                        "for: " + parentProvider.getAccountID().getDisplayName());
+                    logger.error("un-registering - not received ping stanza ID " + waitingForStanzaWithID +
+                        " for: " + parentProvider.getAccountID().getDisplayName());
 
                     parentProvider.unregister(false);
 
@@ -249,10 +246,9 @@ public class KeepAliveManager
                         parentProvider.getOurJid(),
                         JidCreate.from(parentProvider.getAccountID().getService()));
 
-                    logger.trace("send keepalive for acc: "
-                        + parentProvider.getAccountID().getDisplayName());
-
                     waitingForStanzaWithID = ping.getStanzaId();
+                    logger.debug("Send ping with stanza ID " + waitingForStanzaWithID +
+                        " for: " + parentProvider.getAccountID().getDisplayName());
                     parentProvider.getConnection().sendStanza(ping);
                 }
                 catch (Throwable ex)

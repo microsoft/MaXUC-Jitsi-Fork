@@ -111,10 +111,6 @@ service.gui.AUTHENTICATION_REQUESTED=Autenticaci\u00f3n solicitada
 service.gui.AUTHENTICATION_REQUESTED_SERVER=Inicie sesi\u00f3n con su cuenta de {0}.
 service.gui.AUTHENTICATION_REJECTED=el contacto ha rechazado su solicitud de autorizaci\u00f3n.
 service.gui.AUTHENTICATION_WINDOW_TITLE=Iniciar sesi\u00f3n
-service.gui.AUTHORIZATION_REQUESTED=Solicitud de Contacto de Chat
-service.gui.AUTHORIZATION_REQUESTED_INFO={0} solicita su autorizaci\u00f3n para chat y presencia.
-service.gui.AUTHORIZATION_RESPONSE=Respuesta a la autorizaci\u00f3n
-service.gui.AUTO_AUTH_CHAT=Aceptar autom\u00e1ticamente solicitudes de contacto por chat
 service.gui.AWAY_STATUS=Alejado
 
 service.gui.BROWSE=Buscar

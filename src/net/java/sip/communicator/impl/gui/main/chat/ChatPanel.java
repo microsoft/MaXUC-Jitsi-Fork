@@ -2032,7 +2032,9 @@ public class ChatPanel
                 MetaContact contact = (MetaContact)descriptor;
                 participantsOnline = contact.canBeMessaged();
                 if (participantsOnline)
+                {
                     break;
+                }
             }
             else
             {
@@ -2045,8 +2047,13 @@ public class ChatPanel
 
         if (!participantsOnline)
         {
-            sLog.warn("User tried to send a message after the recipient " +
-                                                      "stopped being a buddy.");
+            sLog.warn("User tried to send a message after the recipient stopped being a buddy.");
+            for (ChatContact<?> chatContact : mChatSession.getParticipants())
+            {
+                sLog.info("chatContact name " + logHasher(chatContact.getName()) +
+                    ", UID " + logHasher(chatContact.getUID()) + " can't be messaged");
+            }
+
             String[] params = {Integer.toString(maxLength)};
             addErrorMessage(
                 mChatSession.getCurrentChatTransport().getName(),

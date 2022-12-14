@@ -93,6 +93,11 @@ public class ChatRoomManager
     private Timer joinAndLeaveChatRoomTimer;
 
     /**
+     * If we fail to join a chat room (despite having a healthy XMPP connection), retry every 15s.
+     */
+    private static final int JOIN_CHAT_ROOM_RETRY_DELAY_MS = 15000;
+
+    /**
      * Creates a chat room manager instance.
      *
      * @param provider the jabber protocol provider.
@@ -359,7 +364,7 @@ public class ChatRoomManager
         // be sure we don't get out of sync.  Now that we've processed all of
         // the chat rooms in the initial roster, we can ask the server stored
         // contact list to join/leave any chat rooms based those cached updates.
-        if(opSetPersPres != null)
+        if (opSetPersPres != null)
         {
             opSetPersPres.getServerStoredContactList().processPendingRosterUpdates();
         }
@@ -464,22 +469,34 @@ public class ChatRoomManager
      */
     private void addAndJoinChatRoomOnTimer(final Jid chatRoomId, final Date joinDate)
     {
+        addAndJoinChatRoomOnTimer(chatRoomId, joinDate, 0);
+    }
+
+    private void addAndJoinChatRoomOnTimer(final Jid chatRoomId, final Date joinDate, final int delay)
+    {
         // Schedule a task on the timer to join the chat room so
         // we join them one at a time without blocking start-up.
         joinAndLeaveChatRoomTimer.schedule(new TimerTask()
         {
             public void run()
             {
+                boolean success = false;
                 try
                 {
-                    addAndJoinChatRoom(chatRoomId, joinDate);
+                    success = addAndJoinChatRoom(chatRoomId, joinDate);
                 }
                 catch (Throwable th)
                 {
                     logger.error("addAndJoinChatRoom ended unexpectedly!: ", th);
                 }
+
+                if (!success)
+                {
+                    logger.error("Failed to join chat room. Try again in " + JOIN_CHAT_ROOM_RETRY_DELAY_MS + "ms");
+                    addAndJoinChatRoomOnTimer(chatRoomId, joinDate, JOIN_CHAT_ROOM_RETRY_DELAY_MS);
+                }
             }
-        },0);
+        }, delay);
     }
 
     /**
@@ -489,8 +506,9 @@ public class ChatRoomManager
      * @param chatRoomId the id of the chat room to join and add to config.
      * @param joinDate the date at which we joined the chat room, possibly on
      * another client.
+     * @return success Whether we successfully joined the group chat or not.
      */
-    private void addAndJoinChatRoom(Jid chatRoomId, Date joinDate)
+    private boolean addAndJoinChatRoom(Jid chatRoomId, Date joinDate)
     {
         logger.info(
             "Joining chat room with id " + chatRoomId + " and date " + joinDate);
@@ -515,22 +533,25 @@ public class ChatRoomManager
             }
 
             // Finally , join the chat room.
-            if(chatRoom != null)
+            if (chatRoom != null)
             {
                 logger.debug("Joining chat room with id: " + chatRoomId);
                 chatRoom.join(joinDate);
             }
             else
             {
-                logger.error("Failed to find or create chat room with id: "
-                    + chatRoomId);
+                logger.error("Failed to find or create chat room with id: " + chatRoomId);
+                return false;
             }
         }
         catch (OperationFailedException | OperationNotSupportedException e)
         {
             logger.error("Failed to find or create chat room with id: "
                 + chatRoomId, e);
+            return false;
         }
+
+        return true;
     }
 
     /**

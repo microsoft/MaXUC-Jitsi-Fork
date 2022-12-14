@@ -6,14 +6,18 @@
  */
 package net.java.sip.communicator.plugin.addressbook.calendar;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import net.java.sip.communicator.plugin.addressbook.*;
+import net.java.sip.communicator.plugin.addressbook.AddressBookProtocolActivator;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
-import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.service.threading.CancellableRunnable;
+import net.java.sip.communicator.service.threading.ThreadingService;
+import net.java.sip.communicator.util.Logger;
 
 /**
  * A class that represents a calendar item. It schedules tasks for the
@@ -24,10 +28,16 @@ public class CalendarItemScheduler
 {
     private static final Logger sLog = Logger.getLogger(CalendarItemScheduler.class);
 
+    private static final ThreadingService threadingService = AddressBookProtocolActivator.getThreadingService();
+
     /**
-     * The <tt>Timer</tt> instance that schedules the tasks.
+     *  The start/end/cancel tasks can be run on different threads, but we don't want them to run
+     *  simultaneously - so synchronize access to task running with this. This lock should only
+     *  be taken at the start of tasks scheduled with the ThreadingService, at which point there
+     *  should be no other lock owned by that thread that a different thread with taskRunningLock
+     *  could try to take (i.e. no chance of deadlock).
      */
-    private static final Timer sTimer = new Timer("Outlook Meeting Scheduler");
+    private final Object taskRunningLock = new Object();
 
     /**
      * A count of the number of meetings we are in
@@ -64,11 +74,6 @@ public class CalendarItemScheduler
     private final String meetingId;
 
     /**
-     * The status of the calendar item.
-     */
-    private final BusyStatusEnum state;
-
-    /**
      * The start date of the calendar item.
      */
     private final Date startDate;
@@ -84,43 +89,52 @@ public class CalendarItemScheduler
      */
     private RecurringPattern pattern;
 
-    /**
-     * True if the start task has run
-     */
-    private boolean startTaskRun = false;
-
-    /**
-     * True if the end task has run
-     */
-    private boolean endTaskRun = false;
+    // The start/end tasks can be run on different threads, so track whether they have each started
+    // and completed with volatile properties.
+    private volatile boolean startTaskRun = false;
+    private volatile boolean endTaskRun = false;
 
     /**
      * The task that will be executed at the beginning of the task.
      */
-    private TimerTask startTask = new TimerTask()
+    private CancellableRunnable startTask = new CancellableRunnable()
     {
         @Override
         public void run()
         {
-            synchronized (sMeetingIds)
+            if (isCancelled())
             {
-                sMeetingIds.add(meetingId);
+                sLog.info("Start task has been cancelled");
+                return;
             }
 
-            int nbMeetings = sMeetingCount.incrementAndGet();
-            GlobalStatusService statusService = getGlobalStatusService();
-            sLog.debug("Start meeting task running " + this +
-                                                  " nb meetings " + nbMeetings);
-
-            // Only update presence if the meeting is not marked as left.
-            if ((nbMeetings == 1 || !statusService.isInMeeting()) &&
-                                                      !meeting.isMarkedAsLeft())
+            synchronized(taskRunningLock)
             {
-                sLog.info("Updating to be in a meeting");
-                statusService.setInMeeting(true);
-            }
+                synchronized (sMeetingIds)
+                {
+                    sMeetingIds.add(meetingId);
+                }
 
-            startTaskRun = true;
+                int nbMeetings = sMeetingCount.incrementAndGet();
+                GlobalStatusService statusService = getGlobalStatusService();
+                sLog.info("Start meeting task running " + this + " nb meetings " + nbMeetings);
+
+                // Only update presence if the meeting is not marked as left.
+                if ((nbMeetings == 1 || !statusService.isInMeeting()) &&
+                                                          !meeting.isMarkedAsLeft())
+                {
+                    sLog.info("Updating to be in a meeting");
+                    statusService.setInMeeting(true);
+                }
+                else
+                {
+                    sLog.info("Don't update to be in a meeting - nbMeetings " + nbMeetings +
+                        " statusService.isInMeeting " + statusService.isInMeeting() +
+                        " meeting marked as left " + meeting.isMarkedAsLeft());
+                }
+
+                startTaskRun = true;
+            }
         }
 
         public String toString()
@@ -133,61 +147,77 @@ public class CalendarItemScheduler
     /**
      * The task that will be executed at the end of the task.
      */
-    private TimerTask endTask = new TimerTask()
+    private CancellableRunnable endTask = new CancellableRunnable()
     {
         @Override
         public void run()
         {
-            synchronized (sMeetingIds)
+            if (isCancelled())
             {
-                sMeetingIds.remove(meetingId);
+                sLog.info("End task has been cancelled");
+                return;
             }
 
-            int nbRemainingMeetings = sMeetingCount.decrementAndGet();
-            sLog.debug("End meeting task running " + this +
-                                       ", nb remaining " + nbRemainingMeetings);
-
-            if (nbRemainingMeetings == 0)
+            synchronized(taskRunningLock)
             {
-                sLog.info("Updating to leave the meeting");
-                getGlobalStatusService().setInMeeting(false);
-            }
-            else if (nbRemainingMeetings < 0)
-            {
-                sLog.error("Meeting end event when not in meeting. Now in " +
-                           nbRemainingMeetings + " meetings");
-            }
-
-            // If the meeting was marked as left, reset that here so that
-            // recurring meetings will have correct presence.
-            if (meeting.isMarkedAsLeft())
-            {
-                meeting.markAsLeft(false);
-            }
-
-            // If we have a pattern, then this meeting recurs.  Thus create a
-            // new scheduler to schedule the tasks for the next instance.
-            if (pattern != null)
-            {
-                // Schedule the next instance after a slight delay.  Otherwise
-                // there is a risk that the dates of the next instance will be
-                // for the instance that has just completed.
-                TimerTask nextMeetingTask = new TimerTask()
+                synchronized (sMeetingIds)
                 {
-                    public void run()
+                    sMeetingIds.remove(meetingId);
+                }
+
+                int nbRemainingMeetings = sMeetingCount.decrementAndGet();
+                sLog.info("End meeting task running " + this +
+                                           ", nb remaining " + nbRemainingMeetings);
+
+                if (nbRemainingMeetings == 0)
+                {
+                    sLog.info("Updating to leave the meeting");
+                    getGlobalStatusService().setInMeeting(false);
+                }
+                else if (nbRemainingMeetings < 0)
+                {
+                    sLog.error("Meeting end event when not in meeting. Now in " +
+                               nbRemainingMeetings + " meetings");
+                }
+
+                // If the meeting was marked as left, reset that here so that
+                // recurring meetings will have correct presence.
+                if (meeting.isMarkedAsLeft())
+                {
+                    meeting.markAsLeft(false);
+                }
+
+                // If we have a pattern, then this meeting recurs.  Thus create a
+                // new scheduler to schedule the tasks for the next instance.
+                if (pattern != null)
+                {
+                    sLog.info("Create task to schedule next meeting in recurring pattern");
+
+                    // Schedule the next instance after a slight delay.  Otherwise
+                    // there is a risk that the dates of the next instance will be
+                    // for the instance that has just completed.
+                    CancellableRunnable nextMeetingTask = new CancellableRunnable()
                     {
-                        CalendarItemScheduler nextTask = pattern.next();
-                        pattern = null;
+                        public void run()
+                        {
+                            // We don't need to take the taskRunningLock here, because it involves
+                            // processing on a new CalendarItemScheduler, which is clearly
+                            // thread-safe with any processing done on this one.
+                            CalendarItemScheduler nextTask = pattern.next();
+                            pattern = null;
 
-                        if (nextTask != null)
-                            nextTask.scheduleTasks();
-                    }
-                };
+                            if (nextTask != null)
+                            {
+                                nextTask.scheduleTasks();
+                            }
+                        }
+                    };
 
-                sTimer.schedule(nextMeetingTask, 1000);
+                    threadingService.schedule("Schedule next meeting in recurring pattern for " + meetingId, nextMeetingTask, 1000);
+                }
+
+                endTaskRun = true;
             }
-
-            endTaskRun = true;
         }
 
         public String toString()
@@ -223,7 +253,6 @@ public class CalendarItemScheduler
         this.meeting   = meeting;
         this.startDate = startDate;
         this.endDate   = endDate;
-        this.state     = meeting == null ? null : meeting.getBusyStatus();
         this.pattern   = meeting == null ? null : meeting.getRecurrencyPattern();
         this.meetingId = meeting == null ? null : meeting.getId();
 
@@ -236,6 +265,14 @@ public class CalendarItemScheduler
         // can cancel these tasks when / if the meeting is edited.
         if (meeting != null)
             meeting.setItemTask(this);
+    }
+
+    /*
+     * Return a string containing useful info for a state dump.
+     */
+    String getState()
+    {
+        return "started? " +  startTaskRun + " ended? " + endTaskRun;
     }
 
     /**
@@ -297,8 +334,8 @@ public class CalendarItemScheduler
         }
         else
         {
-            sTimer.schedule(startTask, startDate);
-            sTimer.schedule(endTask, endDate);
+            threadingService.schedule("Start of Outlook meeting", startTask, startDate);
+            threadingService.schedule("End of Outlook meeting", endTask, endDate);
         }
     }
 
@@ -308,52 +345,46 @@ public class CalendarItemScheduler
     public void cancelTasks()
     {
         sLog.info("Cancel tasks for this meeting " + this);
-        // Run on the timer so that we avoid any threading issues
-        sTimer.schedule(new TimerTask()
+        threadingService.schedule("Cancel tasks for Outlook meeting" + meetingId,
+            new CancellableRunnable()
         {
             @Override
             public void run()
             {
-                if (startTaskRun && !endTaskRun)
+                synchronized(taskRunningLock)
                 {
-                    // We've started the meeting but not finished it - therefore
-                    // we must be in a meeting
-                    int nbRemainingMeetings = sMeetingCount.decrementAndGet();
-                    sLog.info("Decreased number meetings to " +
-                                             nbRemainingMeetings + ", " + this);
-
-                    if (nbRemainingMeetings == 0)
+                    if (startTaskRun && !endTaskRun)
                     {
-                        getGlobalStatusService().setInMeeting(false);
+                        // We've started the meeting but not finished it - therefore
+                        // we must be in a meeting
+                        int nbRemainingMeetings = sMeetingCount.decrementAndGet();
+                        sLog.info("Decreased number meetings to " +
+                                                 nbRemainingMeetings + ", " + this);
+
+                        if (nbRemainingMeetings == 0)
+                        {
+                            getGlobalStatusService().setInMeeting(false);
+                        }
+
+                        synchronized (sMeetingIds)
+                        {
+                            sMeetingIds.remove(meetingId);
+                        }
+                    }
+                    else if (endTaskRun && !startTaskRun)
+                    {
+                        // This should never happen.  But it has been seen in the
+                        // field thus cope with it here.
+                        int nbRemainingMeetings = sMeetingCount.incrementAndGet();
+                        sLog.error("Increased meeting count as end run but not start"
+                                               + nbRemainingMeetings + ", " + this);
                     }
 
-                    synchronized (sMeetingIds)
-                    {
-                        sMeetingIds.remove(meetingId);
-                    }
+                    startTask.cancel();
+                    endTask.cancel();
                 }
-                else if (endTaskRun && !startTaskRun)
-                {
-                    // This should never happen.  But it has been seen in the
-                    // field thus cope with it here.
-                    int nbRemainingMeetings = sMeetingCount.incrementAndGet();
-                    sLog.error("Increased meeting count as end run but not start"
-                                           + nbRemainingMeetings + ", " + this);
-                }
-
-                startTask.cancel();
-                endTask.cancel();
             }
         }, 0);
-    }
-
-    /**
-     * Returns the free busy status of the calendar item.
-     * @return the free busy status of the calendar item.
-     */
-    public BusyStatusEnum getStatus()
-    {
-        return state;
     }
 
     /**

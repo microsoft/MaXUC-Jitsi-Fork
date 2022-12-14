@@ -368,8 +368,9 @@ public class ConferenceChatSession
 
         if (eventType.equals(ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED))
         {
-            ConferenceChatContact chatContact
-                = new ConferenceChatContact(chatRoomMember);
+            ConferenceChatContact chatContact = new ConferenceChatContact(chatRoomMember);
+            logger.debug("Member joined: " + logHasher(chatContact.getUID()) + "/" +
+                logHasher(chatContact.getName()));
 
             // Check if not ever present in the chat room. In some cases, the
             // considered chatroom member may appear twice in the chat contact
@@ -377,7 +378,9 @@ public class ConferenceChatSession
             synchronized (chatParticipants)
             {
                 if (!chatParticipants.contains(chatContact))
+                {
                     chatParticipants.add(chatContact);
+                }
             }
             sessionRenderer.addChatContact(chatContact);
         }
@@ -388,7 +391,7 @@ public class ConferenceChatSession
             String chatRoomMemberName = chatRoomMember.getName();
             String chatRoomMemberAddress = chatRoomMember.getContactAddressAsString();
             logger.debug(
-                "Member left: " + chatRoomMemberName + "/" + chatRoomMemberAddress);
+                "Member left: " + logHasher(chatRoomMemberName) + "/" + logHasher(chatRoomMemberAddress));
 
             ChatContact<?> participantToRemove = null;
             synchronized (chatParticipants)
@@ -582,12 +585,18 @@ public class ConferenceChatSession
             chatParticipants.clear();
 
             if ((chatRoom != null) && chatRoom.isJoined())
+            {
                 for (ChatRoomMember member : chatRoom.getMembers())
                 {
                     logger.debug("Adding chat participant for " +
                                  logHasher(member.getContactAddressAsString()));
                     chatParticipants.add(new ConferenceChatContact(member));
                 }
+            }
+            else
+            {
+                logger.info("Not adding participants, not joined chat room yet");
+            }
         }
 
         // Tell the chat panel to update the UI to include these participants.

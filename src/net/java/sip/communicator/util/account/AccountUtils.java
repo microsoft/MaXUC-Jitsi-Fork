@@ -30,7 +30,7 @@ public class AccountUtils
     /**
      * The logger.
      */
-    private static Logger logger = Logger.getLogger(AccountUtils.class);
+    private static final Logger logger = Logger.getLogger(AccountUtils.class);
 
     /**
      * Returns an iterator over a list of all stored <tt>AccountID</tt>-s.
@@ -89,7 +89,6 @@ public class AccountUtils
         Class<? extends OperationSet> opSetClass)
     {
         List<ProtocolProviderService> providers = getProviders(opSetClass, false);
-        logger.debug("Found providers: ", providers);
         return providers;
     }
 
@@ -128,8 +127,6 @@ public class AccountUtils
                 if (operationSet != null &&
                     (!shouldBeRegistered || protocolProvider.isRegistered()))
                 {
-                    logger.debug("Protocol provider: ", protocolProvider,
-                                 " contains operation set: ", operationSet);
                     opSetProviders.add(protocolProvider);
                 }
             }

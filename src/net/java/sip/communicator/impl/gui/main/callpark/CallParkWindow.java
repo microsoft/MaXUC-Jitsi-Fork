@@ -109,7 +109,7 @@ public class CallParkWindow extends SIPCommFrame implements CallParkListener,
     /**
      * The cell editor for the contact list
      */
-    private CallParkCellEditor mCellEditor = new CallParkCellEditor(this);
+    private CallParkCellEditor mCellEditor = new CallParkCellEditor();
 
     /**
      * The currently selected row
@@ -660,7 +660,6 @@ public class CallParkWindow extends SIPCommFrame implements CallParkListener,
     public static synchronized void parkCall(CallPeer peer, Window window)
     {
         sLog.info("Open call park window for call " + peer.getDisplayName());
-        final boolean windowWasHidden = sWindow == null || !sWindow.isVisible();
 
         // Add a listener for the  call to be dismissed.
         peer.getCall().addCallChangeListener(new CallChangeAdapter()
@@ -674,23 +673,29 @@ public class CallParkWindow extends SIPCommFrame implements CallParkListener,
                 {
                     sLog.debug("Call ended so hiding window");
 
-                    if (sWindow != null)
-                    {
-                        if (windowWasHidden)
-                        {
-                            // Window was hidden before the call, so hide it again
-                            sWindow.setVisible(false);
-                        }
-
-                        // Make sure that we reset the always on top flag, or it
-                        // will irritate users.
-                        sWindow.setAlwaysOnTop(false);
-                    }
+                    hideWindow();
                 }
             }
         });
 
         showCallParkWindow(window);
+    }
+
+    /**
+     * Hide the CallParkWindow, if it exists.
+     */
+    static void hideWindow()
+    {
+        sLog.debug("Hide Call Park Window");
+
+        if (sWindow != null)
+        {
+            // Window was hidden before the call, so hide it again
+            sWindow.setVisible(false);
+
+            // Make sure that we reset the always on top flag, or it will irritate users.
+            sWindow.setAlwaysOnTop(false);
+        }
     }
 
     @Override

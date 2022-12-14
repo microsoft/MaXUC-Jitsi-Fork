@@ -111,10 +111,6 @@ service.gui.AUTHENTICATION_REQUESTED=Authentication requested
 service.gui.AUTHENTICATION_REQUESTED_SERVER=Please enter your {0} login details.
 service.gui.AUTHENTICATION_REJECTED=contact has rejected your authorisation request.
 service.gui.AUTHENTICATION_WINDOW_TITLE=Login
-service.gui.AUTHORIZATION_REQUESTED=Chat Contact Request
-service.gui.AUTHORIZATION_REQUESTED_INFO={0} requests your authorisation for chat and presence.
-service.gui.AUTHORIZATION_RESPONSE=Authorisation response
-service.gui.AUTO_AUTH_CHAT=Auto-accept chat contact requests
 service.gui.AWAY_STATUS=Away
 
 service.gui.BROWSE=Browse

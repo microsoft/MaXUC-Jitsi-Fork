@@ -476,7 +476,6 @@ public class RecurringPattern
                 result += info.toString() + ", ";
             }
         }
-        result += "\n\n";
 
         return result;
     }

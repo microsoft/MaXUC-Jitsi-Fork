@@ -50,21 +50,14 @@ public class CallParkCellEditor extends AbstractCellEditor implements TreeCellEd
     private JPopupMenu mMenu;
 
     /**
-     * The call park window that is displaying this editor
-     */
-    private CallParkWindow mWindow;
-
-    /**
      * The object that currently handles key presses.
      */
     private KeyAdapter mKeyPressHandler;
 
     private AnalyticsService mAnalytics = GuiActivator.getAnalyticsService();
 
-    public CallParkCellEditor(CallParkWindow window)
+    public CallParkCellEditor()
     {
-        mWindow = window;
-
         // Add park button listener
         mComponent.getParkButton().addActionListener(new ActionListener()
         {
@@ -140,6 +133,9 @@ public class CallParkCellEditor extends AbstractCellEditor implements TreeCellEd
             switch (state)
             {
             case BUSY:
+                // Hide the window before retrieving the call, because that can take a while and we
+                // don't want the user to interact with the UI anymore until that's happened.
+                CallParkWindow.hideWindow();
                 orbit.retrieveCall();
                 break;
 
@@ -341,7 +337,7 @@ public class CallParkCellEditor extends AbstractCellEditor implements TreeCellEd
 
                 case KeyEvent.VK_ESCAPE:
                     sLog.user("Escape pressed in call park window");
-                    mWindow.setVisible(false);
+                    CallParkWindow.hideWindow();
                     break;
 
                 case KeyEvent.VK_ENTER:

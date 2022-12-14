@@ -107,7 +107,6 @@ import net.java.sip.communicator.service.protocol.SecurityAuthority;
 import net.java.sip.communicator.service.protocol.TransportProtocol;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeListener;
-import net.java.sip.communicator.service.protocol.sipconstants.SipPresenceTypeEnum;
 import net.java.sip.communicator.service.threading.ThreadingService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
@@ -808,15 +807,6 @@ public class ProtocolProviderServiceSipImpl
     private void createPresenceOpSets(SipAccountID accountID,
         OperationSetBasicTelephonySipImpl opSetBasicTelephonySipImpl)
     {
-        String strPresenceType =
-            accountID.getAccountPropertyString(
-                ProtocolProviderFactory.PRESENCE_TYPE);
-        SipPresenceTypeEnum presenceType = SipPresenceTypeEnum.getEnum(
-            strPresenceType);
-
-        boolean forceP2P = accountID.getAccountPropertyBoolean(
-                        ProtocolProviderFactory.FORCE_P2P_MODE, true);
-
         int pollingValue =
             accountID.getAccountPropertyInt(
                 ProtocolProviderFactory.POLLING_PERIOD, 30);
@@ -829,10 +819,8 @@ public class ProtocolProviderServiceSipImpl
         OperationSetPersistentPresence opSetPersPresence
             = OperationSetPresenceSipImpl
                 .createOperationSetPresenceSipImpl(
-                    presenceType,
                     this,
                     true,
-                    forceP2P,
                     pollingValue,
                     subscriptionExpiration);
 
@@ -1446,10 +1434,11 @@ public class ProtocolProviderServiceSipImpl
     {
         ArrayList<ViaHeader> viaHeaders = new ArrayList<>();
 
-        ListeningPoint srcListeningPoint
-        = getListeningPoint(intendedDestination.getTransportParam());
         try
         {
+            ListeningPoint srcListeningPoint
+                    = getListeningPoint(intendedDestination.getTransportParam());
+
             InetSocketAddress targetAddress =
                         getIntendedDestination(intendedDestination);
 
@@ -1514,28 +1503,30 @@ public class ProtocolProviderServiceSipImpl
         }
         catch (InvalidArgumentException ex)
         {
-            logger.error(
-                "Unable to create a via header for port "
-                + sipStackSharing.getLP(ListeningPoint.UDP).getPort(),
-                ex);
-            throw new OperationFailedException(
-                "Unable to create a via header for port "
-                + sipStackSharing.getLP(ListeningPoint.UDP).getPort()
-                ,OperationFailedException.INTERNAL_ERROR
-                ,ex);
+            throw createOperationFailedException(ex, OperationFailedException.INTERNAL_ERROR);
         }
-        catch (java.io.IOException ex)
+        catch (IllegalStateException | java.io.IOException ex)
         {
-            logger.error(
-                "Unable to create a via header for port "
-                + sipStackSharing.getLP(ListeningPoint.UDP).getPort(),
-                ex);
-            throw new OperationFailedException(
-                "Unable to create a via header for port "
-                + sipStackSharing.getLP(ListeningPoint.UDP).getPort()
-                ,OperationFailedException.NETWORK_FAILURE
-                ,ex);
+            throw createOperationFailedException(ex, OperationFailedException.NETWORK_FAILURE);
         }
+    }
+
+    private OperationFailedException createOperationFailedException(Exception exception, int exceptionType)
+    {
+        String errorMessage;
+        int udpPort;
+        try
+        {
+            udpPort = sipStackSharing.getLP(ListeningPoint.UDP).getPort();
+            errorMessage = "Unable to create a via header for port " + udpPort;
+        }
+        catch (IllegalStateException ex)
+        {
+            errorMessage = "Unable to create a via header. There are no listening points available " + ex;
+        }
+
+        logger.error(errorMessage, exception);
+        return new OperationFailedException(errorMessage, exceptionType, exception);
     }
 
     /**
@@ -1598,14 +1589,14 @@ public class ProtocolProviderServiceSipImpl
     {
         Address contactAddress = null;
 
-        ListeningPoint srcListeningPoint
-                                  = getListeningPoint(intendedDestination);
-
-        InetSocketAddress targetAddress =
-                getIntendedDestination(intendedDestination);
-
         try
         {
+            ListeningPoint srcListeningPoint
+                    = getListeningPoint(intendedDestination);
+
+            InetSocketAddress targetAddress =
+                    getIntendedDestination(intendedDestination);
+
             //find the address to use with the target
             InetAddress localAddress = SipActivator
                 .getNetworkAddressManagerService()
@@ -1669,6 +1660,15 @@ public class ProtocolProviderServiceSipImpl
                 "An IOException occurred while creating contact URI!", ex);
             throw new IllegalArgumentException(
                 "An IOException occurred while creating contact URI!", ex);
+        }
+        catch (IllegalStateException ex)
+        {
+            logger.error(
+                    "An IllegalStateException occurred while creating contact URI! " +
+                    "We are probably offline and no listening points are available.", ex);
+            throw new IllegalArgumentException(
+                    "An IllegalStateException occurred while creating contact URI! " +
+                    "We are probably offline and no listening points are available. ", ex);
         }
 
         return contactAddress;
@@ -2108,6 +2108,15 @@ public class ProtocolProviderServiceSipImpl
             throw new IllegalArgumentException(
                             "Failed to create our SIP AOR address"
                             , exc);
+        }
+        catch (IllegalStateException ex)
+        {
+            logger.error(
+                    "An IllegalStateException occurred while creating our SIP AOR address!" +
+                    "We are probably offline and no listening points are available.", ex);
+            throw new IllegalArgumentException(
+                    "An IllegalStateException occurred while creating our SIP AOR address!" +
+                    "We are probably offline and no listening points are available. ", ex);
         }
     }
 

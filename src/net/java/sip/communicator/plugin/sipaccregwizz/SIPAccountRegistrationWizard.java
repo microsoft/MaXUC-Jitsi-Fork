@@ -470,22 +470,6 @@ public class SIPAccountRegistrationWizard
         accountProperties.put(ProtocolProviderFactory.IS_PRESENCE_ENABLED,
                 Boolean.toString(registration.isEnablePresence()));
 
-        accountProperties.put(ProtocolProviderFactory.PRESENCE_TYPE,
-                registration.getPresenceType().toString());
-
-        // when we are creating registerless account make sure that
-        // we don't use PA
-        if(serverAddress != null)
-        {
-            accountProperties.put(ProtocolProviderFactory.FORCE_P2P_MODE,
-                Boolean.toString(registration.isForceP2PMode()));
-        }
-        else
-        {
-            accountProperties.put(ProtocolProviderFactory.FORCE_P2P_MODE,
-                Boolean.TRUE.toString());
-        }
-
         accountProperties.put(ProtocolProviderFactory.DEFAULT_ENCRYPTION,
                 Boolean.toString(registration.isDefaultEncryption()));
 
