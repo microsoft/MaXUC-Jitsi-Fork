@@ -4,13 +4,16 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EventObject;
 import java.util.HashSet;
@@ -18,11 +21,13 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.jivesoftware.smack.StanzaListener;
@@ -30,19 +35,14 @@ import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.SmackException.NoResponseException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.XMPPException.XMPPErrorException;
+import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.packet.MessageBuilder;
 import org.jivesoftware.smack.filter.StanzaTypeFilter;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.packet.StanzaError;
 import org.jivesoftware.smack.packet.StanzaError.Condition;
-import org.jivesoftware.smackx.xdata.form.Form;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.EntityFullJid;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.jid.parts.Resourcepart;
-import org.jxmpp.stringprep.XmppStringprepException;
-import org.jivesoftware.smackx.xevent.MessageEventManager;
 import org.jivesoftware.smackx.delay.DelayInformationManager;
+import org.jivesoftware.smackx.disco.packet.DiscoverInfo;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.muc.Affiliate;
 import org.jivesoftware.smackx.muc.MUCRole;
@@ -53,8 +53,15 @@ import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.muc.ParticipantStatusListener;
 import org.jivesoftware.smackx.muc.SubjectUpdatedListener;
 import org.jivesoftware.smackx.muc.UserStatusListener;
-import org.jivesoftware.smackx.disco.packet.DiscoverInfo;
 import org.jivesoftware.smackx.muc.packet.MUCUser;
+import org.jivesoftware.smackx.xdata.form.Form;
+import org.jivesoftware.smackx.xevent.MessageEventManager;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.EntityFullJid;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.parts.Resourcepart;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import net.java.sip.communicator.impl.protocol.jabber.JabberActivator.GroupMembershipAction;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
@@ -251,13 +258,6 @@ public class ChatRoomJabberImpl implements ChatRoom
     private final Object oldSubjectLock = new Object();
 
     /**
-     * The maximum number of history messages that we request from the server
-     * when joining a chat room.  Currently set to 0 as we don't want to
-     * receive any history.
-     */
-    private static final int MAX_HISTORY_SIZE = 0;
-
-    /**
      * The date when we were invited to this room (will remain null if we
      * weren't invited since the client was last rebooted).
      */
@@ -286,7 +286,7 @@ public class ChatRoomJabberImpl implements ChatRoom
             .getOperationSet(OperationSetSpecialMessaging.class);
 
         String identifier = getIdentifier().toString();
-        logger.debug("Creating new chat room with id " + identifier);
+        logger.debug("Creating new chat room with id " + sanitiseChatRoom(identifier));
 
         // Get the old subject from config, if we have it, as the server
         // won't return a subject when we first connect, even if one is set.
@@ -306,7 +306,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         String mutedConfig = ConfigurationUtils.getChatRoomProperty(
                                  provider, identifier, MUTE_PROPERTY_NAME);
 
-        isMuted = (mutedConfig == null) ? false : mutedConfig.equals("true");
+        isMuted = mutedConfig != null && mutedConfig.equals("true");
 
         String localJidString = provider.getAccountID().getAccountAddress();
 
@@ -529,8 +529,8 @@ public class ChatRoomJabberImpl implements ChatRoom
      */
     private List<Jid> getOwnerJids()
     {
-        String identifier = getIdentifier().toString();
-        logger.debug("Getting owner JIDs for chat room " + identifier);
+        String loggableIdentifier = sanitiseChatRoom(getIdentifier());
+        logger.debug("Getting owner JIDs for chat room " + loggableIdentifier);
         List<Jid> ownerJids = new ArrayList<>();
         try
         {
@@ -552,10 +552,10 @@ public class ChatRoomJabberImpl implements ChatRoom
             | InterruptedException ex)
         {
             logger.error(
-                "Failed to get list of owners JIDs for chat room: " + identifier, ex);
+                "Failed to get list of owners JIDs for chat room: " + loggableIdentifier, ex);
         }
 
-        logger.debug("Chat room " + identifier + " owner JIDs found: " + ownerJids);
+        logger.debug("Chat room found with " + ownerJids.size() + " owner JIDs");
 
         return ownerJids;
     }
@@ -684,7 +684,7 @@ public class ChatRoomJabberImpl implements ChatRoom
     {
         if (userAddress == null)
         {
-            logger.error("Ignoring invitiation to null user address");
+            logger.error("Ignoring invitation to null user address");
             return;
         }
 
@@ -700,7 +700,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         }
         catch (XmppStringprepException ex)
         {
-            logger.error("Could not invite non JID address: " + userAddress, ex);
+            logger.error("Could not invite non JID address: " +
+                         sanitiseChatAddress(userAddress), ex);
         }
     }
 
@@ -725,7 +726,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         // all clients recognise that they have joined the chat room.
         try
         {
-            logger.info("Trying to grant ownership and invite " + logHasher(userAddress));
+            logger.info("Trying to grant ownership and invite " +
+                        sanitiseChatAddress(userAddress.toString()));
             // Here, only the 'grantOwnership' method might throw the
             // XMPPException, but both method calls are in the try block so
             // that, if granting ownership fails, we don't try to invite.
@@ -754,7 +756,9 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (XMPPErrorException | NotConnectedException |
             InterruptedException | NoResponseException | XmppStringprepException ex)
         {
-            logger.error("Error inviting " + userAddress + "to chatroom.", ex);
+            logger.error("Error inviting " +
+                         sanitiseChatAddress(userAddress.toString()) +
+                         "to chatroom.", ex);
         }
     }
 
@@ -796,13 +800,13 @@ public class ChatRoomJabberImpl implements ChatRoom
             // once for the ChatRoomMessageReceivedEvent that will be
             // generated when we receive it in the chat room.
             logger.debug("Sending " + message + ", action = " + action +
-                                             ", chatroom = " + getIdentifier());
+                                             ", chatroom = " + sanitiseChatRoom(getIdentifier()));
             sendMessage(message, false);
         }
         catch (OperationFailedException ex)
         {
             logger.error("Failed to send chat room membership message for " +
-                                 userAddress + ", action = " + action, ex);
+                                 sanitiseChatAddress(userAddress) + ", action = " + action, ex);
         }
     }
 
@@ -885,7 +889,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         }
         catch (Exception ex)
         {
-            String errorMessage = "Failed to join room with nickname: " + nickname;
+            String errorMessage = "Failed to join room with nickname: " +
+                                  sanitisePeerId(nickname);
 
             logger.error(errorMessage, ex);
 
@@ -899,8 +904,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         {
             // If no nickname is provided, use our full jid.
             nickname = (userNickname == null) ? provider.getOurJid().toString() : userNickname;
-            logger.debug("Joining chat room as nickname " + nickname +
-                         ", chat room jid: " + chatRoomJid);
+            logger.debug("Joining chat room as nickname " +
+                         sanitisePeerId(nickname));
 
             // Check the nickname can be validly expressed as a resourcepart now.
             // Unless an empty string or a string greater than 256 bytes was
@@ -918,7 +923,8 @@ public class ChatRoomJabberImpl implements ChatRoom
 
             if (multiUserChat.isJoined())
             {
-                logger.debug("Already joined chat room, jid: " + chatRoomJid);
+                logger.debug("Already joined chat room, jid: " +
+                             sanitiseChatRoom(chatRoomJid));
                 if (!multiUserChat.getNickname().equals(nicknameResource))
                 {
                     multiUserChat.changeNickname(nicknameResource);
@@ -926,7 +932,8 @@ public class ChatRoomJabberImpl implements ChatRoom
                 else
                 {
                     logger.debug("Nickname not changed so nothing to do, " +
-                                              "chat room jid: " + chatRoomJid);
+                                 "chat room jid: " +
+                                 sanitiseChatRoom(chatRoomJid));
                     return;
                 }
             }
@@ -987,7 +994,8 @@ public class ChatRoomJabberImpl implements ChatRoom
                         historyRequestDate = lastMessage.getTimestamp();
                         logger.debug("Chat room not left - requesting history" +
                                      " since last message: " + historyRequestDate +
-                                     ", chat room jid: " + chatRoomJid);
+                                     ", chat room jid: " +
+                                     sanitiseChatRoom(chatRoomJid));
                     }
 
                     if (historyRequestDate == null)
@@ -996,7 +1004,8 @@ public class ChatRoomJabberImpl implements ChatRoom
                         // message history, so request history from the current
                         // time.
                         logger.debug("LastMessageDate is null, invitedDate = " +
-                                     invitedDate + ", chat room jid: " + chatRoomJid);
+                                     invitedDate + ", chat room jid: " +
+                                     sanitiseChatRoom(chatRoomJid));
                         historyRequestDate = new Date();
                     }
                 }
@@ -1013,8 +1022,8 @@ public class ChatRoomJabberImpl implements ChatRoom
                 // since we checked at the start of this method.
                 if (multiUserChat.isJoined())
                 {
-                    logger.debug("Already joined chat room so not " +
-                                 "joining again, jid: " + chatRoomJid);
+                    logger.debug("Already joined chat room so not joining again, jid :" +
+                                 sanitiseChatRoom(chatRoomJid));
                     return;
                 }
 
@@ -1042,8 +1051,8 @@ public class ChatRoomJabberImpl implements ChatRoom
                     List<Jid> latestParticipants = getOwnerJids();
                     for (Jid latestParticipant : latestParticipants)
                     {
-                        logger.debug("Adding to the list " + latestParticipant +
-                                     ", chat room jid: " + chatRoomJid);
+                        logger.debug("Adding to the list " +
+                                     sanitiseChatAddress(latestParticipant.toString()));
                         ChatRoomMemberJabberImpl newMember =
                             new ChatRoomMemberJabberImpl(
                                 this,
@@ -1101,9 +1110,9 @@ public class ChatRoomJabberImpl implements ChatRoom
             {
                 errorMessage
                     = "Failed to join room "
-                        + chatRoomJid
-                        + " with nickname: "
-                        + nickname;
+                      + sanitiseChatRoom(chatRoomJid)
+                      + " with nickname: "
+                      + sanitisePeerId(nickname);
 
                 logger.error(errorMessage, ex);
 
@@ -1117,10 +1126,10 @@ public class ChatRoomJabberImpl implements ChatRoom
             {
                 errorMessage
                     = "Failed to join chat room "
-                        + chatRoomJid
-                        + " with nickname: "
-                        + nickname
-                        + ". The chat room requests a password.";
+                      + sanitiseChatRoom(chatRoomJid)
+                      + " with nickname: "
+                      + sanitisePeerId(nickname)
+                      + ". The chat room requests a password.";
 
                 logger.error(errorMessage, ex);
 
@@ -1134,10 +1143,10 @@ public class ChatRoomJabberImpl implements ChatRoom
             {
                 errorMessage
                     = "Failed to join chat room "
-                        + chatRoomJid
-                        + " with nickname: "
-                        + nickname
-                        + ". The chat room requires registration.";
+                      + sanitiseChatRoom(chatRoomJid)
+                      + " with nickname: "
+                      + sanitisePeerId(nickname)
+                      + ". The chat room requires registration.";
 
                 logger.error(errorMessage, ex);
 
@@ -1151,10 +1160,10 @@ public class ChatRoomJabberImpl implements ChatRoom
             {
                 errorMessage
                     = "Failed to join chat room "
-                        + chatRoomJid
-                        + " with nickname: "
-                        + nickname
-                        + ". You are not permitted to join the chat room.";
+                      + sanitiseChatRoom(chatRoomJid)
+                      + " with nickname: "
+                      + sanitisePeerId(nickname)
+                      + ". You are not permitted to join the chat room.";
 
                 // Only log this at debug level, as it is expected to get this
                 // response if someone else removed us from the chat room while
@@ -1170,9 +1179,9 @@ public class ChatRoomJabberImpl implements ChatRoom
             {
                 errorMessage
                     = "Failed to join room "
-                        + chatRoomJid
-                        + " with nickname: "
-                        + nickname;
+                      + sanitiseChatRoom(chatRoomJid)
+                      + " with nickname: "
+                      + sanitisePeerId(nickname);
 
                 logger.error(errorMessage, ex);
 
@@ -1185,9 +1194,9 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (Throwable ex)
         {
             String errorMessage = "Failed to join room "
-                                    + chatRoomJid
-                                    + " with nickname: "
-                                    + nickname;
+                                  + sanitiseChatRoom(chatRoomJid)
+                                  + " with nickname: "
+                                  + sanitisePeerId(nickname);
 
             logger.error(errorMessage, ex);
 
@@ -1218,7 +1227,6 @@ public class ChatRoomJabberImpl implements ChatRoom
      *
      * @param smackRole the smack role as returned by
      * <tt>Occupant.getRole()</tt>.
-     * @param affiliation
      * @return ChatRoomMemberRole
      */
     public static ChatRoomMemberRole smackRoleToScRole(MUCRole smackRole)
@@ -1256,12 +1264,12 @@ public class ChatRoomJabberImpl implements ChatRoom
         {
             logger.warn(
                 "Not looking for member for null participant in chat room " +
-                                                               getIdentifier());
+                                                               sanitiseChatRoom(getIdentifier()));
             return null;
         }
 
         logger.debug("Looking for existing member for " +
-                                        participant + " in " + getIdentifier());
+                     sanitisePeerId(participant) + " in " + sanitiseChatRoom(getIdentifier()));
         ChatRoomMemberJabberImpl participantMember = null;
 
         // Participant will be in the format chatroomid/nickname.  This
@@ -1312,7 +1320,7 @@ public class ChatRoomJabberImpl implements ChatRoom
     private ChatRoomMemberJabberImpl createMemberForSmackParticipant(
         EntityFullJid participant)
     {
-        logger.debug("Trying to create a new member for " + participant);
+        logger.debug("Trying to create a new member for " + sanitisePeerId(participant));
         ChatRoomMemberJabberImpl newMember = null;
         Boolean createMember = true;
 
@@ -1324,7 +1332,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         if (occupant == null)
         {
             logger.info(
-                "No occupant found - figuring out member details for " + participant);
+                "No occupant found - figuring out member details for " + sanitisePeerId(participant));
 
             // Participant will be in the format chatroomid/nickname.  This
             // extracts the nickname from that string.
@@ -1353,14 +1361,14 @@ public class ChatRoomJabberImpl implements ChatRoom
                 }
                 catch (XmppStringprepException ex)
                 {
-                    logger.error("Error creating Jid from participant name" + participantName
+                    logger.error("Error creating Jid from participant name" + sanitisePeerId(participantName)
                         + ". Can't create member", ex);
                     createMember = false;
                 }
             }
             else
             {
-                logger.debug("No participant name - this must be the chatroom itself" + participant);
+                logger.debug("No participant name - this must be the chatroom itself" + sanitisePeerId(participant));
                 return null;
             }
         }
@@ -1382,16 +1390,17 @@ public class ChatRoomJabberImpl implements ChatRoom
                 }
                 catch (XmppStringprepException ex)
                 {
-                    logger.error("Error creating Jid from occupant nickname" + occupantNick
-                        + ". Can't create member", ex);
+                    logger.error("Error creating Jid from occupant nickname" +
+                                 sanitisePeerId(occupantNick) +
+                                 ". Can't create member", ex);
                     createMember = false;
                 }
             }
         }
 
-        if (occupantNick != null && createMember == true)
+        if (occupantNick != null && createMember)
         {
-            logger.debug("Creating new member with jid " + occupantJid);
+            logger.debug("Creating new member with jid " + sanitisePeerId(occupantJid));
             newMember = new ChatRoomMemberJabberImpl(this,
                 occupantNick,
                 occupantJid);
@@ -1455,12 +1464,12 @@ public class ChatRoomJabberImpl implements ChatRoom
         // has left.
         if ((ownerJids.size() == 1) && (ownerJids.get(0).equals(localJid)))
         {
-            logger.info("Destroying chat room " + identifier);
+            logger.info("Destroying chat room " + sanitiseChatRoom(identifier));
             destroy(leaveDate, eventType, reason);
         }
         else
         {
-            logger.debug("Leaving chat room " + identifier);
+            logger.debug("Leaving chat room " + sanitiseChatRoom(identifier));
             leaveChatRoom(leaveDate, eventType, reason);
         }
     }
@@ -1476,7 +1485,9 @@ public class ChatRoomJabberImpl implements ChatRoom
     private void leaveChatRoom(Date leaveDate, String eventType, String reason)
     {
         String identifier = getIdentifier().toString();
-        logger.info("Trying to leave chatroom " + identifier + ", " + getSubject());
+        logger.info("Trying to leave chatroom " +
+                    sanitiseChatRoom(identifier) + ", " +
+                    logHasher(getSubject()));
 
         try
         {
@@ -1490,13 +1501,16 @@ public class ChatRoomJabberImpl implements ChatRoom
             // Only log at debug level, as this will happen if another client
             // logged in with our ID already revoked our ownership.
             logger.debug("Failed to revoke ownership in chatroom " +
-                identifier + ", " + getSubject() + ". This may be due" +
-                    "to ownership already being revoked", ex);
+                         sanitiseChatRoom(identifier) + ", " +
+                         logHasher(getSubject()) +
+                         ". This may be due" +
+                         "to ownership already being revoked", ex);
         }
         catch (NoResponseException | NotConnectedException | InterruptedException ex)
         {
             logger.error("Failed to revoke ownership in chatroom " +
-                identifier + ", " + getSubject(), ex);
+                         sanitiseChatRoom(identifier) + ", " +
+                         logHasher(getSubject()), ex);
         }
 
         try
@@ -1511,7 +1525,8 @@ public class ChatRoomJabberImpl implements ChatRoom
             | InterruptedException ex)
         {
             logger.error("Failed to leave chatroom " +
-                identifier + ", " + getSubject(), ex);
+                         sanitiseChatRoom(identifier) + ", " +
+                         logHasher(getSubject()), ex);
         }
 
         cleanUpChatRoom(leaveDate, eventType, reason);
@@ -1523,8 +1538,9 @@ public class ChatRoomJabberImpl implements ChatRoom
         String identifier = getIdentifier().toString();
         try
         {
-            logger.info("Trying to destroy chatroom " + identifier +
-                                                           ", " + getSubject());
+            logger.info("Trying to destroy chatroom " +
+                        sanitiseChatRoom(identifier) + ", " +
+                        logHasher(getSubject()));
 
             // No need to revoke our ownership, as we're destroying the room.
             multiUserChat.destroy(null, null);
@@ -1535,8 +1551,10 @@ public class ChatRoomJabberImpl implements ChatRoom
             // Only log at debug level, as we may have just failed to destroy
             // because we don't have permission or because the chatroom has
             // been deleted by someone else.
-            logger.debug("Failed to destroy chatroom " + identifier +
-                ", " + getSubject() + " : " + ex.getMessage(), ex);
+            logger.debug("Failed to destroy chatroom " +
+                         sanitiseChatRoom(identifier) + ", " +
+                         logHasher(getSubject()) + " : " +
+                         ex.getMessage(), ex);
 
             // In case we just didn't have permission to destroy the chatroom,
             // try to leave it and let the owner destroy it later.
@@ -1544,8 +1562,10 @@ public class ChatRoomJabberImpl implements ChatRoom
         }
         catch (NoResponseException | NotConnectedException | InterruptedException ex)
         {
-            logger.error("Failed to destroy chatroom " + identifier +
-                ", " + getSubject() + " : " + ex.getMessage(), ex);
+            logger.error("Failed to destroy chatroom " +
+                         sanitiseChatRoom(identifier) + ", " +
+                         logHasher(getSubject()) + " : " +
+                         ex.getMessage(), ex);
         }
     }
 
@@ -1562,7 +1582,7 @@ public class ChatRoomJabberImpl implements ChatRoom
      */
     private void cleanUpChatRoom(Date leaveDate, String eventType, String reason)
     {
-        logger.debug("Cleaning up chat room: " + getIdentifier());
+        logger.debug("Cleaning up chat room: " + sanitiseChatRoom(getIdentifier()));
         // Remove this chat room ID from our roster on the server so that
         // any other clients logged on to this user account will be told that
         // it has been deleted and leave the chat room.
@@ -1624,8 +1644,7 @@ public class ChatRoomJabberImpl implements ChatRoom
          {
              assertConnected();
 
-             org.jivesoftware.smack.packet.MessageBuilder msg =
-                provider.getConnection().getStanzaFactory().buildMessageStanza();
+             MessageBuilder msg = provider.getConnection().getStanzaFactory().buildMessageStanza();
 
              msg.setBody(message.getContent());
              //msg.addExtension(new Version());
@@ -1696,10 +1715,11 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (IllegalStateException | NoResponseException | NotConnectedException
             | InterruptedException | XMPPErrorException ex)
         {
-            logger.error("Failed to change subject for chat room" + getIdentifier()
-                         , ex);
+            logger.error("Failed to change subject for chat room" +
+                         sanitiseChatRoom(getIdentifier()), ex);
             throw new OperationFailedException(
-                "Failed to changed subject for chat room" + getIdentifier(),
+                "Failed to changed subject for chat room" +
+                sanitiseChatRoom(getIdentifier()),
                 OperationFailedException.FORBIDDEN,
                 ex);
         }
@@ -1779,8 +1799,9 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void banned(EntityFullJid participant, Jid actor, String reason)
         {
-            logger.info(participant + " has been banned from "
-                + getIdentifier() + " chat room.");
+            logger.info(sanitisePeerId(participant) +
+                        " has been banned from " +
+                        sanitiseChatRoom(getIdentifier()) + " chat room.");
 
             participantPermanentlyLeft(participant);
         }
@@ -1796,7 +1817,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void adminGranted(EntityFullJid participant)
         {
-            logger.debug("Admin granted to " + participant);
+            logger.debug("Admin granted to " + sanitisePeerId(participant));
         }
 
         /**
@@ -1811,7 +1832,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void adminRevoked(EntityFullJid participant)
         {
-            logger.debug("Admin revoked from " + participant);
+            logger.debug("Admin revoked from " + sanitisePeerId(participant));
         }
 
         /**
@@ -1826,8 +1847,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void joined(EntityFullJid participant)
         {
-            logger.info(participant + " has joined the "
-                + getIdentifier() + " chat room.");
+            logger.info(sanitisePeerId(participant) + " has joined the "
+                + sanitiseChatRoom(getIdentifier()) + " chat room.");
 
             participantJoined(participant);
         }
@@ -1835,7 +1856,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         /**
          * Handles adding a new participant who has just joined the chat room.
          *
-         * @param participant The paricipant who has joined the chat room.
+         * @param participant The participant who has joined the chat room.
          */
         private void participantJoined(EntityFullJid participant)
         {
@@ -1857,7 +1878,7 @@ public class ChatRoomJabberImpl implements ChatRoom
                     members.containsKey(participantName))
                 {
                     logger.debug("Ignoring joined event as participant " +
-                                 participant + " is already in members list");
+                                 sanitisePeerId(participant) + " is already in members list");
                     return;
                 }
 
@@ -1869,12 +1890,12 @@ public class ChatRoomJabberImpl implements ChatRoom
                     nickname.equalsIgnoreCase(participantName))
                 {
                     logger.debug(
-                        "Ignoring joined event from ourself " + participant);
+                        "Ignoring joined event from ourself " + sanitisePeerId(participant));
                     return;
                 }
             }
 
-            logger.debug("Participant joined " + participant);
+            logger.debug("Participant joined " + sanitisePeerId(participant));
 
             synchronized (members)
             {
@@ -1896,8 +1917,9 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void left(EntityFullJid participant)
         {
-            logger.info(participant + " has left the "
-                + getIdentifier() + " chat room.");
+            logger.info(sanitisePeerId(participant) +
+                        " has left the " + sanitiseChatRoom(getIdentifier())
+                        + " chat room.");
 
             // Do nothing here as the user has just gone offline.  If they
             // left permanently, we will receive an event to say that their
@@ -1911,8 +1933,9 @@ public class ChatRoomJabberImpl implements ChatRoom
          */
         private void participantPermanentlyLeft(EntityFullJid participant)
         {
-            logger.debug("Participant permanently left chat room " + getIdentifier() +
-                ": " + participant);
+            logger.debug("Participant permanently left chat room " +
+                         sanitiseChatRoom(getIdentifier()) + ": " +
+                         sanitisePeerId(participant));
 
             ChatRoomMemberJabberImpl member =
                 getMemberForSmackParticipant(participant, true);
@@ -1925,7 +1948,7 @@ public class ChatRoomJabberImpl implements ChatRoom
                 // between our local contact list and the server roster.
                 String memberAddress = member.getContactAddressAsString().toLowerCase();
                 removed = members.remove(memberAddress);
-                logger.debug("Removed chat room member " + memberAddress + "? " + removed);
+                logger.debug("Removed chat room member " + sanitiseChatAddress(memberAddress) + "? " + removed);
             }
 
             // Only fire an event if we actually removed the member from the
@@ -1951,7 +1974,9 @@ public class ChatRoomJabberImpl implements ChatRoom
         {
             // We don't show the nickname to the user, so we don't care about
             // changes.
-            logger.debug("Nickname changed for " + participant + " to " + newNickname);
+            logger.debug("Nickname changed for " +
+                         sanitisePeerId(participant) + " to " +
+                         sanitisePeerId(newNickname));
         }
 
         /**
@@ -1965,7 +1990,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void ownershipRevoked(EntityFullJid participant)
         {
-            logger.info("Ownership revoked from " + participant);
+            logger.info("Ownership revoked from " +
+                        sanitisePeerId(participant));
 
             // All participants in the chat room are set to be owners.  This is
             // because their ownership persists over going offline so we can
@@ -2003,8 +2029,8 @@ public class ChatRoomJabberImpl implements ChatRoom
             {
                 // actorMember can be null, so don't worry too much if we
                 // can't get a member from the actor Jid.
-                logger.warn("Kick actor " + actor + " is not a full JID, "
-                    + "unable to find member", ex);
+                logger.warn("Kick actor " + sanitisePeerId(actor.asEntityFullJidIfPossible()) +
+                            " is not a full JID, unable to find member", ex);
             }
 
             if(member == null)
@@ -2035,7 +2061,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void moderatorGranted(EntityFullJid participant)
         {
-            logger.debug("Moderator granted to " + participant);
+            logger.debug("Moderator granted to " + sanitisePeerId(participant));
         }
 
         /**
@@ -2049,7 +2075,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void voiceRevoked(EntityFullJid participant)
         {
-            logger.debug("Voice revoked from " + participant);
+            logger.debug("Voice revoked from " + sanitisePeerId(participant));
         }
 
         /**
@@ -2062,7 +2088,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void membershipGranted(EntityFullJid participant)
         {
-            logger.debug("Membership granted to " + participant);
+            logger.debug("Membership granted to " + sanitisePeerId(participant));
         }
 
         /**
@@ -2077,7 +2103,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void moderatorRevoked(EntityFullJid participant)
         {
-            logger.debug("Moderator Revoked from " + participant);
+            logger.debug("Moderator Revoked from " + sanitisePeerId(participant));
         }
 
         /**
@@ -2091,7 +2117,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void voiceGranted(EntityFullJid participant)
         {
-            logger.debug("Voice granted to " + participant);
+            logger.debug("Voice granted to " + sanitisePeerId(participant));
         }
 
         /**
@@ -2106,7 +2132,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void membershipRevoked(EntityFullJid participant)
         {
-            logger.debug("Membership revoked from " + participant);
+            logger.debug("Membership revoked from " + sanitisePeerId(participant));
         }
 
         /**
@@ -2120,7 +2146,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         @Override
         public void ownershipGranted(EntityFullJid participant)
         {
-            logger.info("Ownership granted to " + participant);
+            logger.info("Ownership granted to " + sanitisePeerId(participant));
 
             // All participants in the chat room are set to be owners.  This is
             // because their ownership persists over going offline so we can
@@ -2266,7 +2292,7 @@ public class ChatRoomJabberImpl implements ChatRoom
             else
             {
                 throw new OperationFailedException(
-                    "An error occured while trying to kick the participant.",
+                    "An error occurred while trying to kick the participant.",
                     OperationFailedException.GENERAL_ERROR);
             }
         }
@@ -2400,7 +2426,7 @@ public class ChatRoomJabberImpl implements ChatRoom
          * been initialized that will be processed once the chat room is
          * initialized.
          */
-        private final List<Stanza> pendingStanzas = new ArrayList<>();
+        private final List<Message> pendingMessages = new ArrayList<>();
 
         /**
          * Process a packet.  The packet will be processed immediately if the
@@ -2409,31 +2435,39 @@ public class ChatRoomJabberImpl implements ChatRoom
          *
          * @param message to process.
          */
-        public void processMessage(org.jivesoftware.smack.packet.Message message)
+        public void processMessage(Message message)
         {
             boolean processImmediately;
-            synchronized (pendingStanzas)
+            synchronized (pendingMessages)
             {
                 if (!chatRoomInitialized)
                 {
                     logger.debug("Chat room not initialized, adding packet " +
                                  "to pending packets: " + message.getStanzaId() +
-                                 ", for " + getIdentifier());
-                    pendingStanzas.add(message);
+                                 ", for " + sanitiseChatRoom(getIdentifier()));
+                    pendingMessages.add(message);
                     processImmediately = false;
                 }
                 else
                 {
                     logger.debug("Chat room initialized, processing packet " +
                                  "immediately: " + message.getStanzaId() +
-                                 ", for " + getIdentifier());
+                                 ", for " + sanitiseChatRoom(getIdentifier()));
                     processImmediately = true;
                 }
             }
 
             if (processImmediately)
             {
-                processStanzaImmediately(message);
+                if ((message.getStanzaId() != null) &&
+                    (!messageHistoryService.findMatchingGroupChatMsgUids(getIdentifier().toString(),
+                        Collections.singletonList(message.getStanzaId())).isEmpty()))
+                {
+                    logger.info("Ignore duplicate message with ID " + message.getStanzaId());
+                    return;
+                }
+
+                processMessageImmediately(message);
             }
         }
 
@@ -2443,39 +2477,51 @@ public class ChatRoomJabberImpl implements ChatRoom
          */
         private void setChatRoomInitialized()
         {
-            synchronized (pendingStanzas)
+            synchronized (pendingMessages)
             {
-                logger.debug("Processing pending packets for " + getIdentifier());
+                logger.debug("Processing pending packets for " + sanitiseChatRoom(getIdentifier()));
 
                 // We've been asked to process the pending packets, so the chat
                 // room is now initialized.
                 chatRoomInitialized = true;
 
-                for (Stanza pendingStanza : pendingStanzas)
+                // Do a bulk check for duplicate messages.  As this involves a DB operation, doing this
+                // in bulk saves significant time compared to doing it individually when there are many.
+                List<String> msgUids = pendingMessages.stream()
+                    .map(Message::getStanzaId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+                Collection<String> msgUidDuplicates =
+                    messageHistoryService.findMatchingGroupChatMsgUids(getIdentifier().toString(), msgUids);
+
+                for (Message pendingMessage : pendingMessages)
                 {
-                    processStanzaImmediately(pendingStanza);
+                    if (msgUidDuplicates.contains(pendingMessage.getStanzaId()))
+                    {
+                        logger.debug("Skip duplicate message with ID " + pendingMessage.getStanzaId());
+                        continue;
+                    }
+
+                    processMessageImmediately(pendingMessage);
                 }
 
-                pendingStanzas.clear();
+                pendingMessages.clear();
             }
         }
 
         /**
-         * Process a stanza immediately.
+         * Process a Message immediately.
          *
-         * @param stanza to process.
+         * @param msg to process.
          */
-        private void processStanzaImmediately(Stanza stanza)
+        private void processMessageImmediately(Message msg)
         {
-            if(!(stanza instanceof org.jivesoftware.smack.packet.Message) ||
-               !ConfigurationUtils.isMultiUserChatEnabled())
+            if (!ConfigurationUtils.isMultiUserChatEnabled())
             {
                 logger.warn("Ignoring multi-user chat message as MUC disabled");
                 return;
             }
-
-            org.jivesoftware.smack.packet.Message msg =
-                (org.jivesoftware.smack.packet.Message) stanza;
 
             String msgBody = msg.getBody();
             if(msgBody == null)
@@ -2515,7 +2561,7 @@ public class ChatRoomJabberImpl implements ChatRoom
             String chatRoomId = getIdentifier().toString();
             if (match != null && match.matches())
             {
-                logger.debug("Matched special message: " + msgBody + " for " + chatRoomId);
+                logger.debug("Matched special message: " + sanitiseChatAddress(msgBody) + " for " + sanitiseChatRoom(chatRoomId));
                 // Get the message type
                 String type = match.group(1);
 
@@ -2587,7 +2633,7 @@ public class ChatRoomJabberImpl implements ChatRoom
             if (member == null)
             {
                 logger.debug("No member found for " + msgFromString +
-                                 chatRoomId + ", ignoring message: " + msgBody);
+                                 sanitiseChatRoom(chatRoomId) + ", ignoring message: " + msgBody);
                 return;
             }
 
@@ -2650,11 +2696,12 @@ public class ChatRoomJabberImpl implements ChatRoom
                         // invited us back into the chat while we were offline
                         // so we expect to receive a historical join message
                         // after this one. If it isn't a historical message,
-                        // don't actually ban ourself until we've fired the
+                        // don't actually ban ourselves until we've fired the
                         // message event to be sure that the status message is
                         // displayed in the chat before we've left.
-                        logger.debug("User has been banned from " + getIdentifier() +
-                            ". Historical special message? " + isHistoryMessage);
+                        logger.debug("User has been banned from " +
+                                     sanitiseChatRoom(getIdentifier()) +
+                                     ". Historical special message? " + isHistoryMessage);
                         if (!isHistoryMessage)
                         {
                             sendBan = true;
@@ -2685,72 +2732,16 @@ public class ChatRoomJabberImpl implements ChatRoom
                 }
             }
 
-            logger.debug("Received message from " + fromUserName + " in " + chatRoomId);
+            logger.debug("Received message from " + sanitiseChatAddress(fromUserName)
+                         + " in " + sanitiseChatRoom(chatRoomId));
 
             String msgID = msg.getStanzaId();
             ImMessage newMessage = createMessage(msgBody, msgID);
 
-            if (msg.getType() == org.jivesoftware.smack.packet.Message.Type.error)
+            if (msg.getType() == Message.Type.error)
             {
-                logger.info("Message error received from " +
-                                            fromUserName + " in " + chatRoomId);
-
-                StanzaError error = stanza.getError();
-                Condition errorCode = error.getCondition();
-                int errorResultCode = MessageFailedEvent.UNKNOWN_ERROR;
-                String errorReason = error.getConditionText();
-
-                if (errorCode == Condition.service_unavailable)
-                {
-                    org.jivesoftware.smackx.xevent.packet.MessageEvent msgEvent =
-                        (org.jivesoftware.smackx.xevent.packet.MessageEvent)
-                            stanza.getExtensionElement("x", "jabber:x:event");
-
-                    if (msgEvent != null && msgEvent.isOffline())
-                    {
-                        errorResultCode =
-                            MessageFailedEvent.OFFLINE_MESSAGES_NOT_SUPPORTED;
-                    }
-                }
-
-                ChatRoomMessageDeliveryFailedEvent evt =
-                    new ChatRoomMessageDeliveryFailedEvent(
-                        newMessage,
-                        ChatRoomJabberImpl.this,
-                        member,
-                        errorResultCode,
-                        errorReason,
-                        new Date());
-
-                fireMessageEvent(evt);
+                processErrorMessage(msg, chatRoomId, member, fromUserName, newMessage);
                 return;
-            }
-
-            // Sometimes the server sends us duplicates of the most recent
-            // messages that we've already received.  Check whether this
-            // message is in the recent history and, if so, ignore it.
-            Collection<MessageEvent> messageEvents = messageHistoryService.
-                    findLastMessagesBefore(ChatRoomJabberImpl.this,
-                                           new Date(),
-                                           MAX_HISTORY_SIZE + 10);
-
-            if (!messageEvents.isEmpty())
-            {
-                for (EventObject eventObject : messageEvents)
-                {
-                    if (eventObject instanceof MessageEvent)
-                    {
-                        MessageEvent evt = (MessageEvent) eventObject;
-
-                        if (msgID.equals(evt.getSourceMessage().getMessageUID()))
-                        {
-                            logger.debug(
-                                "Ignoring duplicate message with ID " + msgID +
-                                                           " in " + chatRoomId);
-                            return;
-                        }
-                    }
-                }
             }
 
             // If this is a historical message, set the timestamp of the
@@ -2804,6 +2795,43 @@ public class ChatRoomJabberImpl implements ChatRoom
                 userListener.banned(senderAddress, null);
             }
         }
+
+        private void processErrorMessage(Message msg, String chatRoomId,
+            ChatRoomMemberJabberImpl member, String fromUserName,
+            ImMessage newMessage)
+        {
+            logger.info("Message error received from " +
+                        sanitisePeerId(fromUserName) + " in " + sanitiseChatRoom(chatRoomId));
+
+            StanzaError error = msg.getError();
+            Condition errorCode = error.getCondition();
+            int errorResultCode = MessageFailedEvent.UNKNOWN_ERROR;
+            String errorReason = error.getConditionText();
+
+            if (errorCode == Condition.service_unavailable)
+            {
+                org.jivesoftware.smackx.xevent.packet.MessageEvent msgEvent =
+                    (org.jivesoftware.smackx.xevent.packet.MessageEvent)
+                        msg.getExtensionElement("x", "jabber:x:event");
+
+                if (msgEvent != null && msgEvent.isOffline())
+                {
+                    errorResultCode =
+                        MessageFailedEvent.OFFLINE_MESSAGES_NOT_SUPPORTED;
+                }
+            }
+
+            ChatRoomMessageDeliveryFailedEvent evt =
+                new ChatRoomMessageDeliveryFailedEvent(
+                    newMessage,
+                    ChatRoomJabberImpl.this,
+                    member,
+                    errorResultCode,
+                    errorReason,
+                    new Date());
+
+            fireMessageEvent(evt);
+        }
     }
 
     /**
@@ -2819,7 +2847,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         public void subjectUpdated(String subject, EntityFullJid from)
         {
             String fromAddress = from != null ? from.toString() : null;
-            logger.info("Subject updated by " + logHasher(fromAddress) + " in room " + getIdentifier());
+            logger.info("Subject updated by " + sanitisePeerId(fromAddress) +
+                        " in room " + sanitiseChatRoom(getIdentifier()));
 
             if (subject == null || subject.trim().isEmpty())
             {
@@ -2896,7 +2925,8 @@ public class ChatRoomJabberImpl implements ChatRoom
          */
         public void kicked(String actor, String reason)
         {
-            logger.info("Kicked from " + getIdentifier() + " by " + actor + ". Reason: " + reason);
+            logger.info("Kicked from " + sanitiseChatRoom(getIdentifier()) +
+                        " by " + logHasher(actor) + ". Reason: " + reason);
             leave(LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_KICKED, reason);
         }
 
@@ -2931,7 +2961,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         */
         public void banned(String actor, String reason)
         {
-            logger.info("Banned from " + getIdentifier() + " by " + actor + ". Reason: " + reason);
+            logger.info("Banned from " + sanitiseChatRoom(getIdentifier()) +
+                        " by " + logHasher(actor) + ". Reason: " + reason);
             leave(LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_DROPPED, reason);
         }
 
@@ -3143,7 +3174,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (Exception ex)
         {
             logger.warn("Could not get persistent state for room :" +
-                roomName + "\n", ex);
+                sanitiseChatRoom(roomName) + "\n", ex);
         }
         return persistent;
     }
@@ -3227,8 +3258,8 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (NoResponseException | NotConnectedException | InterruptedException |
             XMPPErrorException ex)
         {
-            logger.error("An error occured granting moderator " +
-                "privileges to user " + nickname, ex);
+            logger.error("An error occurred granting moderator " +
+                         "privileges to user " + sanitisePeerId(nickname.toString()), ex);
         }
     }
 
@@ -3238,7 +3269,7 @@ public class ChatRoomJabberImpl implements ChatRoom
     * ownership privileges to other users. An owner is allowed to change
     * defining room features as well as perform all administrative functions.
     *
-    * @param jidString the bare XMPP user ID of the user to grant ownership
+    * @param jid the bare XMPP user ID of the user to grant ownership
     * privileges (e.g. "user@host.org").
     */
     public void grantOwnership(Jid jid)
@@ -3279,7 +3310,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (NoResponseException | NotConnectedException | InterruptedException |
             XMPPErrorException ex)
         {
-            logger.error("An error occured granting voice to a visitor", ex);
+            logger.error("An error occurred granting voice to a visitor", ex);
         }
     }
 
@@ -3288,7 +3319,7 @@ public class ChatRoomJabberImpl implements ChatRoom
     * administrator privileges will become a member. Room owners may revoke
     * administrator privileges from a member or unaffiliated user.
     *
-    * @param jidString the bare XMPP user ID of the user to grant administrator
+    * @param jid the bare XMPP user ID of the user to grant administrator
     * privileges (e.g. "user@host.org").
     */
     public void revokeAdmin(Jid jid)
@@ -3312,7 +3343,7 @@ public class ChatRoomJabberImpl implements ChatRoom
     * on the member list). If the user is in the room and the room is of type
     * members-only then the user will be removed from the room.
     *
-    * @param jidString the bare XMPP user ID of the user to revoke membership
+    * @param jid the bare XMPP user ID of the user to revoke membership
     * (e.g. "user@host.org").
     */
     public void revokeMembership(Jid jid)
@@ -3324,7 +3355,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (NoResponseException | NotConnectedException | InterruptedException |
             XMPPErrorException ex)
         {
-            logger.error("An error occured revoking membership to a user", ex);
+            logger.error("An error occurred revoking membership to a user", ex);
         }
     }
 
@@ -3347,7 +3378,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (NoResponseException | NotConnectedException | InterruptedException |
             XMPPErrorException ex)
         {
-            logger.error("An error occured revoking moderator " +
+            logger.error("An error occurred revoking moderator " +
                 "privileges from a user", ex);
         }
     }
@@ -3373,7 +3404,7 @@ public class ChatRoomJabberImpl implements ChatRoom
             XMPPErrorException ex)
         {
             String errorString =
-                "An error occurred revoking ownership privileges from the user: " + logHasher(jid);
+                "An error occurred revoking ownership privileges from the user: " + sanitisePeerId(jid);
             logger.error(errorString, ex);
 
             throw new OperationFailedException(
@@ -3405,7 +3436,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         catch (NoResponseException | NotConnectedException | InterruptedException |
             XMPPErrorException ex)
         {
-            logger.info("An error occurs revoking voice from a participant", ex);
+            logger.info("An error occurred while revoking voice from a participant", ex);
         }
     }
 
@@ -3485,8 +3516,7 @@ public class ChatRoomJabberImpl implements ChatRoom
                 // has declined the invitation
                 if (mucUser != null
                     && mucUser.getDecline() != null
-                    && ((org.jivesoftware.smack.packet.Message) stanza).getType()
-                        != org.jivesoftware.smack.packet.Message.Type.error)
+                    && ((Message) stanza).getType() != Message.Type.error)
                 {
                     int messageReceivedEventType = MessageEvent.SYSTEM_MESSAGE;
                     ChatRoomMemberJabberImpl member = new ChatRoomMemberJabberImpl(
@@ -3562,7 +3592,9 @@ public class ChatRoomJabberImpl implements ChatRoom
     {
         // Toggle local mute state
         isMuted = !isMuted;
-        logger.debug("Set mute of chatroom: " + getIdentifier() + " to " + isMuted);
+        logger.debug("Set mute of chatroom: " +
+                     sanitiseChatRoom(getIdentifier()) +
+                     " to " + isMuted);
 
         // Update the config to the new value
         ConfigurationUtils.updateChatRoomProperty(

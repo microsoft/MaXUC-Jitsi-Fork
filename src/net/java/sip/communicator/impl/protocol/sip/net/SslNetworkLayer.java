@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip.net;
 
 import java.io.*;
@@ -284,16 +285,8 @@ public class SslNetworkLayer
             ResourceManagementService res = SipActivator.getResources();
             String title = res.getI18NString("service.gui.ERROR");
             String message = res.getI18NString("service.gui.REFRESH_NETWORK_CONFIG_DIALOG_TEXT");
-            ErrorDialog dialog = new ErrorDialog(null, title, message) {
-                @Override
-                public void dispose()
-                {
-                    super.dispose();
-                    sRefreshNetworkConfigDialogShowing = false;
-                }
-            };
-            dialog.setModal(false);
-            dialog.showDialog();
+            // Show the error popup once and never again
+            new ErrorDialog(title, message).showDialog();
         }
     }
 

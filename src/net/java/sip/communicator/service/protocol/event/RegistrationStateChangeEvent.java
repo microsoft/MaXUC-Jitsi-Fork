@@ -52,12 +52,12 @@ public class RegistrationStateChangeEvent extends PropertyChangeEvent
     public static final int REASON_AUTHENTICATION_FAILED = 1;
 
     /**
-     * Indicates that the same user identifier has logged somewhere else. This
-     * code is often returned when transitting into disconnected state. Some
-     * protocols, however, support multiple logins and servers would only return
-     * this code for purely informational reasons.
+     * Indicates that the same identifier (connection resource) has been used
+     * multiple times. This code is returned when transiting into disconnected
+     * state. Some protocols, however, support multiple logins and servers would
+     * only return this code for purely informational reasons.
      */
-    public static final int REASON_MULTIPLE_LOGINS = 2;
+    public static final int REASON_MULTIPLE_CONNECTIONS = 2;
 
     /**
      * Indicates that the server does not recognize the used identifier that

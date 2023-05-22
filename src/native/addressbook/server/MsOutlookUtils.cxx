@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+
 #include "MAPISession.h"
 #include "MsOutlookUtils.h"
 

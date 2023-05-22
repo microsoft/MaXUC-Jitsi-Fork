@@ -440,12 +440,7 @@ public abstract class PathSelectorComboBox extends JComboBox<String>
             });
             return;
         }
-        ErrorDialog dialog = new ErrorDialog(null,
-                                             mInvalidChoiceTitle,
-                                             mInvalidChoiceText);
-        dialog.setAlwaysOnTop(true);
-        dialog.setResizable(false);
-        dialog.setVisible(true);
+        new ErrorDialog(mInvalidChoiceTitle, mInvalidChoiceText).showDialog();
     }
 
     /**

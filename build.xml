@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created by Emil Ivov on Jul 6, 2005 8:30:22 PM-->
-
+<!-- Portions (c) Microsoft Corporation. All rights reserved. -->
 <project default="ant-usage" name="jitsi" xmlns:ivy="antlib:org.apache.ivy.ant" >
     <!-- Java version to use.  We use the same version for everything. -->
     <property name="javac.source" value="11"/>
@@ -100,10 +100,6 @@
     <!-- set the os.lib.home here in case it was not set before -->
     <property name="os.lib.home" value="${lib}"/>
 
-    <property name="profiler.args" value="" />
-    <property name="profiler.bootdelegation" value="" />
-    <property name="profiler.autostart" value="" />
-
     <tstamp>
         <format property="build.date" pattern="dd-MM-yyyy"/>
     </tstamp>
@@ -138,15 +134,8 @@
         <path id="compile.class.path" >
             <path refid="project.class.path" />
             <pathelement location="${dest}" />
-            <!-- Add swt.jar classes for both Windows and Mac to the compile class path to enable
-                cross compilation.  Runtime checks ensure that only platform-compatible methods are called. -->
-            <fileset dir="${lib}" >
-                <include name="installer-exclude/os-specific/javafx-*.jar" />
-                <include name="installer-exclude/os-specific/org.eclipse.swt.cocoa.macosx.x86_64.jar" />
-                <include name="installer-exclude/os-specific/org.eclipse.swt.win32.win32.x86.jar" />
-            </fileset>
         </path>
-
+            
         <path id="debug.class.path" >
             <!-- used by netbeans but might be useful elsewhere. -->
             <path refid="project.class.path" />
@@ -173,7 +162,6 @@
        <echo message="'ant -projecthelp' for other useful build targets" />
        <echo message="'ant -help' for Ant help" />
     </target>
-
 
     <!-- java compile -->
     <target name="compile" depends="-init-paths,init">
@@ -221,7 +209,7 @@
     <!--internal-target- Copies all resource file to the ${dest} dir -->
     <target name="resource">
         <property name="resource.locale.sed.independent"
-            value="s/@@PRODUCT_NAME_ASCII@@/Accession Communicator/g;s/@@PRODUCT_NAME_SHORT@@/Accession/g;s/@@PRODUCT_NAME_TITLECASE@@/Accession Communicator/g;s/@@WEB_PAGE@@/https:\/\/www.metaswitch.com/g;s/@@COMPANY_NAME@@/Metaswitch Networks/g;s/@@ACCESSION_MEETING_APP_NAME@@/Accession Meeting/g;s/@@ACCESSION_MEETING_MEETING_NAME@@/Meeting/g" />
+            value="s/@@PRODUCT_NAME_ASCII@@/Unified Communications Client/g;s/@@PRODUCT_NAME_SHORT@@/Unified Communications Client/g;s/@@PRODUCT_NAME_TITLECASE@@/Unified Communications Client/g;" />
 
         <exec executable="sed" output="resources/languages/resources.properties" logError="true" failonerror="true">
             <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
@@ -410,42 +398,6 @@
               overwrite="true"/>
     </target>
 
-    <target name="find-electron-commit-from-variable">
-        <if>
-            <and>
-                <isset property="build.label"/>
-                <isset property="system.ELECTRON_COMMIT"/>
-            </and>
-            <then>
-                  <replace file="${src}/net/java/sip/communicator/impl/version/NightlyBuildID.java"
-                           token="build.electron_commit" value="${system.ELECTRON_COMMIT}"/>
-            </then>
-        </if>
-    </target>
-
-    <target name="find-electron-commit-from-file">
-        <if>
-            <and>
-                <isset property="build.label"/>
-                <not>
-                    <isset property="system.ELECTRON_COMMIT"/>
-                </not>
-            </and>
-            <then>
-                <trycatch>
-                    <try>
-                        <loadfile srcfile="../electron_version.txt" property="electronCommit"/>
-                        <replace file="${src}/net/java/sip/communicator/impl/version/NightlyBuildID.java"
-                                 token="build.electron_commit" value="${electronCommit}"/>
-                    </try>
-                    <catch>
-                        <echo>Cannot find electron_version.txt</echo>
-                    </catch>
-                </trycatch>
-            </then>
-        </if>
-    </target>
-
     <!--INIT-->
     <target name="init" depends="-init-paths">
         <mkdir dir="${dest}"/>
@@ -457,7 +409,6 @@
         <mkdir dir="${bundles.dest.win}"/>
     </target>
 
-
     <!-- - - - - - - - - - - - - - BUNDLE BUILDING TARGETS - - - - - - - -       -->
     <!--ALL BUNDLES-->
     <target name="bundles"
@@ -467,11 +418,11 @@
         bundle-callhistory,
         bundle-netaddr,
         bundle-sip,bundle-fileaccess,
-        bundle-neomedia,bundle-hid,bundle-ldap,
+        bundle-neomedia,bundle-ldap,
         bundle-resource-manager,bundle-resources-defaultpack,
         bundle-protocol,bundle-protocol-media,
         bundle-mock,
-        bundle-jabber,bundle-swing-ui,bundle-ui-service,bundle-mac-widgets,
+        bundle-jabber,bundle-swing-ui,bundle-ui-service,
         bundle-jnalib,
         bundle-contactlist,meta-contactlist,
         bundle-plugin-jabberaccregwizz,
@@ -483,7 +434,7 @@
         bundle-systemactivitynotifications,
         bundle-osdependent,bundle-browserlauncher,
         bundle-notification-service,bundle-notification-handlers,
-        bundle-notification-wiring,bundle-notification-config,
+        bundle-notification-wiring,
         bundle-contacteventhandler,
         bundle-keybindings,
         bundle-plugin-globalproxyconfig,
@@ -510,8 +461,7 @@
         bundle-hsql, bundle-database,
         bundle-headsetmanager-service, bundle-websocketserver-service, bundle-wispaservice,
         bundle-metadata-extractor, bundle-websocket,
-        bundle-commons-lang, bundle-commons-logging, bundle-commons-io,bundle-commons-text,
-        bundle-nanohttpd" />
+        bundle-commons-lang, bundle-commons-logging, bundle-commons-io,bundle-commons-text" />
 
     <!--BUNDLE-SC-LAUNCHER-->
     <target name="bundle-sc-launcher">
@@ -727,20 +677,6 @@
         </jar>
     </target>
 
-    <!--BUNDLE-HID -->
-    <target name="bundle-hid">
-        <jar compress="false" destfile="${bundles.dest}/hid.jar"
-            manifest="${src}/net/java/sip/communicator/impl/hid/hid.manifest.mf">
-
-            <zipfileset dir="${dest}/net/java/sip/communicator/service/hid"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/service/hid"/>
-            <zipfileset dir="${dest}/net/java/sip/communicator/impl/hid"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/impl/hid" />
-        </jar>
-    </target>
-
     <!--BUNDLE-LDAP-->
     <target name="bundle-ldap">
         <jar compress="false" destfile="${bundles.dest}/ldap.jar"
@@ -904,41 +840,6 @@
         </jar>
     </target>
 
-    <!-- BUNDLE-MAC-WIDGETS -->
-    <target name="bundle-mac-widgets">
-        <jar compress="true"
-             destfile="${bundles.dest}/mac_widgets.jar"
-             filesetmanifest="merge" >
-            <zipfileset src="lib/installer-exclude/mac_widgets.jar" prefix="" />
-            <zipfileset src="lib/installer-exclude/forms.jar" prefix="" />
-            <manifest>
-                <attribute name="Export-Package" value="com.explodingpixels.macwidgets" />
-                <attribute name="Import-Package" value="javax.swing,
-                                                        javax.swing.border,
-                                                        javax.swing.event,
-                                                        javax.swing.filechooser,
-                                                        javax.swing.plaf,
-                                                        javax.swing.plaf.basic,
-                                                        javax.swing.plaf.metal,
-                                                        javax.swing.table,
-                                                        javax.swing.text,
-                                                        javax.swing.text.html,
-                                                        javax.swing.tree,
-                                                        javax.swing.undo" />
-                <attribute name="Bundle-Name" value="Mac Widgets" />
-                <attribute name="Bundle-Description" value="Provides mac look and feel" />
-                <attribute name="System-Bundle" value="yes" />
-                <!-- Attributes corresponding to forms.jar - preserved from previously checked-in file jitsi/lib/installer-exclude/forms-1.2.1.jar!META-INF/MANIFEST.MF -->
-                <attribute name="Specification-Title" value="JGoodies Forms API Specification" />
-                <attribute name="Specification-Vendor" value="JGoodies Karsten Lentzsch" />
-                <attribute name="Specification-Version" value="1.2" />
-                <attribute name="Implementation-Title" value="JGoodies Forms" />
-                <attribute name="Implementation-Vendor" value="JGoodies Karsten Lentzsch" />
-                <attribute name="Implementation-Version" value="1.2.1 2008-07-25 08:51:31" />
-            </manifest>
-        </jar>
-    </target>
-
     <!-- BUNDLE-CONTACTLIST -->
     <target name="bundle-contactlist">
         <!-- Creates a bundle containing the contactlist interfaces.-->
@@ -1089,22 +990,6 @@
         </jar>
     </target>
 
-    <!--BUNDLE-NANOHTTPD -->
-    <target name="bundle-nanohttpd">
-        <jar compress="true" destfile="lib/bundle/nanohttpd.jar"
-            filesetmanifest="merge">
-
-            <zipfileset src="${lib.noinst}/nanohttpd.jar" prefix=""/>
-            <manifest>
-                <attribute name="Import-Package" value="javax.net.ssl"/>
-                <attribute name="Export-Package" value="fi.iki.elonen"/>
-                <attribute name="Bundle-Name" value="NanoHTTPD"/>
-                <attribute name="Bundle-Description" value="HTTP server."/>
-                <attribute name="System-Bundle" value="yes"/>
-            </manifest>
-        </jar>
-    </target>
-
     <!--BUNDLE-WEBSOCKET -->
     <target name="bundle-websocket">
         <jar compress="true" destfile="lib/bundle/Java-WebSocket.jar"
@@ -1163,7 +1048,8 @@
             <manifest>
                 <attribute name="Export-Package" value="org.apache.commons.lang3,
                                                         org.apache.commons.lang3.builder,
-                                                        org.apache.commons.lang3.time"/>
+                                                        org.apache.commons.lang3.time,
+                                                        org.apache.commons.lang3.tuple"/>
                 <attribute name="Bundle-Name" value="Apache Commons Lang"/>
                 <attribute name="Bundle-Description" value="Extra methods for manipulation of core java classes."/>
                 <attribute name="System-Bundle" value="yes"/>
@@ -1318,22 +1204,6 @@
         </jar>
     </target>
 
-   <!--BUNDLE-PLUGIN-PROFILER-->
-   <target name="bundle-plugin-profiler4j">
-        <jar compress="false" destfile="${bundles.dest}/profiler4j.jar"
-            manifest="${src}/net/java/sip/communicator/plugin/profiler4j/profiler4j.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/profiler4j"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/plugin/profiler4j" />
-            <zipfileset src="${lib.noinst}/profiler4j-1.0-beta3-SC.jar"
-                prefix=""/>
-            <zipfileset src="${lib.noinst}/jdom.jar" prefix=""/>
-            <zipfileset src="${lib.noinst}/jcommon-1.0.0.jar" prefix=""/>
-            <zipfileset src="${lib.noinst}/jfreechart-1.0.1.jar" prefix=""/>
-            <fileset file="${lib.noinst}/p4j-exclusions.txt"/>
-        </jar>
-    </target>
-
     <!--BUNDLE-General Config-->
     <target name="bundle-plugin-generalconfig">
         <jar compress="false" destfile="${bundles.dest}/generalconfig.jar"
@@ -1385,8 +1255,6 @@
                     prefix="resources/sounds"/>
             <zipfileset dir="${resources}/styles"
                     prefix="resources/styles"/>
-          <zipfileset dir="${resources}/layouts"
-                  prefix="resources/layouts"/>
         </jar>
     </target>
 
@@ -1402,17 +1270,6 @@
             <zipfileset dir="${dest}/net/java/sip/communicator/impl/resources"
                         excludes="**/Test*.class"
                         prefix="net/java/sip/communicator/impl/resources"/>
-        </jar>
-    </target>
-
-    <!-- BUNDLE-NOTIFICATION-CONFIG -->
-    <target name="bundle-notification-config">
-        <!-- Creates a bundle for the notifications.-->
-        <jar compress="false" destfile="${bundles.dest}/notificationconfig.jar"
-            manifest="${src}/net/java/sip/communicator/plugin/notificationconfiguration/notificationconfiguration.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/notificationconfiguration"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/plugin/notificationconfiguration"/>
         </jar>
     </target>
 

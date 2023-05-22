@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.event.*;
@@ -461,8 +462,8 @@ public class RecordButton extends InCallButton
 
         if (!savedCallsFolder.exists())
         {
-            logger.debug("Call recording folder " + recordingsPath + " does " +
-                         "not exist, and will now be created.");
+            logger.debug("Call recording folder does " +
+                         "not exist, so will now be created.");
             try
             {
                 boolean success = savedCallsFolder.mkdirs();
@@ -488,13 +489,11 @@ public class RecordButton extends InCallButton
             FileUtils.moveFile(mTempFile, target);
             showSavedToast(filename, new File(savedCallsFolder.getPath()));
             logger.info("Recording for call " + mCall.getCallID() +
-                        " saved to " + target.getAbsolutePath());
+                        " saved.");
         }
         catch (IOException e)
         {
-            logger.debug("Failed to export call recording file " +
-                         mTempFile.getAbsolutePath() + " to destination " +
-                         target.getAbsolutePath() + " for call " +
+            logger.debug("Failed to export call recording file for call " +
                          mCall.getCallID(), e);
             showPublishingFailedDialog();
         }
@@ -509,13 +508,8 @@ public class RecordButton extends InCallButton
         {
             public void run()
             {
-                ErrorDialog dialog = new ErrorDialog(null,
-                                              CALL_RECORDING_START_FAILED_TITLE,
-                                              CALL_RECORDING_START_FAILED_TEXT);
-                dialog.setAlwaysOnTop(true);
-                dialog.setResizable(false);
-                dialog.pack();
-                dialog.setVisible(true);
+                new ErrorDialog(CALL_RECORDING_START_FAILED_TITLE,
+                    CALL_RECORDING_START_FAILED_TEXT).showDialog();
            }
         });
     }
@@ -529,13 +523,8 @@ public class RecordButton extends InCallButton
         {
             public void run()
             {
-                ErrorDialog dialog = new ErrorDialog(null,
-                                               CALL_RECORDING_STOP_FAILED_TITLE,
-                                               CALL_RECORDING_STOP_FAILED_TEXT);
-                dialog.setAlwaysOnTop(true);
-                dialog.setResizable(false);
-                dialog.pack();
-                dialog.setVisible(true);
+                new ErrorDialog(CALL_RECORDING_STOP_FAILED_TITLE,
+                    CALL_RECORDING_STOP_FAILED_TEXT).showDialog();
            }
         });
     }
@@ -659,7 +648,7 @@ public class RecordButton extends InCallButton
             mTempFile = getTempFile();
             logger.debug("Writing call recording for call " +
                          mCall.getCallID() +
-                         " to temporary file " + mTempFile.getAbsolutePath());
+                         " to temporary file " + mTempFile.getName());
 
             Recorder recorder = getRecorder();
 
@@ -726,12 +715,8 @@ public class RecordButton extends InCallButton
             {
                public void run()
                {
-                   ErrorDialog dialog = new ErrorDialog(null,
-                                                 RECORDING_TIMEOUT_DIALOG_TITLE,
-                                                 RECORDING_TIMEOUT_DIALOG_TEXT);
-                   dialog.setAlwaysOnTop(true);
-                   dialog.setResizable(false);
-                   dialog.setVisible(true);
+                    new ErrorDialog(RECORDING_TIMEOUT_DIALOG_TITLE,
+                        RECORDING_TIMEOUT_DIALOG_TEXT).showDialog();
                }
             });
     }
@@ -789,12 +774,8 @@ public class RecordButton extends InCallButton
                    {
                        public void run()
                        {
-                           ErrorDialog dialog = new ErrorDialog(null,
-                                                    FAILED_TO_OPEN_FOLDER_TITLE,
-                                                    FAILED_TO_OPEN_FOLDER_TEXT);
-                           dialog.setAlwaysOnTop(true);
-                           dialog.setResizable(false);
-                           dialog.setVisible(true);
+                            new ErrorDialog(FAILED_TO_OPEN_FOLDER_TITLE,
+                                FAILED_TO_OPEN_FOLDER_TEXT).showDialog();
                        }
                    });
                }

@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.account;
 
 import java.beans.*;
@@ -91,7 +92,7 @@ public class AccountList
             // config mode.
             if (isHidden)
             {
-                logger.debug("Hiding account " + accountID);
+                logger.debug("Hiding account " + accountID.getLoggableAccountID());
                 continue;
             }
 
@@ -229,7 +230,7 @@ public class AccountList
             // probably typed an incorrect username so we do want to delete
             // the account.
             logger.debug(
-                "Will remove account " + accountID.getAccountAddress() +
+                "Will remove account " + accountID.getLoggableAccountID() +
                 " if it IS enabled (enabled = " + enabled + ") and the " +
                 "server address is NOT validated (address validated = " +
                 serverAddressValidated +")");

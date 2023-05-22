@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.jabberaccregwizz;
+
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.awt.*;
 import java.util.*;
@@ -34,16 +37,6 @@ public class JabberAccountRegistrationWizard
      */
     private static final Logger logger =
         Logger.getLogger(JabberAccountRegistrationWizard.class);
-
-    /**
-     * Account suffix for Google service.
-     */
-    private static final String GOOGLE_USER_SUFFIX = "gmail.com";
-
-    /**
-     * XMPP server for Google service.
-     */
-    private static final String GOOGLE_CONNECT_SRV = "talk.google.com";
 
     /**
      * The first wizard page.
@@ -203,11 +196,6 @@ public class JabberAccountRegistrationWizard
             String.valueOf(registration.isSendKeepAlive()));
 
         summaryTable.put(
-            Resources.getString(
-                        "plugin.jabberaccregwizz.ENABLE_GMAIL_NOTIFICATIONS"),
-            String.valueOf(registration.isGmailNotificationEnabled()));
-
-        summaryTable.put(
             Resources.getString("plugin.jabberaccregwizz.RESOURCE"),
             registration.getResource());
 
@@ -299,9 +287,9 @@ public class JabberAccountRegistrationWizard
             serverName = getServerFromUserName(userName);
         }
 
-        if (serverName == null || serverName.length() <= 0)
+        if (serverName == null || serverName.length() == 0)
         {
-            String errorMessage = "No server specified for username " + userName;
+            String errorMessage = "No server specified for username " + sanitiseChatAddress(userName);
             logger.error(errorMessage);
             throw new OperationFailedException(errorMessage,
                 OperationFailedException.SERVER_NOT_SPECIFIED);
@@ -322,6 +310,8 @@ public class JabberAccountRegistrationWizard
     public ProtocolProviderService signin(String userName, String password)
         throws OperationFailedException
     {
+        logger.info("Sign in to account");
+
         boolean rememberPassword = false;
 
         // If firstWizardPage is null we are requested sign-in from
@@ -380,7 +370,7 @@ public class JabberAccountRegistrationWizard
         String passwd)
         throws OperationFailedException
     {
-        logger.trace("Preparing to install account for user " + userName);
+        logger.info("Preparing to install account for user " + sanitiseChatAddress(userName));
         Hashtable<String, String> accountProperties
             = new Hashtable<>();
 
@@ -404,11 +394,6 @@ public class JabberAccountRegistrationWizard
 
         //accountProperties.put("SEND_KEEP_ALIVE",
         //                      String.valueOf(registration.isSendKeepAlive()));
-
-        accountProperties.put("GMAIL_NOTIFICATIONS_ENABLED",
-                    String.valueOf(registration.isGmailNotificationEnabled()));
-        accountProperties.put("GOOGLE_CONTACTS_ENABLED",
-                String.valueOf(registration.isGoogleContactsEnabled()));
 
         String serverName = getServerFromRegistration();
 
@@ -473,12 +458,6 @@ public class JabberAccountRegistrationWizard
             accountProperties.put(  ProtocolProviderFactory.ACCOUNT_DISPLAY_NAME,
                                     accountDisplayName);
 
-        accountProperties.put(ProtocolProviderFactory.IS_USE_UPNP,
-                String.valueOf(registration.isUseUPNP()));
-
-        accountProperties.put(ProtocolProviderFactory.IS_ALLOW_NON_SECURE,
-            String.valueOf(registration.isAllowNonSecure()));
-
         if(registration.getDTMFMethod() != null)
             accountProperties.put("DTMF_METHOD",
                 registration.getDTMFMethod());
@@ -509,7 +488,7 @@ public class JabberAccountRegistrationWizard
 
         try
         {
-            logger.trace("Will install account for user " + userName
+            logger.debug("Will install account for user " + sanitiseChatAddress(userName)
                          + " with the following properties."
                          + accountProperties);
 
@@ -630,14 +609,7 @@ public class JabberAccountRegistrationWizard
         if (delimIndex != -1)
         {
             String newServerAddr = userName.substring(delimIndex + 1);
-            if (newServerAddr.equals(GOOGLE_USER_SUFFIX))
-            {
-                return GOOGLE_CONNECT_SRV;
-            }
-            else
-            {
-                return newServerAddr;
-            }
+            return newServerAddr;
         }
 
         return null;

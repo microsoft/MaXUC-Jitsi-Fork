@@ -51,7 +51,7 @@ public class CallPullButton extends AbstractPluginComponent implements CallJumpC
     private boolean mIsCallJumpAllowed = false;
     private boolean mIsCallAvailableToPull = false;
 
-    private static final ErrorDialog sErrorDialog = new ErrorDialog(null,
+    private static final ErrorDialog sErrorDialog = new ErrorDialog(
             sResources.getI18NString("service.calljump.CALL_PULL_ERROR_DIALOG_TITLE"),
             sResources.getI18NString("service.calljump.CALL_PULL_ERROR_DIALOG_MESSAGE"));
 
@@ -110,10 +110,7 @@ public class CallPullButton extends AbstractPluginComponent implements CallJumpC
         // An error occurred attempting to pull the call - show the user a dialog
         SwingUtilities.invokeLater(() ->
         {
-            if (!sErrorDialog.isShowing())
-            {
-                sErrorDialog.showDialog();
-            }
+            sErrorDialog.showDialog();
         });
     }
 

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.generalconfig;
 
 import java.awt.*;
@@ -18,7 +19,6 @@ import net.java.sip.communicator.plugin.desktoputil.OptionListConfigurationPanel
 import net.java.sip.communicator.plugin.desktoputil.SIPCommBasicTextButton;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommCheckBox;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommConfirmDialog;
-import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
 import net.java.sip.communicator.plugin.provisioning.ProvisioningServiceImpl;
 import net.java.sip.communicator.service.commportal.CPCos;
@@ -116,14 +116,6 @@ public class CallsConfigurationPanel
         else
         {
             logger.warn("Unexpected number of call park op. sets " + callParkOpSets);
-        }
-
-        if (!configService.user().getBoolean(
-              "net.java.sip.communicator.plugin.generalconfig.advancedcallconfig.DISABLED",
-              true))
-        {
-            voipContainer.add(createNormalizeNumberCheckBox());
-            voipContainer.add(createAcceptPhoneNumberWithAlphaCharCheckBox());
         }
 
         voipContainer.addPanel(createCallRatingComponent());
@@ -267,93 +259,6 @@ public class CallsConfigurationPanel
         });
 
         return container;
-    }
-
-    /**
-     * Creates the normalized phone number check box.
-     *
-     * @return the created component
-     */
-    private Component createNormalizeNumberCheckBox()
-    {
-        final JCheckBox formatPhoneNumberCheckBox = new SIPCommCheckBox();
-
-        formatPhoneNumberCheckBox.setText(
-            Resources.getString("plugin.generalconfig.user().REMOVE_SPECIAL_PHONE_SYMBOLS"));
-        formatPhoneNumberCheckBox.setForeground(TEXT_COLOR);
-
-        formatPhoneNumberCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        formatPhoneNumberCheckBox.setSelected(
-            ConfigurationUtils.isNormalizePhoneNumber());
-
-        formatPhoneNumberCheckBox.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                logger.info("Normalized number checkbox clicked");
-
-                ConfigurationUtils.setNormalizePhoneNumber(
-                    formatPhoneNumberCheckBox.isSelected());
-            }
-        });
-
-        return formatPhoneNumberCheckBox;
-    }
-
-    /**
-     * Creates the accept phone number with alphabetical character check box.
-     *
-     * @return the created component
-     */
-    private Component createAcceptPhoneNumberWithAlphaCharCheckBox()
-    {
-        JPanel checkBoxPanel = new TransparentPanel(new BorderLayout());
-
-        // Checkbox to accept string with alphabetical characters as potential
-        // phone numbers.
-        final SIPCommCheckBox acceptPhoneNumberWithAlphaChars
-            = new SIPCommCheckBox();
-
-        acceptPhoneNumberWithAlphaChars.setText(
-            Resources.getString(
-                "plugin.generalconfig.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS"));
-
-        acceptPhoneNumberWithAlphaChars.setForeground(TEXT_COLOR);
-
-        acceptPhoneNumberWithAlphaChars.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        acceptPhoneNumberWithAlphaChars.setSelected(
-            ConfigurationUtils.acceptPhoneNumberWithAlphaChars());
-
-        acceptPhoneNumberWithAlphaChars.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                logger.info("Accept number with alpha char checkbox clicked");
-
-                ConfigurationUtils.setAcceptPhoneNumberWithAlphaChars(
-                    acceptPhoneNumberWithAlphaChars.isSelected());
-            }
-        });
-
-        // The example of changing letters to numbers in a phone number.
-        String label = Resources.getString(
-            "plugin.generalconfig.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS_EXAMPLE");
-        JLabel exampleLabel = new JLabel(label);
-        exampleLabel.setForeground(Color.GRAY);
-        exampleLabel.setBorder(ScaleUtils.createEmptyBorder(3, 4, 0, 0));
-        exampleLabel.setFont(exampleLabel.getFont().
-            deriveFont(ScaleUtils.getScaledFontSize(8f)));
-        exampleLabel.setHorizontalAlignment(JLabel.LEADING);
-
-        // Adds the components to the current panel.
-        checkBoxPanel.add(acceptPhoneNumberWithAlphaChars, BorderLayout.NORTH);
-        checkBoxPanel.add(
-                exampleLabel,
-                BorderLayout.SOUTH);
-
-        return checkBoxPanel;
     }
 
     private Component createCallWindowAlwaysOnTopCheckBox()

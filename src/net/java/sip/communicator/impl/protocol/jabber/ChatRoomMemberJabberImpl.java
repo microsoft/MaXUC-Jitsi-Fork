@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import org.jivesoftware.smackx.muc.Occupant;
@@ -19,7 +20,7 @@ import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.OperationSetPersistentPresence;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitisePeerId;
 
 import org.jitsi.service.resources.BufferedImageFuture;
 
@@ -112,7 +113,7 @@ public class ChatRoomMemberJabberImpl
      * Returns the contact identifier representing this contact.
      *
      * @return a String (contact address), uniquely representing the contact
-     *   over the service the service being used by the associated protocol
+     *   over the service being used by the associated protocol
      *   provider instance/
      */
     public String getContactAddressAsString()
@@ -124,7 +125,7 @@ public class ChatRoomMemberJabberImpl
      * Returns the contact identifier representing this contact.
      *
      * @return a BareJid (contact address), uniquely representing the contact
-     *   over the service the service being used by the associated protocol
+     *   over the service being used by the associated protocol
      *   provider instance/
      */
     public BareJid getContactAddress()
@@ -263,6 +264,6 @@ public class ChatRoomMemberJabberImpl
      @Override
      public String toString()
      {
-         return logHasher(getContactAddressAsString());
+         return sanitisePeerId(getContactAddressAsString());
      }
 }

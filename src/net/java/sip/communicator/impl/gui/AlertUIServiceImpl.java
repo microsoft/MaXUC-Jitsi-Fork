@@ -26,24 +26,6 @@ public class AlertUIServiceImpl
      */
     public void showAlertDialog(String title, String message)
     {
-        new ErrorDialog(GuiActivator.getUIService().getMainFrame(),
-                        title,
-                        message).showDialog();
-    }
-
-    /**
-     * Shows an alert dialog with the given title message and exception
-     * corresponding to the error.
-     *
-     * @param title the title of the dialog
-     * @param message the message to be displayed
-     * @param e the exception corresponding to the error
-     */
-    public void showAlertDialog(String title, String message, Throwable e)
-    {
-        new ErrorDialog(GuiActivator.getUIService().getMainFrame(),
-            title,
-            message,
-            e).showDialog();
+        new ErrorDialog(title, message).showDialog();
     }
 }

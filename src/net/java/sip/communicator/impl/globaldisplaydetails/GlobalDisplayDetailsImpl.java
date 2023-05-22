@@ -4,15 +4,16 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.globaldisplaydetails;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.jitsi.service.resources.BufferedImageFuture;
 import org.jitsi.util.StringUtils;
+
 import org.osgi.framework.BundleContext;
 
 import net.java.sip.communicator.service.globaldisplaydetails.GlobalDisplayDetailsService;
@@ -67,8 +68,8 @@ public class GlobalDisplayDetailsImpl
     /**
      * The display details listeners list.
      */
-    private final List<GlobalDisplayDetailsListener> displayDetailsListeners
-        = new ArrayList<>();
+    private final Set<GlobalDisplayDetailsListener> displayDetailsListeners
+        = new CopyOnWriteArraySet<>();
 
     /**
      * Link to AccountManager so we can register for its events
@@ -186,11 +187,7 @@ public class GlobalDisplayDetailsImpl
      */
     public void addGlobalDisplayDetailsListener(GlobalDisplayDetailsListener l)
     {
-        synchronized (displayDetailsListeners)
-        {
-            if (!displayDetailsListeners.contains(l))
-                displayDetailsListeners.add(l);
-        }
+        displayDetailsListeners.add(l);
     }
 
     /**
@@ -202,11 +199,7 @@ public class GlobalDisplayDetailsImpl
     public void removeGlobalDisplayDetailsListener(
         GlobalDisplayDetailsListener l)
     {
-        synchronized (displayDetailsListeners)
-        {
-            if (displayDetailsListeners.contains(l))
-                displayDetailsListeners.remove(l);
-        }
+        displayDetailsListeners.remove(l);
     }
 
     @Override
@@ -546,18 +539,10 @@ public class GlobalDisplayDetailsImpl
      */
     private void fireGlobalDisplayNameEvent(String displayName)
     {
-        List<GlobalDisplayDetailsListener> listeners;
-        synchronized (displayDetailsListeners)
+        for (GlobalDisplayDetailsListener listener : displayDetailsListeners)
         {
-            listeners = Collections.unmodifiableList(displayDetailsListeners);
-        }
-
-        Iterator<GlobalDisplayDetailsListener> listIter
-            = listeners.iterator();
-        while (listIter.hasNext())
-        {
-            listIter.next().globalDisplayNameChanged(
-                new GlobalDisplayNameChangeEvent(this, displayName));
+            listener.globalDisplayNameChanged(
+                    new GlobalDisplayNameChangeEvent(this, displayName));
         }
     }
 
@@ -568,18 +553,10 @@ public class GlobalDisplayDetailsImpl
      */
     private void fireGlobalAvatarEvent(BufferedImageFuture avatar)
     {
-        List<GlobalDisplayDetailsListener> listeners;
-        synchronized (displayDetailsListeners)
+        for (GlobalDisplayDetailsListener listener : displayDetailsListeners)
         {
-            listeners = Collections.unmodifiableList(displayDetailsListeners);
-        }
-
-        Iterator<GlobalDisplayDetailsListener> listIter
-            = listeners.iterator();
-        while (listIter.hasNext())
-        {
-            listIter.next().globalDisplayAvatarChanged(
-                new GlobalAvatarChangeEvent(this, avatar));
+            listener.globalDisplayAvatarChanged(
+                    new GlobalAvatarChangeEvent(this, avatar));
         }
     }
 }

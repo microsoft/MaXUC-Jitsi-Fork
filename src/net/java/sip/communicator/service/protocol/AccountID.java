@@ -4,11 +4,14 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.util.*;
 
 import org.jitsi.service.configuration.*;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitisePeerId;
 
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.account.*;
@@ -250,6 +253,15 @@ public abstract class AccountID
     }
 
     /**
+     * Returns a hashed String related to this account for logging purposes.
+     * @return String
+     */
+    public String getLoggableAccountID()
+    {
+        return accountUID != null ? accountUID.replace(getUserID(), sanitisePeerId(getUserID())) : "null";
+    }
+
+    /**
      * Returns a Map containing protocol and implementation account
      * initialization properties.
      * @return a Map containing protocol and implementation account
@@ -419,7 +431,7 @@ public abstract class AccountID
     /**
      * Returns a string that could be directly used (or easily converted to) an
      * address that other users of the protocol can use to communicate with us.
-     * By default this string is set to userid@servicename. Protocol
+     * By default, this string is set to userid@servicename. Protocol
      * implementors should override it if they'd need it to respect a different
      * syntax.
      *

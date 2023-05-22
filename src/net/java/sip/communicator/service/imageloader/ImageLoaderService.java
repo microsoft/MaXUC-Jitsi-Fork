@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.imageloader;
 
 import java.awt.*;
@@ -1491,12 +1492,6 @@ public interface ImageLoaderService
         = new ImageID("service.gui.icons.AUTHORIZATION_ICON");
 
     /**
-     * The icon used to indicate that the chat account has gone offline.
-     */
-    ImageID CHAT_OFFLINE_ERROR_ICON
-        = new ImageID("service.gui.icons.CHAT_OFFLINE_ERROR_ICON");
-
-    /**
      * The icon used to indicate that the user has chosen to take the chat
      * account offline.
      */
@@ -1695,12 +1690,6 @@ public interface ImageLoaderService
      */
     ImageID CONTACT_LIST_CREATE_NEW_BUTTON_ROLLOVER
         = new ImageID("service.gui.buttons.CONTACT_LIST_CREATE_NEW_BUTTON_ROLLOVER");
-
-    /**
-     * Notifications muted icon
-     */
-    ImageID NOTIFICATIONS_MUTED
-        = new ImageID("service.gui.icons.NOTIFICATIONS_MUTED");
 
     /*
      * =======================================================================
@@ -2146,15 +2135,6 @@ public interface ImageLoaderService
      */
     ImageID CONTACT_LIST_DISABLED_SELECTED =
               new ImageID("service.gui.buttons.CONTACT_LIST_DISABLED_SELECTED");
-
-    ImageID STANDALONE_MEETING_ICON =
-              new ImageID("impl.gui.standalonemeeting.MEETING_ICON");
-
-    ImageID STANDALONE_CREATE_MEETING_ICON =
-        new ImageID("impl.gui.standalonemeeting.CREATE_MEETING_ICON");
-
-    ImageID STANDALONE_SCHEDULE_MEETING_ICON =
-        new ImageID("impl.gui.standalonemeeting.SCHEDULE_MEETING_ICON");
 
     /**
      * Loads an image from a given image identifier.

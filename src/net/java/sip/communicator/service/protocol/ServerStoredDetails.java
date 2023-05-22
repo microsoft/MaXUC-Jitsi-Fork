@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.net.*;
@@ -301,10 +302,10 @@ public class ServerStoredDetails
 //------------------------------ LOCALE DETAILS --------------------------------
     /**
      * A generic detail that should be used (extended) when representing details
-     * that have anything to do with locales (countries, languages, etc). Most
-     * of the locales field could be ignored when extending the class. When
-     * representing a country for example we'd only be using the fields
-     * concerning the country.
+     * that have anything to do with locales (countries/regions, languages,
+     * etc). Most of the locales field could be ignored when extending
+     * the class. When representing a country for example
+     * we'd only be using the fields concerning the country.
      */
     public static class LocaleDetail extends GenericDetail
     {

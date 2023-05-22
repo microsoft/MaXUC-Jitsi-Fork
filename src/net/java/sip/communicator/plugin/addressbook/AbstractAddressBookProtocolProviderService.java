@@ -3,7 +3,6 @@ package net.java.sip.communicator.plugin.addressbook;
 
 import static org.jitsi.util.Hasher.logHasher;
 
-import java.awt.event.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -296,9 +295,8 @@ public abstract class AbstractAddressBookProtocolProviderService
                         logger.warn("Unable to init Outlook contacts" +
                                      " but user doesn't care. " + contactStore);
                     }
-                    else if (mErrorDialog == null || !mErrorDialog.isVisible())
+                    else if (mErrorDialog == null)
                     {
-                        // We aren't showing any error message yet, so create it
                         logger.debug("No error dialog yet");
                         ResourceManagementService res =
                                     AddressBookProtocolActivator.getResources();
@@ -307,16 +305,7 @@ public abstract class AbstractAddressBookProtocolProviderService
                         String text = res.getI18NString(
                                  "service.gui.LOCAL_CONTACT_SOURCE_ERROR_TEXT");
 
-                        mErrorDialog = new ErrorDialog(null, title, text);
-                        mErrorDialog.addWindowListener(new WindowAdapter()
-                        {
-                            @Override
-                            public void windowClosed(WindowEvent e)
-                            {
-                                // Clear the stored reference - no need for it.
-                                mErrorDialog = null;
-                            }
-                        });
+                        mErrorDialog = new ErrorDialog(title, text);
 
                         mErrorDialog.showDialog();
                     }

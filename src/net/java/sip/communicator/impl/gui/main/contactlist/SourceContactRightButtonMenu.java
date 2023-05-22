@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import java.awt.*;
@@ -221,36 +222,6 @@ public class SourceContactRightButtonMenu
                 add(addContactComponent);
             }
 
-            // Add CRM launch item, if configured.  Only add it if there's no
-            // MetaContact (since the MetaContact menu already includes the CRM
-            // icon.
-            UrlServiceTools ust = UrlServiceTools.getUrlServiceTools();
-            if (ust.isServiceTypeEnabled(ServiceType.CRM))
-            {
-                crmItem = ServiceType.CRM.createMenuItems().get(0);
-                add(crmItem);
-                crmItem.setName(ServiceType.CRM.getConfigName());
-                crmItem.addActionListener(new ActionListener()
-                {
-                    @Override
-                    public void actionPerformed(ActionEvent e)
-                    {
-                        UIContactDetail contactDetail =
-                            uiContact.getDefaultContactDetail(
-                                              OperationSetBasicTelephony.class);
-
-                        String number = null;
-
-                        if (contactDetail != null)
-                        {
-                            number = contactDetail.getAddress().split("@")[0];
-                        }
-
-                        ServiceType.CRM.launchSelectedCrmService(
-                                        sourceContact.getDisplayName(), number);
-                    }
-                });
-            }
         }
         else if (metaContacts.size() == 1)
         {
@@ -380,97 +351,11 @@ public class SourceContactRightButtonMenu
         // between the chat menu items.
         initConferenceMenu(chatRoom);
 
-        // The leave chat menu item
-        JMenuItem leaveChatItem = new ResMenuItem("service.gui.chat.LEAVE_GROUP_CHAT");
-
         addSeparator();
-        add(leaveChatItem);
-
-        leaveChatItem.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent evt)
-            {
-                sLog.user("Right-click, 'leave group chat' option selected");
-                boolean leaveChatRoom = false;
-
-                if(!ConfigurationUtils.getDontAskLeaveGroupChat())
-                {
-                    sLog.info("Showing confirm dialog for leaving chat room");
-                    MessageDialog dialog = new MessageDialog(null,
-                        resources.getI18NString("service.gui.RESET_DIALOG_TITLE"),
-                        resources.getI18NString("service.gui.chat.LEAVE_GROUP_CHAT_DESCRIPTION"),
-                        resources.getI18NString("service.gui.chat.LEAVE"));
-
-                    int returnCode = dialog.showDialog();
-
-                    if (returnCode == MessageDialog.OK_RETURN_CODE)
-                    {
-                        sLog.info("Leave chat room, ask again");
-                        leaveChatRoom = true;
-                    }
-                    else if (returnCode == MessageDialog.OK_DONT_ASK_CODE)
-                    {
-                        sLog.user("Do not ask to confirm leaving group " +
-                                          "chat again selected");
-                        sLog.info("Leave chat room, don't ask again");
-                        leaveChatRoom = true;
-                        ConfigurationUtils.setDontAskLeaveGroupChat(true);
-                    }
-                }
-                else
-                {
-                    sLog.info("Leaving chat room without asking");
-                    leaveChatRoom = true;
-                }
-
-                if (leaveChatRoom)
-                {
-                    ConferenceChatManager conferenceManager
-                           = GuiActivator.getUIService().getConferenceChatManager();
-
-                    if (chatRoom != null)
-                    {
-                        ChatRoomList chatRoomList = conferenceManager.getChatRoomList();
-
-                        if (chatRoomList != null)
-                        {
-                            ChatRoomWrapper chatRoomWrapper =
-                                chatRoomList.findChatRoomWrapperFromChatRoom(chatRoom);
-
-                            if (chatRoomWrapper == null)
-                            {
-                                sLog.debug(
-                                    "Creating chat room wrapper so we can leave the chat room");
-                                ChatRoomProviderWrapper parentProvider =
-                                    chatRoomList.findServerWrapperFromProvider(
-                                        chatRoom.getParentProvider());
-
-                                chatRoomWrapper =
-                                    new ChatRoomWrapper(parentProvider, chatRoom);
-
-                                chatRoomList.addChatRoom(chatRoomWrapper);
-                            }
-
-                            conferenceManager.leaveChatRoom(chatRoomWrapper);
-                        }
-                        else
-                        {
-                            sLog.warn("ChatRoomList is null");
-                        }
-                    }
-                }
-            }
-        });
 
         if (disableItems)
         {
             startChatItem.setEnabled(false);
-            leaveChatItem.setEnabled(false);
-        }
-        else if (chatRoomClosed)
-        {
-            leaveChatItem.setEnabled(false);
         }
 
         ConferenceChatManager conferenceChatManager =
@@ -629,9 +514,8 @@ public class SourceContactRightButtonMenu
 
                 if (providers == null || providersCount == 0)
                 {
-                    new ErrorDialog(null,
-                        resources.getI18NString(
-                            "service.gui.CALL_FAILED"),
+                    new ErrorDialog(
+                        resources.getI18NString("service.gui.CALL_FAILED"),
                         resources.getI18NString(
                             "service.gui.NO_ONLINE_TELEPHONY_ACCOUNT"))
                         .showDialog();

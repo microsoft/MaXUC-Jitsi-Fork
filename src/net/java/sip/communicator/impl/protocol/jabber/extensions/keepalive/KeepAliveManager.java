@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber.extensions.keepalive;
 
 import java.util.Timer;
@@ -101,15 +102,15 @@ public class KeepAliveManager
             // and we have already created those tasks make sure we cancel them
             if (keepAliveSendTask != null)
             {
-                logger.error("Those task is not supposed to be available for "
-                    + parentProvider.getAccountID().getDisplayName());
+                logger.error("This task is not supposed to be available for "
+                    + parentProvider.getAccountID().getLoggableAccountID());
                 keepAliveSendTask.cancel();
                 keepAliveSendTask = null;
             }
             if (keepAliveTimer != null)
             {
-                logger.error("Those timer is not supposed to be available for "
-                    + parentProvider.getAccountID().getDisplayName());
+                logger.error("This timer is not supposed to be available for "
+                    + parentProvider.getAccountID().getLoggableAccountID());
                 keepAliveTimer.cancel();
                 keepAliveTimer = null;
             }
@@ -118,7 +119,8 @@ public class KeepAliveManager
             waitingForStanzaWithID = null;
 
             keepAliveTimer = new Timer("Jabber keepalive timer for <"
-                + parentProvider.getAccountID() + ">", true);
+                + parentProvider.getAccountID().getLoggableAccountID()
+                + ">", true);
             keepAliveTimer.scheduleAtFixedRate(keepAliveSendTask,
                                                KEEP_ALIVE_CHECK_INTERVAL,
                                                KEEP_ALIVE_CHECK_INTERVAL);
@@ -203,7 +205,7 @@ public class KeepAliveManager
             if (!parentProvider.isRegistered())
             {
                 logger.trace("provider not registered. Won't send keep alive for "
-                        + parentProvider.getAccountID().getDisplayName());
+                        + parentProvider.getAccountID().getLoggableAccountID());
 
                 parentProvider.unregister(false);
 
@@ -226,7 +228,7 @@ public class KeepAliveManager
                 if (waitingForStanzaWithID != null)
                 {
                     logger.error("un-registering - not received ping stanza ID " + waitingForStanzaWithID +
-                        " for: " + parentProvider.getAccountID().getDisplayName());
+                        " for: " + parentProvider.getAccountID().getLoggableAccountID());
 
                     parentProvider.unregister(false);
 
@@ -248,7 +250,7 @@ public class KeepAliveManager
 
                     waitingForStanzaWithID = ping.getStanzaId();
                     logger.debug("Send ping with stanza ID " + waitingForStanzaWithID +
-                        " for: " + parentProvider.getAccountID().getDisplayName());
+                        " for: " + parentProvider.getAccountID().getLoggableAccountID());
                     parentProvider.getConnection().sendStanza(ping);
                 }
                 catch (Throwable ex)

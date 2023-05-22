@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.commportal;
 
 import java.beans.PropertyChangeListener;
 import java.net.InetAddress;
 import java.security.InvalidParameterException;
-import java.util.regex.*;
+
 import net.java.sip.communicator.service.protocol.emergencylocation.*;
 
 /**
@@ -36,10 +37,13 @@ public interface CommPortalService
      * @param networkErrorCallback optional parameter which will handle network
      *        errors if present.  Otherwise, these are handled by the service
      * @param isForeground If true then this will happen with high priority
+     * @param allowFurtherTokenGeneration If true then the token generated can
+     *        be used to generate further tokens
      */
     void getToken(CPTokenGetterCallback callback,
                   CPOnNetworkErrorCallback networkErrorCallback,
-                  boolean isForeground);
+                  boolean isForeground,
+                  boolean allowFurtherTokenGeneration);
 
     /**
      * Request a service indication(s) from CommPortal with a 5 second timeout
@@ -158,20 +162,20 @@ public interface CommPortalService
     String getUrl();
 
     /**
-     * Register for notifications on changes to the CommPortal session ID, when
-     * it is needed to navigate to a CPWeb URL in a browser. The session ID will
+     * Register for notifications on changes to the CommPortal short-lived token, when
+     * it is needed to navigate to a CPWeb URL in a browser. The token will be
      * requested and returned on the callback.
      *
-     * @param callback The callback on which session ID is returned
+     * @param callback The callback on which short-lived token is returned
      */
-    void getSessionIdForBrowser(CPSessionCallback callback);
+    void getShortLivedTokenForBrowser(CPShortLivedTokenForBrowserCallback callback);
 
     /**
-     * Un-register the callback for changes to the CommPortal session ID
+     * Un-register the callback for changes to the CommPortal short-lived token.
      *
      * @param callback The registered callback
      */
-    void unRegisterSessionCallback(CPSessionCallback callback);
+    void unRegisterShortLivedTokenCallback(CPShortLivedTokenForBrowserCallback callback);
 
     /**
      * Request a specific service indication to retrieve the number of unread
@@ -190,85 +194,6 @@ public interface CommPortalService
      * @return the latest version
      */
     CommPortalVersion getLatestVersion();
-
-    /**
-     * Returns a session ID substitute which is able to be logged. We don't
-     * log the whole session ID due to security concerns, but it is useful for
-     * L3 to be able to correlate with server-side logs, so we print an
-     * obfuscated version which strips out the central characters.
-     *
-     * @param sessionId The session ID to modify
-     * @return  There are three cases:
-     *          1) the ID has >= 20 characters. Return a string of the first 8
-     *          and last 4 characters from the session ID, with "__removed__" in
-     *          between. If it is not at least 8 characters long, it returns null.
-     *          2) the ID has <20 but >=16 characters. Just return the first 8
-     *          characters followed by "__removed__" as any more characters would
-     *          compromise security.
-     *          3) the ID has <=15 characters. We never expect this to happen.
-     *          Return "__Redacted as less than 16 characters.__";
-     */
-    static String obfuscateSessionId(String sessionId)
-    {
-        String obfuscatedSessionId;
-        if (sessionId == null)
-        {
-            obfuscatedSessionId = null;
-        }
-        else if (sessionId.length() >= 20)
-        {
-            obfuscatedSessionId = sessionId.substring(0,8) + "__removed__" +
-                                  sessionId.substring(sessionId.length() - 4);
-        }
-        else if (sessionId.length() >= 16)
-        {
-            obfuscatedSessionId = sessionId.substring(0,8) + "__removed__";
-        }
-        else
-        {
-            // This should never happen
-            obfuscatedSessionId = "__Redacted as less than 16 characters.__";
-        }
-        return obfuscatedSessionId;
-    }
-
-    /**
-     * Returns a URL which is able to be logged. We use this when a URL contains
-     * a session ID. We can't print the whole URl for security reasons, so we
-     * remove a central part of the session ID. This still gives L3 the
-     * information they need to be able to reconstruct the URL from server logs.
-     *
-     * @param url The URL to remove the session ID from
-     * @return The same URL, but with the session ID modified as in
-     *         obfuscateSessionId(). If no session ID is found, it returns the
-     *         url input.
-     */
-    static String getLoggableURL(String url)
-    {
-        // The pattern to match could be "/session" + {at least 8 hex
-        // characters} + "/" or it could be "session=" + {at least 8 hex
-        // characters} + "&". We need to check both. 8 is an arbitrary number
-        // which is low enough that it shouldn't miss any session IDs, but
-        // high enough that it won't give false positives.
-        String[] possibleMatches = {"/session(\\p{XDigit}{8,})/",
-                "session=(\\p{XDigit}{8,})&"};
-        String stringToReturn = url;
-
-        for (String sessionIdRegex: possibleMatches)
-        {
-            Pattern pattern = Pattern.compile(sessionIdRegex);
-            Matcher matcher = pattern.matcher(url);
-
-            if (matcher.find())
-            {
-                String sessionId = matcher.group(1);
-                stringToReturn = stringToReturn.replaceAll(sessionId,
-                                                           obfuscateSessionId(sessionId));
-                break;
-            }
-        }
-        return stringToReturn;
-    }
 
     /**
      * @return true if the user's BG has location data for emergency calling enabled.
@@ -304,7 +229,8 @@ public interface CommPortalService
     /**
      * @return true if the user's BG has location data for emergency calling
      *              enabled but any data we have received does not contain
-     *              location information for the current network.
+     *              location information for the current network and
+     *              the user is not a standalone meeting user.
      */
     boolean isMissingEmergencyLocationInformation();
 

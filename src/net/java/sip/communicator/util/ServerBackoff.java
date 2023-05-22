@@ -7,7 +7,7 @@ package net.java.sip.communicator.util;
  *
  *  This class's exported interface is threadsafe.
  */
-public abstract class ServerBackoff
+public class ServerBackoff
 {
     private final Logger logger = Logger.getLogger(getClass());
 
@@ -37,17 +37,13 @@ public abstract class ServerBackoff
      */
     protected boolean mHasHitMaxDoubles = false;
 
-    public ServerBackoff()
+    public ServerBackoff(int maxNumberFailureDoubles, long initialFailBackoff)
     {
-        mMaxNumberFailureDoubles = getMaxNumberFailureDoubles();
-        mInitialFailBackoff = getInitialFailBackoff();
+        mMaxNumberFailureDoubles = maxNumberFailureDoubles;
+        mInitialFailBackoff = initialFailBackoff;
 
         logger.debug("Initial backoff: " + mInitialFailBackoff + " ms, max doubles: " + mMaxNumberFailureDoubles);
     }
-
-    public abstract int getMaxNumberFailureDoubles();
-
-    public abstract long getInitialFailBackoff();
 
     /**
      * Method to be called when there is a connection failure. It will increase
@@ -73,7 +69,13 @@ public abstract class ServerBackoff
         }
     }
 
-    public abstract boolean shouldRetry();
+    /**
+     * Once the backoff time hits its maximum limit, give up.
+     */
+    public synchronized boolean hasHitMaxDoubles()
+    {
+        return mHasHitMaxDoubles;
+    }
 
     /**
      * Recalculate the value of the backoff.

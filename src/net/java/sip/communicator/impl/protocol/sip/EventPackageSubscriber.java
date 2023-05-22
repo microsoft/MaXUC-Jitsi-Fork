@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import java.text.*;
@@ -17,6 +18,7 @@ import javax.sip.message.*;
 import gov.nist.javax.sip.header.RouteList;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
+import org.jitsi.util.CustomAnnotations.Nullable;
 
 /**
  * Implements the subscriber part of RFC 3265
@@ -111,7 +113,7 @@ public class EventPackageSubscriber
      *            request
      * @param dialog
      *            the <tt>Dialog</tt> with which this request should be
-     *            associated
+     *            associated or null if a dialog has not been created yet
      * @param expires
      *            the subscription duration of the SUBSCRIBE request to be
      *            created
@@ -124,21 +126,12 @@ public class EventPackageSubscriber
      */
     private ClientTransaction createSubscription(
             Subscription subscription,
+            @Nullable
             Dialog dialog,
             int expires)
         throws OperationFailedException
     {
-        Request req = messageFactory.createRequest(dialog, Request.SUBSCRIBE);
-
-        // Address
-        Address toAddress = dialog.getRemoteTarget();
-        // no Contact field
-        if (toAddress == null)
-            toAddress = dialog.getRemoteParty();
-
-        //MaxForwards
-        MaxForwardsHeader maxForwards = protocolProvider.getMaxForwardsHeader();
-        req.setHeader(maxForwards);
+        Request req = createSubscriptionRequest(subscription, dialog, expires);
 
         /*
          * Create the transaction and then add the via header as recommended by
@@ -146,13 +139,13 @@ public class EventPackageSubscriber
          * http://snad.ncsl.nist.gov/proj/iptel/jain-sip-1.2/javadoc
          * /javax/sip/Dialog.html#createRequest(String).
          */
-        ClientTransaction transac = null;
+        ClientTransaction subscribeTransaction = null;
         try
         {
-            transac = protocolProvider
-                    .getDefaultJainSipProvider().getNewClientTransaction(req);
+            logger.info("Get the new subscriber transaction");
+            subscribeTransaction = protocolProvider.getDefaultJainSipProvider().getNewClientTransaction(req);
         }
-        catch (TransactionUnavailableException ex)
+        catch (TransactionUnavailableException | IllegalArgumentException ex)
         {
             logger.error(
                 "Failed to create subscriptionTransaction.\n"
@@ -163,166 +156,129 @@ public class EventPackageSubscriber
                     OperationFailedException.NETWORK_FAILURE);
         }
 
-        populateSubscribeRequest(req, subscription, expires);
-
-        return transac;
+        return subscribeTransaction;
     }
 
-    /**
-     * Creates a new SUBSCRIBE request in the form of a
-     * <tt>ClientTransaction</tt> with the parameters of a specific
-     * <tt>Subscription</tt>.
-     *
-     * @param subscription
-     *            the <tt>Subscription</tt> to be described in a SUBSCRIBE
-     *            request
-     * @param expires
-     *            the subscription duration of the SUBSCRIBE request to be
-     *            created
-     * @return a new <tt>ClientTransaction</tt> initialized with a new
-     *         SUBSCRIBE request which matches the parameters of the specified
-     *         <tt>Subscription</tt>
-     * @throws OperationFailedException
-     *             if the request could not be generated
-     */
-    private ClientTransaction createSubscription(
-            Subscription subscription,
-            int expires)
-        throws OperationFailedException
+    private Request createSubscriptionRequest(Subscription subscription, @Nullable Dialog dialog, int expires)
+            throws OperationFailedException
     {
-        Address toAddress = subscription.getAddress();
-        HeaderFactory headerFactory = protocolProvider.getHeaderFactory();
-
-        // Call ID
-        CallIdHeader callIdHeader;
-        try
-        {
-            callIdHeader =
-                protocolProvider.getDefaultJainSipProvider().getNewCallId();
-        }
-        catch (IllegalArgumentException ex)
-        {
-            // Probably means we're offline
-            logger.error(
-                "Network failure while constructing the CallIdHeader", ex);
-            throw new OperationFailedException(
-                "Network failure while constructing the CallIdHeader",
-                OperationFailedException.NETWORK_FAILURE,
-                ex);
-        }
-
-        //CSeq
-        CSeqHeader cSeqHeader;
-        try
-        {
-            cSeqHeader
-                = headerFactory.createCSeqHeader(1L, Request.SUBSCRIBE);
-        }
-        catch (InvalidArgumentException | ParseException ex)
-        {
-            //Shouldn't happen
-            logger.error(
-                "An unexpected error occurred while"
-                + "constructing the CSeqHeader", ex);
-            throw new OperationFailedException(
-                "An unexpected error occurred while"
-                + "constructing the CSeqHeader"
-                , OperationFailedException.INTERNAL_ERROR
-                , ex);
-        }
-
-        //FromHeader and ToHeader
-        String localTag = SipMessageFactory.generateLocalTag();
-        FromHeader fromHeader;
-        ToHeader toHeader;
-        try
-        {
-            //FromHeader
-            fromHeader
-                = headerFactory
-                    .createFromHeader(
-                        protocolProvider.getOurSipAddress(toAddress),
-                        localTag);
-
-            //ToHeader
-            toHeader = headerFactory.createToHeader(toAddress, null);
-        }
-        catch (ParseException ex)
-        {
-            //these two should never happen.
-            logger.error(
-                "An unexpected error occurred while"
-                + "constructing the FromHeader or ToHeader", ex);
-            throw new OperationFailedException(
-                "An unexpected error occurred while"
-                + "constructing the FromHeader or ToHeader"
-                , OperationFailedException.INTERNAL_ERROR
-                , ex);
-        }
-
-        //ViaHeaders
-        List<ViaHeader> viaHeaders
-            = protocolProvider.getLocalViaHeaders(toAddress);
-
-        //MaxForwards
+        Request req;
         MaxForwardsHeader maxForwards = protocolProvider.getMaxForwardsHeader();
 
-        Request req;
-        try
+        if(dialog != null)
         {
-            req
-                = protocolProvider
-                    .getMessageFactory()
-                        .createRequest(
-                            toHeader.getAddress().getURI(),
-                            Request.SUBSCRIBE,
-                            callIdHeader,
-                            cSeqHeader,
-                            fromHeader,
-                            toHeader,
-                            viaHeaders,
-                            maxForwards);
+            req = messageFactory.createRequest(dialog, Request.SUBSCRIBE);
+            req.setHeader(maxForwards);
         }
-        catch (ParseException ex)
+        else
         {
-            //shouldn't happen
-            logger.error(
-                "Failed to create message Request!", ex);
-            throw new OperationFailedException(
-                "Failed to create message Request!"
-                , OperationFailedException.INTERNAL_ERROR
-                , ex);
+            Address toAddress = subscription.getAddress();
+            HeaderFactory headerFactory = protocolProvider.getHeaderFactory();
+
+            // Call ID
+            CallIdHeader callIdHeader;
+            try
+            {
+                callIdHeader = protocolProvider.getDefaultJainSipProvider().getNewCallId();
+            }
+            catch (IllegalArgumentException ex)
+            {
+                // Probably means we're offline
+                logger.error(
+                        "Network failure while constructing the CallIdHeader", ex);
+                throw new OperationFailedException(
+                        "Network failure while constructing the CallIdHeader",
+                        OperationFailedException.NETWORK_FAILURE,
+                        ex);
+            }
+
+            //CSeq
+            CSeqHeader cSeqHeader;
+            try
+            {
+                cSeqHeader = headerFactory.createCSeqHeader(1L, Request.SUBSCRIBE);
+            }
+            catch (InvalidArgumentException | ParseException ex)
+            {
+                //Shouldn't happen
+                logger.error(
+                        "An unexpected error occurred while"
+                        + "constructing the CSeqHeader", ex);
+                throw new OperationFailedException(
+                        "An unexpected error occurred while"
+                        + "constructing the CSeqHeader"
+                        , OperationFailedException.INTERNAL_ERROR
+                        , ex);
+            }
+
+            //FromHeader and ToHeader
+            String localTag = SipMessageFactory.generateLocalTag();
+            FromHeader fromHeader;
+            ToHeader toHeader;
+            try
+            {
+                //FromHeader
+                fromHeader = headerFactory.createFromHeader(protocolProvider.getOurSipAddress(toAddress), localTag);
+
+                //ToHeader
+                toHeader = headerFactory.createToHeader(toAddress, null);
+            }
+            catch (ParseException ex)
+            {
+                //these two should never happen.
+                logger.error(
+                        "An unexpected error occurred while"
+                        + "constructing the FromHeader or ToHeader", ex);
+                throw new OperationFailedException(
+                        "An unexpected error occurred while"
+                        + "constructing the FromHeader or ToHeader"
+                        , OperationFailedException.INTERNAL_ERROR
+                        , ex);
+            }
+
+            //ViaHeaders
+            List<ViaHeader> viaHeaders = protocolProvider.getLocalViaHeaders(toAddress);
+
+            try
+            {
+                req = protocolProvider.getMessageFactory().createRequest(
+                        toHeader.getAddress().getURI(),
+                        Request.SUBSCRIBE,
+                        callIdHeader,
+                        cSeqHeader,
+                        fromHeader,
+                        toHeader,
+                        viaHeaders,
+                        maxForwards);
+            }
+            catch (ParseException ex)
+            {
+                //shouldn't happen
+                logger.error(
+                        "Failed to create message Request!", ex);
+                throw new OperationFailedException(
+                        "Failed to create message Request!"
+                        , OperationFailedException.INTERNAL_ERROR
+                        , ex);
+            }
         }
 
         populateSubscribeRequest(req, subscription, expires);
 
-        // Add route list from Service-Route header
-        RouteList routeList = protocolProvider.getPreloadedRouteList();
-        if (routeList != null && !routeList.isEmpty())
+        // For unclear historical reasons,
+        // the routeList has been only provided for new dialogs,
+        // so if the dialog is null we set the routeList header
+        if(dialog == null)
         {
-            req.setHeader(routeList);
+            // Add route list from Service-Route header
+            RouteList routeList = protocolProvider.getPreloadedRouteList();
+            if (routeList != null && !routeList.isEmpty())
+            {
+                req.setHeader(routeList);
+            }
         }
 
-        //Transaction
-        ClientTransaction subscribeTransaction;
-        try
-        {
-            subscribeTransaction
-                = protocolProvider
-                    .getDefaultJainSipProvider()
-                        .getNewClientTransaction(req);
-        }
-        catch (TransactionUnavailableException ex)
-        {
-            logger.error(
-                "Failed to create subscribe transaction.\n"
-                + "This is most probably a network connection error.",
-                ex);
-            throw new OperationFailedException(
-                    "Failed to create the subscription transaction",
-                    OperationFailedException.NETWORK_FAILURE);
-        }
-        return subscribeTransaction;
+        return req;
     }
 
     /**
@@ -876,9 +832,8 @@ public class EventPackageSubscriber
              // others: definitive reject (or not implemented)
              else
              {
-                 logger.debug("error received from the network:\n"
-                              + response + ". Retrying subscription in "
-                              + retryMargin + "s.");
+                 logger.debug("error received from the network. Retrying subscription in " +
+                              retryMargin + "s.");
 
                  removeSubscription(callId, subscription);
                  subscription.processFailureResponse(responseEvent, statusCode);
@@ -988,10 +943,7 @@ public class EventPackageSubscriber
         ClientTransaction subscribeTransaction = null;
         try
         {
-            subscribeTransaction
-                = (dialog == null)
-                    ? createSubscription(subscription, subscriptionDuration)
-                    : createSubscription(subscription, dialog, subscriptionDuration);
+            subscribeTransaction = createSubscription(subscription, dialog, subscriptionDuration);
         }
         catch (OperationFailedException ex)
         {

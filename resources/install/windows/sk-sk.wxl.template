@@ -1,31 +1,31 @@
-<?xml version="1.0" encoding="windows-1250" ?>
+<?xml version="1.0" encoding="WINDOWS-1252" ?>
 <WixLocalization
     xmlns="http://schemas.microsoft.com/wix/2006/localization"
-    Culture="sk-sk"
-    Language="1051">
+    Culture="en-us"
+    Language="1033">
 
-  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Nastavenie</String>
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Setup</String>
   <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="CleanSweepDlgDescription" Overridable="yes">Aké ďalšie úlohy by sa mali vykonať?</String>
-  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Ďalšie úlohy</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Which additional tasks should be done?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Additional Tasks</String>
 
-  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Nastavenie</String>
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Setup</String>
   <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Aké ďalšie úlohy by sa mali vykonať?</String>
-  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Ďalšie úlohy</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Which additional tasks should be done?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Additional Tasks</String>
 
-  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Vytvorte skratky</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Ponuka Štart</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Vytvoriť skratku na pracovnej ploche</String>
-  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Iné akcie</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Pri spustení spustite @@PRODUCT_NAME_TITLECASE@@</String>
-  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Pridružené protokoly</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Create Shortcuts</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">S&amp;tart Menu</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Create Desktop Shortcut</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Other Actions</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Launch @@PRODUCT_NAME_TITLECASE@@ on startup</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Associate Protocols</String>
 
-  <String Id="WelcomeText1" Overridable="yes">Tento softvér vyvinula: @@COMPANY_NAME_LEGAL@@</String>
-  <String Id="WelcomeText2" Overridable="yes">Domovská stránka je na adrese: @@WEB_PAGE@@</String>
-  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Používa jitsi.org</String>
+  <String Id="WelcomeText1" Overridable="yes">This software is developed by: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">The homepage is at: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Powered by jitsi.org</String>
 
-  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ nie je v tejto verzii systému Windows podporovaný. Vyžaduje si to aspoň Windows 7.</String>
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ is not supported on this version of Windows.  It requires at least Windows 7.</String>
 
-  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Spustiť @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Launch @@PRODUCT_NAME_TITLECASE@@</String>
 </WixLocalization>

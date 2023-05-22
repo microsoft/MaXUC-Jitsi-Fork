@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+
 #include "../Logger.h"
 #include <jni.h>
 

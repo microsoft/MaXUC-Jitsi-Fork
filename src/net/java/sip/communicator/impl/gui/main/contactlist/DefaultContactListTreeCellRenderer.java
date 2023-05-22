@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -1040,6 +1041,7 @@ public class DefaultContactListTreeCellRenderer
                         {
                             // TODO: DUIR-5256 This is not properly localized,
                             //  you should not use string concatenation
+                            // Code currently not used, ignoring this bug until this code is reinstated
                             displayName = metaContacts.get(0).getDisplayName() +
                                 " " + AND + " " + metaContacts.get(1).getDisplayName();
                         }

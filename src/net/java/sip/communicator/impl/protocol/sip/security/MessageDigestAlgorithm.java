@@ -4,11 +4,13 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip.security;
 
 import java.security.*;
 
 import net.java.sip.communicator.util.*;
+import static org.jitsi.util.Hasher.logHasher;
 
 /**
  * The class takes standard Http Authentication details and returns a response
@@ -59,11 +61,15 @@ public class MessageDigestAlgorithm
                                     String entity_body,
                                     String qop_value)
     {
-        logger.debug("trying to authenticate using : " + algorithm + ", "
-            + username_value + ", " + realm_value + ", " + (passwd != null
-            && passwd.trim().length() > 0) + ", " + nonce_value + ", "
-            + nc_value + ", " + cnonce_value + ", " + method + ", "
-            + digest_uri_value + ", " + entity_body + ", " + qop_value);
+        logger.debug("trying to authenticate using : " + algorithm + ", " +
+            logHasher(username_value) + ", " +
+            realm_value + ", " +
+            (passwd != null && passwd.trim().length() > 0) + ", "
+            + nonce_value + ", " +
+            nc_value + ", " +
+            cnonce_value + ", " +
+            method + ", " +
+            qop_value);
 
         if (username_value == null || realm_value == null || passwd == null
             || method == null || digest_uri_value == null || nonce_value == null)

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.beans.*;
@@ -110,6 +111,12 @@ public interface CallPeer
      * @return the peer's address or phone number.
      */
     String getAddress();
+
+    /**
+     * Returns a loggable String locator for that peer. A locator might be a SIP
+     * URI, an IP address or a telephone number.
+     */
+    String getLoggableAddress();
 
     /**
      * Returns a reference to the call that this peer belongs to.
@@ -348,4 +355,9 @@ public interface CallPeer
      * @return a string representation of the peer and its state.
      */
     String toString();
+
+    /**
+     * @return Any diversion info, so we can display this in the UI.
+     */
+    String getDiversionInfo();
 }

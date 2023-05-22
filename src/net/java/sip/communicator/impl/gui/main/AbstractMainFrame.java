@@ -2,13 +2,11 @@
 package net.java.sip.communicator.impl.gui.main;
 
 import java.awt.Color;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.KeyboardFocusManager;
 import java.awt.Toolkit;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
@@ -27,8 +25,6 @@ import org.jitsi.util.OSUtils;
 import net.java.sip.communicator.impl.gui.GuiActivator;
 import net.java.sip.communicator.impl.gui.customcontrols.MessageDialog;
 import net.java.sip.communicator.impl.gui.main.contactlist.ContactListPane;
-import net.java.sip.communicator.impl.gui.main.menus.MainMenu;
-import net.java.sip.communicator.impl.gui.main.presence.AccountStatusPanel;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommFrame;
 import net.java.sip.communicator.plugin.desktoputil.lookandfeel.LookAndFeelManager;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
@@ -41,6 +37,7 @@ import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
+import net.java.sip.communicator.impl.gui.main.callpark.CallParkAvailabilityObserver;
 
 public abstract class AbstractMainFrame extends SIPCommFrame implements ExportedWindow
 {
@@ -74,11 +71,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
      * The logger.
      */
     private final Logger logger = Logger.getLogger(AbstractMainFrame.class);
-
-    /**
-     * The main menu.
-     */
-    protected MainMenu menu;
 
     /**
      * The keyboard focus manager.
@@ -166,12 +158,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
     public abstract void removeProtocolProvider(AccountID accountID);
 
     /**
-     * Returns the account status panel.
-     * @return the account status panel.
-     */
-    public abstract AccountStatusPanel getAccountStatusPanel();
-
-    /**
      * Returns the multi user chat operation set for the given protocol provider.
      *
      * @param protocolProvider The protocol provider for which the multi user
@@ -248,7 +234,7 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
             this.setUndecorated(true);
         }
 
-        menu = new MainMenu(this);
+        new CallParkAvailabilityObserver().observeCallParkAvailability();
 
         this.initTitleFont();
 
@@ -328,8 +314,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
                 saveSizeAndLocationTimer.reset();
             }
         });
-
-        this.setJMenuBar(menu);
     }
 
     public AbstractMainFrame()
@@ -358,15 +342,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
         setMinimumSize(new Dimension(minSize.width + borderWidth,
                                      minSize.height + borderHeight));
         setSizeAndLocation();
-    }
-
-    /**
-     * Returns the main menu in the application window.
-     * @return the main menu in the application window
-     */
-    public MainMenu getMainMenu()
-    {
-        return menu;
     }
 
     /**
@@ -517,52 +492,8 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
         if (!GuiActivator.getUIService().getExitOnMainWindowClose()
             && !OSUtils.IS_MAC)
         {
-            if (ConfigurationUtils.isQuitWarningShown())
-            {
-                showWindowHiddenDialog();
-            }
-
             ConfigurationUtils.setApplicationVisible(false);
         }
-    }
-
-    /**
-     * Display the dialog which warns the user that the app is hiding but not
-     * closing, and if they choose to not show the dialog in future, store the
-     * decision in config.
-     */
-    private void showWindowHiddenDialog()
-    {
-        if (!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    showWindowHiddenDialog();
-                }
-            });
-        }
-
-        if (windowHiddenDialog == null)
-        {
-            windowHiddenDialog =
-                         new MessageDialog(null, CLOSE, HIDE_MAIN_WINDOW, false)
-            {
-                private static final long serialVersionUID = 0L;
-
-                public void actionPerformed(ActionEvent evt)
-                {
-                    super.actionPerformed(evt);
-                    if (returnCode == MessageDialog.OK_DONT_ASK_CODE)
-                        ConfigurationUtils.setQuitWarningShown(false);
-                }
-            };
-
-            windowHiddenDialog.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);
-        }
-
-        windowHiddenDialog.setVisible(true);
     }
 
     /**

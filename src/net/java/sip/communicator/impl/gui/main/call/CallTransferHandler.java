@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.datatransfer.*;
@@ -179,17 +180,16 @@ public class CallTransferHandler
                         = GuiActivator.getResources();
                     AccountID accountID = callProvider.getAccountID();
 
-                    new ErrorDialog(null,
-                            resources.getI18NString("service.gui.ERROR"),
-                            resources.getI18NString(
-                                    "service.gui.CALL_NOT_SUPPORTING_PARTICIPANT",
-                                    new String[]
-                                            {
-                                                accountID.getService(),
-                                                accountID.getUserID(),
-                                                uiContact.getDisplayName()
-                                            }))
-                        .showDialog();
+                    new ErrorDialog(
+                        resources.getI18NString("service.gui.ERROR"),
+                        resources.getI18NString(
+                            "service.gui.CALL_NOT_SUPPORTING_PARTICIPANT",
+                            new String[]
+                            {
+                                accountID.getService(), accountID.getUserID(),
+                                uiContact.getDisplayName()
+                            }
+                        )).showDialog();
                 }
             }
         }

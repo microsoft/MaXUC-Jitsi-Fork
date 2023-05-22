@@ -4,21 +4,33 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.neomedia;
 
-import java.awt.event.*;
-import java.beans.*;
-import java.util.*;
-
-import javax.media.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import javax.media.CaptureDeviceInfo;
 import javax.swing.*;
-import javax.swing.event.*;
-
-import org.jitsi.impl.neomedia.device.*;
-import org.jitsi.util.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.impl.neomedia.device.AudioSystem;
+import org.jitsi.impl.neomedia.device.CaptureDeviceListManager;
+import org.jitsi.impl.neomedia.device.DataFlow;
+import org.jitsi.impl.neomedia.device.Device;
+import org.jitsi.impl.neomedia.device.DeviceConfiguration;
+import org.jitsi.impl.neomedia.device.NotifyDeviceListManager;
+import org.jitsi.impl.neomedia.device.PlaybackDeviceListManager;
+import org.jitsi.impl.neomedia.device.VideoDeviceListManager;
+import org.jitsi.impl.neomedia.device.VideoSystem;
+import org.jitsi.util.StringUtils;
 
 /**
  * Implements <tt>ComboBoxModel</tt> for a specific <tt>DeviceConfiguration</tt>
@@ -95,6 +107,12 @@ public class DeviceConfigurationComboBoxModel
     private final int mType;
 
     /**
+     * The property name that will be received in a PropertyChangeEvent for
+     * the type of device displayed in this combo.
+     */
+    private final String mPropertyName;
+
+    /**
      * The index to use for selecting devices when using keyboard navigation.
      * This is necessary because selected devices always go to the top of the
      * list, therefore a custom key manager must be used.
@@ -120,24 +138,41 @@ public class DeviceConfigurationComboBoxModel
     /**
      * @param deviceConfiguration The current device configuration
      * @param type The device type, e.g. video, capture, notify, playback
+     * @param propertyName The property name that will be received in a PropertyChangeEvent
+     *                     for the type of device displayed in this combo box.
      * @param comboBox The combo box that this model is for
      */
     public DeviceConfigurationComboBoxModel(
             DeviceConfiguration deviceConfiguration,
             int type,
+            String propertyName,
             JComboBox<Object> comboBox)
     {
         if (deviceConfiguration == null)
+        {
             throw new IllegalArgumentException("deviceConfiguration");
+        }
+
         if ((type != AUDIO_CAPTURE) &&
             (type != AUDIO_NOTIFY) &&
             (type != AUDIO_PLAYBACK) &&
             (type != VIDEO))
+        {
             throw new IllegalArgumentException("type");
+        }
+
+        if (!CaptureDeviceListManager.PROP_DEVICE.equals(propertyName) &&
+            !NotifyDeviceListManager.PROP_DEVICE.equals(propertyName) &&
+            !PlaybackDeviceListManager.PROP_DEVICE.equals(propertyName) &&
+            !VideoDeviceListManager.PROP_DEVICE.equals(propertyName))
+        {
+            throw new IllegalArgumentException("propertyName");
+        }
 
         mComboBox = comboBox;
         mDeviceConfiguration = deviceConfiguration;
         mType = type;
+        mPropertyName = propertyName;
         mDeviceConfiguration.addPropertyChangeListener(this);
 
         getActiveDevices();
@@ -331,7 +366,7 @@ public class DeviceConfigurationComboBoxModel
         {
             for (CaptureDevice device : mActiveDevices)
             {
-                if (device.equals(info))
+                if (device.getInfo().equals(info))
                 {
                     deviceLogger.debug("Selected (" + mType + ") device is " + device);
                     mSelectedDevice = device;
@@ -368,19 +403,18 @@ public class DeviceConfigurationComboBoxModel
      *
      * @param ev a <tt>PropertyChangeEvent</tt> which describes the name of the
      * property whose value has changed and the old and new values of that
-     * property
+     * property.  Note that the property name included on the event is a shortened
+     * version of the property in sip-communicator.properties (e.g. 'captureDevice'
+     * rather than 'net.java.sip.communicator.impl.neomedia.audioSystem.wasapi.captureDevice_list2').
      */
     public void propertyChange(final PropertyChangeEvent ev)
     {
         String propertyName = ev.getPropertyName();
-
-        if (((DeviceConfiguration.PROP_AUDIO_SYSTEM_DEVICES.equals(propertyName)) && (mType != VIDEO)) ||
-            ((DeviceConfiguration.PROP_VIDEO_SYSTEM_DEVICES.equals(propertyName)) && (mType == VIDEO)))
+        if (mPropertyName.equals(propertyName))
         {
             if (SwingUtilities.isEventDispatchThread())
             {
-                sLog.debug("Received device change notif, reset active devices.");
-
+                sLog.info("Received device change notification, reload active devices: " + ev);
                 getActiveDevices();
                 fireContentsChanged(0, getSize() - 1);
             }
@@ -574,21 +608,26 @@ public class DeviceConfigurationComboBoxModel
             return mInfo;
         }
 
-        /**
-         * Determines whether the <tt>CaptureDeviceInfo</tt> encapsulated by
-         * this instance is equal (by value) to a specific
-         * <tt>CaptureDeviceInfo</tt>.
-         *
-         * @param cdi the <tt>CaptureDeviceInfo</tt> to be determined whether it
-         * is equal (by value) to the <tt>CaptureDeviceInfo</tt> encapsulated by
-         * this instance
-         * @return <tt>true</tt> if the <tt>CaptureDeviceInfo</tt> encapsulated
-         * by this instance is equal (by value) to the specified <tt>cdi</tt>;
-         * otherwise, <tt>false</tt>
-         */
-        public boolean equals(CaptureDeviceInfo cdi)
+        @Override
+        public boolean equals(Object captureDevice)
         {
-            return Objects.equals(mInfo, cdi);
+            if (this == captureDevice)
+            {
+                return true;
+            }
+
+            if (!(captureDevice instanceof CaptureDevice))
+            {
+                return false;
+            }
+
+            return mInfo.equals(((CaptureDevice) captureDevice).getInfo());
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return mInfo.hashCode();
         }
 
         /**

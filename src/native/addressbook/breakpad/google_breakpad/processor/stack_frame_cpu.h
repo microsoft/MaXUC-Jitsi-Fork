@@ -344,7 +344,7 @@ struct StackFrameMIPS : public StackFrame {
   // 3. $f20-$f31 
   // 
   // The register structure is available at
-  // https://en.wikipedia.org/wiki/MIPS_architecture#Compiler_register_usage
+  // http://en.wikipedia.org/wiki/MIPS_architecture#Compiler_register_usage
 
 #define INDEX_MIPS_REG_S0 MD_CONTEXT_MIPS_REG_S0  // 16
 #define INDEX_MIPS_REG_S7 MD_CONTEXT_MIPS_REG_S7  // 23

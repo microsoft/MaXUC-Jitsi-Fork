@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.msghistory;
 
 import java.util.*;
@@ -132,6 +133,14 @@ public interface MessageHistoryService
     Collection<MessageEvent> findByKeyword(String smsNumber,
                                            String keyword)
         throws RuntimeException;
+
+    /**
+     * Returns the message that matches the provided message id, or null if no match.
+     *
+     * @param uid the id of the message to find
+     * @return MessageReceivedEvent, MessageDeliveredEvent, or null
+     */
+    MessageEvent findById(String uid);
 
     /**
      * Returns the supplied number of recent messages exchanged by all the contacts
@@ -359,6 +368,16 @@ public interface MessageHistoryService
         throws RuntimeException;
 
     /**
+     * Which of the supplied msgUids are already in the group chat DB for this room.
+     * @param roomJid
+     * @param msgUids
+     * @return Collection containing the subset of the supplied msgUids that are already present in
+     * the group chat DB, matching the supplied room.
+     * @throws RuntimeException
+     */
+    Collection<String> findMatchingGroupChatMsgUids(String roomJid, List<String> msgUids) throws RuntimeException;
+
+    /**
      * Returns the supplied number of recent messages exchanged with the given
      * SMS number and the metacontact (if any) that contains that number.
      *
@@ -494,6 +513,13 @@ public interface MessageHistoryService
      * @param peerId the peerId of the messages
      */
     void updateReadStatusToReadForAllUnread(String peerId);
+
+    /**
+     * Remove a message from the database
+     *
+     * @param uid the id of the message to remove
+     */
+    void removeByID(String uid);
 
     /**
      * Registers a <tt>SourceContactChangeListener</tt> with this service so

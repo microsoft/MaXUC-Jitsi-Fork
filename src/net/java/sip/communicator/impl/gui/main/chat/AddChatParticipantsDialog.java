@@ -17,6 +17,8 @@ import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+
 /**
  * A dialog that shows all IM contacts. The user may select multiple contacts
  * to invite them to a group chat
@@ -47,11 +49,6 @@ public class AddChatParticipantsDialog
      * The color to use for the border and separator
      */
     private static final Color BORDER_COLOR = new Color(125, 125, 125);
-
-    /**
-     * The error dialog to display if the subject is not set or is too long.
-     */
-    private ErrorDialog errorDialog;
 
     /**
      * Create the dialog with the default title and 'ok' button text.
@@ -170,21 +167,12 @@ public class AddChatParticipantsDialog
 
         if (errorMessage != null)
         {
-            errorDialog = new ErrorDialog(
+            new ErrorDialog(
                 sResources.getI18NString("service.gui.chat.ERROR_INVALID_CHAT_NAME"),
-                errorMessage,
-                this);
-            errorDialog.setVisible(true);
-            errorDialog.requestFocus();
+                errorMessage).showDialog();
         }
         else
         {
-            // Dispose of this frame and set the UI on the chat room
-            if (errorDialog != null)
-            {
-                errorDialog.dispose();
-            }
-
             if (chatPanel != null)
             {
                 chatPanel.setLeftChatRoomUI(false);
@@ -281,7 +269,7 @@ public class AddChatParticipantsDialog
             contactsToInvite.add(imContact.getAddress());
         }
 
-        logger.debug("Returning contacts to invite: " + contactsToInvite);
+        logger.debug("Returning contacts to invite: " + sanitiseChatAddress(contactsToInvite.toString()));
         return contactsToInvite;
     }
 
@@ -321,7 +309,7 @@ public class AddChatParticipantsDialog
                 }
 
                 ChatWindowManager chatWindowManager = uiService.getChatWindowManager();
-                chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, true, false);
+                chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, true);
 
                 if (chatPanel != null)
                 {

@@ -4,12 +4,14 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip.xcap;
 
 import java.io.*;
 import java.net.UnknownHostException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import javax.net.ssl.*;
 import javax.sip.address.*;
@@ -457,7 +459,7 @@ public abstract class BaseHttpXCapClient implements HttpXCapClient
             SchemeRegistry sr = ccm.getSchemeRegistry();
             SSLContext ctx =
                 certificateVerification.getSSLContext(
-                    certificateVerification.getTrustManager(uri.getHost()));
+                    certificateVerification.getTrustManager(List.of(uri.getHost())));
             org.apache.http.conn.ssl.SSLSocketFactory ssf =
                 new org.apache.http.conn.ssl.SSLSocketFactory(ctx,
                     SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);

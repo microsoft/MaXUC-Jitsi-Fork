@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.util.Map;
 
@@ -69,6 +72,8 @@ public class ProtocolProviderFactoryJabberImpl
     public AccountID installAccount( String userIDStr,
                                      Map<String, String> accountProperties)
     {
+        logger.info("Install account " + sanitiseChatAddress(userIDStr));
+
         BundleContext context
             = JabberActivator.getBundleContext();
         if (context == null)
@@ -93,7 +98,7 @@ public class ProtocolProviderFactoryJabberImpl
                 accountProperties.put(SERVER_ADDRESS,
                     JitsiStringUtils.parseServer(userIDStr));
             else throw new IllegalArgumentException(
-                "Should specify a server for user name " + userIDStr + ".");
+                "Should specify a server for user name " + sanitiseChatAddress(userIDStr) + ".");
         }
 
         // if server port is null, we will set default value
@@ -105,7 +110,7 @@ public class ProtocolProviderFactoryJabberImpl
         //make sure we haven't seen this account id before.
         if (isAccountRegistered(accountID))
         {
-            throw new IllegalStateException("An account for id " + userIDStr + " was already installed!");
+            throw new IllegalStateException("An account for id " + sanitiseChatAddress(userIDStr) + " was already installed!");
         }
 
         //first store the account and only then load it as the load generates
@@ -144,7 +149,7 @@ public class ProtocolProviderFactoryJabberImpl
     protected ProtocolProviderService createService(String userID,
         AccountID accountID)
     {
-        logger.info("Creating ProtocolProviderService for account ID " + accountID);
+        logger.info("Creating ProtocolProviderService for account ID " + sanitiseChatAddress(accountID.toString()));
         ProtocolProviderServiceJabberImpl service = new ProtocolProviderServiceJabberImpl();
 
         service.initialize(userID, accountID);

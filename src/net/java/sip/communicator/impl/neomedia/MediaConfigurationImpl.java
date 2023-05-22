@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.neomedia;
 
 import java.awt.*;
@@ -45,10 +46,14 @@ import org.jitsi.impl.neomedia.MediaServiceImpl;
 import org.jitsi.impl.neomedia.device.AudioMediaDeviceImpl;
 import org.jitsi.impl.neomedia.device.AudioMediaDeviceSession;
 import org.jitsi.impl.neomedia.device.AudioSystem;
+import org.jitsi.impl.neomedia.device.CaptureDeviceListManager;
 import org.jitsi.impl.neomedia.device.DataFlow;
 import org.jitsi.impl.neomedia.device.MediaDeviceImpl;
 import org.jitsi.impl.neomedia.device.MediaDeviceSession;
 import org.jitsi.impl.neomedia.device.NoneAudioSystem;
+import org.jitsi.impl.neomedia.device.NotifyDeviceListManager;
+import org.jitsi.impl.neomedia.device.PlaybackDeviceListManager;
+import org.jitsi.impl.neomedia.device.VideoDeviceListManager;
 import org.jitsi.service.audionotifier.SCAudioClip;
 import org.jitsi.service.neomedia.BasicVolumeControl;
 import org.jitsi.service.neomedia.MediaConfigurationService;
@@ -457,6 +462,7 @@ public class MediaConfigurationImpl
                 new DeviceConfigurationComboBoxModel(
                         mediaService.getDeviceConfiguration(),
                         DeviceConfigurationComboBoxModel.AUDIO_CAPTURE,
+                        CaptureDeviceListManager.PROP_DEVICE,
                         captureCombo)
                 {
                     @Override
@@ -532,6 +538,7 @@ public class MediaConfigurationImpl
                 new DeviceConfigurationComboBoxModel(
                         mediaService.getDeviceConfiguration(),
                         DeviceConfigurationComboBoxModel.AUDIO_PLAYBACK,
+                        PlaybackDeviceListManager.PROP_DEVICE,
                         playbackCombo)
                 {
                     @Override
@@ -556,7 +563,7 @@ public class MediaConfigurationImpl
         // Playback play sound button.
         playbackPlaySoundButton = NeomediaActivator.getResources()
                 .getBufferedImage(
-                        "plugin.notificationconfig.PLAY_ICON")
+                        "plugin.mediaconfig.PLAY_ICON")
                 .getImageIcon()
                 .addToButton(new JButton());
         playbackPlaySoundButton.setMinimumSize(PLAY_BUTTON_DIMENSION);
@@ -613,9 +620,10 @@ public class MediaConfigurationImpl
             notifyCombo.setEditable(false);
             DeviceConfigurationComboBoxModel notifyModel =
                 new DeviceConfigurationComboBoxModel(
-                            mediaService.getDeviceConfiguration(),
-                            DeviceConfigurationComboBoxModel.AUDIO_NOTIFY,
-                            notifyCombo)
+                        mediaService.getDeviceConfiguration(),
+                        DeviceConfigurationComboBoxModel.AUDIO_NOTIFY,
+                        NotifyDeviceListManager.PROP_DEVICE,
+                        notifyCombo)
                 {
                     @Override
                     public void setSelectedItem(Object item)
@@ -640,7 +648,7 @@ public class MediaConfigurationImpl
             notifyPlaySoundButton
                 = NeomediaActivator.getResources()
                     .getBufferedImage(
-                        "plugin.notificationconfig.PLAY_ICON")
+                        "plugin.mediaconfig.PLAY_ICON")
                         .getImageIcon()
                         .addToButton(new JButton());
             notifyPlaySoundButton.setMinimumSize(PLAY_BUTTON_DIMENSION);
@@ -814,9 +822,10 @@ public class MediaConfigurationImpl
         deviceComboBox.setEditable(false);
         DeviceConfigurationComboBoxModel comboBoxModel =
                 new DeviceConfigurationComboBoxModel(
-                                      mediaService.getDeviceConfiguration(),
-                                      DeviceConfigurationComboBoxModel.VIDEO,
-                                      deviceComboBox);
+                        mediaService.getDeviceConfiguration(),
+                        DeviceConfigurationComboBoxModel.VIDEO,
+                        VideoDeviceListManager.PROP_DEVICE,
+                        deviceComboBox);
         deviceComboBox.setModel(comboBoxModel);
 
         deviceComboBox.addKeyListener(comboBoxModel);
@@ -896,16 +905,7 @@ public class MediaConfigurationImpl
                 {
                     logger.info("deviceComboBoxActionListener - action performed");
 
-                    // Drop out if the user selected the same video device.
-                    // Without this fix, we attempt to open a second connection
-                    // to the same video device (which fails) before the first
-                    // connection is closed.  There may be a better way to fix
-                    // that, but this fix works!
-                    if ((type == MediaType.VIDEO) &&
-                        (ev != null) &&
-                        ("comboBoxChanged".equals(ev.getActionCommand())) &&
-                        (mLastSelectedVideoItem != null) &&
-                        (videoDeviceComboBox.getSelectedItem() == mLastSelectedVideoItem))
+                    if (tryingToOpenParallelConnectionToVideoDevice(ev))
                     {
                         logger.info("Same device selected, drop out: " +
                                     mLastSelectedVideoItem);
@@ -975,6 +975,20 @@ public class MediaConfigurationImpl
                         deviceAndPreviewPanel.revalidate();
                         deviceAndPreviewPanel.repaint();
                     }
+                }
+
+                /**
+                 * Returns true if the client attempts to create a second, parallel
+                 * connection to the same video device (which will fail and
+                 * cause an error).
+                 */
+                private boolean tryingToOpenParallelConnectionToVideoDevice(ActionEvent ev)
+                {
+                    return (type == MediaType.VIDEO) &&
+                           (ev != null) &&
+                           ("comboBoxChanged".equals(ev.getActionCommand())) &&
+                           (mLastSelectedVideoItem != null) &&
+                           mLastSelectedVideoItem.equals(videoDeviceComboBox.getSelectedItem());
                 }
             };
 

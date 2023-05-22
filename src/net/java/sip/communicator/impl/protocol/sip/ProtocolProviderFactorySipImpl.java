@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
+
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.util.*;
 
@@ -48,7 +51,8 @@ public class ProtocolProviderFactorySipImpl
      */
     protected void storeAccount(AccountID accountID)
     {
-        logger.debug("Storing account ID " + accountID);
+        logger.debug("Storing account ID " +
+                     (accountID != null ? accountID.getLoggableAccountID() : null));
         storeXCapPassword(accountID);
         super.storeAccount(accountID);
     }
@@ -102,6 +106,8 @@ public class ProtocolProviderFactorySipImpl
     public AccountID installAccount( String userIDStr,
                                  Map<String, String> accountProperties)
     {
+        logger.info("Install account " + sanitiseChatAddress(userIDStr));
+
         BundleContext context = SipActivator.getBundleContext();
         if (context == null)
             throw new NullPointerException("The specified BundleContext was null");
@@ -121,7 +127,7 @@ public class ProtocolProviderFactorySipImpl
         //make sure we haven't seen this account id before.
         if (isAccountRegistered(accountID))
         {
-            throw new IllegalStateException("An account for id " + userIDStr + " was already installed!");
+            throw new IllegalStateException("An account for id " + accountID.getLoggableAccountID() + " was already installed!");
         }
 
         //first store the account and only then load it as the load generates
@@ -157,9 +163,7 @@ public class ProtocolProviderFactorySipImpl
                 "service.gui.NO_ONLINE_TELEPHONY_ACCOUNT");
         String title = mResourceService.getI18NString(
                 "service.gui.WARNING");
-        ErrorDialog dialog = new ErrorDialog(null, title, message);
-        dialog.setVisible(true);
-        dialog.setModal(true);
+        new ErrorDialog(title, message).showDialog();
     }
 
     @Override
@@ -210,10 +214,10 @@ public class ProtocolProviderFactorySipImpl
      *         <code>AccountID</code>
      */
     @Override
-    protected ProtocolProviderService createService(String userID,
-        AccountID accountID)
+    protected ProtocolProviderService createService(String userID, AccountID accountID)
     {
-        logger.info("Creating ProtocolProviderService for account ID " + accountID);
+        logger.info("Creating ProtocolProviderService for account ID " +
+                    (accountID != null ? accountID.getLoggableAccountID() : null));
         ProtocolProviderServiceSipImpl service = new ProtocolProviderServiceSipImpl();
 
         try

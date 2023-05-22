@@ -5,10 +5,10 @@
 // Code for reading in ELF files.
 //
 // For information on the ELF format, see
-// https://www.x86.org/ftp/manuals/tools/elf.pdf
+// http://www.x86.org/ftp/manuals/tools/elf.pdf
 //
 // I also liked:
-// https://www.caldera.com/developers/gabi/1998-04-29/contents.html
+// http://www.caldera.com/developers/gabi/1998-04-29/contents.html
 //
 // A note about types: When dealing with the file format, we use types
 // like Elf32_Word, but in the public interfaces we treat all
@@ -905,7 +905,7 @@ class ElfReaderImpl {
       // the event of overflow (greater than SHN_LORESERVE sections), e_shnum
       // will read SHN_UNDEF and the true number of section header table entries
       // is found in the sh_size field of the first section header.
-      // See: https://www.sco.com/developers/gabi/2003-12-17/ch4.sheader.html
+      // See: http://www.sco.com/developers/gabi/2003-12-17/ch4.sheader.html
       if (pread(fd, &first_section_header_, sizeof(first_section_header_),
                 header_.e_shoff) != sizeof(first_section_header_)) {
         return false;

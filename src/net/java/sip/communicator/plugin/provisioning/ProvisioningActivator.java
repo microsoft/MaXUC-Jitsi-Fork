@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.provisioning;
 
 import org.jitsi.service.configuration.*;
@@ -17,6 +18,7 @@ import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.netaddr.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.provisioning.*;
+import net.java.sip.communicator.service.threading.ThreadingService;
 import net.java.sip.communicator.service.update.*;
 import net.java.sip.communicator.service.wispaservice.*;
 import net.java.sip.communicator.util.Logger;
@@ -51,6 +53,12 @@ public class ProvisioningActivator
      * that is registered with the bundle context.
      */
     private static CredentialsStorageService credentialsService = null;
+
+    /**
+     * A reference to the ThreadingService implementation instance
+     * that is registered with the bundle context.
+     */
+    private static ThreadingService threadingService = null;
 
     /**
      * A reference to the NetworkAddressManagerService implementation instance
@@ -104,7 +112,7 @@ public class ProvisioningActivator
         logger.debug("Provisioning discovery [STARTED]");
 
         ProvisioningActivator.bundleContext = bundleContext;
-        provisioningService = new ProvisioningServiceImpl();
+        provisioningService = ProvisioningServiceImpl.getProvisioningServiceImpl();
 
         String method = provisioningService.getProvisioningMethod();
 
@@ -217,6 +225,28 @@ public class ProvisioningActivator
                                         .getService(credentialsReference);
         }
         return credentialsService;
+    }
+
+    /**
+     * Returns a reference to a ThreadingService implementation
+     * currently registered in the bundle context or null if no such
+     * implementation was found.
+     *
+     * @return a currently valid implementation of the
+     * ThreadingService.
+     */
+    public static ThreadingService getThreadingService()
+    {
+        if (threadingService == null)
+        {
+            ServiceReference<?> threadingReference
+                = bundleContext.getServiceReference(
+                    ThreadingService.class.getName());
+            threadingService
+                = (ThreadingService) bundleContext
+                                        .getService(threadingReference);
+        }
+        return threadingService;
     }
 
     /**

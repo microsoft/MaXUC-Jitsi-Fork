@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.beans.*;
 import java.util.*;
@@ -126,6 +129,15 @@ public abstract class Call
     public String getCallID()
     {
         return callID;
+    }
+
+    /**
+     * Returns a loggable id of the specified Call.
+     * @return a String uniquely identifying the call (with hashed Call ID).
+     */
+    public String getLoggableCallID()
+    {
+        return sanitiseChatAddress(callID);
     }
 
     /**

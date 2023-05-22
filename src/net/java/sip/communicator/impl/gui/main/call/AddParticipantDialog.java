@@ -7,6 +7,7 @@ import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.UIService.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
+import static org.jitsi.util.Hasher.logHasher;
 
 /**
  * A class which allows the user to choose a participant to add to a call
@@ -39,7 +40,7 @@ public class AddParticipantDialog extends AbstractCallContactInviteDialog
 
             if (number != null)
             {
-                sLog.info("Number selected " + number);
+                sLog.info("Number selected " + logHasher(number));
                 CallManager.inviteToConferenceCall(mCall,
                                                    Reformatting.NEEDED,
                                                    number);
@@ -55,7 +56,7 @@ public class AddParticipantDialog extends AbstractCallContactInviteDialog
                 if (phoneNumber != null && phoneNumber.length() > 0)
                 {
                     // Valid phone number - invite it
-                    sLog.info("Phone number entered: " + phoneNumber);
+                    sLog.info("Phone number entered: " + logHasher(phoneNumber));
                     CallManager.inviteToConferenceCall(mCall,
                                                        Reformatting.NOT_NEEDED,
                                                        phoneNumber);
@@ -66,7 +67,7 @@ public class AddParticipantDialog extends AbstractCallContactInviteDialog
                 else
                 {
                     // Invalid number entered - show error
-                    sLog.info("Invalid number entered " + enteredText);
+                    sLog.info("Invalid number entered " + logHasher(enteredText));
                     showError("service.gui.add.ERROR",
                               "service.gui.ERROR_INVALID_NUMBER");
                 }

@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.contactlist;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseDirectoryNumber;
 
 import java.io.*;
 import java.util.*;
@@ -271,19 +274,19 @@ public class MclStorageManager
         // get a reference to the contact list file.
         try
         {
-            logger.info("Using contact list file name " + fileName);
+            logger.info("Using contact list file name " + DEFAULT_FILE_NAME);
             contactlistFile = new File(fileName);
 
             if (!contactlistFile.exists() && !contactlistFile.createNewFile())
                 throw new IOException("Failed to create file"
-                                          + contactlistFile.getAbsolutePath());
+                                          + contactlistFile.getName());
         }
         catch (Exception ex)
         {
             logger.error("Failed to get a reference to the contact list file.",
                 ex);
             throw new IOException("Failed to get a reference to the contact "
-                + "list file=" + fileName + ". error was:" + ex.getMessage());
+                + "list file=" + DEFAULT_FILE_NAME + ". error was:" + ex.getMessage());
         }
 
         contactlistTrans = new TransactionBasedFile(contactlistFile);
@@ -297,7 +300,7 @@ public class MclStorageManager
             if (contactlistFile.length() == 0)
             {
                 // if the contact list does not exist - create it.
-                logger.error("Creating new contact list object " + fileName);
+                logger.error("Creating new contact list object " + DEFAULT_FILE_NAME);
                 contactListDocument = builder.newDocument();
                 initVirginDocument(mclServImpl, contactListDocument);
 
@@ -563,7 +566,8 @@ public class MclStorageManager
      */
     void extractContactsForAccount(String accountID) throws XMLException
     {
-        logger.info("Extracting contacts for " + accountID);
+        logger.info("Extracting contacts for " +
+                    sanitiseDirectoryNumber(accountID));
         if (!isStarted())
             return;
 
@@ -607,9 +611,10 @@ public class MclStorageManager
             // catch everything because we MUST NOT disturb the thread
             // initializing the meta CL for a new provider with null point
             // exceptions or others of the sort
-            logger.error("Exception loading contacts for account " + accountID, e);
+            logger.error("Exception loading contacts for account "
+                        + sanitiseDirectoryNumber(accountID), e);
             throw new XMLException("Failed to extract contacts for account "
-                + accountID, e);
+                        + sanitiseDirectoryNumber(accountID), e);
         }
     }
 
@@ -1508,7 +1513,7 @@ public class MclStorageManager
         // for now and that's all.
         if (metaContactNode == null)
         {
-            logger.error("Save after renam failed. Contact not found: "
+            logger.error("Save after rename failed. Contact not found: "
                 + evt.getSourceMetaContact());
             return;
         }

@@ -27,6 +27,17 @@ public interface AnalyticsService
     void startSysRunningTimer();
 
     /**
+     * There are cases where we want to send the analytics right away so they
+     * don't get lost (for example if OOM happens twice in less then 15
+     * minutes), so calling this method will do just that, send currently queued
+     * analytics to the server.
+     *
+     * @param incrementingEventCount true if we are getting the events which
+     * have an incrementing event count. False otherwise.
+     */
+    void dumpImmediately(boolean incrementingEventCount);
+
+    /**
      * Called in order to log an event
      *
      * @param eventType the event type to log
@@ -97,4 +108,19 @@ public interface AnalyticsService
                                       List<AnalyticsParameter> parameters,
                                       int[] sasMarkerType,
                                       String[] sasMarkerValue);
+
+    /**
+     * Called in order to report an app rating submission
+     */
+    void onAppRatingSubmitted();
+
+    /**
+     * Called in order to report an app rating refusal
+     */
+    void onAppRatingRefused();
+
+    /**
+     * Returns whether we are currently asking the user for an app rating
+     */
+    boolean getWaitingForUserRating();
 }

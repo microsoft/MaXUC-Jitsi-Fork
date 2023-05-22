@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.ldap;
 
 import java.util.*;
@@ -158,21 +159,7 @@ public class LdapDirectoryImpl
 
         String portText;
 
-        /* settings checks */
-        if(!textHasContent(settings.getName()))
-            throw new IllegalArgumentException("name has no content.");
-        if(!textHasContent(settings.getHostname()))
-            throw new IllegalArgumentException("Hostname has no content.");
-        if(settings.getAuth() != Auth.NONE && !textHasContent(
-                settings.getBindDN()))
-            throw new IllegalArgumentException("Bind DN has no content.");
-        if(settings.getAuth() != Auth.NONE && settings.getPassword() == null)
-            throw new IllegalArgumentException("password is null.");
-        if(settings.getPort() < 0 || settings.getPort() > 65535)
-            throw new IllegalArgumentException("Illegal port number.");
-        if(settings.getBaseDN() == null)
-            throw new IllegalArgumentException("Base DN has no content.");
-
+        settings.validateSettings();
         this.settings = settings.clone();
 
         if(this.settings.getPort() == 0)
@@ -1032,17 +1019,6 @@ public class LdapDirectoryImpl
     public int hashCode()
     {
         return this.settings.getName().hashCode();
-    }
-
-    /**
-     * Used to check method input parameters
-     *
-     * @return wether the text is not empty
-     */
-    private boolean textHasContent(String aText)
-    {
-        String EMPTY_STRING = "";
-        return (aText != null) && (!aText.trim().equals(EMPTY_STRING));
     }
 
     /**

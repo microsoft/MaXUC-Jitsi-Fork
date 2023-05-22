@@ -73,7 +73,7 @@ void CheckNeedsFTruncateWorkAround(int file) {
     // We are going to deploy the workaround for writing minidump files
     // without uses of ftruncate(). This workaround should be fine even
     // for kernels without the bug.
-    // See https://crbug.com/542840 for more details.
+    // See http://crbug.com/542840 for more details.
     g_need_ftruncate_workaround = true;
   }
 }

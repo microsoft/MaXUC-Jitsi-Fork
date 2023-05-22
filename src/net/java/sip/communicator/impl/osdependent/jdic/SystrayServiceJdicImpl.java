@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.osdependent.jdic;
 
 import java.awt.*;
@@ -557,7 +558,7 @@ public class SystrayServiceJdicImpl implements SystrayService
                         }
                         else if (o instanceof ChatRoom)
                         {
-                            chat = uiService.getChat((ChatRoom) o, true, true);
+                            chat = uiService.getChat((ChatRoom) o, true);
                         }
 
                         if (chat != null)

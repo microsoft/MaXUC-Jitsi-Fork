@@ -35,6 +35,7 @@
 #include <ImageHlp.h>
 
 #include <functional>
+#include <memory>
 
 #include "common/windows/string_utils-inl.h"
 #include "common/windows/guid_string.h"
@@ -42,15 +43,19 @@
 namespace {
 
 /*
- * Not defined in WinNT.h for some reason. Definitions taken from:
- * https://uninformed.org/index.cgi?v=4&a=1&p=13
+ * Not defined in WinNT.h prior to SDK 10.0.20348.0 for some reason.
+ * Definitions taken from: http://uninformed.org/index.cgi?v=4&a=1&p=13
  *
  */
 typedef unsigned char UBYTE;
 
-#if !defined(_WIN64)
+#if !defined(UNW_FLAG_EHANDLER)
 #define UNW_FLAG_EHANDLER  0x01
+#endif
+#if !defined(UNW_FLAG_UHANDLER)
 #define UNW_FLAG_UHANDLER  0x02
+#endif
+#if !defined(UNW_FLAG_CHAININFO)
 #define UNW_FLAG_CHAININFO 0x04
 #endif
 
@@ -71,7 +76,7 @@ enum UnwindOperationCodes {
   UWOP_SAVE_NONVOL,     /* info == register number, offset in next slot */
   UWOP_SAVE_NONVOL_FAR, /* info == register number, offset in next 2 slots */
   // XXX: these are missing from MSDN!
-  // See: https://www.osronline.com/ddkx/kmarch/64bitamd_4rs7.htm
+  // See: http://www.osronline.com/ddkx/kmarch/64bitamd_4rs7.htm
   UWOP_SAVE_XMM,
   UWOP_SAVE_XMM_FAR,
   UWOP_SAVE_XMM128,     /* info == XMM reg number, offset in next slot */
@@ -79,7 +84,7 @@ enum UnwindOperationCodes {
   UWOP_PUSH_MACHFRAME   /* info == 0: no error-code, 1: error-code */
 };
 
-// See: https://msdn.microsoft.com/en-us/library/ddssxxy8.aspx
+// See: http://msdn.microsoft.com/en-us/library/ddssxxy8.aspx
 // Note: some fields removed as we don't use them.
 struct UnwindInfo {
   UBYTE version : 3;

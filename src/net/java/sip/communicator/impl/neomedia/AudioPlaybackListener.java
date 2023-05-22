@@ -31,14 +31,14 @@ public class AudioPlaybackListener
     public void onClipStarted()
     {
         NeomediaActivator.getResources().getBufferedImage(
-            "plugin.notificationconfig.STOP_ICON").getImageIcon().
+            "plugin.mediaconfig.STOP_ICON").getImageIcon().
             addToButton(mButton);
     }
 
     public void onClipEnded()
     {
         NeomediaActivator.getResources().getBufferedImage(
-            "plugin.notificationconfig.PLAY_ICON").getImageIcon().
+            "plugin.mediaconfig.PLAY_ICON").getImageIcon().
             addToButton(mButton);
     }
 }

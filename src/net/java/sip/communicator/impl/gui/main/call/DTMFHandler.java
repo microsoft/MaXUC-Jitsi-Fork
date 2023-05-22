@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.*;
@@ -419,11 +420,11 @@ public class DTMFHandler
                     switch (e.getID())
                     {
                     case KeyEvent.KEY_PRESSED:
-                        logger.debug("User pressed DTMF " + info.keyChar);
+                        logger.debug("User pressed DTMF");
                         startSendingDtmfTone(info);
                         break;
                     case KeyEvent.KEY_RELEASED:
-                        logger.debug("User released DTMF " + info.keyChar);
+                        logger.debug("User released DTMF");
                         stopSendingDtmfTone();
                         break;
                     }

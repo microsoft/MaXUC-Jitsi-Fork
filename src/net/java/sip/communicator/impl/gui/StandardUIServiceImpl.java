@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.*;
@@ -20,7 +22,7 @@ import javax.swing.*;
 
 import org.jitsi.service.configuration.ScopedConfigurationService;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.impl.gui.main.MainFrame;
 import net.java.sip.communicator.impl.gui.main.ServiceType;
@@ -105,6 +107,11 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
      * Config key for whether the user's password has expired.
      */
     private static final String PASSWORD_EXPIRED = "net.java.sip.communicator.plugin.pw.PASSWORD_EXPIRED";
+
+    /**
+     * Config key for whether the user's CoS allows them to use MaX UC.
+     */
+    private static final String COS_ALLOWS_MAX_UC = "net.java.sip.communicator.impl.commportal.COS_ALLOWS_MAX_UC";
 
     private AccountRegWizardContainerImpl wizardContainer;
 
@@ -197,7 +204,7 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
             else
             {
                 contactLogger.debug("Opening MetaContact chat for " +
-                                     metaContact.getDisplayName() +
+                                     logHasher(metaContact.getDisplayName()) +
                                      " with SMS number " + loggableSmsNumber);
                 chatPanel = chatWindowManager.getContactChat(
                                           metaContact, true);
@@ -291,13 +298,12 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
      * @param create <tt>true</tt> to create a <tt>ChatPanel</tt> corresponding
      * to the specified <tt>ChatRoom</tt> if such <tt>ChatPanel</tt> does not
      * exist yet
-     * @param requestHistory If true, then load the history for the chat
      * @return the <tt>Chat</tt> corresponding to the given <tt>ChatRoom</tt>.
      */
     @Override
-    public ChatPanel getChat(ChatRoom chatRoom, boolean create, boolean requestHistory)
+    public ChatPanel getChat(ChatRoom chatRoom, boolean create)
     {
-        return chatWindowManager.getMultiChat(chatRoom, create, requestHistory);
+        return chatWindowManager.getMultiChat(chatRoom, create);
     }
 
     /**
@@ -475,7 +481,8 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
         ScopedConfigurationService userConfig = sConfigService.user();
         boolean userInteractionAllowed = userConfig.getBoolean(LATEST_EULA_ACCEPTED, false)
             && !userConfig.getBoolean(PASSWORD_EXPIRED, false)
-            && !userConfig.getBoolean(FORCE_UPDATE, false);
+            && !userConfig.getBoolean(FORCE_UPDATE, false)
+            && userConfig.getBoolean(COS_ALLOWS_MAX_UC, true);
         if (!userInteractionAllowed)
         {
             logger.info("User interaction is not allowed yet so don't create call");
@@ -662,8 +669,8 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
         if (ust.isServiceTypeEnabled(ServiceType.CRM))
         {
             logger.debug(
-                "Creating Accession " +
-                        "CRM button for " + searchName + ": " + searchNumber);
+                "Creating Accession CRM button for " + logHasher(searchName) +
+                ": " + sanitisePeerId(searchNumber));
             crmLaunchButton = ust.createCrmLaunchButton(searchName, searchNumber);
         }
 
@@ -750,7 +757,7 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
         }
 
         logger.debug("Looking for chat panel for existing chat room");
-        ChatPanel chatPanel = getChatWindowManager().getMultiChat(chatRoom, true, true);
+        ChatPanel chatPanel = getChatWindowManager().getMultiChat(chatRoom, true);
 
         return chatPanel;
     }
@@ -838,7 +845,7 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     public void showBrowserService(UrlCreatorEnum mOption)
     {
         BrowserPanelService browserService = GuiActivator.getBrowserPanelService();
-        mDisplayer = browserService.getBrowserPanelDisplayer(mOption, true, mOption.getNameRes());
+        mDisplayer = browserService.getBrowserPanelDisplayer(mOption, mOption.getNameRes());
         mDisplayer.setVisible(true);
     }
 }

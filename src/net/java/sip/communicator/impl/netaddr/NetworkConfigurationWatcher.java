@@ -4,10 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.netaddr;
 
 import java.net.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.osgi.framework.*;
 
@@ -462,7 +464,7 @@ public class NetworkConfigurationWatcher extends Thread
         {
             logMessage.append(en.getKey());
             logMessage.append(":");
-            logMessage.append(en.getValue());
+            logMessage.append(getLoggableAddresses(en.getValue()));
             logMessage.append("\n");
         }
 
@@ -471,7 +473,7 @@ public class NetworkConfigurationWatcher extends Thread
         {
             logMessage.append(en.getKey());
             logMessage.append(":");
-            logMessage.append(en.getValue());
+            logMessage.append(getLoggableAddresses(en.getValue()));
             logMessage.append("\n");
         }
 
@@ -690,6 +692,17 @@ public class NetworkConfigurationWatcher extends Thread
                 }
             }
         }
+    }
+
+    private List<String> getLoggableAddresses(final List<InetAddress> addresses)
+    {
+        if (addresses == null || addresses.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return addresses.stream()
+                .map(NetworkAddressManagerServiceImpl::getLoggableAddress)
+                .collect(Collectors.toList());
     }
 
     /**

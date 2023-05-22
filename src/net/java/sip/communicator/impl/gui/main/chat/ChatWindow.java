@@ -4,35 +4,65 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+import static org.jitsi.util.Hasher.*;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.util.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.LayoutManager;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JEditorPane;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.MenuSelectionManager;
 
-import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
-import org.osgi.framework.*;
+import org.jitsi.service.resources.BufferedImageFuture;
+import org.jitsi.util.OSUtils;
+import org.jitsi.util.StringUtils;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 
-import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.impl.gui.event.*;
-import net.java.sip.communicator.impl.gui.main.chat.conference.*;
-import net.java.sip.communicator.impl.gui.main.chat.menus.*;
-import net.java.sip.communicator.impl.gui.main.chat.toolBars.*;
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.impl.gui.AbstractUIServiceImpl;
+import net.java.sip.communicator.impl.gui.GuiActivator;
+import net.java.sip.communicator.impl.gui.StandardUIServiceImpl;
+import net.java.sip.communicator.impl.gui.event.PluginComponentEvent;
+import net.java.sip.communicator.impl.gui.event.PluginComponentListener;
+import net.java.sip.communicator.impl.gui.main.chat.conference.ConferenceChatSession;
+import net.java.sip.communicator.impl.gui.main.chat.menus.ChatRightButtonMenu;
+import net.java.sip.communicator.impl.gui.main.chat.menus.WritePanelRightButtonMenu;
+import net.java.sip.communicator.impl.gui.main.chat.toolBars.ChatToolbar;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommFrame;
+import net.java.sip.communicator.plugin.desktoputil.ScaledDimension;
+import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
+import net.java.sip.communicator.plugin.desktoputil.UIAction;
 import net.java.sip.communicator.service.gui.Container;
-import net.java.sip.communicator.service.imageloader.*;
-import net.java.sip.communicator.service.keybindings.*;
+import net.java.sip.communicator.service.gui.ExportedWindow;
+import net.java.sip.communicator.service.gui.PluginComponent;
+import net.java.sip.communicator.service.gui.WindowID;
+import net.java.sip.communicator.service.imageloader.ImageLoaderService;
+import net.java.sip.communicator.service.keybindings.KeybindingSet;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
-import net.java.sip.communicator.util.skin.*;
+import net.java.sip.communicator.util.skin.Skinnable;
 
 /**
  * The chat window is the place, where users can write and send messages, view
@@ -96,11 +126,6 @@ public class ChatWindow
     private KeyEventDispatcher mKeyDispatcher;
 
     /**
-     * The manager for this chat window.
-     */
-    private ChatWindowManager mManager;
-
-    /**
      * Whether this window is showing a conference chat session or not
      */
     private boolean mIsConference;
@@ -120,9 +145,8 @@ public class ChatWindow
      * Creates an instance of <tt>ChatWindow</tt> by passing to it an instance
      * of the main application window.
      */
-    public ChatWindow(ChatWindowManager manager)
+    public ChatWindow()
     {
-        mManager = manager;
         if (!ConfigurationUtils.isWindowDecorated())
         {
             setUndecorated(true);
@@ -292,7 +316,7 @@ public class ChatWindow
         setConferenceUI(chatSession instanceof ConferenceChatSession);
 
         sLog.debug(
-                "Set current chat panel to: " + chatSession.getChatName());
+                "Set current chat panel to: " + sanitiseChatRoom(chatSession.getChatName()));
 
         chatPanel.requestFocusInWriteArea();
 
@@ -858,16 +882,6 @@ public class ChatWindow
 
             this.logoBgImage = logoBgImage;
         }
-    }
-
-    /**
-     * Sends the given file when dropped to the chat window.
-     * @param file the file to send
-     * @param point the point, where the file was dropped
-     */
-    public void fileDropped(File file, Point point)
-    {
-        getCurrentChat().sendFile(file);
     }
 
     /**

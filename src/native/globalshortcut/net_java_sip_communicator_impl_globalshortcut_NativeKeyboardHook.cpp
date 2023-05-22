@@ -859,7 +859,7 @@ HRESULT callback(UINT msg, WPARAM wParam, LPARAM lParam)
 
                 if(!RegisterHotKey(keyboard->hwnd, ks.id, ks.modifiers | MOD_NOREPEAT, ks.vkcode))
                 {
-                  fprintf(stderr, "[LOOP] Problem with RegisterHotKey: %d\n", GetLastError());fflush(stderr);
+                  fprintf(stderr, "[LOOP] Problem with RegisterHotKey: %ld\n", GetLastError());fflush(stderr);
                   ks.active = -1;
                 }
             }
@@ -868,7 +868,7 @@ HRESULT callback(UINT msg, WPARAM wParam, LPARAM lParam)
                 /* hotkey to remove */
                 if(!UnregisterHotKey(keyboard->hwnd, ks.id))
                 {
-                //fprintf(stderr, "[LOOP] Error when UnregisterHotKey: %d\n", GetLastError());fflush(stderr);
+                //fprintf(stderr, "[LOOP] Error when UnregisterHotKey: %ld\n", GetLastError());fflush(stderr);
                 }
                 it = keyboard->keystrokes.erase(it)--;
             }
@@ -938,7 +938,7 @@ static void RegisterWindowClassW(HINSTANCE hInstance)
 
   if(RegisterClassExW(&wcex) == 0)
   {
-    fprintf(stderr, "Failed to register window class: %d", GetLastError());
+    fprintf(stderr, "Failed to register window class: %ld", GetLastError());
     fflush(stderr);
   }
 }
@@ -1018,7 +1018,7 @@ static unsigned WINAPI CreateWndThreadW(LPVOID pThreadParam)
 
   if(hWnd == NULL)
   {
-    fprintf(stderr, "Failed to create window: %d\n", GetLastError());
+    fprintf(stderr, "Failed to create window: %ld\n", GetLastError());
     fflush(stderr);
     return 0;
   }

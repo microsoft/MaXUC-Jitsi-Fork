@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -221,7 +223,7 @@ public class SIPCommSnakeTextEntry extends JLayeredPane
      */
     public void setLabelText(String text)
     {
-        logger.debug("Setting textField label to: " + text);
+        logger.debug("Setting textField label to: " + logHasher(text));
         labelText = text;
         displayLabel();
     }

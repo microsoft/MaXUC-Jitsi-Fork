@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
+import static org.jitsi.util.Hasher.logHasher;
 import java.beans.*;
 import java.util.*;
 
@@ -120,7 +121,7 @@ public class OperationSetCallParkSipImpl implements OperationSetCallPark, StateD
                     ContactPresenceStatusChangeEvent evt)
                 {
                     String orbitCode = evt.getSourceContact().getDisplayName();
-                    logger.debug("Notification for " + orbitCode + " in state " + evt.getNewStatus());
+                    logger.debug("Notification for " + logHasher(orbitCode) + " in state " + evt.getNewStatus());
 
                     CallParkOrbit orbit = orbits.get(orbitCode);
 

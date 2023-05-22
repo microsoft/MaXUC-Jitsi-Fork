@@ -10,6 +10,7 @@ import javax.swing.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.service.resources.*;
+import org.jitsi.util.CustomAnnotations.*;
 
 /**
  * This is a helper class to make it easy to represent
@@ -123,7 +124,7 @@ public abstract class AbstractBufferedImagePending extends AbstractBufferedImage
     }
 
     @Override
-    public synchronized BufferedImage get(long timeout, TimeUnit unit)
+    public synchronized BufferedImage get(long timeout, @NotNull TimeUnit unit)
         throws InterruptedException,
             TimeoutException
     {

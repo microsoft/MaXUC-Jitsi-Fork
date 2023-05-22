@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
+
+import static org.jitsi.util.SanitiseUtils.sanitise;
 
 import java.io.*;
 import java.text.*;
@@ -52,6 +55,18 @@ public class ScLogFormatter
     private static final Pattern STRIP_SENSITIVE_DETAILS =
         Pattern.compile("(password=|encrypted=|passkey=|/session)([^&\n/?]+)",
                         Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    private static final Pattern SENSITIVE_STACK_TRACE =
+        Pattern.compile("^(org\\.jivesoftware\\.smack)",
+                        Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Pattern to find peer ID, which can be a chat address, a chat room address
+     * or chat room participant address (with resource part), in Smack exceptions.
+     * Using <a href="https://www.rfc-editor.org/rfc/rfc3986#section-3.3">Uniform Resource Identifier (URI): Generic Syntax</a>
+     */
+    private static final Pattern PEER_ID_PATTERN =
+            Pattern.compile("[A-Za-z0-9!#$%&'*+-/=?^_`{|}~.]+@[A-Za-z0-9-.]+[A-Za-z0-9-._~!$&'()*+,;=/]*");
 
     private static String lineSeparator = System.getProperty("line.separator");
     private static DecimalFormat twoDigFmt = new DecimalFormat("00");
@@ -166,7 +181,17 @@ public class ScLogFormatter
                 PrintWriter pw = new PrintWriter(sw);
                 record.getThrown().printStackTrace(pw);
                 pw.close();
-                sb.append(sw.toString());
+                String exceptionClassName = record.getThrown().getCause() != null
+                        ? record.getThrown().getCause().getClass().getCanonicalName()
+                        : record.getThrown().getClass().getCanonicalName();
+                if (SENSITIVE_STACK_TRACE.matcher(exceptionClassName).find())
+                {
+                    sb.append(findAndSanitisePeerId(sw.toString()));
+                }
+                else
+                {
+                    sb.append(sw);
+                }
             }
             catch (Exception ex)
             {
@@ -201,7 +226,7 @@ public class ScLogFormatter
     private int inferCaller(LogRecord record)
     {
         // Get the stack trace.
-        StackTraceElement stack[] = (new Throwable()).getStackTrace();
+        StackTraceElement[] stack = (new Throwable()).getStackTrace();
 
         //the line number that the caller made the call from
         int lineNumber = -1;
@@ -238,5 +263,10 @@ public class ScLogFormatter
         }
 
         return lineNumber;
+    }
+
+    private static String findAndSanitisePeerId(String value)
+    {
+        return sanitise(value, PEER_ID_PATTERN, PrivacyUtils::sanitisePeerId);
     }
 }

@@ -4,21 +4,26 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.launcher;
 
+import static java.util.stream.Collectors.joining;
+import static net.java.sip.communicator.util.launchutils.LaunchArgHandler.*;
+
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.felix.main.Main;
 
 import net.java.sip.communicator.util.Logger;
@@ -57,6 +62,12 @@ public class SIPCommunicator
      */
     public static final String PNAME_SC_OLD_APP_NAME =
             "net.java.sip.communicator.SC_OLD_APP_NAME";
+
+    /**
+     * The name of the property that stores the Electron executable name on Mac (non-ASCII).
+     */
+    public static final String PNAME_ELECTRON_APP_NAME =
+            "net.java.sip.communicator.ELECTRON_APP_NAME";
 
     /**
      * Configuration property name for the host port we're connecting to.
@@ -140,6 +151,12 @@ public class SIPCommunicator
     private static String mRecordingsDirectoryMigrationLogMessage = "";
 
     /**
+     * Message that will be logged to record cleaning old logs.
+     * Required because the migration takes place before the logger is created.
+     */
+    private static String mCleaningLogsLogMessage = "";
+
+    /**
      * As logging is uninitialised until after the start-up process, we must
      * store log messages as strings to print later. We use this enum to
      * determine which operation we are logging (stored in the respective string#
@@ -197,13 +214,13 @@ public class SIPCommunicator
     {
         setSystemProperties();
 
-        /*
-         * SC_HOME_DIR_* are specific to the OS so make sure they're configured
-         * accordingly before any other application-specific logic depending on
-         * them starts (e.g. Felix).
-         */
-        // Don't add logging before we set the home dir.
+        // SC_HOME_DIR_* are specific to the OS so make sure they're configured
+        // accordingly before any other application-specific logic depending on
+        // them starts (e.g. Felix or any logging).
         setScHomeDir();
+
+        // Also deliberately called before logging anything.
+        ensureLogDirectoryIsClean();
 
         // Similarly for potentially moving the recorded calls/meetings folder
         // in the event of a name change.
@@ -241,7 +258,14 @@ public class SIPCommunicator
 
         for (final String arg : args)
         {
-            logger.error("With arg: " + arg);
+            logger.error("With arg: " + sanitiseArgument(arg));
+        }
+
+        // Log any clean-up we've done.
+        if ((mCleaningLogsLogMessage != null) &&
+            (!mCleaningLogsLogMessage.equals("")))
+        {
+            logger.info("Cleaning old logs message: " + mCleaningLogsLogMessage);
         }
 
         // If we attempted to rename the user data folder due to an app name
@@ -255,12 +279,10 @@ public class SIPCommunicator
         // If we attempted to rename the recorded calls folder due to an app name
         // change log the attempt now.
         if ((mRecordingsDirectoryMigrationLogMessage != null) &&
-                (!mRecordingsDirectoryMigrationLogMessage.equals("")))
+            (!mRecordingsDirectoryMigrationLogMessage.equals("")))
         {
             logger.info("Recordings migration message: " + mRecordingsDirectoryMigrationLogMessage);
         }
-
-        logger.info("Default JVM locale = " + Locale.getDefault());
 
         //lock our config dir so that we would only have a single instance of
         //sip communicator, no matter how many times we start it (use mainly
@@ -277,11 +299,13 @@ public class SIPCommunicator
                     break;
                 case SipCommunicatorLock.ALREADY_STARTED:
                     logger.error(
-                        "SIP Communicator is already running and will "
-                        + "handle your parameters (if any).\n"
-                        + "Parameters = " + Arrays.toString(args) + "\n"
-                        + "Launch with the --multiple param to override this "
-                        + "behaviour.");
+                            "SIP Communicator is already running and will "
+                            + "handle your parameters (if any).\n"
+                            + "Parameters = ["
+                            + Stream.of(args).map(LaunchArgHandler::sanitiseArgument).collect(joining(", "))
+                            + "]\n"
+                            + "Launch with the --multiple param to override this "
+                            + "behaviour.");
 
                     //we exit with success because for the user that's what it is.
                     System.exit(SipCommunicatorLock.SUCCESS);
@@ -481,9 +505,90 @@ public class SIPCommunicator
 
         // when we end up with the home dirs, make sure we have log dir
         File logDirectory = new File(location, appName + File.separator + "log");
-        logDirectory.mkdirs();
 
         System.out.println("Log directory is " + logDirectory);
+    }
+
+    /**
+     * V3.10 privacy improvements require that we remove all logs written by pre-V3.10 clients,
+     * as they may expose Personal Data.
+     * If this is an upgrade FROM V3.10+, do nothing - we don't want to delete logs unnecessarily.
+     *
+     * This method must be called before logging is enabled,
+     * otherwise log files will be locked and attempts to delete them will fail.
+     *
+     * We use the existence of a file to track whether the log dir is clean.
+     * We do this rather than use the config service as we need to delete logs before they
+     * get written to (and locked) and we always start logging before the config service is running.
+     */
+    static void ensureLogDirectoryIsClean()
+    {
+        String homeDirectory = System.getProperty(PNAME_SC_HOME_DIR_LOCATION);
+        File logDirectory = new File(homeDirectory, appName + File.separator + "log");
+        File flagLogDirectoryClean = new File(homeDirectory, appName + File.separator + ".log-dir-clean");
+
+        if (!flagLogDirectoryClean.exists())
+        {
+            mCleaningLogsLogMessage = "Log directory is unclean.";
+            if(cleanDirectory(logDirectory))
+            {
+                try
+                {
+                    flagLogDirectoryClean.createNewFile();
+                    mCleaningLogsLogMessage += " Marked log directory as clean.";
+                }
+                catch (IOException ex)
+                {
+                    mCleaningLogsLogMessage += " Writing log directory clean flag failed.";
+                }
+            }
+            else
+            {
+                mCleaningLogsLogMessage += " Could not clean the log directory.";
+            }
+        }
+    }
+
+    /**
+     * Returns true if
+     * 1) the log directory has been successfully cleaned of all
+     * old log files, or
+     * 2) in the case of a fresh install, where the log directory
+     * does not yet exist.
+     * <p>
+     * This ignores garbage collection (gc) and msoutlook logs, as the gc logs
+     * do not expose Personal Data, and the msoutlook logs are not
+     * included in feedback reports. These files are typically locked
+     * on launch and cannot be deleted anyway.
+     */
+    static boolean cleanDirectory(File logDirectory)
+    {
+        if (!logDirectory.isDirectory())
+        {
+            mCleaningLogsLogMessage += " No existing log directory - OK.";
+            return true;
+        }
+
+        mCleaningLogsLogMessage += " Existing log directory to clean.";
+
+        int deletionFailures = 0;
+        FilenameFilter ignoreExcluded = (dir, file) -> !file.startsWith("gc") &&
+                                                       !file.startsWith("msoutlook");
+        File[] filesToRemove = logDirectory.listFiles(ignoreExcluded);
+        if (filesToRemove != null)
+        {
+            for (File f : filesToRemove)
+            {
+                if(!f.delete())
+                {
+                    mCleaningLogsLogMessage += " Failed to remove file " +
+                                               f.getName();
+                    deletionFailures++;
+                }
+            }
+        }
+
+        return deletionFailures == 0;
     }
 
     /**
@@ -676,10 +781,6 @@ public class SIPCommunicator
      */
     public static void startElectronUI()
     {
-        // The SC_HOME_DIR_NAME is passed in on the command line, and taken from the
-        // ASCII product name, which is the name electron uses for its executable.
-        String electronAppName = System.getProperty(PNAME_SC_HOME_DIR_NAME);
-
         // Calculate the port that we want to host the web server on. Once we
         // know what port we are going to use we save it in properties so
         // that we can access it in ElectronAPIConnector which actually sets
@@ -710,6 +811,9 @@ public class SIPCommunicator
             {
                 logger.info("Starting Electron UI on Mac");
 
+                // The ELECTRON_APP_NAME is passed in on the command line, and taken from the
+                // non-ASCII product name, which is the name electron uses for its executable on Mac.
+                String electronAppName = System.getProperty(PNAME_ELECTRON_APP_NAME);
                 // Current working directory is <MaX UC App Dir>/Contents/Java,
                 // and the Electron app is <MaX UC App Dir>/Contents/Frameworks/<electronAppName>.app
                 File electronApp = new File("../Frameworks/", electronAppName + ".app");
@@ -749,9 +853,12 @@ public class SIPCommunicator
             try
             {
                 logger.info("Starting Electron UI on Windows");
+
+                // The SC_HOME_DIR_NAME is passed in on the command line, and taken from the
+                // ASCII product name, which is the name electron uses for its executable on Windows.
+                String electronAppName = System.getProperty(PNAME_SC_HOME_DIR_NAME);
                 // Current working directory is C:\\Program Files (x86)\\<MaX UC App Dir>,
                 // and the Electron app is at C:\\Program Files (x86)\\<MaX UC App Dir>\\ui
-
                 File electronApp = new File("ui/", electronAppName + ".exe");
                 String electronAppAbsolutePath = electronApp.getAbsolutePath();
                 logger.info("Starting Electron UI at: " + electronAppAbsolutePath);
@@ -877,7 +984,8 @@ public class SIPCommunicator
                           System.getProperty(SIPCommunicator.PNAME_SC_HOME_DIR_NAME) + fileSeparator +
                           WISPA_DIR_NAME + fileSeparator;
         System.setProperty(WISPA_KEYS_DIR_PROPERTY, wispaDir);
-        logger.debug("WISPA keys directory: " + wispaDir);
+        // output relative path than absolute path
+        logger.debug("WISPA keys directory: " + fileSeparator + WISPA_DIR_NAME + fileSeparator);
 
         // Derive and record the paths of the various key stores and certificates.
         String serverKeyStore = wispaDir + WISPA_SERVER_KEY_STORE;

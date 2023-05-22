@@ -144,6 +144,13 @@ public interface OperationSetCallPark extends OperationSet
         CallParkOrbitState getState();
 
         /**
+         * Retrieves the call and sets a timer to set the state to FREE
+         * after a certain amount of time to avoid consecutive clicks on the
+         * 'pick up' button
+         */
+        void pickUpCall();
+
+        /**
          * Called when a presence notification arrives for this orbit.
          *
          * @param evt The presence notification event
@@ -205,6 +212,13 @@ public interface OperationSetCallPark extends OperationSet
          * their own.
          */
         DISABLED_BUSY,
+
+        /**
+         * A call has just been picked up, so to avoid consecutive clicks
+         * on the button the DISABLED_FREE state is used before the
+         * orbit is set to be in state FREE
+         */
+        DISABLED_FREE,
 
         /**
          * The state of the orbit is not yet known.  This state should be

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Note this contains untested changes.  The previous version of the Makefile needed a number of changes just to get the
 # library built. The current version creates a .jnilib on Mac6933 as of 27/01/22, but the resultant library hasn't been tested.
 CC = cc -O2

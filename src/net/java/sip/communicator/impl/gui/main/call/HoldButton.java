@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.event.*;

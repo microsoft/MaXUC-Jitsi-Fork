@@ -7,12 +7,9 @@ import java.awt.event.*;
 import javax.swing.*;
 
 import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
 import org.jitsi.util.swing.TransparentPanel;
 
-import com.explodingpixels.macwidgets.*;
-
-import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.Logger;
@@ -103,41 +100,21 @@ public abstract class AlertDialogCreator implements ActionListener
     /**
      * Creates an instance of <tt>AlertDialogCreator</tt>.
      *
-     * @param title The title of the dialog (only visible on Mac).
      * @param buttonResourceType The type of dialog, used to find resources
      * (i.e. strings and images) specific to this dialog.  For example,
      * "service.gui.<mResourceType>.ACCEPT" is used to get the string for the
      * "ok" button.
      */
-    public AlertDialogCreator(String title, String buttonResourceType)
+    public AlertDialogCreator(String buttonResourceType)
     {
         mResourceType = buttonResourceType;
 
-        if (OSUtils.IS_MAC)
-        {
-            HudWindow window = new HudWindow();
-            window.hideCloseButton();
+        SIPCommFrame frame = new SIPCommFrame(false, BKG_COLOR, BKG_COLOR);
 
-            JDialog dialog = window.getJDialog();
-            dialog.setUndecorated(true);
-
-            if (title != null)
-            {
-                dialog.setTitle(title);
-            }
-
-            alertWindow = dialog;
-        }
-        else
-        {
-            // Mac has a defined background.  On Windows we use the brand color.
-            SIPCommFrame frame = new SIPCommFrame(false, BKG_COLOR, BKG_COLOR);
-
-            // Get rid of the title bar and border but still allow the user to
-            // drag the frame to reposition it on the screen.
-            frame.setDraggableUndecorated();
-            alertWindow = frame;
-        }
+        // Get rid of the title bar and border but still allow the user to
+        // drag the frame to reposition it on the screen.
+        frame.setDraggableUndecorated();
+        alertWindow = frame;
 
         alertWindow.setAlwaysOnTop(true);
 
@@ -341,15 +318,17 @@ public abstract class AlertDialogCreator implements ActionListener
 
         sLog.info("User pressed " + buttonName);
 
-        boolean mouse = (e.getModifiers() & InputEvent.BUTTON1_MASK) != 0;
+        String answeredWithAnalyticParam = ((e.getModifiers() & InputEvent.BUTTON1_MASK) != 0) ?
+            AnalyticsParameter.VALUE_MOUSE :
+            AnalyticsParameter.VALUE_KEYBOARD;
 
         if (buttonName.equals(OK_BUTTON_NAME))
         {
-            okButtonPressed(mouse);
+            okButtonPressed(answeredWithAnalyticParam);
         }
         else if (buttonName.equals(CANCEL_BUTTON_NAME))
         {
-            cancelButtonPressed(mouse);
+            cancelButtonPressed(answeredWithAnalyticParam);
         }
 
         // Once the user has clicked a button we need to close the dialog.
@@ -361,8 +340,7 @@ public abstract class AlertDialogCreator implements ActionListener
      */
     protected JLabel createIconLabel()
     {
-        JLabel iconLabel =
-            OSUtils.IS_MAC ? HudWidgetFactory.createHudLabel("") : new JLabel();
+        JLabel iconLabel = new JLabel();
         getIconImage().addToLabel(iconLabel);
 
         return iconLabel;
@@ -387,23 +365,10 @@ public abstract class AlertDialogCreator implements ActionListener
      */
     protected JLabel createHeadingLabel(String headingText)
     {
-        JLabel headingLabel;
-        Color labelColor;
-
-        if(OSUtils.IS_MAC)
-        {
-            headingLabel = HudWidgetFactory.createHudLabel(headingText);
-            labelColor = TEXT_COLOR;
-        }
-        else
-        {
-            headingLabel = new JLabel(headingText);
-            labelColor = TEXT_COLOR;
-        }
-
+        JLabel headingLabel = new JLabel(headingText);
         headingLabel.setFont(new JLabel().getFont().deriveFont(
             Font.BOLD, ScaleUtils.getScaledFontSize(12.5f)));
-        headingLabel.setForeground(labelColor);
+        headingLabel.setForeground(TEXT_COLOR);
 
         return headingLabel;
     }
@@ -413,23 +378,10 @@ public abstract class AlertDialogCreator implements ActionListener
      */
     protected JLabel createDescriptionLabel(String text)
     {
-        JLabel descriptionLabel;
-        Color descriptionTextColor;
-
-        if (OSUtils.IS_MAC)
-        {
-            descriptionLabel = HudWidgetFactory.createHudLabel(text);
-            descriptionTextColor = TEXT_COLOR;
-        }
-        else
-        {
-            descriptionLabel = new JLabel(text);
-            descriptionTextColor = TEXT_COLOR;
-        }
-
+        JLabel descriptionLabel = new JLabel(text);
         descriptionLabel.setFont(new JLabel().getFont().deriveFont(
             Font.PLAIN, ScaleUtils.getScaledFontSize(12.5f)));
-        descriptionLabel.setForeground(descriptionTextColor);
+        descriptionLabel.setForeground(TEXT_COLOR);
 
         return descriptionLabel;
     }
@@ -450,9 +402,17 @@ public abstract class AlertDialogCreator implements ActionListener
     protected abstract String getHeadingText();
 
     /**
-     * @return the text for the heading label
+     * @return the text for the description label
      */
     protected abstract String getDescriptionText();
+
+    /**
+     * @return the extra text for the description label, may be NULL
+     */
+    protected String getExtraText()
+    {
+        return null;
+    }
 
     /**
      * @return the OK button
@@ -467,16 +427,18 @@ public abstract class AlertDialogCreator implements ActionListener
     /**
      * Called when the ok button is pressed.
      *
-     * @param mouse True if the button was pressed with the mouse, false if by keyboard. Used for analytics.
+     * @param answeredWithAnalyticParam - value to use in analytics for the
+     *        AnalyticsParameter.NAME_DIALOG_ANSWERED_WITH param.
      */
-    public abstract void okButtonPressed(boolean mouse);
+    public abstract void okButtonPressed(String answeredWithAnalyticParam);
 
     /**
      * Called when the cancel button is pressed.
      *
-     * @param mouse True if the button was pressed with the mouse, false if by keyboard. Used for analytics.
+     * @param answeredWithAnalyticParam - value to use in analytics for the
+     *        AnalyticsParameter.NAME_DIALOG_ANSWERED_WITH param.
      */
-    public abstract void cancelButtonPressed(boolean mouse);
+    public abstract void cancelButtonPressed(String answeredWithAnalyticParam);
 
     /**
      * @return An empty panel to use as a spacing between the columns of the

@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.addressbook;
 
+import static net.java.sip.communicator.service.protocol.ContactGroupType.ADDRESS_BOOK;
+
 import java.util.*;
 
 import net.java.sip.communicator.service.protocol.*;
@@ -106,5 +108,11 @@ public class AddressBookContactGroup
     {
         // No persistent data as we can construct the group from it's members
         return null;
+    }
+
+    @Override
+    public final ContactGroupType groupType()
+    {
+        return ADDRESS_BOOK;
     }
 }

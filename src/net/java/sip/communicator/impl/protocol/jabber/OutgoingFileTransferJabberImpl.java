@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.io.File;
@@ -269,8 +270,8 @@ public class OutgoingFileTransferJabberImpl
                 thumbnailResponse.setFrom(bobIQ.getFrom());
                 thumbnailResponse.setType(IQ.Type.result);
 
-                logger.debug("Send thumbnail response to the receiver: "
-                        + thumbnailResponse.toXML());
+                logger.debug("Send thumbnail response to the receiver for transfer with ID: "
+                        + BoBIQCid);
 
                 return thumbnailResponse;
             }

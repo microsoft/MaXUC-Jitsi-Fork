@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+
 #include "../MAPIBitness.h"
 #include "MAPISession.h"
 #include "MsOutlookAddrBookContactSourceService.h"

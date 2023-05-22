@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.ldap;
 
 import java.util.*;
@@ -827,6 +828,27 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
+     * Validate settings to ensure LDAP service can safely run.
+     *
+     * @exception IllegalArgumentException if a settings issue is found.
+     */
+    public void validateSettings()
+    {
+        if(!textHasContent(getName()))
+            throw new IllegalArgumentException("name has no content.");
+        if(!textHasContent(getHostname()))
+            throw new IllegalArgumentException("Hostname has no content.");
+        if(getAuth() != Auth.NONE && !textHasContent(getBindDN()))
+            throw new IllegalArgumentException("Bind DN has no content.");
+        if(getAuth() != Auth.NONE && getPassword() == null)
+            throw new IllegalArgumentException("password is null.");
+        if(getPort() < 0 || getPort() > 65535)
+            throw new IllegalArgumentException("Illegal port number.");
+        if(getBaseDN() == null)
+            throw new IllegalArgumentException("Base DN has no content.");
+    }
+
+    /**
      * Merge String elements from a list to a single String separated by space.
      *
      * @param lst list of <tt>String</tt>s
@@ -981,5 +1003,15 @@ public class LdapDirectorySettingsImpl
     public LdapDirectorySettings clone()
     {
         return new LdapDirectorySettingsImpl(this);
+    }
+
+    /**
+     * Used to check method input parameters
+     *
+     * @return whether the text is not empty
+     */
+    private boolean textHasContent(String aText)
+    {
+        return (aText != null) && !aText.trim().isEmpty();
     }
 }

@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.notification;
 
+import static java.util.Collections.emptySet;
 import static net.java.sip.communicator.service.notification.NotificationAction.*;
 import static net.java.sip.communicator.service.notification.event.NotificationActionTypeEvent.*;
 import static net.java.sip.communicator.service.notification.event.NotificationEventTypeEvent.*;
@@ -514,7 +516,7 @@ class NotificationServiceImpl
             Set<NotificationHandler> ret;
 
             if (handler == null)
-                ret = Collections.emptySet();
+                ret = emptySet();
             else
                 ret = Collections.singleton(handler);
             return ret;

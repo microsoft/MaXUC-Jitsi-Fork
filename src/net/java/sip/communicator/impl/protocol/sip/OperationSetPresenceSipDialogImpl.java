@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import java.util.*;
@@ -174,8 +175,6 @@ public class OperationSetPresenceSipDialogImpl
              return;
          }
 
-         logger.debug("parsing:\n" + presenceDoc);
-
          // <dialog-info>
          NodeList dialogInfoList = doc.getElementsByTagNameNS(ANY_NS, DIALOG_INFO_ELEMENT);
 
@@ -203,7 +202,6 @@ public class OperationSetPresenceSipDialogImpl
          NamedNodeMap attr = dialogInfoNode.getAttributes();
          Node nodeAttr = attr.getNamedItem(ENTITY_ATTRIBUTE);
          String contactID = nodeAttr.getTextContent();
-         logger.info("Got contact URI: " + contactID);
 
          // Look up this contact ID in our contact list
          // we use a vector here and not an unique contact to handle an

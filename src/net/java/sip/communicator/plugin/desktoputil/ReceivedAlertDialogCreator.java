@@ -15,8 +15,9 @@ import org.jitsi.service.resources.BufferedImageFuture;
 import org.jitsi.service.resources.ImageIconFuture;
 import org.jitsi.util.swing.TransparentPanel;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.imageloader.ImageLoaderService;
@@ -86,15 +87,13 @@ public abstract class ReceivedAlertDialogCreator
     /**
      * Creates a new ReceivedConference Dialog.
      *
-     * @param title The title to use for this dialog (only visible on Mac).
      * @param resourceId The id used to find resources specific to this dialog.
      * @param metaContact The MetaContact who caused us to receive this alert.
      */
-    public ReceivedAlertDialogCreator(String title,
-                                      String resourceId,
+    public ReceivedAlertDialogCreator(String resourceId,
                                       MetaContact metaContact)
     {
-        super(title, resourceId);
+        super(resourceId);
         sLog.info("Creating received alert dialog");
         mMetaContact = metaContact;
 
@@ -146,14 +145,16 @@ public abstract class ReceivedAlertDialogCreator
             public void actionPerformed(ActionEvent e)
             {
                 sLog.user("Alert rejected from " + mMetaContact);
-                cancelButtonPressed((e.getModifiers() & InputEvent.BUTTON1_MASK) != 0);
+                cancelButtonPressed(((e.getModifiers() & InputEvent.BUTTON1_MASK) != 0) ?
+                    AnalyticsParameter.VALUE_MOUSE :
+                    AnalyticsParameter.VALUE_KEYBOARD);
                 dispose();
             }
         });
     }
 
     @Override
-    public void okButtonPressed(boolean mouse)
+    public void okButtonPressed(String answeredWithAnalyticParam)
     {
         JButton accessionCrmButton =
                 mCrmButtonSetter.getAccessionCrmButtonIfVisible();
@@ -179,7 +180,32 @@ public abstract class ReceivedAlertDialogCreator
     @Override
     protected JComponent createDescriptionComponent()
     {
-        return createDescriptionLabel(getDescriptionText());
+        JComponent component;
+        JLabel description = createDescriptionLabel(getDescriptionText());
+        String extra = getExtraText();
+        if (extra != null)
+        {
+            JLabel extraLabel = new JLabel(extra);
+            extraLabel.setFocusable(true);
+            extraLabel.setFont(description.getFont());
+            extraLabel.setForeground(description.getForeground());
+            if (description == null)
+            {
+                component = extraLabel;
+            }
+            else
+            {
+                component = new TransparentPanel(new GridLayout(0,1));
+                component.add(description);
+                component.add(extraLabel);
+            }
+        }
+        else
+        {
+            component = description;
+        }
+
+        return component;
     }
 
     /**

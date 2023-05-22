@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
+
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -295,7 +298,6 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
      * @param reason the reason why the inviter sent the invitation.
      * @param password the password to use when joining the room.
      * @param message the message used by the inviter to send the invitation.
-     * @param invitation the raw invitation received with the message.
      */
     private void acceptInvitation(
         XMPPConnection conn,
@@ -332,14 +334,15 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
                 if(timestamp == null)
                 {
                     timestamp = new Date();
-                    sLog.debug(
-                            "Setting invitedDate to current timestamp for " + room);
+                    sLog.debug("Setting invitedDate to current timestamp for " +
+                            sanitiseMUCRoom(room));
                     isHistorical = false;
                 }
                 else
                 {
                     sLog.debug("Setting historical invitedDate " +
-                                 timestamp + " for " + room);
+                               timestamp + " for " +
+                               sanitiseMUCRoom(room));
                     isHistorical = true;
                 }
 
@@ -350,7 +353,8 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
                 // If an invited date has been set, we can ignore this
                 // invitation as it is a duplicate.
                 sLog.debug("Invited date is not null - returning as no" +
-                             " need to try to join again: " + room);
+                             " need to try to join again: " +
+                           sanitiseMUCRoom(room));
                 return;
             }
 
@@ -369,7 +373,8 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
         }
         catch (OperationFailedException | OperationNotSupportedException ex)
         {
-            sLog.error("Failed to find room with name: " + room, ex);
+            sLog.error("Failed to find room with name: " +
+                       sanitiseMUCRoom(room), ex);
         }
     }
 
@@ -438,14 +443,14 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
 
                 if (findRoom(roomName) == null)
                 {
-                    sLog.debug("Room doesn't exist so name is valid: " + roomName);
+                    sLog.debug("Room doesn't exist so name is valid: " + sanitiseChatRoom(roomName));
                     gotValidRoomName = true;
                 }
             }
         }
         else
         {
-            sLog.debug("Room name provided so try to find it: " + roomName);
+            sLog.debug("Room name provided so try to find it: " + sanitiseChatRoom(roomName));
             room = findRoom(roomName);
         }
 
@@ -599,16 +604,15 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
         catch (XMPPErrorException ex)
         {
             sLog.debug(
-                "No existing chat room found for: " + canonicalRoomName);
+                "No existing chat room found for: " + sanitiseChatRoom(canonicalRoomName.toString()));
             return null;
         }
         catch (NoResponseException | NotConnectedException | InterruptedException ex)
         {
             sLog.debug(
-                "Error finding chat room for:  " + canonicalRoomName, ex);
+                "Error finding chat room for:  " + sanitiseChatRoom(canonicalRoomName.toString()), ex);
             return null;
         }
-
     }
 
     /**
@@ -805,7 +809,7 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
         catch (NotConnectedException | XmppStringprepException | InterruptedException ex)
         {
             sLog.error("Failed to reject invitation to chat room " +
-                invitation.getTargetChatRoom().getIdentifier(), ex);
+                       sanitiseChatRoom(invitation.getTargetChatRoom().getIdentifier()), ex);
         }
     }
 
@@ -882,13 +886,13 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
             NoResponseException ex)
         {
             sLog.error("Failed to retrieve conference service name for user: "
-                + jabberProvider.getAccountID().getUserID()
+                + jabberProvider.getAccountID().getLoggableAccountID()
                 + " on server: "
                 + jabberProvider.getAccountID().getService()
                 , ex);
             throw new OperationFailedException(
                 "Failed to retrieve conference service name for user: "
-                + jabberProvider.getAccountID().getUserID()
+                + jabberProvider.getAccountID().getLoggableAccountID()
                 + " on server: "
                 + jabberProvider.getAccountID().getService()
                 , OperationFailedException.GENERAL_ERROR
@@ -900,7 +904,7 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
             sLog.error("Failed to construct canonical room name: "
                 + roomName + "/" + resourceString
                 + " for user: "
-                + jabberProvider.getAccountID().getUserID()
+                + jabberProvider.getAccountID().getLoggableAccountID()
                 + " on server: "
                 + jabberProvider.getAccountID().getService()
                 , ex);
@@ -908,7 +912,7 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
                 "Failed to construct canonical room name: "
                     + roomName + "/" + resourceString
                     + " for user: "
-                    + jabberProvider.getAccountID().getUserID()
+                    + jabberProvider.getAccountID().getLoggableAccountID()
                     + " on server: "
                     + jabberProvider.getAccountID().getService()
                     , OperationFailedException.GENERAL_ERROR
@@ -1082,7 +1086,8 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
                 if (mInitialRosterProcessed)
                 {
                     sLog.info("The roster has already been processed," +
-                                " so accepting invitation for room " + roomName);
+                              " so accepting invitation for room " +
+                              sanitiseChatRoom(roomName));
                     acceptInvitation(conn,
                                      room,
                                      inviter,
@@ -1093,7 +1098,8 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
                 else
                 {
                     sLog.info("The roster has not yet been processed, so" +
-                                " adding invitation to list for room " + roomName);
+                              " adding invitation to list for room " +
+                              sanitiseChatRoom(roomName));
                     mInvitationToChatRoomList.add(
                         new InvitationToChatRoom(conn,
                                                  room,
@@ -1146,7 +1152,8 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
             String reason, Message message,
             Decline rejection)
         {
-            sLog.debug("Group chat invitiation rejected by " + invitee);
+            sLog.debug("Group chat invitation rejected by " +
+                       sanitiseChatAddress(invitee));
             fireInvitationRejectedEvent(chatRoom, invitee.toString(), reason);
         }
     }
@@ -1175,7 +1182,7 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
 
                 setMultiChatSupported();
                 // Clearing the backup cache, given we will now repopulate the original cache to be used
-                // while the client RegistrarionState is registered.
+                // while the client RegistrationState is registered.
                 backupChatRoomCache.clear();
             }
             else if (evt.getNewState() == RegistrationState.UNREGISTERED
@@ -1341,7 +1348,8 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
                  }
                  catch (OperationFailedException | OperationNotSupportedException ex)
                  {
-                     sLog.error("Failed to find chatroom for id " + id, ex);
+                     sLog.error("Failed to find chatroom for id " +
+                                sanitiseChatRoom(id), ex);
                  }
 
                  if (chatRoom != null)
@@ -1368,5 +1376,24 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
 
         jabberProvider.removeRegistrationStateChangeListener(providerRegListener);
         mMultiChatTimer.cancel();
+    }
+
+    /**
+     * For strings containing a (sub)string of the form
+     * "chatroom-abcd1234@im_domain.com(01234@im_domain.com)", this method will produce a
+     * hashed replacement that reads
+     * "chatroom-HASH-VALUE(hash)@im_domain.com(ANOTHER-HASH-VALUE(hash)@im_domain.com)".
+     */
+    private static String sanitiseMUCRoom(MultiUserChat room)
+    {
+        final StringBuilder stringToReturn = new StringBuilder();
+
+        String[] split = room.toString().split("\\(");
+
+        stringToReturn.append(sanitiseChatRoom(split[0]));
+        stringToReturn.append("(");
+        stringToReturn.append(sanitiseChatAddress(split[1]));
+
+        return stringToReturn.toString();
     }
 }

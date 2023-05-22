@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 on run appName
    with timeout of (10 * 60) seconds
       tell application "Finder"

@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.net.*;
 import java.util.*;
@@ -180,7 +183,7 @@ public abstract class AbstractCallPeer<T extends Call,
         if (listener == null)
             return;
 
-        logger.debug("addCallPeerListener: " + listener + " to " + this);
+        logger.debug("addCallPeerListener: " + listener + " to " + sanitiseChatAddress(this.toString()));
 
         synchronized(callPeerListeners)
         {
@@ -340,7 +343,7 @@ public abstract class AbstractCallPeer<T extends Call,
 
         logger.debug("Dispatching a CallPeerChangeEvent event to "
                  + callPeerListeners.size()
-                 +" listeners. event is: " + evt.toString() +
+                 + " listeners. event is: " + sanitiseChatAddress(evt.toString()) +
                  " Reason: " + reason);
 
         Iterator<CallPeerListener> listeners = null;
@@ -353,7 +356,8 @@ public abstract class AbstractCallPeer<T extends Call,
         while (listeners.hasNext())
         {
             CallPeerListener listener = listeners.next();
-            logger.debug("Fire the event on " + listener + " (" + this + ")");
+            logger.debug("Fire the event on " + listener +
+                         " (" + sanitiseChatAddress(this.toString()) + ")");
 
             // catch any possible errors, so we are sure we dispatch events
             // to all listeners
@@ -780,7 +784,8 @@ public abstract class AbstractCallPeer<T extends Call,
             return;
         synchronized(callPeerListeners)
         {
-            logger.debug("removeCallPeerListener: " + listener + " from " + this);
+            logger.debug("removeCallPeerListener: " + listener + " from " +
+                         sanitiseChatAddress(this.toString()));
             callPeerListeners.remove(listener);
         }
     }
@@ -957,14 +962,11 @@ public abstract class AbstractCallPeer<T extends Call,
      * <br/>
      * Display Name &lt;address&gt;;status=CallPeerStatus
      *
-     * No need to hash PII for logging as the only PII is the address and we
-     * are permitted to log that in calls.
-     *
      * @return a string representation of the peer and its state.
      */
     @Override
     public String toString()
     {
-        return "AbstractCallPeer:" + hashCode() + "<" + getAddress() + ", status=" + getState().getStateString() + ">";
+        return "AbstractCallPeer:" + hashCode() + "<" + getLoggableAddress() + ", status=" + getState().getStateString() + ">";
     }
 }

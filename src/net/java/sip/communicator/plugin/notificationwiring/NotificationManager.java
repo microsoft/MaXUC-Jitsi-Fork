@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.notificationwiring;
 
 import java.beans.*;
@@ -237,7 +238,7 @@ public class NotificationManager
 
             if (uiService != null)
             {
-                chatPanel = uiService.getChat(chatRoom, true, true);
+                chatPanel = uiService.getChat(chatRoom, true);
             }
         }
         else if (chatContact instanceof String)

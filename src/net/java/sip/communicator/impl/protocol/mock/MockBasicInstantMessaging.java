@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.mock;
 
 import java.util.*;
@@ -77,18 +78,6 @@ public class MockBasicInstantMessaging
     public boolean isOfflineMessagingSupported()
     {
         return true;
-    }
-
-    /**
-     * Determines whether the protocol supports the supplied content type
-     *
-     * @param contentType the type we want to check
-     * @return <tt>true</tt> if the protocol supports it and
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isContentTypeSupported(String contentType)
-    {
-        return contentType.equals(DEFAULT_MIME_TYPE);
     }
 
     /**

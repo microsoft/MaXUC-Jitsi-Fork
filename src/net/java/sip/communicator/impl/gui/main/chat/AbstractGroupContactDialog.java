@@ -11,8 +11,6 @@ import javax.swing.*;
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
 
-import com.explodingpixels.macwidgets.*;
-
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactlist.*;
@@ -267,8 +265,7 @@ public abstract class AbstractGroupContactDialog
      */
     private JLabel createIconLabel()
     {
-        JLabel iconLabel =
-            OSUtils.IS_MAC ? HudWidgetFactory.createHudLabel("") : new JLabel();
+        JLabel iconLabel = new JLabel();
 
         ImageIconFuture imageIcon = ImageUtils.getScaledEllipticalIcon(
                 imageLoaderService.getImage(ImageLoaderService.DEFAULT_GROUP_CONTACT_PHOTO),

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 
 #include "run.h"
 
@@ -54,6 +55,7 @@ static DWORD Run_equalsParentProcessExecutableFilePath(LPCTSTR executableFilePat
 static DWORD Run_getExecutableFilePath(LPTSTR *executableFilePath);
 static DWORD Run_getJavaExeCommandLine(LPCTSTR javaExe, LPTSTR *commandLine);
 static LPTSTR Run_getJavaLibraryPath();
+static DWORD Run_extractCmdLineValue(LPCSTR Arg, LPSTR value, DWORD maxSize);
 static DWORD Run_getJavaVMOptionStrings(size_t head, TCHAR separator, size_t tail, LPTSTR *optionStrings, jint *optionStringCount);
 static LPTSTR Run_getLockFilePath();
 static LPTSTR Run_getGCLogPath();
@@ -72,22 +74,29 @@ static DWORD Run_runJavaFromJavaHome(LPCTSTR javaHome, BOOL *searchForJava);
 static DWORD Run_runJavaFromRuntimeLib(LPCTSTR runtimeLib, LPCTSTR javaHome, BOOL *searchForJava);
 static LPSTR Run_skipWhitespace(LPSTR str);
 
+#ifdef ENABLE_COVERAGE
+static LPTSTR Run_getJacocoAgentString();
+#endif
+
 // Add the given directory to the START of the path
 static DWORD
 Run_addPath(LPCTSTR path)
 {
-    // There is no practical limit to the size of the PATH environment variable, so the
-    // limit here is simply how much stack space we are prepared to allow for
-    TCHAR envVar[10000];
-    LPTSTR str = envVar;
-
-    DWORD pathLength = _tcslen(path);
-    // Allow for the separator, and the null terminator when calculating the space after the path component
-    DWORD envVarCapacity = sizeof(envVar) / sizeof(TCHAR) - pathLength - 2;
-
     LPCTSTR envVarName = _T("PATH");
-    DWORD envVarLength;
-    DWORD error;
+    DWORD pathLength = 0, envVarLength = 0, envVarCapacity = 0, error = 0;
+    LPTSTR envVar = NULL, str = NULL;
+
+    if (path == NULL || (pathLength = _tcslen(path)) == 0) return ERROR_BAD_ARGUMENTS;
+
+    // Allow for the separator, and the null terminator when calculating the space after the path component
+    envVarCapacity = GetEnvironmentVariable(envVarName, 0, 0);
+
+    //Allocate a buffer large enough - exit if we cannot
+    envVar = (LPTSTR)malloc((envVarCapacity + pathLength + 2) * sizeof(TCHAR));
+
+    if (envVar == NULL) return ERROR_NOT_ENOUGH_MEMORY;
+
+    str = (LPTSTR)&envVar[0];
 
     // Copy the new component to be the start of the path
     _tcsncpy(str, path, pathLength);
@@ -106,7 +115,7 @@ Run_addPath(LPCTSTR path)
             error = ERROR_NOT_ENOUGH_MEMORY;
         else
         {
-            // Add the NUL terminator
+            // Add the NULL terminator
             str += envVarLength;
             *str = 0;
 
@@ -118,6 +127,9 @@ Run_addPath(LPCTSTR path)
     }
     else
         error = GetLastError();
+
+    // Clean up the allocated memory
+    free((void*)envVar);
     return error;
 }
 
@@ -457,54 +469,106 @@ Run_getJavaLibraryPath()
     return _tcsdup(dup);
 }
 
+/*
+ * Run_extractCmdLineValue 
+ *      Check Run_cmdLine for <in Arg> as first param, extract <out value> , then remove <Arg>+<value> from Run_cmdLine
+ *      Where <in value> maximum character size is defined by maxSize, 
+ *      If maxSize == 0 then don't populate <value>, 
+ *          just check presence
+        returns presence of the <inArg> as a 1 or 0 (true/false)
+ *      Allowed Input Formats
+ *              <in Arg>="<out value>"
+ *              <in Arg> "<out value>"
+ *              <in Arg>
+ *      
+ */
+static DWORD Run_extractCmdLineValue(LPCSTR Arg, LPSTR value, DWORD maxSize)
+{
+    if (Arg == NULL) // Required
+    {
+        return 0;
+    }
+
+    /* Extract and remove the command-line argument, if present. */
+    /* If used, it will now be the first argument in Run_cmdLine */
+    if (Run_cmdLine && strlen(Run_cmdLine))
+    {
+        size_t ArgLength = strlen(Arg);
+
+        /* Get the value of the command-line argument.           */
+        if ((strlen(Run_cmdLine) > ArgLength)
+            && (strnicmp(Run_cmdLine, Arg, ArgLength) == 0))
+        {
+            Run_cmdLine += ArgLength;
+            if (maxSize == 0)
+            {
+                if (*Run_cmdLine == '\"' || *Run_cmdLine == '=')
+                {
+                    if(*Run_cmdLine == '=')
+                        ++Run_cmdLine;
+
+                    if (*Run_cmdLine == '\"')
+                        ++Run_cmdLine;
+
+                    while ((*Run_cmdLine != _T('\0')) && (*Run_cmdLine != _T('\"')))
+                        ++Run_cmdLine;
+                }
+                while ((*Run_cmdLine != _T('\0')) && (*Run_cmdLine != _T(' ')))
+                    ++Run_cmdLine;
+            }
+            else if ((*Run_cmdLine == '=' || *Run_cmdLine == ' ') && (Run_cmdLine[1]) == '\"')
+            {
+                Run_cmdLine++; // Skip the '=' or ' '
+                Run_cmdLine++; // Skip the '\"'
+
+                int ii = 0;
+
+                /* Copy the value argument up to the closing       */
+                /* quotation mark or the end of the string.        */
+                while ((*Run_cmdLine != _T('\0')) && (*Run_cmdLine != _T('\"')))
+                {
+                    // Assignment with * occurs before incrementing Run_cmdLine.
+                    if ((maxSize - 1) > ii && value != NULL)
+                    {
+                        value[ii] = *Run_cmdLine;
+                        ++ii;
+                    }
+                    ++Run_cmdLine;
+                }
+
+                if (value != NULL)
+                {
+                    value[ii] = '\0';
+                }
+
+                /*
+                 * Skip the quotation mark and whitespace after the value.
+                 */
+                if (*Run_cmdLine == '\"')
+                {
+                    Run_cmdLine++;
+                }
+                Run_cmdLine = Run_skipWhitespace(Run_cmdLine);
+            }
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 static DWORD
 Run_getJavaVMOptionStrings
     (size_t head, TCHAR separator, size_t tail,
         LPTSTR *optionStrings, jint *optionStringCount)
 {
     LPTSTR javaLibraryPath = Run_getJavaLibraryPath();
-    jint _optionStringCount = 0;
     DWORD error;
+    DWORD _optionStringCount = 0;
     TCHAR oldNameValue[1000];
     oldNameValue[0] = '\0';
 
-    /* Extract and remove the --old_name command-line argument, if present. */
-    /* If used, it will now be the first argument in Run_cmdLine            */
-    if (Run_cmdLine && strlen(Run_cmdLine))
-    {
-        LPCSTR oldNameArg = "--old_name=";
-        size_t oldNameArgLength = strlen(oldNameArg);
-
-        /* Get the value of the "--old_name" command-line argument.           */
-        if ((strlen(Run_cmdLine) > oldNameArgLength)
-                 && (strnicmp(Run_cmdLine, oldNameArg, oldNameArgLength) == 0))
-        {
-          Run_cmdLine += oldNameArgLength;
-          if (*Run_cmdLine == '\"')
-          {
-              /* Copy the value of the old_name argument up to the closing */
-              /* quotation mark or the end of the string.                  */
-              Run_cmdLine++;
-              int ii = 0;
-              while ((*Run_cmdLine != '\0') && (*Run_cmdLine != '\"'))
-              {
-                // Assignment with * occurs before incrementing Run_cmdLine.
-                oldNameValue[ii] = *Run_cmdLine++;
-                ii++;
-              }
-              oldNameValue[ii] = '\0';
-
-              /*
-               * Skip the quotation mark and whitespace after the value of oldNameArg.
-               */
-              if (*Run_cmdLine == '\"')
-              {
-                Run_cmdLine++;
-              }
-              Run_cmdLine = Run_skipWhitespace(Run_cmdLine);
-          }
-       }
-    }
+    Run_extractCmdLineValue("--old_name", oldNameValue, 1000);
 
     /* If there was no --old_name argument, use the branded-in value. */
     if (oldNameValue[0] == '\0')
@@ -525,9 +589,8 @@ Run_getJavaVMOptionStrings
                 _T("lib\\bundle\\Java-WebSocket.jar"),
                 _T("lib\\bundle\\metaswitch-protobuf.jar"),
                 _T("lib\\bundle\\protobuf-java.jar"),
-                _T("lib\\javafx-win.jar"),
-                _T("lib\\swt.jar"),
                 _T("sc-bundles\\sc-launcher.jar"),
+                _T("sc-bundles\\json.jar"),
                 _T("sc-bundles\\util.jar"),
                 _T("sc-bundles\\libjitsi.jar"),
                 _T("sc-bundles\\jnalib.jar"),
@@ -586,11 +649,18 @@ Run_getJavaVMOptionStrings
                   NULL
             };
 
+#ifdef ENABLE_COVERAGE
+        LPTSTR jacocoAgentString = Run_getJacocoAgentString();
+#endif
+
         // List of JVM options that don't come in pairs.
         LPCTSTR params[]
           = {
                   _T("Xss576k"), // Stack size for each thread
                   _T("Xmx256m"), // Max heap size
+#ifdef ENABLE_COVERAGE
+                  jacocoAgentString,
+#endif
                   NULL
           };
 
@@ -794,12 +864,79 @@ Run_getJavaVMOptionStrings
             error = ERROR_OUTOFMEMORY;
 
         free(javaLibraryPath);
+
+#ifdef ENABLE_COVERAGE
+        free(jacocoAgentString);
+#endif // ENABLE_COVERAGE
     }
     else
         error = ERROR_OUTOFMEMORY;
 
     return error;
 }
+
+#ifdef ENABLE_COVERAGE
+static LPTSTR
+Run_getJacocoAgentString()
+{
+    LPCTSTR envName = _T("APPDATA");
+    LPTSTR appData = NULL;
+    DWORD appDataLength = 0;
+    
+    appDataLength = GetEnvironmentVariable(envName, NULL, 0);
+    appData = (LPTSTR)malloc((appDataLength + 1) * sizeof(TCHAR));
+
+    if (appData == NULL) return NULL;
+
+    appDataLength = GetEnvironmentVariable(envName, appData, appDataLength);
+
+    LPTSTR jacocoAgentString = NULL;
+
+    if (appDataLength)
+    {
+        LPCTSTR productName = PRODUCTNAME;
+        size_t productNameLength = _tcslen(productName);
+        LPCTSTR execFileName = _T("coverage\\installed.jacoco.exec");
+        size_t execFileNameLength = _tcslen(execFileName);
+        LPCTSTR javaAgent = _T("javaagent:.\\lib\\bundle\\org.jacoco.agent-runtime.jar=destfile=");
+        size_t javaAgentLength = _tcslen(javaAgent);
+
+        jacocoAgentString
+            = (LPTSTR)
+                malloc(
+                        sizeof(TCHAR)
+                            * (javaAgentLength
+                                    + appDataLength
+                                    + 1
+                                    + productNameLength
+                                    + 1
+                                    + execFileNameLength
+                                    + 1));
+        if (jacocoAgentString)
+        {
+            LPTSTR str = jacocoAgentString;
+
+            _tcsncpy(str, javaAgent, javaAgentLength);
+            str += javaAgentLength;
+            _tcsncpy(str, appData, appDataLength);
+            str += appDataLength;
+            *str = _T('\\');
+            str++;
+            _tcsncpy(str, productName, productNameLength);
+            str += productNameLength;
+            *str = _T('\\');
+            str++;
+            _tcsncpy(str, execFileName, execFileNameLength);
+            str += execFileNameLength;
+            *str = 0;
+        }
+    }
+
+    free((void*)appData);
+
+    return jacocoAgentString;
+}
+#endif
 
 static LPTSTR
 Run_getLockFilePath()
@@ -1801,6 +1938,12 @@ WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
     DWORD error;
 
     AttachConsole(ATTACH_PARENT_PROCESS);
+
+#ifdef ENABLE_COVERAGE
+    printf("run.exe Coverage Build");
+#else
+    printf("run.exe Production Build");
+#endif
 
     error = Run_getExecutableFilePath(&executableFilePath);
     if (ERROR_SUCCESS == error)

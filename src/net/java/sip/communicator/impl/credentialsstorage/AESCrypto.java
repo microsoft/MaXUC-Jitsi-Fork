@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.credentialsstorage;
 
 import java.security.*;
@@ -46,7 +47,7 @@ public class AESCrypto
     /**
      * Default master password.
      */
-    private static final char[] DEFAULT_MASTER_PASSWORD = {' '};
+    private static final char[] DEFAULT_MASTER_PASSWORD = {' '}; // lgtm[java/hardcoded-credential-api-call] Required only for migration from old version.
 
     /**
      * A list of keys of all supported lengths derived from the master password

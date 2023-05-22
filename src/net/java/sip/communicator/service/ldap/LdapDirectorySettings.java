@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.ldap;
 
 import java.util.*;
@@ -389,6 +390,13 @@ public interface LdapDirectorySettings
      * @param list of Jabber IM fields that we will lookup
      */
     void setJabberSearchFields(List<String> list);
+
+    /**
+     * Validate settings to ensure LDAP service can safely run.
+     *
+     * @exception IllegalArgumentException if a settings issue is found.
+     */
+    public void validateSettings();
 
     /**
      * Loads the settings from the config files into the LdapDirectorySetting.

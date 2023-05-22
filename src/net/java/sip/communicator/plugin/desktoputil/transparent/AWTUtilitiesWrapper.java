@@ -7,6 +7,7 @@
  * Based on the code of Anthony Petrov
  * https://java.sun.com/developer/technicalArticles/GUI/translucent_shaped_windows/
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil.transparent;
 
 import java.awt.*;

@@ -71,11 +71,6 @@ public class EditGroupContactDialog extends AbstractGroupContactDialog
         "service.gui.groupcontact.ERROR_NO_GROUP_CONTACT_NAME_MSG");
 
     /**
-     * The error dialog to display if the group name is not set.
-     */
-    private ErrorDialog errorDialog;
-
-    /**
      * Creates the dialog.
      *
      * @param groupContact the GroupContact (will be null if adding a new
@@ -158,21 +153,10 @@ public class EditGroupContactDialog extends AbstractGroupContactDialog
         if (StringUtils.isNullOrEmpty(groupNameText))
         {
             sLog.debug("User entered no group name - displaying error dialog");
-            errorDialog =
-                new ErrorDialog(ERROR_DIALOG_TITLE, ERRROR_DIALOG_MESSAGE, this);
-            errorDialog.setVisible(true);
-            errorDialog.setModal(true);
-            errorDialog.requestFocus();
+            new ErrorDialog(ERROR_DIALOG_TITLE, ERRROR_DIALOG_MESSAGE).showDialog();
         }
         else
         {
-            // Dispose of this frame and ask the operation set to add/edit the
-            // group contact.
-            if (errorDialog != null)
-            {
-                errorDialog.dispose();
-            }
-
             OperationSetGroupContacts opSetGroupContacts =
                                                  getOperationSetGroupContacts();
             if (opSetGroupContacts != null)

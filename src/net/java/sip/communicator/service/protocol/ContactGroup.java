@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.util.*;
@@ -155,4 +156,9 @@ public interface ContactGroup
      * required and a UID would be sufficient.
      */
     String getPersistentData();
+
+    /**
+     * Returns the type of contact group this is, determined by values in {@link ContactGroupType}.
+     */
+    ContactGroupType groupType();
 }

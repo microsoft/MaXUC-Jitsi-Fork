@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.generalconfig;
 
 import java.awt.*;
@@ -32,7 +33,6 @@ import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
 import net.java.sip.communicator.plugin.desktoputil.OptionListConfigurationPanel;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommBasicTextButton;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommCheckBox;
-import net.java.sip.communicator.plugin.desktoputil.SIPCommConfirmDialog;
 import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
 import net.java.sip.communicator.service.protocol.AccountID;
@@ -238,20 +238,6 @@ public class GeneralConfigurationPanel
     static final AtomicBoolean mJustUpdatedRingtone = new AtomicBoolean(false);
 
     /**
-     * Checkbox indicating whether the WebSocket server should be enabled or
-     * disabled.
-     */
-    private final JCheckBox mWebSocketSettingCheckbox = new SIPCommCheckBox();
-
-    /**
-     * Hint text to display under the WebSocket server settings indicating if
-     * (and what) applications are connected to Accession. The text loaded here
-     * is a template, so ensure it is always updated before showing this field.
-     */
-    private final JTextArea mWebSocketConnectionsAvailableHint =
-            createHintPanel("service.websocketserver.WEBSOCKET_SERVER_CONNECTED_APPLICATION");
-
-    /**
      * Creates the general configuration panel.
      */
     public GeneralConfigurationPanel()
@@ -270,7 +256,7 @@ public class GeneralConfigurationPanel
             }
         }
 
-        if (!configService.global().getBoolean(NOTIFICATION_CONFIG_DISABLED_PROP, false))
+        if (!configService.user().getBoolean(NOTIFICATION_CONFIG_DISABLED_PROP, true))
         {
             Component notifConfigPanel = createNotificationConfigPanel();
             if (notifConfigPanel != null)
@@ -297,19 +283,6 @@ public class GeneralConfigurationPanel
         if (!configService.global().getBoolean(PRIVACY_PROP, false))
         {
             add(createPrivacyPanel());
-        }
-
-        // Only add the WebSocket server settings section when running
-        // on Windows since no integrating application currently
-        // runs on Mac - this will need to be updated if that changes
-        // in the future.
-        //
-        // Additionally, don't show the setting if VoIP calls are not enabled
-        // since the majority of function provided via the WebSocket API at the
-        // current moment is used in VoIP calls.
-        if (OSUtils.IS_WINDOWS && ConfigurationUtils.isVoIPEnabled())
-        {
-            add(createWebSocketConfigPanel());
         }
 
         add(createResetConfigPanel());
@@ -786,7 +759,8 @@ public class GeneralConfigurationPanel
                 {
                     final AccountID account =
                                (AccountID)contactStoreComboBox.getSelectedItem();
-                    logger.user("New contact source selected: " + account);
+                    logger.user("New contact source selected: " +
+                                (account != null ? account.getLoggableAccountID(): null));
 
                     // Load the selected protocol provider and unload all
                     // others. Disable the contact store selector in the
@@ -901,15 +875,19 @@ public class GeneralConfigurationPanel
                 {
                     if (account.equals(store))
                     {
-                        logger.debug("Attempt to load account: " + account);
+                        logger.info("Attempt to load account: " +
+                                     account.getLoggableAccountID());
                         accountManager.loadAccount(account);
-                        logger.debug("Account loaded: " + account);
+                        logger.debug("Account loaded: " +
+                                     account.getLoggableAccountID());
                     }
                     else
                     {
-                        logger.debug("Attempt to unload account: " + account);
+                        logger.debug("Attempt to unload account: " +
+                                     account.getLoggableAccountID());
                         accountManager.unloadAccount(account);
-                        logger.debug("Account unloaded: " + account);
+                        logger.debug("Account unloaded: " +
+                                     account.getLoggableAccountID());
                     }
                 }
             }
@@ -1189,8 +1167,8 @@ public class GeneralConfigurationPanel
 
                if (!recordingsFolder.exists())
                {
-                   logger.debug("Recordings folder " + savedCallsPath +
-                                " does not exist, and will now be created.");
+                   logger.debug("Recordings folder " +
+                                " does not exist, so it will now be created.");
                    try
                    {
                        boolean success = recordingsFolder.mkdir();
@@ -1212,13 +1190,11 @@ public class GeneralConfigurationPanel
                try
                {
                    FileUtils.openFileOrFolder(recordingsFolder);
-                   logger.debug("Opened recordings folder at " +
-                                recordingsFolder);
+                   logger.debug("Opened recordings folder");
                }
                catch (IOException e)
                {
-                   logger.error("Failed to show recordings folder at " +
-                                recordingsFolder);
+                   logger.error("Failed to show recordings folder");
                    showFailedToOpenRecordingFolderDialog();
                }
            }
@@ -1241,12 +1217,9 @@ public class GeneralConfigurationPanel
         {
             public void run()
             {
-                ErrorDialog dialog = new ErrorDialog(null,
-                     Resources.getString("service.gui.ERROR"),
-                     Resources.getString("service.gui.FOLDER_OPEN_FAILED"));
-                dialog.setAlwaysOnTop(true);
-                dialog.setResizable(false);
-                dialog.setVisible(true);
+                new ErrorDialog(Resources.getString("service.gui.ERROR"),
+                    Resources.getString("service.gui.FOLDER_OPEN_FAILED"))
+                    .showDialog();
             }
         });
     }
@@ -1426,76 +1399,6 @@ public class GeneralConfigurationPanel
     }
 
     /**
-     * Creates the panel for WebSocket server settings. Currently only includes
-     * an option to enable/disable the server and a hint text indicating whether
-     * there are any connected applications.
-     *
-     * @return The WebSocket config panel.
-     */
-    private Component createWebSocketConfigPanel()
-    {
-        JPanel webSocketConfigPanel = new ConfigSectionPanel(
-                "service.websocketserver.WEBSOCKET_SERVER");
-
-        webSocketConfigPanel.add(createWebSocketCheckBox());
-
-        // Update the text in the hint panel indicating whether there are any
-        // applications currently connected; add said panel.
-        updateWebSocketHintText();
-        webSocketConfigPanel.add(mWebSocketConnectionsAvailableHint);
-
-        return webSocketConfigPanel;
-    }
-
-    /**
-     * Creates the checkbox to enable/disable the WebSocket server. Generates a
-     * prompt to the user to restart 3-rd party applications when enabling the
-     * server, to allow them to connect.
-     *
-     * @return The checkbox to enable/disable the WebSocket server.
-     */
-    private Component createWebSocketCheckBox()
-    {
-        mWebSocketSettingCheckbox.setText(
-                Resources.getString(
-                        "service.websocketserver.ENABLE_WEBSOCKET_SERVER"));
-        mWebSocketSettingCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        mWebSocketSettingCheckbox.setSelected(
-                ConfigurationUtils.isWebSocketServerEnabled());
-
-        mWebSocketSettingCheckbox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                boolean isSelected = mWebSocketSettingCheckbox.isSelected();
-                logger.user("WebSocket status toggled to: " +
-                                    (isSelected ? "enabled" : "disabled"));
-
-                if (isSelected)
-                {
-                    // Give a prompt to the user to restart any 3rd party
-                    // applications that they might want to connect to over
-                    // the WebSocket.
-                    new SIPCommConfirmDialog(
-                            SwingUtilities.getWindowAncestor(mWebSocketSettingCheckbox),
-                            "service.websocketserver.WEBSOCKET_SERVER_ENABLED_PROMPT_TITLE",
-                            "service.websocketserver.WEBSOCKET_SERVER_ENABLED_PROMPT_TEXT",
-                            "service.websocketserver.WEBSOCKET_SERVER_ENABLED_PROMPT_BUTTON",
-                            null).showDialog();
-                }
-
-                ConfigurationUtils.setWebsocketServerEnabled(isSelected);
-
-                // Run an update of the WebSocket settings panel.
-                updateWebSocketSetting();
-            }
-        });
-
-        return mWebSocketSettingCheckbox;
-    }
-
-    /**
      * Creates the panel for the reset section of the general config
      * panel
      *
@@ -1582,10 +1485,8 @@ public class GeneralConfigurationPanel
         // The panel has been refreshed - check whether we need to update
         // - the valid contact double click options
         // - the visibility of the recordings selector
-        // - the status of the WebSocket Server (enabled/disabled)
         updateContactClickOptions();
         setRecordingsPanelVisibility();
-        updateWebSocketSetting();
         // If we are refocusing on the window, and have not just updated the
         // ringtone, we want to refresh the generalConfigPanel to catch any
         // recent changes.
@@ -1607,48 +1508,5 @@ public class GeneralConfigurationPanel
         // Since we have left the window, we must have refocused on it after any
         // changes to the ringtone.
         mJustUpdatedRingtone.set(false);
-    }
-
-    /**
-     * Update the WebSocket server settings page - the checkbox indicating
-     * whether the server is enabled or not, and the hint text that shows
-     * whether there is an application connected to the WebSocket server.
-     */
-    private void updateWebSocketSetting()
-    {
-        mWebSocketSettingCheckbox.setSelected(
-                ConfigurationUtils.isWebSocketServerEnabled());
-
-        updateWebSocketHintText();
-    }
-
-    /**
-     * Updates the text to use in the WebSocket settings hint (which indicates
-     * whether there is an application connected over the WebSocket).
-     */
-    private void updateWebSocketHintText()
-    {
-        ResourceManagementService res =
-                GeneralConfigPluginActivator.getResources();
-
-        // Poll the config to see if there are any applications connected.
-        String connectedWebSocketApplications =
-                ConfigurationUtils.getWebSocketConnectedApplications();
-
-        // And also get the text to use in case there are no
-        // connected applications
-        String noConnectedApplications = res.getI18NString(
-                "service.websocketserver.WEBSOCKET_SERVER_CONNECTED_APPLICATION_NONE");
-
-        // Update the hint text template.
-        String hintText = res.getI18NString(
-                "service.websocketserver.WEBSOCKET_SERVER_CONNECTED_APPLICATION",
-                new String[]{connectedWebSocketApplications != null ?
-                        connectedWebSocketApplications :
-                        noConnectedApplications});
-
-        // Finally set the text in the hint text panel.
-        mWebSocketConnectionsAvailableHint.setText(hintText);
-        ScaleUtils.scaleFontAsDefault(mWebSocketConnectionsAvailableHint);
     }
 }

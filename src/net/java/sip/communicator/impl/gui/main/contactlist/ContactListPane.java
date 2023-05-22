@@ -4,12 +4,13 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatRoom;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
@@ -206,7 +207,7 @@ public class ContactListPane
 
                     if (clickAction.equals("IM"))
                     {
-                        sLog.info("Start group chat with id " + chatRoomId +
+                        sLog.info("Start group chat with id " + sanitiseChatRoom(chatRoomId) +
                                           " from double click on contact list");
 
                         GuiActivator.getUIService().startGroupChat(
@@ -218,7 +219,7 @@ public class ContactListPane
                     {
                         sLog.info(
                             "Start conference with group chat with id " +
-                             chatRoomId + " from double click on contact list");
+                            sanitiseChatRoom(chatRoomId) + " from double click on contact list");
 
                         if (CreateConferenceMenu.isConferenceInviteByImEnabled())
                         {
@@ -506,27 +507,20 @@ public class ContactListPane
             return;
         }
 
-        String contactAddress;
-        String contactDisplayName;
-
         // Obtain the corresponding chat panel.
         final ChatPanel chatPanel;
 
         if (eventType == MessageEvent.SMS_MESSAGE)
         {
-            contactAddress = smsNumber;
-
             if (metaContact == null)
             {
                 chatPanel = mChatWindowManager.getContactChat(
                                       smsNumber, true);
-                contactDisplayName = smsNumber;
             }
             else
             {
                 chatPanel = mChatWindowManager.getContactChat(
                                     metaContact, true);
-                contactDisplayName = metaContact.getDisplayName();
             }
         }
         else
@@ -534,9 +528,6 @@ public class ContactListPane
             chatPanel = mChatWindowManager.getContactChat(metaContact,
                                                          protocolContact,
                                                          contactResource);
-
-            contactAddress = protocolContact.getAddress();
-            contactDisplayName = metaContact.getDisplayName();
         }
 
         if (metaContact != null)
@@ -546,35 +537,6 @@ public class ContactListPane
             if (!chatPanel.isChatFocused())
                 mContactList.setActiveContact(metaContact, true);
         }
-
-        // Distinguish the message type, depending on the type of event that
-        // we have received.
-        String messageType = null;
-
-        if(eventType == MessageEvent.CHAT_MESSAGE)
-        {
-            messageType = Chat.INCOMING_MESSAGE;
-        }
-        else if(eventType == MessageEvent.SYSTEM_MESSAGE)
-        {
-            messageType = Chat.SYSTEM_MESSAGE;
-        }
-        else if(eventType == MessageEvent.SMS_MESSAGE)
-        {
-            messageType = Chat.INCOMING_SMS_MESSAGE;
-        }
-
-        chatPanel.addMessage(
-            contactAddress,
-            contactDisplayName,
-            timestamp,
-            messageType,
-            message.getContent(),
-            message.getContentType(),
-            message.getMessageUID(),
-            correctedMessageUID,
-            message.isArchive(),
-            message.isCarbon());
 
         // We don't need to automatically open the Java/Swing chat window since we're already
         // showing the conversation in the Electron UI.
@@ -588,7 +550,7 @@ public class ContactListPane
 
         if (eventType == MessageEvent.SMS_MESSAGE)
         {
-            sLog.debug("Setting SMS chat transport for " + smsNumber);
+            sLog.debug("Setting SMS chat transport for " + logHasher(smsNumber));
             chatTransport = chatSession.findChatTransportForSmsNumber(smsNumber);
         }
         else
@@ -613,60 +575,6 @@ public class ContactListPane
      */
     public void messageDelivered(MessageDeliveredEvent evt)
     {
-        // Ignore archive messages.
-        if (evt.getSourceMessage().isArchive())
-            return;
-
-        MetaContactListService contactListService =
-                                          GuiActivator.getContactListService();
-        Contact contact = evt.getPeerContact();
-        String peerIdentifier = evt.getPeerIdentifier();
-        String address = null;
-        MetaContact metaContact = null;
-        ChatPanel chatPanel = null;
-        String messageType = null;
-
-        if (evt.getEventType() == MessageEvent.SMS_MESSAGE)
-        {
-            address = peerIdentifier;
-            metaContact =
-                contactListService.findMetaContactForSmsNumber(peerIdentifier);
-            messageType = Chat.OUTGOING_SMS_MESSAGE;
-        }
-        else
-        {
-            address = contact.getAddress();
-            metaContact = contactListService.findMetaContactByContact(contact);
-            messageType = Chat.OUTGOING_MESSAGE;
-        }
-
-        ImMessage msg = evt.getSourceMessage();
-        String messageUID = msg.getMessageUID();
-        chatPanel = (metaContact != null) ?
-              mChatWindowManager.getContactChat(metaContact, false) :
-              mChatWindowManager.getContactChat(peerIdentifier, false);
-
-        sLog.debug("MESSAGE DELIVERED to contact: " + logHasher(address));
-
-        if (chatPanel != null)
-        {
-            sLog.debug(
-                "MESSAGE DELIVERED: process message to chat for : "
-                + logHasher(address)
-                + " MESSAGE UID: " + messageUID);
-
-            chatPanel.addMessage(
-                evt.getContactAddress(),
-                evt.getContactDisplayName(),
-                evt.getTimestamp(),
-                messageType,
-                msg.getContent(),
-                msg.getContentType(),
-                messageUID,
-                evt.getCorrectedMessageUID(),
-                msg.isArchive(),
-                msg.isCarbon());
-        }
     }
 
     /**
@@ -678,28 +586,22 @@ public class ContactListPane
     {
         sLog.error(evt);
 
-        String errorMsg = null;
         ChatPanel.OfflineWarning offlineWarning = null;
-
-        ImMessage sourceMessage = (ImMessage) evt.getSource();
 
         Contact sourceContact = evt.getPeerContact();
         String peerIdentifier = evt.getPeerIdentifier();
         String displayName = "";
-        String sourceAddress = "";
         MetaContact metaContact = null;
 
         if (evt.getEventType() == MessageEvent.SMS_MESSAGE)
         {
             displayName = peerIdentifier;
-            sourceAddress = peerIdentifier;
             metaContact = GuiActivator.getContactListService().
                                     findMetaContactForSmsNumber(peerIdentifier);
         }
         else
         {
             displayName = sourceContact.getDisplayName();
-            sourceAddress = sourceContact.getAddress();
             metaContact = GuiActivator.getContactListService().
                                         findMetaContactByContact(sourceContact);
         }
@@ -712,9 +614,6 @@ public class ContactListPane
         if (evt.getErrorCode()
                 == MessageDeliveryFailedEvent.OFFLINE_MESSAGES_NOT_SUPPORTED)
         {
-            errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_NOT_SUPPORTED");
-
             // We now know that offline messages are unsupported, so update
             // the offline warning to be more specific to reflect that.
             offlineWarning =
@@ -723,40 +622,11 @@ public class ContactListPane
         else if (evt.getErrorCode()
             == MessageDeliveryFailedEvent.OFFLINE_MESSAGE_QUEUE_FULL)
         {
-            errorMsg = GuiActivator.getResources().getI18NString(
-                "service.gui.MSG_DELIVERY_ERROR");
-
             // We now know that this contact's offline message queue is full,
             // so update the offline warning to be more specific to reflect
             // that.
             offlineWarning = ChatPanel.OfflineWarning.OFFLINE_QUEUE_FULL_WARNING;
         }
-        else if (evt.getErrorCode()
-                == MessageDeliveryFailedEvent.NETWORK_FAILURE)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_NOT_DELIVERED");
-        }
-        else if (evt.getErrorCode()
-                == MessageDeliveryFailedEvent.PROVIDER_NOT_REGISTERED)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_SEND_CONNECTION_PROBLEM");
-        }
-        else if (evt.getErrorCode()
-                == MessageDeliveryFailedEvent.INTERNAL_ERROR)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_INTERNAL_ERROR");
-        }
-        else
-        {
-            errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_ERROR");
-        }
-
-        // Log the error message and internal reason to file
-        sLog.debug(errorMsg + " : " + evt.getReason());
 
         ChatPanel chatPanel;
 
@@ -789,24 +659,6 @@ public class ContactListPane
             sLog.debug("Getting MetaContact IM chat for " + metaContact);
             chatPanel = mChatWindowManager.getContactChat(metaContact, sourceContact);
         }
-
-        String messageType =
-            (evt.getEventType() == MessageEvent.SMS_MESSAGE) ?
-                Chat.OUTGOING_SMS_MESSAGE : Chat.OUTGOING_MESSAGE;
-
-        chatPanel.addMessage(
-                sourceAddress,
-                displayName,
-                new Date(),
-                messageType,
-                sourceMessage.getContent(),
-                sourceMessage.getContentType(),
-                sourceMessage.getMessageUID(),
-                evt.getCorrectedMessageUID(),
-                evt.getFailedMessageUID(),
-                errorMsg,
-                sourceMessage.isArchive(),
-                sourceMessage.isCarbon());
 
         if (offlineWarning != null)
         {

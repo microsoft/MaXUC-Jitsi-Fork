@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -29,6 +32,9 @@ import javax.net.ssl.X509TrustManager;
 import javax.swing.SwingUtilities;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
@@ -118,8 +124,12 @@ import net.java.sip.communicator.util.JitsiStringUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.NetworkUtils;
 import net.java.sip.communicator.util.SRVRecord;
+import net.java.sip.communicator.util.ServerBackoff;
+import net.java.sip.communicator.service.threading.ThreadFactoryBuilder;
+
 import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.service.resources.ResourceManagementService;
+import org.jitsi.util.OSUtils;
 
 /**
  * An implementation of the protocol provider service over the Jabber protocol
@@ -153,14 +163,10 @@ public class ProtocolProviderServiceJabberImpl
     public static final String URN_REGISTER = "jabber:iq:register";
 
     /**
-     * Default smack packet reply timeout.
+     * Roster requests can take longer than other messages to get a response, so use a custom
+     * (larger) packet reply timeout for them.
      */
-    public static final int DEFAULT_SMACK_PACKET_REPLY_TIMEOUT = 5000;
-
-    /**
-     * Custom smack packet reply timeout.
-     */
-    public static final int CUSTOM_SMACK_PACKET_REPLY_TIMEOUT = 45000;
+    public static final int CUSTOM_SMACK_PACKET_REPLY_TIMEOUT_FOR_ROSTER = 45000;
 
     /**
      * Property for vcard reply timeout. Time to wait before
@@ -267,10 +273,7 @@ public class ProtocolProviderServiceJabberImpl
      */
     private JabberStatusEnum mJabberStatusEnum;
 
-    /**
-     * The service we use to interact with user.
-     */
-    private CertificateService mGuiVerification;
+    private ConfigurationService configService;
 
     /**
      * Used with tls connecting when certificates are not trusted
@@ -366,23 +369,34 @@ public class ProtocolProviderServiceJabberImpl
     private final ThreadingService threadingService = JabberActivator.getThreadingService();
 
     /**
-     * Runnable which reregisters with the reason 'connection failed'. This can
-     * be scheduled by the ThreadingService to run on a different thread so that
-     * other work isn't delayed.
+     * Auxiliary executor service for the task that will reset the XMPP
+     * connection on macOS when the system root certificate keychain is updated.
      */
-    private final CancellableRunnable mReregisterConnectionFailedRunnable = new CancellableRunnable()
-    {
-        @Override
-        public void run()
-        {
-            reregister(SecurityAuthority.CONNECTION_FAILED);
-        }
-    };
+    private static ExecutorService reloadExecutor =
+            Executors.newSingleThreadExecutor(
+                    new ThreadFactoryBuilder()
+                            .setName("xmpp-keychain-monitor-thread")
+                            .build());
 
     /**
      * Backoff to use when dealing with authentication failures.
      */
-    private final XmppAuthenticationBackoff mAuthenticationBackoff = new XmppAuthenticationBackoff();
+    private static final String CONFIG_INITIAL_FAIL_BACKOFF =
+        "net.java.sip.communicator.impl.protocol.jabber.initialfailbackoff";
+    private static final String CONFIG_MAX_NUMBER_FAILURE_DOUBLES =
+        "net.java.sip.communicator.impl.protocol.jabber.maxnumberfailuredoubles";
+    private static final long DEFAULT_INITIAL_FAIL_BACKOFF = 2000;
+    /** Double the backoff interval 8 times by default (~ 9 minutes). */
+    private static final int DEFAULT_MAX_NUMBER_FAILURE_DOUBLES = 8;
+    private final ServerBackoff mAuthenticationBackoff;
+
+    public ProtocolProviderServiceJabberImpl ()
+    {
+        configService = JabberActivator.getConfigurationService();
+        mAuthenticationBackoff = new ServerBackoff(
+            configService.global().getInt(CONFIG_MAX_NUMBER_FAILURE_DOUBLES, DEFAULT_MAX_NUMBER_FAILURE_DOUBLES),
+            configService.global().getLong(CONFIG_INITIAL_FAIL_BACKOFF, DEFAULT_INITIAL_FAIL_BACKOFF));
+    }
 
     /**
      * Returns the state of the registration of this protocol provider
@@ -397,26 +411,6 @@ public class ProtocolProviderServiceJabberImpl
             return RegistrationState.REGISTERED;
         else
             return RegistrationState.UNREGISTERED;
-    }
-
-    /**
-     * Return the certificate verification service impl.
-     * @return the CertificateVerification service.
-     */
-    private CertificateService getCertificateVerificationService()
-    {
-        if(mGuiVerification == null)
-        {
-            ServiceReference<?> guiVerifyReference
-                = sBundleContext.getServiceReference(
-                    CertificateService.class.getName());
-            if(guiVerifyReference != null)
-                mGuiVerification = (CertificateService)
-                    sBundleContext.getService(
-                        guiVerifyReference);
-        }
-
-        return mGuiVerification;
     }
 
     /**
@@ -486,7 +480,7 @@ public class ProtocolProviderServiceJabberImpl
                 ex)
             {
                 sLog.error(
-                    "Error registering " + this.getAccountID().getUserID(), ex);
+                    "Error registering " + this.getAccountID().getLoggableAccountID(), ex);
 
                 mEventDuringLogin = null;
 
@@ -558,7 +552,7 @@ public class ProtocolProviderServiceJabberImpl
         }
         catch(OperationFailedException ex)
         {
-            sLog.error("Error ReRegistering" + getAccountID().getUserID(),
+            sLog.error("Error ReRegistering" + getAccountID().getLoggableAccountID(),
                          ex);
 
             mEventDuringLogin = null;
@@ -572,7 +566,7 @@ public class ProtocolProviderServiceJabberImpl
         catch (XMPPException | InterruptedException | IOException | SmackException
             ex)
         {
-            sLog.error("Error ReRegistering" + getAccountID().getUserID(),
+            sLog.error("Error ReRegistering" + getAccountID().getLoggableAccountID(),
                          ex);
 
             mEventDuringLogin = null;
@@ -611,6 +605,23 @@ public class ProtocolProviderServiceJabberImpl
                 mInConnectAndLogin = false;
             }
         }
+    }
+
+    /**
+     * Returns runnable that re-registers with the given {@code authReasonCode}
+     * @param authReasonCode the reason why re-registration is being attempted.
+     * @return a cancellable runnable to re-register with the given reason code.
+     */
+    CancellableRunnable getReregisterRunnable(final int authReasonCode)
+    {
+        return new CancellableRunnable()
+        {
+            @Override
+            public void run()
+            {
+                reregister(authReasonCode);
+            }
+        };
     }
 
     /**
@@ -771,7 +782,7 @@ public class ProtocolProviderServiceJabberImpl
             // connection is retried later so throw an exception here to kick
             // the calling code.
             sLog.warn("Failed to connect XMPP account " +
-                                                   getAccountID().getUserID());
+                                                   getAccountID().getLoggableAccountID());
             throw new JitsiXmppException("Failed to connect to XMPP server");
         }
     }
@@ -1074,45 +1085,9 @@ public class ProtocolProviderServiceJabberImpl
         System.setProperty("smack.socketfactory.timeout", "5000");
 
         XMPPTCPConnectionConfiguration.Builder configBuilder =
-            XMPPTCPConnectionConfiguration.builder();
-        configBuilder.setHost(address.getAddress().getHostAddress());
-        configBuilder.setPort(address.getPort());
-        configBuilder.setXmppDomain(serviceName);
-        configBuilder.setProxyInfo(mProxy);
-
-        // Enable SASL-PLAIN as an auth mechanism. All registered mechanisms are
-        // enabled by default unless we explicitly enable one over others.
-        configBuilder.addEnabledSaslMechanism(SASLPlainMechanism.NAME);
-
-        // user have the possibility to disable TLS but in this case, it will
-        // not be able to connect to a server which requires TLS
-        boolean tlsRequired = loginStrategy.isTlsRequired();
-        configBuilder.setSecurityMode(
-            tlsRequired ? ConnectionConfiguration.SecurityMode.required :
-                ConnectionConfiguration.SecurityMode.ifpossible);
-
-        try
-        {
-            CertificateService cvs =
-                getCertificateVerificationService();
-            if (cvs != null)
-            {
-                X509TrustManager customTrustManager = getTrustManager(cvs, serviceName);
-                configBuilder.setCustomX509TrustManager(customTrustManager);
-
-                SSLContext sslContext = loginStrategy.createSslContext(cvs, customTrustManager);
-                configBuilder.setSslContextFactory(() -> {return sslContext;});
-            }
-            else if (tlsRequired)
-                throw new JitsiXmppException(
-                    "Certificate verification service is "
-                    + "unavailable and TLS is required");
-        }
-        catch (GeneralSecurityException ex)
-        {
-            sLog.error("Error creating custom trust manager", ex);
-            throw new JitsiXmppException("Error creating custom trust manager", ex);
-        }
+                getXMPPConfigBuilder(address,
+                                     serviceName,
+                                     loginStrategy);
 
         XMPPTCPConnectionConfiguration config = configBuilder.build();
 
@@ -1121,12 +1096,11 @@ public class ProtocolProviderServiceJabberImpl
             sLog.error("Connection is not null and isConnected:"
                 + mConnection.isConnected(),
                 new Exception("Trace possible duplicate connections: " +
-                    getAccountID().getAccountAddress()));
+                    getAccountID().getLoggableAccountID()));
             disconnectAndCleanConnection();
         }
 
         mConnection = new XMPPTCPConnection(config);
-        mConnection.setReplyTimeout(DEFAULT_SMACK_PACKET_REPLY_TIMEOUT);
 
         if (mDebugger == null)
         {
@@ -1177,7 +1151,6 @@ public class ProtocolProviderServiceJabberImpl
         }
 
         mCurrentLocalIp = getLocalIpToUse();
-        sLog.debug("Set currentLocalIp to " + mCurrentLocalIp);
 
         setTrafficClass();
 
@@ -1297,6 +1270,85 @@ public class ProtocolProviderServiceJabberImpl
     }
 
     /**
+     * Provides the config needed to initialise the XMPPTCPConnection.
+     * @param address the address to connect to
+     * @param serviceName the service name to use
+     * @param loginStrategy the desired login strategy
+     * @return the XMPP config builder with the desired settings
+     * @throws XmppStringprepException if the given {@code serviceName} is not
+     * a bare JID
+     * @throws JitsiXmppException if TLS is required but there is no
+     * CertificateService available
+     */
+    private XMPPTCPConnectionConfiguration.Builder getXMPPConfigBuilder(
+            InetSocketAddress address,
+            String serviceName,
+            JabberLoginStrategy loginStrategy)
+            throws XmppStringprepException, JitsiXmppException
+    {
+        XMPPTCPConnectionConfiguration.Builder configBuilder =
+            XMPPTCPConnectionConfiguration.builder();
+        configBuilder.setHost(address.getAddress().getHostAddress());
+        configBuilder.setPort(address.getPort());
+        configBuilder.setXmppDomain(serviceName);
+        configBuilder.setProxyInfo(mProxy);
+
+        // Enable SASL-PLAIN as an auth mechanism. All registered mechanisms are
+        // enabled by default unless we explicitly enable one over others.
+        configBuilder.addEnabledSaslMechanism(SASLPlainMechanism.NAME);
+
+        configBuilder.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
+
+        CertificateService cvs = JabberActivator.getCertificateService();
+        CompletableFuture<Void> listener = new CompletableFuture<>();
+        try
+        {
+            if (cvs != null)
+            {
+                X509TrustManager customTrustManager = getTrustManager(cvs, serviceName);
+                configBuilder.setCustomX509TrustManager(customTrustManager);
+
+                SSLContext sslContext = loginStrategy.createSslContext(cvs, customTrustManager);
+                configBuilder.setSslContextFactory(() -> {return sslContext;});
+
+                if (OSUtils.isMac())
+                {
+                    listener = prepareForReRegisterOnKeychainUpdate(cvs, listener);
+                    listener.completeAsync(() -> null, reloadExecutor);
+                }
+            }
+            else
+            {
+                throw new JitsiXmppException("Certificate verification service is  unavailable and TLS is required");
+            }
+        }
+        catch (GeneralSecurityException ex)
+        {
+            sLog.error("Error creating custom trust manager", ex);
+            throw new JitsiXmppException("Error creating custom trust manager", ex);
+        }
+
+        return configBuilder;
+    }
+
+    /**
+     * Prepares a task that will re-register the XMPP connection on macOS when
+     * its system root certificate keychain has been updated.
+     * @param cvs the CertificateVerificationService
+     * @param listener the CompletableFuture to add re-registration stages to
+     * @return the CompletableFuture which will run the re-registration once
+     * the keychain update has occurred.
+     */
+    private CompletableFuture<Void> prepareForReRegisterOnKeychainUpdate(
+            final CertificateService cvs,
+            final CompletableFuture<Void> listener)
+    {
+        return listener.thenComposeAsync((obj) -> cvs.getMacOSKeychainUpdateTrigger(),
+                                         reloadExecutor)
+                .thenRun(() -> getReregisterRunnable(SecurityAuthority.MAC_KEYCHAIN_UPDATED));
+    }
+
+    /**
      * Determine the local IP that will be used when sending XMPP messages to
      * the IM server.
      *
@@ -1342,10 +1394,8 @@ public class ProtocolProviderServiceJabberImpl
     {
         return new HostTrustManager(
             cvs.getTrustManager(
-                Arrays.asList(new String[]{
-                        serviceName,
-                        "_xmpp-client." + serviceName
-                })
+                Arrays.asList(serviceName,
+                              "_xmpp-client." + serviceName)
             )
         );
     }
@@ -1535,7 +1585,7 @@ public class ProtocolProviderServiceJabberImpl
         synchronized(mInitializationLock)
         {
             this.mAccountID = accountID;
-            sLog.info("Initializing jabber " + this + " with accountID " + accountID);
+            sLog.info("Initializing jabber " + this + " with accountID " + accountID.getLoggableAccountID());
 
             // in case of modified account, we clear list of supported features
             // and every state change listeners, otherwise we can have two
@@ -1778,6 +1828,7 @@ public class ProtocolProviderServiceJabberImpl
             disconnectAndCleanConnection();
 
             mIsInitialized = false;
+            reloadExecutor.shutdown();
         }
     }
 
@@ -1932,9 +1983,8 @@ public class ProtocolProviderServiceJabberImpl
                         // show a popup asking for credentials each retry.
                         mAuthenticationBackoff.onError();
 
-                        // Only retry registering if we haven't hit the maximum
-                        // backoff limit.
-                        if (mAuthenticationBackoff.shouldRetry())
+                        // Only retry registering if we haven't hit the maximum backoff limit.
+                        if (!mAuthenticationBackoff.hasHitMaxDoubles())
                         {
                             shouldResetAuthBackoff = false;
 
@@ -1942,13 +1992,14 @@ public class ProtocolProviderServiceJabberImpl
                             {
                                 sLog.debug("Waiting to reregister as there are server authentication problems");
                                 threadingService.schedule("ReregisterJabber",
-                                                           mReregisterConnectionFailedRunnable,
+                                                           getReregisterRunnable(SecurityAuthority.CONNECTION_FAILED),
                                                            mAuthenticationBackoff.getBackOffTime());
                             }
                             else
                             {
                                 // Don't wait before executing
-                                threadingService.submit("ReregisterJabber", mReregisterConnectionFailedRunnable);
+                                threadingService.submit("ReregisterJabber",
+                                                        getReregisterRunnable(SecurityAuthority.CONNECTION_FAILED));
                             }
                         }
                         else
@@ -1956,7 +2007,6 @@ public class ProtocolProviderServiceJabberImpl
                             sLog.info("Give up trying to register. There are server authentication problems.");
                             JabberActivator.getAnalyticsService().onEvent(
                                     AnalyticsEventType.XMPP_AUTHENTICATION_BACKOFF_HIT_MAX_FAILURES,
-                                    AnalyticsParameter.NAME_INITIAL_BACKOFF_MS, String.valueOf(mAuthenticationBackoff.getInitialFailBackoff()),
                                     AnalyticsParameter.NAME_FINAL_BACKOFF_MS, String.valueOf(mAuthenticationBackoff.getBackOffTime()));
                         }
                     }
@@ -1972,12 +2022,12 @@ public class ProtocolProviderServiceJabberImpl
                 }
                 return;
             }
-
-            // This string matching in this else block matches XMPPExceptions
-            // that we've thrown in the client code, and are not derived from
-            // underlying libraries.
             else
             {
+                // This string matching in this else block matches XMPPExceptions
+                // that we've thrown in the client code, and are not derived from
+                // underlying libraries.
+
                 boolean serverNotFound = reasonStrLowerCase.contains("no server addresses found");
 
                 if (ex instanceof NoResponseException ||
@@ -2041,9 +2091,7 @@ public class ProtocolProviderServiceJabberImpl
             return;
         }
 
-        final String userID = mAccountID.getUserID();
-
-        sLog.debug("Failed to connect to server - deleting account " + userID);
+        sLog.debug("Failed to connect to server - deleting account " + mAccountID.getLoggableAccountID());
         mAccountID.deleteAccount(false);
 
         // Display the dialogs on a new thread so they don't block start-up
@@ -2051,14 +2099,12 @@ public class ProtocolProviderServiceJabberImpl
         {
             public void run()
             {
-                sLog.debug("Showing invalid username dialog for " + userID);
+                sLog.debug("Showing invalid username dialog for " + mAccountID.getLoggableAccountID());
                 ResourceManagementService res = JabberActivator.getResources();
                 String title = res.getI18NString("service.gui.ERROR");
                 String message = res.getI18NString(
-                    "plugin.jabberaccregwizz.INVALID_USERNAME", new String[]{userID});
-                ErrorDialog dialog = new ErrorDialog(null, title, message);
-                dialog.setModal(true);
-                dialog.showDialog();
+                    "plugin.jabberaccregwizz.INVALID_USERNAME", new String[]{ mAccountID.getUserID() });
+                new ErrorDialog(title, message).showDialog();
 
                 sLog.debug("Showing chat account login box");
                 WizardContainer wizardContainer =
@@ -2139,7 +2185,7 @@ public class ProtocolProviderServiceJabberImpl
                                 ProtocolProviderServiceJabberImpl.this,
                                 getRegistrationState(),
                                 RegistrationState.UNREGISTERED,
-                                RegistrationStateChangeEvent.REASON_MULTIPLE_LOGINS,
+                                RegistrationStateChangeEvent.REASON_MULTIPLE_CONNECTIONS,
                                 "Connecting multiple times with the same resource");
                              return;
                         }
@@ -2149,7 +2195,7 @@ public class ProtocolProviderServiceJabberImpl
 
                     fireRegistrationStateChanged(getRegistrationState(),
                         RegistrationState.UNREGISTERED,
-                        RegistrationStateChangeEvent.REASON_MULTIPLE_LOGINS,
+                        RegistrationStateChangeEvent.REASON_MULTIPLE_CONNECTIONS,
                         "Connecting multiple times with the same resource");
 
                     return;
@@ -2184,35 +2230,6 @@ public class ProtocolProviderServiceJabberImpl
                 RegistrationState.CONNECTION_FAILED,
                 RegistrationStateChangeEvent.REASON_NOT_SPECIFIED,
                 exception.getMessage());
-        }
-
-        /**
-         * Implements <tt>reconnectingIn</tt> from <tt>ConnectionListener</tt>
-         *
-         * @param i delay in seconds for reconnection.
-         */
-        public void reconnectingIn(int i)
-        {
-            sLog.info("reconnectingIn " + i);
-        }
-
-        /**
-         * Implements <tt>reconnectingIn</tt> from <tt>ConnectionListener</tt>
-         */
-        public void reconnectionSuccessful()
-        {
-            sLog.info("reconnectionSuccessful");
-        }
-
-        /**
-         * Implements <tt>reconnectionFailed</tt> from
-         * <tt>ConnectionListener</tt>.
-         *
-         * @param exception description of the failure
-         */
-        public void reconnectionFailed(Exception exception)
-        {
-            sLog.info("reconnectionFailed ", exception);
         }
     }
 
@@ -2412,7 +2429,8 @@ public class ProtocolProviderServiceJabberImpl
                 // register.connect in new thread so we can release the
                 // current connecting thread, otherwise this blocks
                 // jabber
-                threadingService.submit("ReregisterJabber", mReregisterConnectionFailedRunnable);
+                threadingService.submit("ReregisterJabber",
+                                        getReregisterRunnable(SecurityAuthority.CONNECTION_FAILED));
             }
         }
     }
@@ -2428,20 +2446,23 @@ public class ProtocolProviderServiceJabberImpl
     public Jid getOurJid()
     {
         Jid jid = null;
+        String accountIDUserID = getAccountID().getUserID();
 
         if (mConnection != null)
+        {
             jid = mConnection.getUser();
-        sLog.info("Fetched our JID from the server: " + jid);
+        }
+        sLog.info("Fetched our JID from the server: " + sanitiseChatAddress(jid.toString()));
 
         if (jid == null)
         {
             // seems like the connection is not yet initialized so lets try to
             // construct our jid ourselves.
-            String accountIDUserID = getAccountID().getUserID();
             try
             {
                 jid = JidCreate.bareFrom(accountIDUserID);
-                sLog.info("Connection to server not initialised so constructed our bare JID: " + jid);
+                sLog.info("Connection to server not initialised so constructed our bare JID: " +
+                          sanitiseChatAddress(jid.toString()));
             }
             catch (XmppStringprepException e)
             {
@@ -2454,7 +2475,7 @@ public class ProtocolProviderServiceJabberImpl
     }
 
     /**
-     * Returns our own Jabber ID as a String.
+     * Returns our own Jabber ID as a String (with DN removed, for privacy reasons).
      * If we have a working connection to the server,
      * this returns our full JID (node@domain/resource).
      * If we don't, we construct and return our bare JID (node@domain).
@@ -2465,7 +2486,9 @@ public class ProtocolProviderServiceJabberImpl
     {
         Jid jid = getOurJid();
 
-        return (jid != null) ? jid.toString() : null;
+        return (jid != null) ?
+                sanitiseChatAddress(jid.toString()) :
+                null;
     }
 
     /**
@@ -2653,7 +2676,6 @@ public class ProtocolProviderServiceJabberImpl
         {
             JabberActivator.getAnalyticsService().onEvent(
                     AnalyticsEventType.XMPP_AUTHENTICATION_BACKOFF_SUCCESS,
-                    AnalyticsParameter.NAME_INITIAL_BACKOFF_MS, String.valueOf(mAuthenticationBackoff.getInitialFailBackoff()),
                     AnalyticsParameter.NAME_FINAL_BACKOFF_MS, String.valueOf(mAuthenticationBackoff.getBackOffTime()));
         }
         mAuthenticationBackoff.onSuccess();
@@ -2701,9 +2723,7 @@ public class ProtocolProviderServiceJabberImpl
 
         InetAddress localIpToUse = getLocalIpToUse();
         hasIpChanged = !Objects.equals(mCurrentLocalIp, localIpToUse);
-        sLog.debug("hasIpChanged? " + hasIpChanged +
-                     ": currentLocalIp = " + mCurrentLocalIp +
-                     ", localIpToUse = " + localIpToUse);
+        sLog.debug("hasIpChanged? " + hasIpChanged);
 
         if (hasIpChanged)
         {

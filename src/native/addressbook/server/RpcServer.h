@@ -1,3 +1,4 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
 
 bool start_server();
 void stop_server();

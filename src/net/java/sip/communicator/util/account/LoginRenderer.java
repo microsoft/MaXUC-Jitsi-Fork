@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util.account;
 
 import net.java.sip.communicator.service.protocol.*;
@@ -38,22 +39,6 @@ public interface LoginRenderer
      * @param accountID unique account ID of protocol provider to remove
      */
     void removeProtocolProviderUI(AccountID accountID);
-
-    /**
-     * Starts the connecting user interface for the given protocol provider.
-     *
-     * @param protocolProvider the protocol provider for which we add the
-     * connecting user interface
-     */
-    void startConnectingUI(ProtocolProviderService protocolProvider);
-
-    /**
-     * Stops the connecting user interface for the given protocol provider.
-     *
-     * @param protocolProvider the protocol provider for which we remove the
-     * connecting user interface
-     */
-    void stopConnectingUI(ProtocolProviderService protocolProvider);
 
     /**
      * Indicates that the given protocol provider is now connecting.

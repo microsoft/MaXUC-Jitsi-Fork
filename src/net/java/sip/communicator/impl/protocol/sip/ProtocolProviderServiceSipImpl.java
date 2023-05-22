@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import java.net.InetAddress;
@@ -71,6 +72,7 @@ import net.java.sip.communicator.impl.protocol.sip.net.ProxyConnection;
 import net.java.sip.communicator.impl.protocol.sip.security.SecurityHeaderFactory;
 import net.java.sip.communicator.impl.protocol.sip.security.SipSecurityManager;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
+import net.java.sip.communicator.plugin.desktoputil.ErrorDialog.OnDismiss;
 import net.java.sip.communicator.plugin.provisioning.ProvisioningServiceImpl;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.calljump.CallJumpService;
@@ -439,7 +441,7 @@ public class ProtocolProviderServiceSipImpl
 
          // Evaluate whether FORCE_PROXY_BYPASS is enabled for the account
          // before registering.
-        forceLooseRouting = Boolean.valueOf((String)
+        forceLooseRouting = Boolean.parseBoolean((String)
                 getAccountID().getAccountProperty(
                     ProtocolProviderFactory.FORCE_PROXY_BYPASS));
 
@@ -522,7 +524,7 @@ public class ProtocolProviderServiceSipImpl
         synchronized (initializationLock)
         {
             logger.debug("Initializing ProtocolProviderService for account ID "
-                         + accountID);
+                         + accountID.getLoggableAccountID());
 
             this.accountID = accountID;
 
@@ -682,19 +684,18 @@ public class ProtocolProviderServiceSipImpl
                         String title = res.getI18NString("service.gui.INFORMATION");
                         String buttonText = res.getI18NString("service.gui.FORCE_QUIT");
                         final ErrorDialog dialog = new ErrorDialog(
-                            null, title, message, ErrorDialog.ErrorType.WARNING, buttonText);
+                            title, message, OnDismiss.FORCE_EXIT);
+                        dialog.setModal(true);
+                        dialog.setButtonText(buttonText);
 
                         // Display the dialog on a new thread so it doesn't block start-up
                         new Thread("SipCosChange.ShowDialog")
                         {
                             public void run()
                             {
-                                dialog.setModal(true);
-                                dialog.showDialog();
-
                                 logger.info("Forcing quit of application (" +
                                             "SIP CoS change)");
-                                SipActivator.getShutdownService().beginShutdown();
+                                dialog.showDialog();
                             }
                         }.start();
                     }
@@ -1029,7 +1030,6 @@ public class ProtocolProviderServiceSipImpl
         earlyProcessMessage(timeoutEvent);
 
         Request request = transaction.getRequest();
-        logger.debug("received timeout for req=" + request);
 
         //find the object that is supposed to take care of responses with the
         //corresponding method
@@ -1464,8 +1464,7 @@ public class ProtocolProviderServiceSipImpl
 
                 localAddress = networkManager.getLocalHost(
                                                     targetAddress.getAddress());
-                logger.info("No saved IP address to use for via header; use " +
-                                                                  localAddress);
+                logger.info("No saved IP address to use for via header; use local address");
             }
 
             int localPort = srcListeningPoint.getPort();
@@ -1489,7 +1488,6 @@ public class ProtocolProviderServiceSipImpl
                 null
                 );
             viaHeaders.add(viaHeader);
-            logger.debug("generated via headers:" + viaHeader);
             return viaHeaders;
         }
         catch (ParseException ex)
@@ -1644,8 +1642,6 @@ public class ProtocolProviderServiceSipImpl
             {
                 contactAddress.setDisplayName(ourDisplayName);
             }
-
-            logger.debug("generated contact SIP URI:" + contactAddress);
         }
         catch (ParseException ex)
         {
@@ -1705,8 +1701,7 @@ public class ProtocolProviderServiceSipImpl
         registrationContactHeader = headerFactory.createContactHeader(
             contactAddress);
 
-        logger.debug("generated contactHeader:"
-            + registrationContactHeader);
+        logger.debug("Generated contactHeader successfully.");
 
         return registrationContactHeader;
     }
@@ -2546,7 +2541,7 @@ public class ProtocolProviderServiceSipImpl
         try
         {
             serverTransaction.sendResponse(errorResponse);
-            logger.debug("sent response: " + errorResponse);
+            logger.debug("sent response");
         }
         catch (Exception ex)
         {
@@ -2595,13 +2590,13 @@ public class ProtocolProviderServiceSipImpl
         catch (SipException ex)
         {
             ProtocolProviderServiceSipImpl.throwOperationFailedException(
-                "Failed to send request:\n" + request,
+                "Failed to send SIP request.",
                 OperationFailedException.NETWORK_FAILURE,
                 ex,
                 logger);
         }
 
-        logger.debug("Sent request:\n" + request);
+        logger.debug("Sent SIP request.");
     }
 
     /**

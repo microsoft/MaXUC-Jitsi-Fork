@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util.launchutils;
+
+import static net.java.sip.communicator.util.launchutils.LaunchArgHandler.sanitiseArgument;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,7 +35,7 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 import com.google.common.annotations.VisibleForTesting;
 
 import net.java.sip.communicator.launcher.SIPCommunicator;
@@ -42,7 +45,6 @@ import net.java.sip.communicator.util.Logger;
  * This class is used to prevent from running multiple instances of Jitsi.
  * The class binds a socket somewhere on the localhost domain and
  * records its socket address in the Jitsi configuration directory.
- *
  * All following instances of Jitsi (and hence this class) will look
  * for this record in the configuration directory and try to connect to the
  * original instance through the socket address in there.
@@ -203,7 +205,7 @@ public class SipCommunicatorLock
         boolean lockFileAlreadyExists;
         boolean lockAcquired;
 
-        logger.info("Checking for lock file: " + lockFile.getAbsolutePath());
+        logger.info("Checking for lock file...");
 
         try
         {
@@ -289,7 +291,7 @@ public class SipCommunicatorLock
                 }
                 else
                 {
-                    logger.error("Failed to retrieve lock address from: " + lockFile.getAbsolutePath());
+                    logger.error("Failed to retrieve lock address from: " + lockFile.getName());
                 }
 
                 // Maybe another starting instance has locked the file but has
@@ -375,7 +377,7 @@ public class SipCommunicatorLock
     {
         @Nullable private final InetSocketAddress unresponsiveInstance;
 
-        private NoLockOrIpcRecoveryThread(InetSocketAddress unresponsiveAddress)
+        private NoLockOrIpcRecoveryThread(@Nullable InetSocketAddress unresponsiveAddress)
         {
             this.unresponsiveInstance = unresponsiveAddress;
             setDaemon(true);
@@ -466,7 +468,7 @@ public class SipCommunicatorLock
      */
     private int lock(File lockFile)
     {
-        logger.info("Saving socket details to file: " + lockFile.getAbsolutePath());
+        logger.info("Saving socket details to file: " + lockFile.getName());
 
         InetAddress lockAddress = getRandomBindAddress();
 
@@ -500,7 +502,7 @@ public class SipCommunicatorLock
 
         if (writeLockFile(lockFile, serverSocketAddress) != SUCCESS)
         {
-            logger.error("Failed to write bind address to file " + lockFile.getAbsolutePath());
+            logger.error("Failed to write bind address to file " + lockFile.getName());
             return LOCK_ERROR;
         }
 
@@ -644,7 +646,7 @@ public class SipCommunicatorLock
         catch (IOException e)
         {
             logger.error("Failed to read socket server address from lock file: "
-                                              + lockFile.getAbsolutePath(), e);
+                                              + lockFile.getName(), e);
             return null;
         }
         finally
@@ -740,11 +742,11 @@ public class SipCommunicatorLock
                 + "removed when execution of Jitsi terminates.");
 
             logger.info("Written: " + lockAddress + " to file: " +
-                        lockFile.getAbsolutePath());
+                        lockFile.getName());
         }
         catch (FileNotFoundException e)
         {
-            logger.error("Lock file " + lockFile.getAbsolutePath() +
+            logger.error("Lock file " + lockFile.getName() +
                 " not found.", e);
             return LOCK_ERROR;
         }
@@ -1103,7 +1105,7 @@ public class SipCommunicatorLock
                         return;
                     }
 
-                    logger.debug(line);
+                    logger.debug(sanitiseArgument(line));
 
                     if (line.startsWith(ARG_COUNT))
                     {

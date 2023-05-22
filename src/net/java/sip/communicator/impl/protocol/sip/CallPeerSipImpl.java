@@ -4,10 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import static net.java.sip.communicator.service.protocol.OperationSetBasicTelephony.*;
 import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.net.*;
 import java.text.*;
@@ -46,6 +48,7 @@ import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.media.*;
+import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
 
@@ -104,7 +107,7 @@ public class CallPeerSipImpl
      * a call from a park orbit and display the appropriate orbit name instead
      * of the dial string.
      */
-    private static String callParkRetrieveCode =
+    private static final String callParkRetrieveCode =
         SipActivator.getConfigurationService().user().getString(
             OperationSetCallPark.RETRIEVE_CODE_KEY);
 
@@ -123,7 +126,7 @@ public class CallPeerSipImpl
     /**
      * The sip address of this peer
      */
-    private Address peerAddress = null;
+    private Address peerAddress;
 
     /**
      * The contact for this peer
@@ -236,6 +239,14 @@ public class CallPeerSipImpl
     }
 
     /**
+     * Returns a loggable String locator for that peer.
+     */
+    public String getLoggableAddress()
+    {
+        return sanitiseChatAddress(getAddress());
+    }
+
+    /**
      * Returns full URI of the address.
      *
      * @return full URI of the address
@@ -243,6 +254,49 @@ public class CallPeerSipImpl
     public String getURI()
     {
         return getPeerAddress().getURI().toString();
+    }
+
+    @Override
+    public String getDiversionInfo()
+    {
+        String diversion = null;
+
+        Transaction transaction = getLatestInviteTransaction();
+        if (ConfigurationUtils.displayCallRedirection() && transaction instanceof ServerTransaction)
+        {
+            ServerTransaction serverTransaction = (ServerTransaction)transaction;
+            Request invite = serverTransaction.getRequest();
+
+            // When there are multiple diversion headers, the first header is the
+            // latest one, so see if we are configured to show the latest one.
+            boolean useLatest = ConfigurationUtils.useLatestRedirection();
+
+            ListIterator<? extends Header> headers = invite.getHeaders("Diversion");
+            Header header = null;
+            while (headers.hasNext())
+            {
+                header = headers.next();
+                if (useLatest)
+                {
+                    // Exit the loop if all we want is the first value
+                    break;
+                }
+            }
+            if (header != null)
+            {
+                // Unfortunately JSIP does not have specific support for the
+                // Diversion header, so we need to parse the data out ourselves.
+                // The header starts "Diversion: " and then the value we want.
+                String[] parts = header.toString().split(":", 2);
+                if (parts.length > 1)
+                {
+                    diversion = parts[1].strip();
+                    logger.info("This call includes diversion information" + (useLatest ? ", using latest" : ""));
+                }
+            }
+        }
+
+        return diversion;
     }
 
     /**
@@ -287,8 +341,9 @@ public class CallPeerSipImpl
     }
 
     /**
-     * Actually gets the display name, should only be called from getDisplayName
-     * as that will insure that we have the correct locks
+     * Gets the display name, using a cached value if available.
+     * Should only be called from getDisplayName
+     * as that will ensure that we have the correct locks
      *
      * @return the display name
      */
@@ -302,15 +357,30 @@ public class CallPeerSipImpl
             return displayName;
         }
 
+        // We find and store the display name so we don't have to do this
+        // processing next time.
+        displayName = innerGetDisplayName(resources);
+
+        return displayName;
+    }
+
+    /**
+     * Actually gets the display name, should only be called from doGetDisplayName.
+     *
+     * @return the display name
+     */
+    private String innerGetDisplayName(ResourceManagementService resources)
+    {
         // Assume a CRM looked-up name is not appropriate to use unless the
         // various checks in Accession's native contact sources have returned
         // nothing.
         mCanUseCrmLookupDisplayName = false;
 
         String name = null;
-        List<MetaContact> matchingMetaContacts = findMetaContacts();
-
         String peerName = getPeerDisplayName();
+        String userName = getPeerUserName();
+
+        List<MetaContact> matchingMetaContacts = findMetaContacts(userName, peerName);
 
         if (matchingMetaContacts != null)
         {
@@ -366,8 +436,6 @@ public class CallPeerSipImpl
             if (contactNames.size() == 1)
             {
                 name = contactNames.get(0);
-                // No need to hash MetaContact, as its toString() method does
-                // that.
                 logger.debug("Unique metacontact match found for call peer: " +
                                                          logHasher(name));
             }
@@ -434,10 +502,12 @@ public class CallPeerSipImpl
 
         logger.debug("Name = " + logHasher(name));
 
-        if(name != null)
+        if (name != null)
         {
-            if(name.startsWith("sip:"))
+            if (name.startsWith("sip:"))
+            {
                 name = name.substring(4);
+            }
 
             if ((callParkParkOpSet != null) &&
                 (callParkRetrieveCode != null) &&
@@ -454,12 +524,10 @@ public class CallPeerSipImpl
             name = getAddress();
 
             if (name != null)
+            {
                 name = name.split("@")[0];
+            }
         }
-
-        // Store the display name so we don't have to do this processing next
-        // time.
-        this.displayName = name;
         return name;
     }
 
@@ -476,7 +544,8 @@ public class CallPeerSipImpl
         // No-op if we have no address to lookup.
         if (peerAddress != null)
         {
-            logger.debug("Lookup " + peerAddress + " in CRM.");
+            logger.debug("Lookup " + sanitiseChatAddress(peerAddress) +
+                         " in CRM.");
 
             // Try to do a CRM DN lookup via any applications connected over
             // the WebSocket API to look for CRM contact names.
@@ -519,12 +588,12 @@ public class CallPeerSipImpl
         if (number != null)
         {
 
-            logger.debug("Schedule external lookup for " + number);
+            logger.debug("Schedule external lookup for " + logHasher(number));
             new Thread("ExternalNameLookupThread")
             {
                 public void run()
                 {
-                    logger.debug("Run external lookup for " + number);
+                    logger.debug("Run external lookup for " + logHasher(number));
                     performExternalNameLookup(number);
                 }
             }.start();
@@ -585,7 +654,6 @@ public class CallPeerSipImpl
                 {
                     // Not all services support querying by number.
                     // This one does not, so skip it.
-                    continue;
                 }
             }
         }
@@ -598,14 +666,12 @@ public class CallPeerSipImpl
      * @return the MetaContacts that match this peer, or null if the address was
      * invalid or had no matches.
      */
-    public List<MetaContact> findMetaContacts()
+    public static List<MetaContact> findMetaContacts(String userName, String peerName)
     {
         // Try and associate the phone number with a local contact
-        String userName = getPeerUserName();
 
-        // No need to hash the PII as this is the SIP URI of the other party
-        // in a call.
-        logger.info("Searching for metacontacts matching a call peer " + userName);
+        logger.info("Searching for metacontacts matching a call peer " +
+                    logHasher(userName));
 
         String phoneNumber = SipActivator.getPhoneNumberUtils().
                 extractPlainDnFromAddress(userName);
@@ -613,8 +679,6 @@ public class CallPeerSipImpl
         // Check that this is a valid telephone number
         if (phoneNumber == null)
         {
-            // No need to hash the PII as this is the SIP URI of the other
-            // party in a call.
             logger.error("Failed to obtain phone number from SIP username " +
                          "during contact lookup for call peer.");
             return null;
@@ -623,7 +687,6 @@ public class CallPeerSipImpl
         // Search for all contacts that match this SIP username in the
         // MetaContactListService. It is necessary to normalize the SIP
         // username and account ID so that potential matches aren't missed.
-
         MetaContactListService metaContactListService = ServiceUtils.getService(
                                                 SipActivator.getBundleContext(),
                                                 MetaContactListService.class);
@@ -631,13 +694,12 @@ public class CallPeerSipImpl
         List<MetaContact> metaContactList = metaContactListService
                                             .findMetaContactByNumber(phoneNumber);
 
-        if (metaContactList != null && metaContactList.size() > 1)
+        if (metaContactList.size() > 1)
         {
             // We've got a list of multiple matching contacts - see if we can
             // use the peer name (or CNAM) to narrow it down to just one match.
             // If we can't narrow it down to one match, then return the original
             // list.
-            String peerName = getPeerDisplayName();
             String loggablePeerName = logHasher(peerName);
             logger.debug("Multiple contacts, looking for peer name " +
                          loggablePeerName);
@@ -719,18 +781,19 @@ public class CallPeerSipImpl
 
         if (peerURI instanceof SipURI)
         {
+            // This username is in the form of a DN (i.e. 1234567).
             String userName = ((SipURI) peerURI).getUser();
 
             if (userName != null && userName.length() > 0)
             {
-                logger.exit("Peer user name is " + userName);
+                logger.exit("Peer user name is " + logHasher(userName));
                 return userName;
             }
         }
         else
         {
             String name = peerURI.toString();
-            logger.exit("Peer user name is " + name);
+            logger.exit("Peer user name is " + logHasher(name));
             return name;
         }
 
@@ -954,7 +1017,7 @@ public class CallPeerSipImpl
     public Contact getContact()
     {
         // if this peer has no call, most probably it means
-        // its disconnected and no more in call
+        // it's disconnected and no more in call
         // and we cannot obtain the contact
         if(getCall() == null)
         {
@@ -1053,10 +1116,8 @@ public class CallPeerSipImpl
         throws OperationFailedException
     {
         CallPeerMediaHandlerSipImpl mediaHandler = getMediaHandler();
-        boolean requested
-            = (mediaHandler == null)
-                ? false
-                : mediaHandler.processKeyFrameRequest();
+        boolean requested =
+            mediaHandler != null && mediaHandler.processKeyFrameRequest();
 
         Response response;
 
@@ -1137,7 +1198,7 @@ public class CallPeerSipImpl
         if (cl != null && cl.getContentLength() > 0)
             sdpOffer = SdpUtils.getContentAsString(invite);
 
-        Response response = null;
+        Response response;
         try
         {
             response = messageFactory.createResponse(Response.OK, invite);
@@ -1224,7 +1285,7 @@ public class CallPeerSipImpl
             try
             {
                 byeTran.sendResponse(ok);
-                logger.debug("sent response " + ok);
+                logger.debug("sent response");
             }
             catch (Exception ex)
             {
@@ -1294,7 +1355,7 @@ public class CallPeerSipImpl
             Response ok = messageFactory.createResponse(Response.OK, cancel);
             serverTransaction.sendResponse(ok);
 
-            logger.debug("sent an ok response to a CANCEL request:\n" + ok);
+            logger.debug("sent an ok response to a CANCEL request");
         }
         catch (ParseException ex)
         {
@@ -1325,8 +1386,7 @@ public class CallPeerSipImpl
                 .createResponse(Response.REQUEST_TERMINATED, invite);
 
             inviteTran.sendResponse(requestTerminated);
-            logger.debug("sent request terminated response:\n"
-                    + requestTerminated);
+            logger.debug("sent request terminated response");
         }
         catch (ParseException ex)
         {
@@ -1494,12 +1554,10 @@ public class CallPeerSipImpl
             //an error we also need to hangup the call peer.
             catch (Exception exc)//Media or parse exception.
             {
-                // Only need to hash display name as we can log addresses in
-                // calls.
                 logger.error(
                         "There was an error parsing the SDP description of " +
                         logHasher(getDisplayName()) +
-                        "(" + getAddress() + ")", exc);
+                        "(" + getLoggableAddress() + ")", exc);
                 try
                 {
                     //we are connected from a SIP point of view (cause we sent our
@@ -1526,8 +1584,6 @@ public class CallPeerSipImpl
             if (!CallPeerState.isOnHold(getState()))
             {
                 // Logging "this" invokes the toString() method on AbstractCallPeer.
-                // No need to hash this as the only PII returned is the address
-                // and we are permitted to log that in calls.
                 logger.info("Call is no longer on hold." +
                     " Setting peer state for " + this +
                     " to 'connected'");
@@ -1539,8 +1595,6 @@ public class CallPeerSipImpl
         if (connectCall)
         {
             // Logging "this" invokes the toString() method on AbstractCallPeer.
-            // No need to hash this as the only PII returned is the address
-            // and we are permitted to log that in calls.
             logger.debug("Starting media for " + this);
             getMediaHandler().start();
 
@@ -1619,7 +1673,7 @@ public class CallPeerSipImpl
                     ex);
         }
         //body ended
-        ClientTransaction clientTransaction = null;
+        ClientTransaction clientTransaction;
         try
         {
             clientTransaction
@@ -1650,7 +1704,7 @@ public class CallPeerSipImpl
             }
 
             getDialog().sendRequest(clientTransaction);
-            logger.debug("sent request:\n" + info);
+            logger.debug("sent request");
         }
         catch (SipException ex)
         {
@@ -1780,7 +1834,7 @@ public class CallPeerSipImpl
      * failure, then this string could indicate the reason of the failure
      * @param failed is this a call failure?
      * @param disconnect should we always disconnect?
-     * @throws OperationFailedException
+     * @throws OperationFailedException the operation failed
      */
     private void hangupUsingBye(int reasonCode,
                                 String reason,
@@ -1790,7 +1844,8 @@ public class CallPeerSipImpl
     {
         try
         {
-            // No need to hash PII as explicitly call action.
+            // Safe to log this peerID as it is simply a UID implemented
+            // in MediaAwareCallPeer. No Personal Data involved.
             logger.debug("Sending BYE to hangup call, peerID: " + getPeerID() +
                          " Reason: " + reason +
                          " Code: " + reasonCode);
@@ -1891,7 +1946,7 @@ public class CallPeerSipImpl
         try
         {
             serverTransaction.sendResponse(rejectResponse);
-            logger.debug("sent response:\n" + rejectResponse);
+            logger.debug("sent response");
         }
         catch (Exception ex)
         {
@@ -1928,7 +1983,7 @@ public class CallPeerSipImpl
                 getJainSipProvider().getNewClientTransaction(
                     cancel);
             cancelTransaction.sendRequest();
-            logger.debug("sent request:\n" + cancel);
+            logger.debug("sent request");
         }
         catch (SipException ex)
         {
@@ -1942,7 +1997,7 @@ public class CallPeerSipImpl
      * Sends a BYE request to <tt>callPeer</tt>.
      *
      * @return <tt>true</tt> if the <tt>Dialog</tt> should be considered
-     * alive after sending the BYE request (e.g. when there're still active
+     * alive after sending the BYE request (e.g. when there are still active
      * subscriptions); <tt>false</tt>, otherwise
      *
      * @throws OperationFailedException if we failed constructing or sending a
@@ -2185,9 +2240,8 @@ public class CallPeerSipImpl
 
             // Show the user an error so they actually have some clue as to
             // why the call failed.
-            new ErrorDialog(null,
-                            resources.getI18NString("service.gui.ERROR"),
-                            ex.getMessage()).showDialog();
+            new ErrorDialog(resources.getI18NString("service.gui.ERROR"),
+                ex.getMessage()).showDialog();
 
             return;
         }
@@ -2195,7 +2249,7 @@ public class CallPeerSipImpl
         try
         {
             serverTransaction.sendResponse(ok);
-            logger.debug("sent response\n" + ok);
+            logger.debug("sent response");
         }
         catch (Exception ex)
         {
@@ -2403,7 +2457,7 @@ public class CallPeerSipImpl
             reflectConferenceFocus(invite);
 
             inviteTran.sendRequest();
-            logger.debug("sent request:\n" + inviteTran.getRequest());
+            logger.debug("sent request");
         }
         catch (Exception ex)
         {
@@ -2784,8 +2838,8 @@ public class CallPeerSipImpl
                 }
                 catch (WebSocketApiError.WebSocketApiMessageException e)
                 {
-                    logger.debug("Exception hit when trying to retrieve" +
-                                         "CRM display name from lookup:\n + e");
+                    logger.error("Exception hit when trying to retrieve" +
+                                 "CRM display name from lookup:\n", e);
 
                     // Raise an API error if there was a problem with the data
                     // in the response.

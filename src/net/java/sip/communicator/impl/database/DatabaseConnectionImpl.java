@@ -294,6 +294,27 @@ public class DatabaseConnectionImpl implements DatabaseConnection
     }
 
     @Override
+    public ResultSet findZeroLengthCallAtTimeForParticipant(String tableName,
+                                                            String startDateColName,
+                                                            String endDateColName,
+                                                            String callPeerIdsColName,
+                                                            java.util.Date startDate,
+                                                            String callPeerIds)
+            throws SQLException
+    {
+        PreparedStatement preparedStatement = prepare(
+                "SELECT * FROM " + tableName +
+                " WHERE " + startDateColName + "=? AND " + endDateColName
+                + " =? AND " + callPeerIdsColName + "=?");
+
+        preparedStatement.setLong(1, startDate.getTime());
+        preparedStatement.setLong(2, startDate.getTime());
+        preparedStatement.setString(3, callPeerIds);
+
+        return query(preparedStatement);
+    }
+
+    @Override
     public ResultSet findByPeriod(String tableName,
                                   String localJidColName,
                                   String localJid,
@@ -670,6 +691,36 @@ public class DatabaseConnectionImpl implements DatabaseConnection
         }
 
         preparedStatement.setLong(ii, date.getTime());
+
+        return query(preparedStatement);
+    }
+
+    /**
+     *
+     * @param tableName
+     * @param roomJidColName
+     * @param roomJid
+     * @param msgUidColName
+     * @param msgUids
+     * @return
+     * @throws SQLException
+     */
+    @Override
+    public ResultSet findMatchingGroupChatMsgUids(String tableName,
+                                                  String roomJidColName,
+                                                  String roomJid,
+                                                  String msgUidColName,
+                                                  List<String> msgUids)
+        throws SQLException
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT * FROM " + tableName +
+            " WHERE " + roomJidColName + " ='" + roomJid + "'" +
+            " AND " + msgUidColName + " IN ('");
+        sb.append(String.join("','", msgUids));
+        sb.append("')");
+
+        PreparedStatement preparedStatement = prepare(sb.toString());
 
         return query(preparedStatement);
     }

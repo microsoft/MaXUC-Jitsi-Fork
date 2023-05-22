@@ -15,7 +15,8 @@ public class CaptiveWiFiUtils
     private static final Logger logger = Logger.getLogger(CaptiveWiFiUtils.class);
 
     /**
-     * Default URL for the server which we request a http response code from
+     * Default URL for the server which we request a http response code from.
+     * Must be HTTP (not HTTPS) to make captive portal detection work.
      */
     private static final String DEFAULT_CAPTIVE_WIFI_SERVER_URL =
                                    "http://clients3.google.com/generate_204";
@@ -28,14 +29,6 @@ public class CaptiveWiFiUtils
                                   "net.java.sip.communicator.util.CAPTIVE_WIFI_SERVER_URL";
 
     /**
-     * Default URL for the web browser to open - should
-     * then be redirected to the login page.
-     * This page should be of the form http:// and not https://
-     * otherwise redirection is not guaranteed.
-     */
-    private static final String DEFAULT_URL_FOR_REDIRECTION = "http://google.com";
-
-    /**
      * HTTP connection timeout.  We expect a response pretty much straight away.
      */
     private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
@@ -46,17 +39,6 @@ public class CaptiveWiFiUtils
      */
     public static boolean isCaptivePortal()
     {
-        return getCaptiveRedirect() != null;
-    }
-
-    /**
-     * Method which finds the redirect url of a http request to a google server.
-     * @return Null if not connected to a captive wifi portal, otherwise the
-     * URL which AD was redirected to.
-     */
-    private static String getCaptiveRedirect()
-    {
-        String redirectUrl = null;
         ConfigurationService configService =
                                        UtilActivator.getConfigurationService();
 
@@ -73,7 +55,7 @@ public class CaptiveWiFiUtils
                 logger.debug("Try getting a response from " + serverUrlString);
                 URL serverUrl = new URL(serverUrlString);
                 HttpURLConnection connectionToServer =
-                    (HttpURLConnection) serverUrl.openConnection();
+                    (HttpURLConnection) serverUrl.openConnection(); // lgtm[java/non-https-url] URL to determine captive portal must be HTTP, no data transferring
 
                 connectionToServer.setConnectTimeout(CONNECTION_TIMEOUT_MS);
                 connectionToServer.setReadTimeout(CONNECTION_TIMEOUT_MS);
@@ -89,23 +71,8 @@ public class CaptiveWiFiUtils
                 boolean captivePortal =
                     (connectionToServer.getResponseCode() != 204);
 
-                if (captivePortal)
-                {
-                    redirectUrl = connectionToServer.getHeaderField("Location");
-
-                    if (redirectUrl == null)
-                    {
-                        // We are connected to a captive portal but the
-                        // redirect URL remains null. Set the redirect URL to
-                        // the default URL in order to return that we are
-                        // connected.
-                        logger.warn("Connected to a captive wifi portal, " +
-                                    "but the redirect URL is null");
-                        redirectUrl = DEFAULT_URL_FOR_REDIRECTION;
-                    }
-                }
-
                 logger.debug("Connected to captive wifi: " + captivePortal);
+                return captivePortal;
             }
             catch (MalformedURLException e)
             {
@@ -126,16 +93,6 @@ public class CaptiveWiFiUtils
                          "unable to check for captive wifi portal");
         }
 
-        return redirectUrl;
-    }
-
-    /**
-     * Method which opens a web browser which is then redirected to the captive wifi log in page
-     */
-    public static void openBrowser()
-    {
-        String redirectUrl = getCaptiveRedirect();
-        logger.debug("Opening URL " + redirectUrl);
-        UtilActivator.getBrowserService().openURL(redirectUrl);
+        return false;
     }
 }

@@ -4,29 +4,29 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.updatewindows;
 
-import java.beans.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
-import org.jitsi.service.configuration.*;
-import org.jitsi.service.version.Version;
-import org.jitsi.service.version.VersionService;
-import org.osgi.framework.*;
+import org.osgi.framework.BundleContext;
 
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
-import net.java.sip.communicator.service.browserlauncher.*;
-import net.java.sip.communicator.service.credentialsstorage.*;
-import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.shutdown.*;
+import net.java.sip.communicator.service.browserlauncher.BrowserLauncherService;
+import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
+import net.java.sip.communicator.service.gui.UIService;
+import net.java.sip.communicator.service.threading.CancellableRunnable;
 import net.java.sip.communicator.service.threading.ThreadingService;
-import net.java.sip.communicator.service.update.*;
+import net.java.sip.communicator.service.update.UpdateService;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.AbstractServiceDependentActivator;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
+import org.jitsi.service.configuration.ConfigurationService;
+import org.jitsi.service.version.VersionService;
 
 /**
  * Implements <tt>BundleActivator</tt> for the update plug-in.
@@ -42,27 +42,6 @@ public class UpdateWindowsActivator
         = Logger.getLogger(UpdateWindowsActivator.class);
 
     /**
-     * The name of the configuration property which indicates whether the
-     * "checking for updates" menu entry is disabled.
-     */
-    private static final String CHECK_FOR_UPDATES_MENU_DISABLED_PROP
-        = "net.java.sip.communicator.plugin.update.checkforupdatesmenu.DISABLED";
-
-    /**
-     * The name of the configuration property which indicates whether the client
-     * should automatically check for updates each day or not.
-     */
-    private static final String CHECK_FOR_UPDATES_DAILY_ENABLED_PROP =
-    "net.java.sip.communicator.plugin.update.checkforupdatesmenu.daily.ENABLED";
-
-    /**
-     * The name of the configuration property which indicates the hour that
-     * the client should check for updates (if daily update checking is enabled)
-     */
-    private static final String CHECK_FOR_UPDATES_DAILY_TIME_PROP =
-       "net.java.sip.communicator.plugin.update.checkforupdatesmenu.daily.HOUR";
-
-    /**
      * The name of the configuration property which indicates the minimum version
      * of the application the user is allowed to run.
      */
@@ -74,8 +53,13 @@ public class UpdateWindowsActivator
      * checking has been disabled for this user. This property is part of the user
      * configuration and is set in SIP PS.
      */
-    private static final String DISABLE_UPDATE_CHECKING_PROP =
+    private static final String DISABLE_AUTO_UPDATE_CHECKING_FOR_USER_PROP =
         "net.java.sip.communicator.plugin.update.DISABLE_AUTO_UPDATE_CHECKING";
+
+    /**
+     * Name of property to force update.
+     */
+    private static final String FORCE_UPDATE = "net.java.sip.communicator.plugin.update.FORCE_UPDATE";
 
     /**
      * Reference to the <tt>BrowserLauncherService</tt>.
@@ -92,11 +76,6 @@ public class UpdateWindowsActivator
      * Reference to the <tt>ConfigurationService</tt>.
      */
     private static ConfigurationService configuration;
-
-    /**
-     * Reference to the <tt>UIService</tt>.
-     */
-    private static UIService uiService;
 
     /**
      * The update service.
@@ -120,10 +99,11 @@ public class UpdateWindowsActivator
 
     private static ThreadingService threadingService;
 
-    /**
-     * A scheduler to check for updates once a day
-     */
-    private ScheduledExecutorService mUpdateExecutor = null;
+    private static WISPAService wispaService;
+
+    private static CancellableRunnable updateCheckRunnable;
+    private static final long ONE_MINUTE_IN_MS = 60*1000L;
+    private static final long ONE_DAY_IN_MS = 24*60*ONE_MINUTE_IN_MS;
 
     /**
      * Returns the <tt>BrowserLauncherService</tt> obtained from the bundle
@@ -163,38 +143,6 @@ public class UpdateWindowsActivator
     }
 
     /**
-     * Gets a reference to a <code>ShutdownService</code> implementation
-     * currently registered in the bundle context of the active
-     * <code>UpdateCheckActivator</code> instance.
-     * <p>
-     * The returned reference to <code>ShutdownService</code> is not being
-     * cached.
-     * </p>
-     *
-     * @return reference to a <code>ShutdownService</code> implementation
-     *         currently registered in the bundle context of the active
-     *         <code>UpdateCheckActivator</code> instance
-     */
-    static ShutdownService getShutdownService()
-    {
-        return ServiceUtils.getService(bundleContext, ShutdownService.class);
-    }
-
-    /**
-     * Returns a reference to the UIService implementation currently registered
-     * in the bundle context or null if no such implementation was found.
-     *
-     * @return a reference to a UIService implementation currently registered
-     * in the bundle context or null if no such implementation was found.
-     */
-    static UIService getUIService()
-    {
-        if(uiService == null)
-            uiService = ServiceUtils.getService(bundleContext, UIService.class);
-        return uiService;
-    }
-
-    /**
      * The dependent service is available and the bundle will start.
      * @param dependentService the UIService this activator is waiting.
      */
@@ -212,29 +160,8 @@ public class UpdateWindowsActivator
                 updateService,
                 null);
 
-        // Register the "Check for Updates" menu item if
-        // the "Check for Updates" property isn't disabled.
-        if (!cfg.global().getBoolean(CHECK_FOR_UPDATES_MENU_DISABLED_PROP, false))
-        {
-            // Register the "Check for Updates" menu item.
-            CheckForUpdatesMenuItemComponent
-                    checkForUpdatesMenuItemComponent
-                    = new CheckForUpdatesMenuItemComponent(
-                    Container.CONTAINER_HELP_MENU);
-
-            Hashtable<String, String> toolsMenuFilter
-                    = new Hashtable<>();
-            toolsMenuFilter.put(
-                    Container.CONTAINER_ID,
-                    Container.CONTAINER_HELP_MENU.getID());
-
-            bundleContext.registerService(
-                    PluginComponent.class.getName(),
-                    checkForUpdatesMenuItemComponent,
-                    toolsMenuFilter);
-        }
-
-        if (ConfigurationUtils.isUpdateCheckingDisabled())
+        if (ConfigurationUtils.isAutoUpdateCheckingDisabledForUser() ||
+            ConfigurationUtils.isAutoUpdateCheckingDisabledGlobally())
         {
             getAnalyticsService().onEvent(AnalyticsEventType.AUTO_UPDATE_OFF);
         }
@@ -248,55 +175,27 @@ public class UpdateWindowsActivator
         // return a ClientOutOfDate error which causes us to force an upgrade - see
         // ProvisioningServiceImpl.java.  However, this code is left in as a back-stop because
         // we really want to avoid failing to force someone to update when they need to.
-        boolean forcingUpdate = false;
-        if (!ConfigurationUtils.isUpdateCheckingDisabled())
-        {
-            cfg.user().addPropertyChangeListener(MIN_VERSION_PROP,
-                                                 new PropertyChangeListener()
-                                                 {
-                                                     public void propertyChange(PropertyChangeEvent evt)
-                                                     {
-                                                         logger.info("Minimum version has changed");
-                                                         checkForceUpdate();
-                                                     }
-                                                 });
+        cfg.user().addPropertyChangeListener(
+                MIN_VERSION_PROP,
+                 new PropertyChangeListener()
+                 {
+                     public void propertyChange(PropertyChangeEvent evt)
+                     {
+                         logger.info("Minimum version has changed");
+                         boolean isOutOfDate = checkForceUpdate();
 
-            forcingUpdate = checkForceUpdate();
-        }
-        else
-        {
-            logger.info("Forced updates disabled");
-        }
-
-        // Check for software update upon startup if enabled and we're not already forcing one.
-        if (!ConfigurationUtils.isUpdateCheckingDisabled() &&
-            !forcingUpdate)
-        {
-            logger.info("Checking for updates on startup");
-            updateService.checkForUpdates(false);
-        }
-        else
-        {
-            logger.info("Not checking for updates on startup - " +
-                "disabled? " + ConfigurationUtils.isUpdateCheckingDisabled() + " forcingUpdate? " + forcingUpdate);
-        }
-
-        // Schedule a "check for updates" task (if not disabled)
-        if (!ConfigurationUtils.isUpdateCheckingDisabled()
-            && cfg.global().getBoolean(CHECK_FOR_UPDATES_DAILY_ENABLED_PROP, false))
-        {
-            logger.info("Scheduled update checking enabled");
-            scheduleUpdateCheck();
-        }
-        else
-        {
-            logger.info("Scheduled update checking disabled");
-        }
+                         if (isOutOfDate)
+                         {
+                             logger.debug("Client is now out-of-date. Triggering update check.");
+                             getUpdateService().checkForUpdates(false);
+                         }
+                     }
+                 });
 
         // If the disable automatic update checking setting changes while the
         // client is running, schedule or cancel the update check as appropriate
-        cfg.user().addPropertyChangeListener(DISABLE_UPDATE_CHECKING_PROP,
-             new PropertyChangeListener()
+        cfg.user().addPropertyChangeListener(DISABLE_AUTO_UPDATE_CHECKING_FOR_USER_PROP,
+                                             new PropertyChangeListener()
              {
                  public void propertyChange(PropertyChangeEvent evt)
                  {
@@ -308,18 +207,22 @@ public class UpdateWindowsActivator
                          if (updateDisabled)
                          {
                              // Auto update checking is now disabled
-                             logger.info("Scheduled update checking disabled");
+                             logger.info("Scheduled update checking disabled for this user");
                              cancelUpdateCheck();
                              getAnalyticsService().
                                      onEvent(AnalyticsEventType.AUTO_UPDATE_OFF);
                          }
-                         else
+                         else if (!ConfigurationUtils.isAutoUpdateCheckingDisabledGlobally())
                          {
                              // Auto update checking is now enabled
-                             logger.info("Scheduled update checking enabled");
+                             logger.info("Scheduled update checking enabled for this user");
                              scheduleUpdateCheck();
                              getAnalyticsService().
                                      onEvent(AnalyticsEventType.AUTO_UPDATE_ON);
+                         }
+                         else
+                         {
+                             logger.info("Scheduled update checking disabled globally");
                          }
                      }
                      else
@@ -330,36 +233,52 @@ public class UpdateWindowsActivator
                  }
              });
 
+        // Schedule a "check for updates" task (if not disabled)
+        if (!ConfigurationUtils.isAutoUpdateCheckingDisabledForUser() &&
+            !ConfigurationUtils.isAutoUpdateCheckingDisabledGlobally())
+        {
+            logger.info("Scheduled update checking enabled");
+            scheduleUpdateCheck();
+        }
+        else
+        {
+            logger.info("Scheduled update checking disabled");
+        }
+
         logger.info("Update checker [REGISTERED]");
     }
 
     /**
      * Check to see if we need to force the user to update the client
      * Note that the forcing of the update happens on another thread.
+     * Whenever we call this function and we are forcing update, we also
+     * send electron a motion to show the force update UI
      * @return true iff the client version is too low so an update is required.
      */
-    private boolean checkForceUpdate()
+    static boolean checkForceUpdate()
     {
         boolean forcingUpdate = false;
         VersionService versionService = getVersionService();
-        Version currentVersion = versionService.getCurrentVersion();
+        ConfigurationService cfg = getConfiguration();
 
-        String minimumVersionString = getConfiguration().user()
-                            .getString("net.java.sip.communicator.MIN_VERSION");
-        Version minimumVersion = minimumVersionString == null ? null :
-                        versionService.parseVersionString(minimumVersionString);
-
-        logger.info("Comparing current and minimum versions: " +
-                                        currentVersion + ", " + minimumVersion);
-
-        boolean isOutOfDate = minimumVersion != null &&
-                              currentVersion.compareTo(minimumVersion) < 0;
+        boolean isOutOfDate = versionService.isOutOfDate();
 
         if (isOutOfDate && updateService != null)
         {
-            logger.info("Client version too low - forcing update");
-            updateService.forceUpdate();
             forcingUpdate = true;
+        }
+
+        logger.debug("Need to force update? " + forcingUpdate);
+        if (forcingUpdate)
+        {
+            logger.debug("Version too low - forcing update on Windows");
+            cfg.user().setProperty(FORCE_UPDATE, true);
+        }
+        else
+        {
+            logger.debug("Version is fine - removing FORCE_UPDATE property " +
+                         "if it exists from a previously out-of-date client");
+            cfg.user().removeProperty(FORCE_UPDATE);
         }
 
         return forcingUpdate;
@@ -370,7 +289,7 @@ public class UpdateWindowsActivator
      */
     private synchronized void scheduleUpdateCheck()
     {
-        if (mUpdateExecutor != null)
+        if (updateCheckRunnable != null && !updateCheckRunnable.isCancelled())
         {
             logger.warn("Trying to schedule an update check, but one already exists. "
                 + "Cancelling it before scheduling another.");
@@ -378,8 +297,7 @@ public class UpdateWindowsActivator
         }
 
         logger.info("Scheduling an update check");
-        int hoursToWait = calcHoursToWait();
-        Runnable updateRunnable = new Runnable()
+        updateCheckRunnable = new CancellableRunnable()
         {
             public void run()
             {
@@ -388,11 +306,27 @@ public class UpdateWindowsActivator
             }
         };
 
-        mUpdateExecutor = Executors.newSingleThreadScheduledExecutor();
-        mUpdateExecutor.scheduleAtFixedRate(updateRunnable,
-                                            hoursToWait,
-                                            24,
-                                            TimeUnit.HOURS);
+        // If the client cannot contact the server for a mandatory update, the user is likely to
+        // get stuck in a blocked state without an update option. We want to make sure they receive the
+        // update as soon as the client regains connection to the server. If the user already triggered the
+        // update download, sending another update prompt won't disrupt their update.
+        boolean forceUpdate = checkForceUpdate();
+        if (forceUpdate)
+        {
+            logger.info("Scheduled an update check every minute for mandatory update");
+            getThreadingService().scheduleAtFixedRate("Force update check",
+                                                      updateCheckRunnable,
+                                                      0L,
+                                                      ONE_MINUTE_IN_MS);
+        }
+        else
+        {
+            logger.info("Scheduled an update check once every 24 hours");
+            getThreadingService().scheduleAtFixedRate("Update check",
+                                                      updateCheckRunnable,
+                                                      ONE_DAY_IN_MS,
+                                                      ONE_DAY_IN_MS);
+        }
     }
 
     /**
@@ -400,11 +334,10 @@ public class UpdateWindowsActivator
      */
     private synchronized void cancelUpdateCheck()
     {
-        if (mUpdateExecutor != null)
+        logger.info("Cancelling update check");
+        if (updateCheckRunnable != null)
         {
-            logger.info("Shutting down UpdateExecutor");
-            mUpdateExecutor.shutdown();
-            mUpdateExecutor = null;
+            updateCheckRunnable.cancel();
         }
     }
 
@@ -429,34 +362,13 @@ public class UpdateWindowsActivator
     }
 
     /**
-     * Calculate the number of hour to wait until the first scheduled update
-     * check.  This will only be called if daily checking for config updates
-     * is enabled
-     *
-     * @return The number of hours to wait
-     */
-    private int calcHoursToWait()
-    {
-        // The hours to wait is the number of hours until midnight tonight (24
-        // minus the current hour) plus the hour that the config says updates
-        // should be
-        return 24 - Calendar.getInstance().get(Calendar.HOUR_OF_DAY) +
-                     configuration.user().getInt(CHECK_FOR_UPDATES_DAILY_TIME_PROP, 0);
-    }
-
-    /**
-     * Stop the bundle. Nothing to stop for now.
+     * Stop the bundle, cancelling any scheduled update check.
      * @param bundleContext <tt>BundleContext</tt> provided by OSGi framework
      */
     public void stop(BundleContext bundleContext)
     {
         logger.debug("Update checker [STOPPED]");
-
-        if (mUpdateExecutor != null)
-        {
-            mUpdateExecutor.shutdown();
-            mUpdateExecutor = null;
-        }
+        cancelUpdateCheck();
     }
 
     /**
@@ -518,5 +430,20 @@ public class UpdateWindowsActivator
         }
 
         return threadingService;
+    }
+
+    /**
+     * Returns the WISPA service instance
+     *
+     * @return the WISPA service instance
+     */
+    static WISPAService getWISPAService()
+    {
+        if (wispaService == null)
+        {
+            wispaService = ServiceUtils.getService(bundleContext,
+                                                   WISPAService.class);
+        }
+        return wispaService;
     }
 }

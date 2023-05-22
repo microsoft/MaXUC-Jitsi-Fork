@@ -8,7 +8,6 @@ import java.util.*;
 import javax.swing.*;
 
 import org.jitsi.service.resources.*;
-
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.main.call.DTMFHandler.*;
 import net.java.sip.communicator.plugin.desktoputil.*;

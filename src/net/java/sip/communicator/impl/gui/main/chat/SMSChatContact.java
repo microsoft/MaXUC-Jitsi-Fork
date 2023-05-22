@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
 import org.jitsi.service.resources.*;

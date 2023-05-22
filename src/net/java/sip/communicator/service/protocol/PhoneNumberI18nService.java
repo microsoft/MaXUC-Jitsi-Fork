@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.util.regex.*;
@@ -126,29 +127,6 @@ public abstract class PhoneNumberI18nService
     }
 
     /**
-     * Normalizes a <tt>String</tt> which may be a phone number or an identifier
-     * for use in calling the number.  As well as the standard normalization,
-     * this strips pause characters from the string so that the number is
-     * dialled without this (and any subsequent characters).  We also include
-     * some logging in this case (as this is not a bulk operation).
-     *
-     * @param possibleNumber a <tt>String</tt> which may represent a phone
-     * number or an identifier to normalize.
-     *
-     * @return a <tt>String</tt> which is a normalized form of the specified
-     * <tt>possibleNumber</tt> for calling.
-     */
-    public static String normalizeToCall(String possibleNumber)
-    {
-        logger.debug("Normalizing number = " + possibleNumber);
-        String normalizedNumber = normalize(possibleNumber);
-        normalizedNumber =
-            pauseCharactersPattern.matcher(normalizedNumber).replaceAll("");
-        logger.debug("Normalized number = " + normalizedNumber);
-        return normalizedNumber;
-    }
-
-    /**
      * Normalizes a <tt>String</tt> phone number by converting alpha characters
      * to their respective digits on a keypad and then stripping non-digit
      * characters.
@@ -227,12 +205,8 @@ public abstract class PhoneNumberI18nService
                 // character at the beginning at the string.
                 String tmpPossibleNumber
                     = possibleNumber.replaceAll(" \\(\\)", "");
-                // If the property is enabled and the string starts with a "+",
-                // then we consider that this is a phone number.
-                if(configService.user().getBoolean(
-                        "impl.gui.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS",
-                        true)
-                        && tmpPossibleNumber.startsWith("+"))
+                // If the string starts with a "+" then we consider that this is a phone number.
+                if (tmpPossibleNumber.startsWith("+"))
                 {
                     return true;
                 }

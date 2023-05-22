@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 /**
@@ -45,6 +46,12 @@ public interface SecurityAuthority
      * the connection failed.
      */
     int CONNECTION_FAILED = 3;
+
+    /**
+     * Indicates that the reason for obtaining credentials is that the macOS
+     * keychain was updated, which would thereby force re-authentication.
+     */
+    int MAC_KEYCHAIN_UPDATED = 4;
 
     /**
      * Returns a UserCredentials object associated with the specified realm, by

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.database.util;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.sql.*;
 
@@ -137,7 +137,7 @@ public class DatabaseUtils
                                  MessageHistoryTable.COL_TYPE + "," +
                                  MessageHistoryTable.COL_READ + "," +
                                  MessageHistoryTable.COL_FAILED + ") VALUES (" +
-                                 logHasher(accountJid) + "," + logHasher(remoteJid) + "," + dir + "," +
+                                 sanitisePeerId(accountJid) + "," + sanitisePeerId(remoteJid) + "," + dir + "," +
                                  DUMMY_MESSAGE_TEXT + "," + msgUid + "," +
                                  timestamp + "," + type + "," + read + ",false)]";
     }
@@ -175,7 +175,7 @@ public class DatabaseUtils
                          GroupMessageHistoryTable.COL_FAILED + "," +
                          GroupMessageHistoryTable.COL_LEFT + "," +
                          GroupMessageHistoryTable.COL_SUBJECT + ") VALUES (" +
-                         logHasher(accountJid) + "," + logHasher(senderJid) + "," + roomJid + "," + dir +
+                         sanitisePeerId(accountJid) + "," + sanitisePeerId(senderJid) + "," + sanitiseChatRoom(roomJid) + "," + dir +
                          "," + DUMMY_MESSAGE_TEXT + "," + msgUid + "," +
                          timestamp + "," + type + "," + read + ",false," +
                          closed + "," + DUMMY_SUBJECT + ")]";
@@ -207,7 +207,7 @@ public class DatabaseUtils
                                  FileHistoryTable.COL_DATE + "," +
                                  FileHistoryTable.COL_STATUS + "," +
                                  FileHistoryTable.COL_ATTENTION + ")  VALUES (" +
-                                 logHasher(accountJid) + "," + logHasher(remoteJid) + "," + ftUid + "," +
+                                 sanitisePeerId(accountJid) + "," + sanitisePeerId(remoteJid) + "," + ftUid + "," +
                                  DUMMY_MESSAGE_TEXT + "," + dir + "," + timestamp + "," + status + "," + attention + ")]";
     }
 }

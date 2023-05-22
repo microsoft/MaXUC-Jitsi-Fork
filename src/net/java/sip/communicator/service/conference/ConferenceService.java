@@ -3,7 +3,7 @@ package net.java.sip.communicator.service.conference;
 
 import java.util.*;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactlist.*;

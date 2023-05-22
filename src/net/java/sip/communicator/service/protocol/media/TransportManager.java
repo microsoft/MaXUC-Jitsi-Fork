@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.media;
+
+import static org.jitsi.util.Hasher.logHasher;
 
 import java.net.*;
 
@@ -337,7 +340,7 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
             if (streamConnector != null)
             {
                 localAddr = streamConnector.getDataSocket().getLocalAddress();
-                logger.debug("Found existing local address: " + localAddr);
+                logger.debug("Found existing local address: " + logHasher(localAddr));
                 if (!localAddr.isAnyLocalAddress())
                 {
                     return localAddr;
@@ -352,7 +355,7 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
         InetAddress intendedDestination = getIntendedDestination(getCallPeer());
         localAddr = nam.getLocalHost(intendedDestination);
 
-        logger.debug("Returning local address: " + localAddr);
+        logger.debug("Returning local address: " + logHasher(localAddr));
         return localAddr;
     }
 

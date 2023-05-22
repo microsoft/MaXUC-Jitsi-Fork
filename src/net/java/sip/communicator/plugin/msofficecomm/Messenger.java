@@ -4,9 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.msofficecomm;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.Hasher.*;
 
 import java.beans.*;
 import java.util.*;
@@ -718,9 +719,9 @@ public class Messenger
      */
     public void startConversation(final int conversationType, String[] participants, String conversationData)
     {
-        logger.info("Got startConversation participants:" +
-            participants == null? "" : logHasher(Arrays.asList(participants)) +
-            ", conversationData=" + logHasher(conversationData));
+        logger.info("Got startConversation participants: " +
+                    (participants == null ? "" : logCollectionHasher(List.of(participants))) +
+                    ", conversationData=" + logHasher(conversationData));
 
         /*
          * Firstly, resolve the participants into Contacts which may include

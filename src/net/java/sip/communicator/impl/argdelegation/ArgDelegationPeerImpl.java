@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.argdelegation;
 
 import java.util.*;
@@ -45,6 +46,8 @@ public class ArgDelegationPeerImpl
     private static final String FORCE_UPDATE = "net.java.sip.communicator.plugin.update.FORCE_UPDATE";
 
     private static final String PASSWORD_EXPIRED = "net.java.sip.communicator.plugin.pw.PASSWORD_EXPIRED";
+
+    private static final String COS_ALLOWS_MAX_UC = "net.java.sip.communicator.impl.commportal.COS_ALLOWS_MAX_UC";
 
     /**
      * Creates an instance of this peer and scans <tt>bundleContext</tt> for all
@@ -155,7 +158,8 @@ public class ArgDelegationPeerImpl
         boolean userInteractionAllowed = (userConfig != null)
             && userConfig.getBoolean(LATEST_EULA_ACCEPTED, false)
             && !userConfig.getBoolean(PASSWORD_EXPIRED, false)
-            && !userConfig.getBoolean(FORCE_UPDATE, false);
+            && !userConfig.getBoolean(FORCE_UPDATE, false)
+            && userConfig.getBoolean(COS_ALLOWS_MAX_UC, true);
         if (!userInteractionAllowed)
         {
             logger.info("User interaction is not allowed yet so do not handle URI");

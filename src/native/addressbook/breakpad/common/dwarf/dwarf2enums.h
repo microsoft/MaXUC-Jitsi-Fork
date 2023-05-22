@@ -110,7 +110,7 @@ enum DwarfTag {
   DW_TAG_class_template = 0x4103,  // For C++.
   DW_TAG_GNU_BINCL = 0x4104,
   DW_TAG_GNU_EINCL = 0x4105,
-  // Extensions for UPC.  See: https://upc.gwu.edu/~upc.
+  // Extensions for UPC.  See: http://upc.gwu.edu/~upc.
   DW_TAG_upc_shared_type = 0x8765,
   DW_TAG_upc_strict_type = 0x8766,
   DW_TAG_upc_relaxed_type = 0x8767,
@@ -190,7 +190,7 @@ enum DwarfForm {
   DW_FORM_addrx3 = 0x2b,
   DW_FORM_addrx4 = 0x2c,
 
-  // Extensions for Fission.  See https://gcc.gnu.org/wiki/DebugFission.
+  // Extensions for Fission.  See http://gcc.gnu.org/wiki/DebugFission.
   DW_FORM_GNU_addr_index = 0x1f01,
   DW_FORM_GNU_str_index = 0x1f02
 };
@@ -314,7 +314,7 @@ enum DwarfAttribute {
   DW_AT_body_begin = 0x2105,
   DW_AT_body_end   = 0x2106,
   DW_AT_GNU_vector = 0x2107,
-  // Extensions for Fission.  See https://gcc.gnu.org/wiki/DebugFission.
+  // Extensions for Fission.  See http://gcc.gnu.org/wiki/DebugFission.
   DW_AT_GNU_dwo_name = 0x2130,
   DW_AT_GNU_dwo_id = 0x2131,
   DW_AT_GNU_ranges_base = 0x2132,
@@ -569,7 +569,7 @@ enum DwarfOpcode {
   DW_OP_hi_user                      =0xff,
   // GNU extensions
   DW_OP_GNU_push_tls_address         =0xe0,
-  // Extensions for Fission.  See https://gcc.gnu.org/wiki/DebugFission.
+  // Extensions for Fission.  See http://gcc.gnu.org/wiki/DebugFission.
   DW_OP_GNU_addr_index               =0xfb,
   DW_OP_GNU_const_index              =0xfc
 };

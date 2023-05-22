@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.io.IOException;
@@ -64,12 +65,6 @@ public interface JabberLoginStrategy
                   String resource)
             throws IOException, InterruptedException, SmackException,
                    XMPPException;
-
-    /**
-     * Is TLS required for this login strategy / account?
-     * @return true if TLS is required
-     */
-    boolean isTlsRequired();
 
     /**
      * Creates an SSLContext to use for the login strategy.

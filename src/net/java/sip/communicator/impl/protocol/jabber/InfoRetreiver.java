@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -349,9 +352,7 @@ public class InfoRetreiver
         // Handle any errors thrown while getting or processing the vCard.
         if (throwable != null)
         {
-            String msg = "Cannot load details for contact "
-                + contactAddress + " : " + throwable.getMessage();
-            sLog.error(msg, throwable);
+            sLog.error("Cannot load details for contact " + sanitiseChatAddress(contactAddress));
         }
 
         retrievedDetails.put(contactAddress, result);

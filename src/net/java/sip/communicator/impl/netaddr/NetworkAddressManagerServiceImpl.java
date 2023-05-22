@@ -4,11 +4,11 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.netaddr;
 
 import java.beans.PropertyChangeEvent;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.BindException;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
@@ -367,35 +367,18 @@ public class NetworkAddressManagerServiceImpl
      */
     public byte[] getHardwareAddress(NetworkInterface iface)
     {
-        String ifName;
-        byte[] hwAddress;
-
-        /* try reflection */
         try
         {
-            Method method = iface.getClass().
-                getMethod("getHardwareAddress");
-
-            hwAddress = (byte[])method.invoke(iface, new Object[]{});
+            return iface.getHardwareAddress();
         }
-        catch(Exception e)
+        catch (SocketException e)
         {
-            /* maybe getHardwareAddress not available on this JVM try
-             * with our JNI
-             */
-            if(OSUtils.IS_WINDOWS)
-            {
-                ifName = iface.getDisplayName();
-            }
-            else
-            {
-                ifName = iface.getName();
-            }
-
-            hwAddress = HardwareAddressRetriever.getHardwareAddress(ifName);
+            logger.warn(
+                    "MAC address of " + iface.getName() + " unavailable: " + e
+                            .getMessage());
         }
 
-        return hwAddress;
+        return null;
     }
 
     /**

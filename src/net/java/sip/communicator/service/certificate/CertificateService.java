@@ -4,11 +4,13 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.certificate;
 
 import java.io.InputStream;
 import java.security.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.*;
 
@@ -30,14 +32,6 @@ public interface CertificateService
      */
     String PNAME_ALWAYS_TRUST =
         "net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED";
-
-    /**
-     * When set to true, the certificate check is performed. If the check fails
-     * the user is not asked and the error is directly reported to the calling
-     * service.
-     */
-    String PNAME_NO_USER_INTERACTION =
-        "net.java.sip.communicator.service.tls.NO_USER_INTERACTION";
 
     /**
      * The property name prefix of all client authentication configurations.
@@ -215,35 +209,7 @@ public interface CertificateService
      * @return TrustManager to use in an SSLContext
      * @throws GeneralSecurityException
      */
-    X509TrustManager getTrustManager(Iterable<String> identitiesToTest)
-        throws GeneralSecurityException;
-
-    /**
-     * @see #getTrustManager(Iterable)
-     *
-     * @param identityToTest when not <tt>null</tt>, the value is assumed to
-     *            be a hostname for invocations of checkServerTrusted and an
-     *            e-mail address for invocations of checkClientTrusted
-     * @return TrustManager to use in an SSLContext
-     * @throws GeneralSecurityException
-     */
-    X509TrustManager getTrustManager(String identityToTest)
-        throws GeneralSecurityException;
-
-    /**
-     * @see #getTrustManager(Iterable, CertificateMatcher, CertificateMatcher)
-     *
-     * @param identityToTest The identity to match against the supplied
-     *            verifiers.
-     * @param clientVerifier The verifier to use in calls to checkClientTrusted
-     * @param serverVerifier The verifier to use in calls to checkServerTrusted
-     * @return TrustManager to use in an SSLContext
-     * @throws GeneralSecurityException
-     */
-    X509TrustManager getTrustManager(
-            final String identityToTest,
-            final CertificateMatcher clientVerifier,
-            final CertificateMatcher serverVerifier)
+    X509TrustManager getTrustManager(List<String> identitiesToTest)
         throws GeneralSecurityException;
 
     /**
@@ -261,10 +227,18 @@ public interface CertificateService
      * @throws GeneralSecurityException
      */
     X509TrustManager getTrustManager(
-            final Iterable<String> identitiesToTest,
+            final List<String> identitiesToTest,
             final CertificateMatcher clientVerifier,
             final CertificateMatcher serverVerifier)
         throws GeneralSecurityException;
+
+    /**
+     * Allow access to the event trigger that signals
+     * when an update to the keychain has occurred. macOS only.
+     *
+     * @return the event trigger for macOS keychain updates.
+     */
+    CompletableFuture<Void> getMacOSKeychainUpdateTrigger();
 
     /**
      * Whether to use WSS (as opposed to WS) for the WISPA connection.  We will

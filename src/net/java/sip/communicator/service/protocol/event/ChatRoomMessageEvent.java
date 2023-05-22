@@ -4,9 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.event;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitisePeerId;
 
 import java.util.*;
 
@@ -87,7 +88,7 @@ public abstract class ChatRoomMessageEvent extends AbstractChatRoomMessageEvent
     public String toString()
     {
         StringBuilder builder = new StringBuilder("messageID  = " + this.getUID());
-        builder.append(", peerID  = " + logHasher(this.getContactAddress()));
+        builder.append(", peerID  = " + sanitisePeerId(this.getContactAddress()));
         builder.append(", isRead = " + this.isMessageRead());
         builder.append(", timestamp = " + this.getTimestamp());
         builder.append(", isClosed = " + this.isConversationClosed());

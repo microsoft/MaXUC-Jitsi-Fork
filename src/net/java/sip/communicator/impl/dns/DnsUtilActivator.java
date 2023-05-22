@@ -4,7 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.dns;
+
+import static org.jitsi.util.Hasher.*;
+
+import java.util.List;
 
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.resources.*;
@@ -189,15 +194,13 @@ public class DnsUtilActivator
 
         StringBuilder sb = new StringBuilder();
         sb.append("Reloaded resolver config, default DNS servers are: ");
-        for(String s : NetworkUtils.convertServerListToStrings(ResolverConfig.getCurrentConfig().servers()))
-        {
-            sb.append(s);
-            sb.append(", ");
-        }
+        sb.append(logCollectionHasher(List.of(
+            NetworkUtils.convertServerListToStrings(
+                ResolverConfig.getCurrentConfig().servers()))));
         logger.info(sb.toString());
 
         // now reset an eventually present custom resolver
-        if(Lookup.getDefaultResolver() instanceof CustomResolver)
+        if (Lookup.getDefaultResolver() instanceof CustomResolver)
         {
             logger.info("Resetting custom resolver "
                     + Lookup.getDefaultResolver().getClass().getSimpleName());

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -117,5 +118,19 @@ public class VolatileContactJabberImpl
     public boolean isPersistent()
     {
         return false;
+    }
+
+    /**
+     * If a subscriber receives a chat message while offline and connects for
+     * the first time with no local config/chat history (i.e. a fresh install),
+     * this sending contact will appear as a Volatile
+     * Jabber contact. Should the IM address of this Volatile contact
+     * match with an existing contact for this user - such as a BG contact -
+     * we want to be able to merge the two.
+     */
+    @Override
+    public boolean canBeMerged()
+    {
+        return true;
     }
 }

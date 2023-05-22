@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.util.*;
@@ -19,6 +20,7 @@ import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.Base64;
 import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.PrivacyUtils;
 import net.java.sip.communicator.util.ServiceUtils;
 
 /**
@@ -135,7 +137,7 @@ public class AccountManager
         List<String> accounts
             = configService.user().getPropertyNamesByPrefix(factoryPackage, true);
 
-        logger.debug("Discovered " + accounts.size() + " stored "
+        logger.info("Discovered " + accounts.size() + " stored "
                     + factoryPackage + " accounts");
 
         for (Iterator<String> storedAccountIter = accounts.iterator();
@@ -149,7 +151,11 @@ public class AccountManager
                     .startsWith(ACCOUNT_UID_PREFIX))
                 continue;
 
-            logger.debug("Loading account " + storedAccount);
+            // Redact the subscriber phone number from logs in any
+            // property where it appears.
+            logger.info("Loading account " +
+                         PrivacyUtils
+                         .sanitiseDirectoryNumberWithAccPrefix(storedAccount));
 
             List<String> storedAccountProperties =
                 configService.user().getPropertyNamesByPrefix(storedAccount, false);
@@ -203,12 +209,14 @@ public class AccountManager
 
                 synchronized (storedAccounts)
                 {
-                    logger.debug("Adding account " + accountID +
-                            " to stored accounts");
+                    logger.info("Adding account " + accountID.getLoggableAccountID() +
+                                " to stored accounts");
                     storedAccounts.add(accountID);
                 }
                 if (!disabled)
+                {
                     factory.loadAccount(accountID);
+                }
             }
             catch (Exception ex)
             {
@@ -216,7 +224,7 @@ public class AccountManager
                  * Swallow the exception in order to prevent a single account
                  * from halting the loading of subsequent accounts.
                  */
-                logger.error("Failed to load account " + accountProperties, ex);
+                logger.error("Failed to load account", ex);
             }
         }
     }
@@ -229,6 +237,7 @@ public class AccountManager
      */
     private void unloadOldAccounts(ProtocolProviderFactory factory)
     {
+        logger.info("Unload old accounts from factory " + factory);
         String protocolName = factory.getProtocolName();
         ConfigurationService configService =
                             ProtocolProviderActivator.getConfigurationService();
@@ -269,7 +278,8 @@ public class AccountManager
         // And now actually remove the account
         for (AccountID account : accountsToRemove)
         {
-            logger.info("Removing stored account as config changed " + account);
+            logger.info("Removing stored account as config changed " +
+                        account.getLoggableAccountID());
 
             try
             {
@@ -278,7 +288,8 @@ public class AccountManager
             catch (Exception e)
             {
                 // Not much we can do, just log
-                logger.error("Error unloading account " + account, e);
+                logger.error("Error unloading account " +
+                             account.getLoggableAccountID(), e);
             }
         }
 
@@ -588,8 +599,6 @@ public class AccountManager
                     }
                 };
                 loadStoredAccountsThread.setDaemon(true);
-                loadStoredAccountsThread
-                    .setName("AccountManager.loadStoredAccounts");
                 loadStoredAccountsThread.start();
             }
         }
@@ -740,8 +749,9 @@ public class AccountManager
     {
         synchronized (storedAccounts)
         {
-            logger.debug("Adding account " + accountID +
-                     " to stored accounts");
+            logger.debug("Adding account " +
+                         accountID.getLoggableAccountID() +
+                         " to stored accounts");
             storedAccounts.add(accountID);
         }
 
@@ -875,7 +885,7 @@ public class AccountManager
         if (configurationProperties.size() > 0)
             configurationService.user().setProperties(configurationProperties);
 
-        logger.debug("Stored account for id " + accountID.getAccountUniqueID()
+        logger.debug("Stored account for id " + accountID.getLoggableAccountID()
                     + " for package " + factoryPackage);
     }
 
@@ -892,7 +902,7 @@ public class AccountManager
         AccountID accountID)
     {
         logger.info("Attempting to delete account with ID " +
-            accountID.toString() + "...");
+            accountID.getLoggableAccountID() + "...");
         synchronized (storedAccounts)
         {
             storedAccounts.remove(accountID);
@@ -943,8 +953,8 @@ public class AccountManager
             String accountUID = configurationService.user().getString(
                 accountRootPropertyName //node id
                 + "." + ProtocolProviderFactory.ACCOUNT_UID); // propname
-            logger.debug("That would give us an account UID of " +
-                         accountUID +".");
+            logger.debug("Extracted an account UID for account " +
+                         accountID.getLoggableAccountID() + ".");
 
             // Sometimes matching lines are actually not account declarations.
             // If this happens we should just move on.
@@ -1047,11 +1057,14 @@ public class AccountManager
     public void loadAccount(AccountID accountID)
         throws OperationFailedException
     {
+        logger.info("Load account" + accountID.getLoggableAccountID());
+
         // If the account with the given id is already loaded we have nothing
         // to do here.
         if (isAccountLoaded(accountID))
         {
-            logger.debug("Account " + accountID + " already loaded");
+            logger.debug("Account " + accountID.getLoggableAccountID() +
+                        " already loaded");
             return;
         }
 
@@ -1061,7 +1074,8 @@ public class AccountManager
 
         if(providerFactory.loadAccount(accountID))
         {
-            logger.debug("Account " + accountID + " loaded successfully");
+            logger.debug("Account " + accountID.getLoggableAccountID() +
+                        " loaded successfully");
             accountID.putAccountProperty(
                 ProtocolProviderFactory.IS_ACCOUNT_DISABLED,
                 String.valueOf(false));
@@ -1117,7 +1131,8 @@ public class AccountManager
     public void unloadAccount(AccountID accountID)
         throws OperationFailedException
     {
-        logger.debug("Unloading account with ID " + accountID);
+        logger.debug("Unloading account with ID " +
+                     accountID.getLoggableAccountID());
 
         // If the account with the given id is already unloaded we have nothing
         // to do here.
@@ -1184,7 +1199,8 @@ public class AccountManager
      */
     public void toggleAccountEnabled(AccountID accountID)
     {
-        logger.debug("Toggling online/offline state of account " + accountID);
+        logger.info("Toggling online/offline state of account " +
+                     accountID.getLoggableAccountID());
 
         // Set whether we're taking the account online or offline to be the
         // opposite of the account's current state.
@@ -1194,12 +1210,14 @@ public class AccountManager
         {
             if (setOnline)
             {
-                logger.debug("Loading account: " + accountID);
+                logger.debug("Loading account: " +
+                             accountID.getLoggableAccountID());
                 loadAccount(accountID);
             }
             else
             {
-                logger.debug("Unloading account: " + accountID);
+                logger.debug("Unloading account: " +
+                             accountID.getLoggableAccountID());
                 unloadAccount(accountID);
             }
 
@@ -1215,22 +1233,23 @@ public class AccountManager
         }
         catch (OperationFailedException ex)
         {
-            logger.error("Failed to load/unload account " + accountID, ex);
+            logger.error("Failed to load/unload account " +
+                         accountID.getLoggableAccountID(), ex);
         }
     }
 
     /**  Refresh the account status for electron */
     public void refreshAccountInfo()
     {
-            WISPAService wispaService = ServiceUtils.getService(bundleContext, WISPAService.class);
-            if (wispaService != null)
-            {
-                wispaService.notify(WISPANamespace.SETTINGS, WISPAAction.UPDATE);
-            }
-            else
-            {
-                logger.warn("Could not notify WISPA about chat state update.");
-            }
+        WISPAService wispaService = ServiceUtils.getService(bundleContext, WISPAService.class);
+        if (wispaService != null)
+        {
+            wispaService.notify(WISPANamespace.SETTINGS, WISPAAction.UPDATE);
+        }
+        else
+        {
+            logger.warn("Could not notify WISPA about chat state update.");
+        }
     }
 
     /**

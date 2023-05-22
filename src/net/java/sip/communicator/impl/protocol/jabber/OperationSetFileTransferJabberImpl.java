@@ -5,7 +5,10 @@
  * See terms of license at gnu.org.
  */
 
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitisePeerId;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -148,8 +151,8 @@ public class OperationSetFileTransferJabberImpl
         provider.addRegistrationStateChangeListener(
             new RegistrationStateListener());
 
-        // Allow SOCKS5 (fast) file transfers
-        FileTransferNegotiator.IBB_ONLY = false;
+        // Disable SOCKS5 (fast) file transfers
+        FileTransferNegotiator.IBB_ONLY = true;
     }
 
     /**
@@ -188,7 +191,7 @@ public class OperationSetFileTransferJabberImpl
     public byte[] createThumbnail(File file)
     {
         byte[] thumbnail = null;
-        if (file != null && FileUtils.isImage(file.getName()) && opSetThumbnail != null)
+        if (file != null && FileUtils.isImage(file.getName()))
         {
             try
             {
@@ -223,15 +226,19 @@ public class OperationSetFileTransferJabberImpl
         // Create the File object
         File file = new File(filePath);
 
-        // Create a thumbnailed file if possible.
-        byte[] thumbnail = createThumbnail(file);
-        if (thumbnail != null && thumbnail.length > 0)
+        // Create a thumbnailed file if possible (file is image and thumbnail factory is available).
+        byte[] thumbnail = null;
+        if (opSetThumbnail != null)
         {
-            file = opSetThumbnail.createFileWithThumbnail(file,
-                                                          64,
-                                                          64,
-                                                          "image/png",
-                                                          thumbnail);
+            thumbnail = createThumbnail(file);
+            if (thumbnail != null && thumbnail.length > 0)
+            {
+                file = opSetThumbnail.createFileWithThumbnail(file,
+                                                              64,
+                                                              64,
+                                                              "image/png",
+                                                              thumbnail);
+            }
         }
 
         // Transfer UID
@@ -243,14 +250,14 @@ public class OperationSetFileTransferJabberImpl
         // Send the file
         try
         {
-            logger.debug("Sending file" + thumbnail != null ? " with thumbnail" : "");
+            logger.debug("Sending file" + (thumbnail != null ? " with thumbnail" : ""));
             sendFile(toContactResource, imContact, file, uid);
             // Send analytic
             JabberActivator.getAnalyticsService().onEvent(AnalyticsEventType.SEND_FILE_STARTED);
         }
         catch (IllegalStateException | IllegalArgumentException | OperationNotSupportedException e)
         {
-            e.printStackTrace();
+            logger.error("Failed to send file", e);
         }
     }
 
@@ -322,7 +329,7 @@ public class OperationSetFileTransferJabberImpl
                 receiver = presence.getFrom();
             }
 
-            logger.info("Sending file to " + receiver);
+            logger.info("Sending file to " + sanitisePeerId(receiver));
             OutgoingFileTransfer transfer
                 = manager.createOutgoingFileTransfer(JidCreate.entityFullFrom(receiver));
 
@@ -421,9 +428,9 @@ public class OperationSetFileTransferJabberImpl
             downloadFile = new File(downloadsFolder, newFileName);
         }
 
-        // Add a thumbnail to the file if it exists.
+        // Add a thumbnail to the file if it exists and thumbnail factory is available.
         byte[] thumbnail = fileTransfer.getThumbnail();
-        if (thumbnail != null && thumbnail.length > 0)
+        if (thumbnail != null && thumbnail.length > 0 && opSetThumbnail != null)
         {
             downloadFile = opSetThumbnail.createFileWithThumbnail(downloadFile,
                                                                   64,
@@ -648,8 +655,8 @@ public class OperationSetFileTransferJabberImpl
                     thumbnailRequest.setType(IQ.Type.get);
 
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Sending thumbnail request:"
-                            + thumbnailRequest.toXML());
+                        logger.debug("Sending thumbnail request for transfer with ID: "
+                            + thumbnailRequest.getContentId());
                     }
 
                     try
@@ -882,7 +889,7 @@ public class OperationSetFileTransferJabberImpl
             if (jabberError != null)
             {
                 String errorMessage = jabberError.getMessage();
-                logger.error("An error occured while transfering file: "
+                logger.error("An error occurred while transferring file: "
                     +  errorMessage);
                 JabberActivator.getAnalyticsService().onEvent(isOutgoing ? AnalyticsEventType.SEND_FILE_FAILED
                                                                          : AnalyticsEventType.RECEIVE_FILE_FAILED,
@@ -893,7 +900,7 @@ public class OperationSetFileTransferJabberImpl
             Exception jabberException = jabberTransfer.getException();
             if (jabberException != null)
             {
-                logger.error("An exception occured while transfering file: ",
+                logger.error("An exception occurred while transferring file: ",
                              jabberException);
 
                 if(jabberException instanceof XMPPErrorException)

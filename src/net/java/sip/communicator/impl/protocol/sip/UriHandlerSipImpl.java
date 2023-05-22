@@ -3,14 +3,15 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitise;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.osgi.framework.*;
@@ -377,15 +378,10 @@ public class UriHandlerSipImpl
 
     /**
      * Sanitises personal data (i.e. DNs) exposed by URIs.
-     * JR7 TODO: Move sanitiser to PrivacyUtils in V3.11 Privacy Remediation work.
      */
     private String sanitiseUriForLogging(String uri)
     {
-        Matcher m = protocolPattern.matcher(uri);
-
-        return (m.find() && !m.group().isEmpty()) ?
-                m.replaceAll(logHasher(m.group())) :
-                uri;
+        return sanitise(uri, protocolPattern);
     }
 
     /**

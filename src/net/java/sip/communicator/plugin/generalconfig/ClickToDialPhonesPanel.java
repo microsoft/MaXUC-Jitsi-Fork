@@ -350,7 +350,7 @@ public class ClickToDialPhonesPanel extends TransparentPanel
                 if (System.currentTimeMillis() - settingTime > 1000)
                 {
                     settingTime = System.currentTimeMillis();
-                    sLog.user("Preferred phone changed to: " + selectedItem);
+                    sLog.user("Preferred phone changed to: " + selectedItem.getName());
                 }
 
                 // Store in config the config location of the preferred phone
@@ -549,7 +549,7 @@ public class ClickToDialPhonesPanel extends TransparentPanel
             }
         }
 
-        sLog.debug("Found selected phone " + selectedPhone);
+        sLog.debug("Found selected phone " + (selectedPhone != null ? selectedPhone.getName() : null));
         return selectedPhone;
     }
 

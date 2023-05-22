@@ -7,6 +7,7 @@ import java.util.concurrent.*;
 import javax.swing.*;
 
 import org.jitsi.service.resources.*;
+import org.jitsi.util.CustomAnnotations.*;
 
 /**
  * This represents a ImageIconFuture, where we already have the ImageIcon
@@ -71,7 +72,7 @@ public class ImageIconAvailable extends AbstractImageIconFuture
     }
 
     @Override
-    public ImageIcon get(long time, TimeUnit unit)
+    public ImageIcon get(long time, @NotNull TimeUnit unit)
     {
         return mIcon;
     }

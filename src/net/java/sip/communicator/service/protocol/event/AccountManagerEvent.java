@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.event;
 
 import java.util.*;
@@ -121,6 +122,6 @@ public class AccountManagerEvent
     {
         return "AccountManagerEvent@" + Integer.toHexString(hashCode()) + ";" +
                "type:" + type +
-               ";account:" + accountID;
+               ";account:" + (accountID != null ? accountID.getLoggableAccountID() : "null");
     }
 }

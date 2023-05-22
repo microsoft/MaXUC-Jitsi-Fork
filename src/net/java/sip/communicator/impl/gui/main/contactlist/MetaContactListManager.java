@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import java.util.*;
@@ -418,7 +419,7 @@ public class MetaContactListManager
                     .getI18NString("service.gui.ERROR");
                 String errorMessage = GuiActivator.getResources()
                     .getI18NString("service.gui.MOVE_TO_GROUP_NOT_SUPPORTED");
-                new ErrorDialog(null, title, errorMessage).showDialog();
+                new ErrorDialog(title, errorMessage).showDialog();
             }
         }
     }
@@ -442,13 +443,11 @@ public class MetaContactListManager
             {
                 sLog.warn(contact, "Provider not registered, can't delete");
                 new ErrorDialog(
-                    GuiActivator.getUIService().getMainFrame(),
+                    GuiActivator.getResources()
+                        .getI18NString("service.gui.ADD_CONTACT_ERROR_TITLE"),
                     GuiActivator.getResources().getI18NString(
-                    "service.gui.ADD_CONTACT_ERROR_TITLE"),
-                    GuiActivator.getResources().getI18NString(
-                            "service.gui.REMOVE_CONTACT_NOT_CONNECTED"),
-                    ErrorDialog.ErrorType.WARNING)
-                .showDialog();
+                        "service.gui.REMOVE_CONTACT_NOT_CONNECTED"))
+                    .showDialog();
 
                 return;
             }
@@ -496,12 +495,9 @@ public class MetaContactListManager
             catch (Exception ex)
             {
                 sLog.error(contact, "Failed to remove contact", ex);
-                new ErrorDialog(null,
-                                GuiActivator.getResources().getI18NString(
-                                "service.gui.REMOVE_CONTACT"),
-                                ex.getMessage(),
-                                ex)
-                            .showDialog();
+                new ErrorDialog(GuiActivator.getResources().getI18NString(
+                    "service.gui.REMOVE_CONTACT"), ex.getMessage())
+                    .showDialog();
             }
         }
     }
@@ -570,7 +566,7 @@ public class MetaContactListManager
                     .getI18NString("service.gui.ERROR");
                 String message = GuiActivator.getResources()
                     .getI18NString("service.gui.REMOVE_CONTACT_NOT_CONNECTED");
-                new ErrorDialog(null, title, message).showDialog();
+                new ErrorDialog(title, message).showDialog();
             }
         }
     }
@@ -625,12 +621,9 @@ public class MetaContactListManager
             catch (Exception ex)
             {
                 sLog.error("Failed to remove contact group.", ex);
-                new ErrorDialog(null,
-                                GuiActivator.getResources().getI18NString(
-                                "service.gui.REMOVE_GROUP"),
-                                ex.getMessage(),
-                                ex)
-                .showDialog();
+                new ErrorDialog(GuiActivator.getResources().getI18NString(
+                    "service.gui.REMOVE_GROUP"), ex.getMessage())
+                    .showDialog();
             }
         }
     }

@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.*;
@@ -14,8 +15,6 @@ import javax.swing.border.*;
 
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
-
-import com.explodingpixels.macwidgets.*;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
@@ -326,31 +325,15 @@ public class ChooseCallAccountDialog
     {
         Window receivedCallWindow = null;
 
-        if (OSUtils.IS_MAC)
-        {
-            HudWindow window = new HudWindow();
-            window.hideCloseButton();
+        SIPCommFrame frame = new SIPCommFrame(false);
 
-            JDialog dialog = window.getJDialog();
-            dialog.setUndecorated(true);
-            dialog.setTitle(title);
+        // Get rid of the title bar and border but still allow the user to
+        // drag the frame to reposition it on the screen.
+        frame.setDraggableUndecorated();
 
-            receivedCallWindow = window.getJDialog();
+        receivedCallWindow = frame;
 
-            callLabelDisplayName = HudWidgetFactory.createHudLabel("");
-        }
-        else
-        {
-            SIPCommFrame frame = new SIPCommFrame(false);
-
-            // Get rid of the title bar and border but still allow the user to
-            // drag the frame to reposition it on the screen.
-            frame.setDraggableUndecorated();
-
-            receivedCallWindow = frame;
-
-            callLabelDisplayName = new JLabel();
-        }
+        callLabelDisplayName = new JLabel();
 
         if (text != null)
             callLabelDisplayName.setText(text);

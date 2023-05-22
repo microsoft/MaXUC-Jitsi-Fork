@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.awt.*;
 import java.io.*;
 import java.net.*;
@@ -58,9 +60,8 @@ public class EmailUtils
                                       String subject,
                                       String body)
     {
-        sLog.info("Creating email to: '" + toAddress +
-                  "' with subject: '" + subject + "'" +
-                  "' and body: '" + body + "'");
+        // Don't log message body as it can contain Personal Data
+        sLog.info("Creating email to: '" + logHasher(toAddress) + "'");
 
         URI uri = null;
         boolean success = false;
@@ -103,7 +104,8 @@ public class EmailUtils
             // Remove it because it's incompatible with certain older versions of Outlook.
             uriString = uriString.replaceAll("mailto://","mailto:");
 
-            sLog.info("launch URI " + uriString);
+            // Don't log URI as it can contain Personal Data
+            sLog.info("launch mailto URI");
             uri = URI.create(uriString);
             Desktop.getDesktop().browse(uri);
             success = true;

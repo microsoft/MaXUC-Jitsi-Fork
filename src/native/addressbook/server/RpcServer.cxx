@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+
 #include <sys/types.h>
 #include <mapix.h>
 #include <jansson.h>
@@ -419,7 +421,7 @@ void server_props_set(json_t* input, json_t* output)
       json_is_string(value_j))
   {
     int wchars_num = MultiByteToWideChar(CP_UTF8, 0, json_string_value(value_j), -1, NULL, 0);
-    LPWSTR value_w = (LPWSTR)new wchar_t[wchars_num];
+    LPWSTR value_w = (LPWSTR) malloc(sizeof(wchar_t) * wchars_num);
     MultiByteToWideChar(CP_UTF8, 0, json_string_value(value_j), -1, value_w, wchars_num);
 
     const char* entry_s = json_string_value(entry_j);

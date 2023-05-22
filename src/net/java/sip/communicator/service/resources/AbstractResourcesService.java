@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.resources;
 
 import java.io.InputStream;
@@ -147,11 +148,9 @@ public abstract class AbstractResourcesService
         String defaultLocale =
                 (String) confService.global().getProperty(DEFAULT_LOCALE_CONFIG);
 
-        logger.info("Default JVM locale: " + Locale.getDefault());
-
         if(defaultLocale != null)
         {
-            logger.info("Overriding default JVN locale to: " + defaultLocale);
+            logger.info("Setting JVM locale to default.");
             Locale.setDefault(
                     ResourceManagementServiceUtils.getLocale(defaultLocale));
         }

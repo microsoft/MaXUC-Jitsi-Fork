@@ -45,7 +45,7 @@ public class ProtocolProviderServiceOutlookImpl
     protected ProtocolProviderServiceOutlookImpl(AccountID accountID)
     {
         super(accountID);
-        logger.info("Created Outlook protocol provider " + accountID);
+        logger.info("Created Outlook protocol provider " + accountID.getLoggableAccountID());
     }
 
     @Override

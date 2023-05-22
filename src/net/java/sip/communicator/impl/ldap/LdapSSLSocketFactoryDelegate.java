@@ -4,11 +4,13 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.ldap;
 
 import java.io.*;
 import java.net.*;
 import java.security.*;
+import java.util.List;
 
 import javax.net.*;
 
@@ -44,8 +46,9 @@ public class LdapSSLSocketFactoryDelegate extends SocketFactory
 
         try
         {
+            logger.debug("Instantiating LdapSSLSocketFactoryDelegate");
             socketFactory =  LdapActivator.getCertificateService().getSSLContext(
-                    LdapActivator.getCertificateService().getTrustManager(host)).
+                    LdapActivator.getCertificateService().getTrustManager(List.of(host))).
                 getSocketFactory();
         }
         catch (GeneralSecurityException e)
@@ -63,36 +66,42 @@ public class LdapSSLSocketFactoryDelegate extends SocketFactory
      */
     public static SocketFactory getDefault()
     {
+        logger.debug("LDAP getDefault() called");
         return new LdapSSLSocketFactoryDelegate();
     }
 
     @Override
     public Socket createSocket() throws IOException
     {
+        logger.debug("LDAP createSocket() called");
         return socketFactory.createSocket();
     }
 
     @Override
     public Socket createSocket(String host, int port) throws IOException
     {
+        logger.debug("LDAP createSocket(host, port) called");
         return socketFactory.createSocket(host, port);
     }
 
     @Override
     public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException
     {
+        logger.debug("LDAP createSocket(host, port, localHost, localPort) called");
         return socketFactory.createSocket(host, port, localHost, localPort);
     }
 
     @Override
     public Socket createSocket(InetAddress host, int port) throws IOException
     {
+        logger.debug("LDAP createSocket(iNetHost, port) called");
         return socketFactory.createSocket(host, port);
     }
 
     @Override
     public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException
     {
+        logger.debug("LDAP createSocket(address, port, localAddress, localPort) called");
         return socketFactory.createSocket(address, port, localAddress, localPort);
     }
 }

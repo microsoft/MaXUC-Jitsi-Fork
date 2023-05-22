@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
 import java.io.*;
@@ -340,6 +341,23 @@ public class Logger
     {
         loggerDelegate.log(Level.FINE,
             instanceDetail + (msg!=null?msg.toString():"null"), t);
+    }
+
+    /**
+     * Logs a message provided that we haven't logged it recently.
+     *
+     * @param tag Used to determine if we've logged this line before.  Lines
+     *            with the same tag will not be logged until an hour since the last
+     *            log has passed.
+     * @param message The message to log.  Logs with the same tag but different
+     *                messages will not be logged unless an hour has passed
+     * @param parameters Optional parameters, that can invalidate a tag cache. I.e.
+     *                   if the parameters have changed from the last tag, this
+     *                   log line will be written
+     */
+    public void interval(int expirySecs, String message, Object... parameters)
+    {
+        interval(expirySecs, message, message, parameters);
     }
 
     /**

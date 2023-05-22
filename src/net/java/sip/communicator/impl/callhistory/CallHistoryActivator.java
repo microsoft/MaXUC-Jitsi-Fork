@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.callhistory;
 
 import java.util.*;
@@ -416,7 +417,8 @@ public class CallHistoryActivator
             // For each, account, see if it supports MWI
             for (AccountID account : accounts)
             {
-                sLog.debug("Looking at account " + account);
+                String loggableAccount = account != null ? account.getLoggableAccountID() : null;
+                sLog.debug("Looking at account " + loggableAccount);
                 ServiceReference<?> serRef = factory.getProviderForAccount(account);
                 ProtocolProviderService provider =
                        (ProtocolProviderService)bundleContext.getService(serRef);

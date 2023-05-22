@@ -4,9 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat.conference;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -83,7 +84,8 @@ public class ConferenceChatManager
     {
         ChatRoomInvitation invitation = evt.getInvitation();
         String chatRoomId = invitation.getTargetChatRoom().getIdentifier().toString();
-        logger.debug("Auto-accepting group chat invitation " + chatRoomId);
+        logger.debug("Auto-accepting group chat invitation " +
+                     sanitiseChatRoom(chatRoomId));
 
         // Send an analytic of us auto-accepting a group chat invite,
         // with the number of active group chats as a parameter.
@@ -111,51 +113,7 @@ public class ConferenceChatManager
      */
     public void messageDelivered(ChatRoomMessageDeliveredEvent evt)
     {
-        // Ignore historical messages
-        if (evt.getSourceMessage().isArchive())
-            return;
 
-        ChatRoom sourceChatRoom = evt.getChatRoom();
-
-        logger.trace("MESSAGE DELIVERED to chat room: " + sourceChatRoom.getIdentifier());
-
-        ChatPanel chatPanel = GuiActivator.getUIService().getChatWindowManager()
-            .getMultiChat(sourceChatRoom, false, true);
-
-        if (chatPanel != null)
-        {
-            String messageType;
-
-            switch (evt.getEventType())
-            {
-            case MessageEvent.GROUP_MESSAGE:
-                messageType = Chat.OUTGOING_MESSAGE;
-                break;
-            case MessageEvent.STATUS_MESSAGE:
-                messageType = Chat.STATUS_MESSAGE;
-                break;
-            case MessageEvent.ACTION_MESSAGE:
-                messageType = Chat.ACTION_MESSAGE;
-                break;
-            default:
-                messageType = null;
-                break;
-            }
-
-            ImMessage msg = evt.getSourceMessage();
-
-            chatPanel.addMessage(
-                evt.getContactAddress(),
-                evt.getContactDisplayName(),
-                evt.getTimestamp(),
-                messageType,
-                msg.getContent(),
-                msg.getContentType(),
-                msg.getMessageUID(),
-                null,
-                msg.isArchive(),
-                msg.isCarbon());
-        }
     }
 
     /**
@@ -194,29 +152,12 @@ public class ConferenceChatManager
         }
 
         String contactAddress = evt.getContactAddress();
-        logger.trace("MESSAGE RECEIVED from contact: " + logHasher(contactAddress));
-
-        ImMessage message = evt.getSourceMessage();
-
+        logger.trace("MESSAGE RECEIVED from contact: " + sanitisePeerId(contactAddress));
         ChatPanel chatPanel = null;
 
         ChatWindowManager chatWindowManager = GuiActivator.getUIService().getChatWindowManager();
 
-        chatPanel = chatWindowManager.getMultiChat(sourceChatRoom, true, true);
-
-        String messageContent = message.getContent();
-
-        chatPanel.addMessage(
-            contactAddress,
-            evt.getContactDisplayName(),
-            evt.getTimestamp(),
-            messageType,
-            messageContent,
-            message.getContentType(),
-            message.getMessageUID(),
-            null,
-            message.isArchive(),
-            message.isCarbon());
+        chatPanel = chatWindowManager.getMultiChat(sourceChatRoom, true);
 
         // Only open the chat window for new chat messages (i.e. not for
         // presence updates from chat room members or for chat room name
@@ -292,7 +233,6 @@ public class ConferenceChatManager
         }
 
         ChatRoom sourceChatRoom = evt.getChatRoom();
-        String errorMsg = null;
 
         /*
          * FIXME ChatRoomMessageDeliveryFailedEvent#getSource() is not a Message
@@ -303,50 +243,8 @@ public class ConferenceChatManager
          * only message I can get out of ChatRoomMessageDeliveryFailedEvent, I'm
          * using it.
          */
-        ImMessage sourceMessage = evt.getSourceMessage();
-
-        ChatRoomMember destMember = evt.getChatRoomMember();
-
-        if (evt.getErrorCode() == MessageDeliveryFailedEvent.OFFLINE_MESSAGES_NOT_SUPPORTED)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString("service.gui.MSG_DELIVERY_NOT_SUPPORTED", new String[]{destMember.getName()});
-        }
-        else if (evt.getErrorCode() == MessageDeliveryFailedEvent.NETWORK_FAILURE)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString("service.gui.MSG_NOT_DELIVERED");
-        }
-        else if (evt.getErrorCode() == MessageDeliveryFailedEvent.PROVIDER_NOT_REGISTERED)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString("service.gui.MSG_SEND_CONNECTION_PROBLEM");
-        }
-        else if (evt.getErrorCode() == MessageDeliveryFailedEvent.INTERNAL_ERROR)
-        {
-            errorMsg = GuiActivator.getResources().getI18NString("service.gui.MSG_DELIVERY_INTERNAL_ERROR");
-        }
-        else
-        {
-            errorMsg = GuiActivator.getResources().getI18NString("service.gui.MSG_DELIVERY_UNKNOWN_ERROR");
-        }
-
-        // Log the error message and internal reason to file
-        logger.debug(errorMsg + evt.getReason());
-
         ChatWindowManager chatWindowManager = GuiActivator.getUIService().getChatWindowManager();
-        ChatPanel chatPanel = chatWindowManager.getMultiChat(sourceChatRoom, true, true);
-
-        chatPanel.addMessage(
-            evt.getContactAddress(),
-            evt.getContactDisplayName(),
-            new Date(),
-            Chat.OUTGOING_MESSAGE,
-            sourceMessage.getContent(),
-            sourceMessage.getContentType(),
-            sourceMessage.getMessageUID(),
-            null,
-            sourceMessage.isArchive(),
-            sourceMessage.isCarbon());
-
-        chatPanel.addErrorMessage(destMember.getName(), errorMsg);
+        ChatPanel chatPanel = chatWindowManager.getMultiChat(sourceChatRoom, true);
 
         if (ConfigurationUtils.isOpenWindowOnNewChatEnabled())
         {
@@ -371,13 +269,14 @@ public class ConferenceChatManager
         ChatRoomWrapper chatRoomWrapper = chatRoomList.findChatRoomWrapperFromChatRoom(sourceChatRoom);
 
         String eventType = evt.getEventType();
-        logger.debug("Local user presence changed to " + eventType + " in " + sourceChatRoom.getIdentifier());
+        logger.debug("Local user presence changed to " + eventType + " in "
+                     + sanitiseChatRoom(sourceChatRoom.getIdentifier()));
         if (LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_JOINED.equals(eventType))
         {
             if (chatRoomWrapper != null)
             {
                 ChatWindowManager chatWindowManager = GuiActivator.getUIService().getChatWindowManager();
-                ChatPanel chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, false, true);
+                ChatPanel chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, false);
 
                 // Check if we have already opened a chat window for this chat
                 // wrapper and load the real chat room corresponding to the
@@ -412,7 +311,7 @@ public class ConferenceChatManager
             if (chatRoomWrapper != null)
             {
                 ChatWindowManager chatWindowManager = GuiActivator.getUIService().getChatWindowManager();
-                ChatPanel chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, false, false);
+                ChatPanel chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, false);
 
                 // Check if we have already opened a chat window for this chat
                 // wrapper and set the left chat room UI if so.
@@ -675,8 +574,7 @@ public class ConferenceChatManager
                 logger.error("Failed to leave chat room", e);
                 String errorTitle = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_LEAVE_GROUP_CHAT_TITLE");
                 String errorMessage = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_LEAVE_GROUP_CHAT");
-                ErrorDialog errorDialog = new ErrorDialog(null, errorTitle, errorMessage);
-                errorDialog.showDialog();
+                new ErrorDialog(errorTitle, errorMessage).showDialog();
                 return;
             }
         }
@@ -705,7 +603,7 @@ public class ConferenceChatManager
         }
 
         ChatWindowManager chatWindowManager = GuiActivator.getUIService().getChatWindowManager();
-        ChatPanel chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, false, false);
+        ChatPanel chatPanel = chatWindowManager.getMultiChat(chatRoomWrapper, false);
 
         if (chatPanel != null)
         {
@@ -810,7 +708,8 @@ public class ConferenceChatManager
             }
             catch (OperationFailedException e)
             {
-                logger.trace("Failed to join chat room: " + chatRoom.getIdentifier(), e);
+                logger.trace("Failed to join chat room: " +
+                             sanitiseChatRoom(chatRoom.getIdentifier()), e);
 
                 switch (e.getErrorCode())
                 {

@@ -8,6 +8,8 @@ package net.java.sip.communicator.util;
 
 import java.io.*;
 
+import org.jitsi.util.CustomAnnotations.*;
+
 /**
  * This class provides a PrintWriter implementation that we use to replace
  * System.out so that we could capture output from all libs or SC code that
@@ -89,7 +91,7 @@ public class ScStdOut extends PrintStream
      * @param x the <tt>char[]</tt> to print.
      */
     @Override
-    public void println(char[] x)
+    public void println(@NotNull char[] x)
     {
         if(stdOutPrintingEnabled)
             super.println(x);
@@ -197,7 +199,7 @@ public class ScStdOut extends PrintStream
      * @param s the <tt>char[]</tt> to print.
      */
     @Override
-    public void print(char[] s)
+    public void print(@NotNull char[] s)
     {
         if(stdOutPrintingEnabled)
             super.print(s);

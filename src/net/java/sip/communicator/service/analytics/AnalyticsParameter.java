@@ -142,7 +142,6 @@ public abstract class AnalyticsParameter
     public static final String NAME_CALL_RATING = "Rating";
 
     // Server backoff-related
-    public static final String NAME_INITIAL_BACKOFF_MS = "Initial backoff ms";
     public static final String NAME_FINAL_BACKOFF_MS = "Final backoff ms";
 
     // Emergency location related
@@ -182,7 +181,13 @@ public abstract class AnalyticsParameter
     public static final String VALUE_CLEAR_EMERGENCY_LOCATION_PERMISSION_DENIED = "Permission denied";
     public static final String VALUE_CLEAR_EMERGENCY_LOCATION_FEATURE_DISABLED = "Feature disabled";
 
+    public static final String PARAM_USING_HTTPS = "Using HTTPS";
     public static final String PARAM_USING_LDAPS = "Using LDAPS";
+
+    public static final String PARAM_DIVERSION_NAME = "Diversion Name";
+    public static final String VALUE_SIGNALLED = "SIGNALLED";
+    public static final String VALUE_CONTACT_MATCH = "CONTACT_MATCH";
+    public static final String VALUE_NO_MATCH = "NO_MATCH";
 
     /**
      * The maximum length of a single analytics event (as supported by our

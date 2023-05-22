@@ -7,7 +7,7 @@
  * as defined in and that are subject to the Apple Public Source License
  * Version 2.0 (the 'License'). You may not use this file except in
  * compliance with the License. Please obtain a copy of the License at
- * https://www.opensource.apple.com/apsl/ and read it before using this
+ * http://www.opensource.apple.com/apsl/ and read it before using this
  * file.
  * 
  * The Original Code and all software distributed under the License are
@@ -57,10 +57,10 @@
 /*
  * This file was copied from libc/gen/nlist.c from Darwin's source code       
  * The version of nlist used as a base is from 10.5.2, libc-498               
- * https://www.opensource.apple.com/darwinsource/10.5.2/Libc-498/gen/nlist.c
+ * http://www.opensource.apple.com/darwinsource/10.5.2/Libc-498/gen/nlist.c   
  *                                                                            
  * The full tarball is at:                                                    
- * https://www.opensource.apple.com/darwinsource/tarballs/apsl/Libc-498.tar.gz
+ * http://www.opensource.apple.com/darwinsource/tarballs/apsl/Libc-498.tar.gz 
  *                                                                            
  * I've modified it to be compatible with 64-bit images.
 */

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.msghistory;
 
 import org.jitsi.service.configuration.*;
@@ -12,6 +13,7 @@ import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactsource.*;
+import net.java.sip.communicator.service.database.DatabaseService;
 import net.java.sip.communicator.service.msghistory.*;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
@@ -39,6 +41,7 @@ public class MessageHistoryActivator
 
     /** The <tt>ResourceManagementService</tt> reference. */
     private static ResourceManagementService resourcesService;
+    private static DatabaseService databaseService;
 
     /** The <tt>ConfigurationService</tt> reference. */
     private static ConfigurationService configService;
@@ -137,6 +140,22 @@ public class MessageHistoryActivator
         }
 
         return resourcesService;
+    }
+
+    /**
+     * Returns the <tt>ResourceManagementService</tt>, through which we will
+     * access all resources.
+     */
+    public static DatabaseService getDatabaseService()
+    {
+        if (databaseService == null)
+        {
+            databaseService =
+                ServiceUtils.getService(sBundleContext,
+                                        DatabaseService.class);
+        }
+
+        return databaseService;
     }
 
     /**

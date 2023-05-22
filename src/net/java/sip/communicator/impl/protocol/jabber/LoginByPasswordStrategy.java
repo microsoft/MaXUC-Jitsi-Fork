@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.io.IOException;
@@ -115,20 +116,6 @@ public class LoginByPasswordStrategy
         }, Resourcepart.from(resource));
 
         return true;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.impl.protocol.jabber.JabberLoginStrategy#
-     * isTlsRequired()
-     */
-    public boolean isTlsRequired()
-    {
-        // requires TLS by default (i.e. it will not connect to a non-TLS server
-        // and will not fallback to cleartext)
-        return !accountID.getAccountPropertyBoolean(
-                ProtocolProviderFactory.IS_ALLOW_NON_SECURE, false);
     }
 
     /**

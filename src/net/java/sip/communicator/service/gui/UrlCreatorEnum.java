@@ -17,7 +17,7 @@ public enum UrlCreatorEnum implements UrlCreator
     CONFERENCE()
     {
         @Override
-        public String createUrl(String commpUrl, String sessionId)
+        public String createUrl(String commpUrl, String redirectionAndTokenForUrl)
         {
             try
             {
@@ -105,7 +105,7 @@ public enum UrlCreatorEnum implements UrlCreator
     private final String mNameRes;
 
     /**
-     * The page to access under /session/line/ to reference.
+     * The page to access under /line/ to reference.
      * If you don't want to use this to form the URL, override getUrl().
      */
     private final String mPage;
@@ -136,11 +136,15 @@ public enum UrlCreatorEnum implements UrlCreator
      */
     abstract boolean isSupported(CPCos classOfService);
 
+    /**
+     * Create the url via a short-lived token needed to direct the user to a
+     * specific page on login to CommPortal.
+     */
     @Override
-    public String createUrl(String url, String sessionId)
+    public String createUrl(String commpUrl, String redirectionAndTokenForUrl)
     {
         return mPage == null ?
-                    null : url + "/session" + sessionId + "/line/" + mPage;
+                    null : (commpUrl + "/login?redirectTo=/line/" + mPage + redirectionAndTokenForUrl);
     }
 
     /**

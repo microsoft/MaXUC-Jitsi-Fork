@@ -4,4 +4,6 @@ package net.java.sip.communicator.impl.gui.main.presence.avatar;
 public interface SelectAvatarService
 {
     void handleChooseAvatar();
+
+    void handleAvatarChosen(byte[] newImage);
 }

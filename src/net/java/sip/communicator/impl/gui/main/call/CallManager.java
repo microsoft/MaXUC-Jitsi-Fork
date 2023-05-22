@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.*;
@@ -25,6 +26,7 @@ import org.jitsi.service.neomedia.device.*;
 import org.jitsi.service.neomedia.format.*;
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
+import static org.jitsi.util.Hasher.logHasher;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
@@ -90,7 +92,7 @@ public class CallManager
     /**
      * The current incoming calls
      */
-    private static final Map<String, Call> incomingCalls = new HashMap<>();
+    private static final Map<String, ReceivedCallDialogCreator> incomingCalls = new HashMap<>();
 
     /**
      * The current outgoing calls
@@ -168,7 +170,7 @@ public class CallManager
                     return;
                 }
 
-                incomingCalls.put(sourceCall.getCallID(), sourceCall);
+                incomingCalls.put(sourceCall.getCallID(), receivedCallDialog);
 
                 receivedCallDialog.show();
 
@@ -205,23 +207,18 @@ public class CallManager
                 @Override
                 public void callStateChanged(final CallChangeEvent ev)
                 {
-                    if(!SwingUtilities.isEventDispatchThread())
+                    if (!SwingUtilities.isEventDispatchThread())
                     {
-                        SwingUtilities.invokeLater(
-                                new Runnable()
-                                {
-                                    public void run()
-                                    {
-                                        callStateChanged(ev);
-                                    }
-                                });
+                        SwingUtilities.invokeLater(()->callStateChanged(ev));
                         return;
                     }
 
                     // When the call state changes, we ensure here that the
                     // received call notification dialog is closed.
                     if ((receivedCallDialog != null) && receivedCallDialog.isVisible())
+                    {
                         receivedCallDialog.dispose();
+                    }
 
                     // Ensure that the CallDialog is created, because it is the
                     // one that listens for CallPeers.
@@ -372,7 +369,11 @@ public class CallManager
 
             // Adds a call peer listener and a property change listener to
             // listen to changes in hold and mute states
-            addCallPeerListeners(sourceCall.getCallPeers().next());
+            Iterator<? extends CallPeer> callPeers = sourceCall.getCallPeers();
+            if (callPeers.hasNext())
+            {
+                addCallPeerListeners(callPeers.next());
+            }
 
             sourceCall.addCallChangeListener(new CallChangeAdapter()
             {
@@ -550,44 +551,22 @@ public class CallManager
         @Override
         public void answer(String callID)
         {
-            // answerCall must be called on the EDT
-            if (!SwingUtilities.isEventDispatchThread())
+            ReceivedCallDialogCreator dialog = incomingCalls.get(callID);
+            if (dialog != null)
             {
-                SwingUtilities.invokeLater(
-                    new Runnable()
-                    {
-                        public void run()
-                        {
-                            answer(callID);
-                        }
-                    });
-            }
-            else
-            {
-                GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.INCOMING_ANSWERED,
-                    AnalyticsParameter.NAME_NUM_CALLS_IN_PROGRESS,
-                    String.valueOf(CallManager.getInProgressCalls().size()),
-                    AnalyticsParameter.NAME_DIALOG_ANSWERED_WITH,
-                    AnalyticsParameter.VALUE_HEADSET);
-
-                // answerCall can handle null input
-                answerCall(incomingCalls.get(callID));
+                dialog.okButtonPressed(AnalyticsParameter.VALUE_HEADSET);
             }
         }
 
         @Override
         public void rejectIncoming(String callID)
         {
-            GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.INCOMING_REJECT,
-                AnalyticsParameter.NAME_NUM_CALLS_IN_PROGRESS,
-                String.valueOf(CallManager.getInProgressCalls().size()),
-                AnalyticsParameter.NAME_DIALOG_ANSWERED_WITH,
-                AnalyticsParameter.VALUE_HEADSET);
-
-            // Headset Manager needs to be notified when the call has actually
-            // been hung up.
-            // hangupCall can handle null input
-            hangupCall(incomingCalls.get(callID));
+            // Headset Manager needs to be notified when the call has actually been hung up.
+            ReceivedCallDialogCreator dialog = incomingCalls.get(callID);
+            if (dialog != null)
+            {
+                dialog.cancelButtonPressed(AnalyticsParameter.VALUE_HEADSET);
+            }
         }
     }
 
@@ -742,12 +721,6 @@ public class CallManager
                                   Reformatting reformatNeeded)
     {
         callString = callString.trim();
-
-        // Removes special characters from phone numbers.
-        if (ConfigurationUtils.isNormalizePhoneNumber())
-        {
-            callString = PhoneNumberI18nService.normalizeToCall(callString);
-        }
 
         List<ProtocolProviderService> telephonyProviders
             = CallManager.getAllTelephonyProviders(callString);
@@ -975,7 +948,7 @@ public class CallManager
         String message = resources.getI18NString("service.gui.NO_ONLINE_TELEPHONY_ACCOUNT");
         String title = resources.getI18NString("service.gui.WARNING");
 
-        new ErrorDialog(null, title, message) .showDialog();
+        new ErrorDialog(title, message).showDialog();
     }
 
     /**
@@ -1207,7 +1180,7 @@ public class CallManager
         CallConference conference = call.getConference();
         CallFrame callFrame = findCallFrame(conference);
 
-        logger.info("Asked to open a call frame for call: " + call.getCallID());
+        logger.info("Asked to open a call frame for call: " + call.getLoggableCallID());
 
         if (callFrame == null)
         {
@@ -1219,9 +1192,8 @@ public class CallManager
 
                 synchronized (callFrames)
                 {
-                    // No need to hash call peer's address for explicit call.
                     logger.info("Creating new call frame for peer: " +
-                                callPeer.getAddress());
+                                callPeer.getLoggableAddress());
                     callFrame = new CallFrame(callPeer, conference);
                     windowStacker.addWindow(callFrame);
 
@@ -1522,11 +1494,9 @@ public class CallManager
                         logger.info("Unable to change video quality.", e);
 
                         new ErrorDialog(
-                                null,
-                                resources.getI18NString("service.gui.WARNING"),
-                                resources.getI18NString(
-                                        "service.gui.UNABLE_TO_CHANGE_VIDEO_QUALITY"),
-                                e)
+                            resources.getI18NString("service.gui.WARNING"),
+                            resources.getI18NString(
+                                "service.gui.UNABLE_TO_CHANGE_VIDEO_QUALITY"))
                             .showDialog();
                     }
                 }
@@ -1788,11 +1758,11 @@ public class CallManager
                 boolean video,
                 Reformatting reformatNeeded)
         {
-            logger.debug("Creating call to " + stringContact);
+            logger.debug("Creating call to " + logHasher(stringContact));
 
             // Remove whitespace characters from the phone number
             stringContact = stringContact.replaceAll(PHONE_NUMBER_IGNORE_REGEX, "");
-            logger.debug("(Called number is '" + stringContact +
+            logger.debug("(Called number is '" + logHasher(stringContact) +
                                            "' after stripping invalid chars.)");
 
             this.protocolProvider = protocolProvider;
@@ -1807,7 +1777,7 @@ public class CallManager
         @Override
         public void run()
         {
-            logger.debug("Running with number " + stringContact);
+            logger.debug("Running with number " + logHasher(stringContact));
 
             if (!PHONE_NUMBER_VALIDATER.matcher(stringContact).find())
             {
@@ -1817,7 +1787,7 @@ public class CallManager
                             "service.gui.ERROR_INVALID_NUMBER_DIALED");
 
                 logger.error("Trying to call bad number " + stringContact);
-                new ErrorDialog(null, title, msg).setVisible(true);
+                new ErrorDialog(title, msg).showDialog();
                 return;
             }
 
@@ -1904,17 +1874,6 @@ public class CallManager
                 contact = null;
             }
 
-            if (ConfigurationUtils.isNormalizePhoneNumber())
-            {
-                if (contact != null)
-                {
-                    stringContact = contact.getAddress();
-                    contact = null;
-                }
-
-                stringContact = PhoneNumberI18nService.normalizeToCall(stringContact);
-            }
-
             try
             {
                 if (video)
@@ -1970,27 +1929,18 @@ public class CallManager
                     }
                 }
             }
-            catch (Throwable t)
+            catch (Exception e)
             {
-                handleCallCreationFailure(t);
+                handleCallCreationFailure(e);
             }
         }
 
         // Shared logic for handling failures from the call() method.
-        private void handleCallCreationFailure(Throwable t)
+        private void handleCallCreationFailure(Exception e)
         {
-            if (t instanceof ThreadDeath)
-                throw (ThreadDeath) t;
-
-            logger.error("The call could not be created: ", t);
-
-                String message = resources.getI18NString("service.gui.CREATE_CALL_FAILED");
-
-                new ErrorDialog(
-                        null,
-                        resources.getI18NString("service.gui.ERROR"),
-                        message)
-                    .showDialog();
+            logger.error("The call could not be created: ", e);
+            String message = resources.getI18NString("service.gui.CREATE_CALL_FAILED");
+            new ErrorDialog(resources.getI18NString("service.gui.ERROR"), message).showDialog();
         }
 
         // Shared logic for setting options relating to a call started by the call() method.
@@ -2083,9 +2033,9 @@ public class CallManager
                                     .getAnalyticsService()
                                     .onEvent(AnalyticsEventType.EMERGENCY_CALL_RETRY);
                         }
-                        catch (Throwable t)
+                        catch (Exception e)
                         {
-                            handleCallCreationFailure(t);
+                            handleCallCreationFailure(e);
                         }
                     }
                     else if (evt.getNewValue().equals(CallPeerState.CONNECTED))
@@ -2252,7 +2202,7 @@ public class CallManager
         {
             if (!StringUtils.isNullOrEmpty(stringContact))
             {
-                logger.info("Calling number:" + stringContact);
+                logger.info("Calling number:" + logHasher(stringContact));
                 call = telephony.createCall(stringContact,
                                             displayName,
                                             null,
@@ -2448,13 +2398,12 @@ public class CallManager
                 List<String> contactList = entry.getValue();
                 String[] contactArray
                     = contactList.toArray(new String[contactList.size()]);
+                var loggableContactArray = Arrays.asList(contactArray)
+                                           .stream()
+                                           .map(obj -> logHasher(obj))
+                                           .collect(Collectors.toList());
 
-                logger.info("Contacts in " + Arrays.toString(contactArray));
-                if (ConfigurationUtils.isNormalizePhoneNumber())
-                {
-                    logger.debug("Normalizing");
-                    normalizePhoneNumbers(contactArray);
-                }
+                logger.info("Contacts in " + loggableContactArray);
 
                 // Cleans up the numbers we are calling (analogous to same
                 // call when you make a regular call).
@@ -2535,7 +2484,7 @@ public class CallManager
                     {
                         for (String contact : contactArray)
                         {
-                            logger.info("Inviting: " + contact);
+                            logger.info("Inviting: " + logHasher(contact));
                             telephonyConferencing.inviteCalleeToCall(
                                     contact,
                                     ppsCall);
@@ -2549,11 +2498,8 @@ public class CallManager
                                 + Arrays.toString(contactArray),
                             e);
                     new ErrorDialog(
-                            null,
-                            resources.getI18NString("service.gui.ERROR"),
-                            e.getMessage(),
-                            ErrorDialog.ErrorType.ERROR)
-                        .showDialog();
+                        resources.getI18NString("service.gui.ERROR"),
+                        e.getMessage()).showDialog();
                 }
             }
         }
@@ -2925,19 +2871,6 @@ public class CallManager
                 }
             }
         }
-    }
-
-    /**
-     * Normalizes the phone numbers (if any) in a list of <tt>String</tt>
-     * contact addresses or phone numbers.
-     *
-     * @param callees the list of contact addresses or phone numbers to be
-     * normalized
-     */
-    private static void normalizePhoneNumbers(String callees[])
-    {
-        for (int i = 0 ; i < callees.length ; i++)
-            callees[i] = PhoneNumberI18nService.normalize(callees[i]);
     }
 
     /**
@@ -3333,10 +3266,11 @@ public class CallManager
 
                 if (providersCount <= 0)
                 {
-                    new ErrorDialog(null,
-                                    resources.getI18NString("service.gui.CALL_FAILED"),
-                                    resources.getI18NString("service.gui.NO_ONLINE_TELEPHONY_ACCOUNT"))
-                    .showDialog();
+                    new ErrorDialog(
+                        resources.getI18NString("service.gui.CALL_FAILED"),
+                        resources.getI18NString(
+                            "service.gui.NO_ONLINE_TELEPHONY_ACCOUNT"))
+                        .showDialog();
                 }
                 else if (providersCount == 1)
                 {

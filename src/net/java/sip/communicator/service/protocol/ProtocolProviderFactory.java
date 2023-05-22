@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.lang.reflect.*;
@@ -39,7 +40,7 @@ public abstract class ProtocolProviderFactory
     /**
      * Then name of a property which represents a password.
      */
-    public static final String PASSWORD = "PASSWORD";
+    public static final String PASSWORD = "PASSWORD"; // lgtm[java/hardcoded-password-field] False positive: it's a property name, not a password value
 
     /**
      * The name of a property representing the name of the protocol for an
@@ -317,84 +318,6 @@ public abstract class ProtocolProviderFactory
     public static final String IS_ACCOUNT_RELOADING = "IS_ACCOUNT_RELOADING";
 
     /**
-     * Indicates if ICE should be used.
-     */
-    public static final String IS_USE_ICE = "ICE_ENABLED";
-
-    /**
-     * Indicates if Google ICE should be used.
-     */
-    public static final String IS_USE_GOOGLE_ICE = "GTALK_ICE_ENABLED";
-
-    /**
-     * Indicates if STUN server should be automatically discovered.
-     */
-    public static final String AUTO_DISCOVER_STUN = "AUTO_DISCOVER_STUN";
-
-    /**
-     * Indicates if default STUN server would be used if no other STUN/TURN
-     * server are available.
-     */
-    public static final String USE_DEFAULT_STUN_SERVER
-        = "USE_DEFAULT_STUN_SERVER";
-
-    /**
-     * The name of the boolean account property which indicates whether Jitsi
-     * VideoBridge is to be used, if available and supported, for conference
-     * calls.
-     */
-    public static final String USE_JITSI_VIDEO_BRIDGE
-        = "USE_JITSI_VIDEO_BRIDGE";
-
-    /**
-     * The property name prefix for all stun server properties. We generally use
-     * this prefix in conjunction with an index which is how we store multiple
-     * servers.
-     */
-    public static final String STUN_PREFIX = "STUN";
-
-    /**
-     * The base property name for address of additional STUN servers specified.
-     */
-    public static final String STUN_ADDRESS = "ADDRESS";
-
-    /**
-     * The base property name for port of additional STUN servers specified.
-     */
-    public static final String STUN_PORT = "PORT";
-
-    /**
-     * The base property name for username of additional STUN servers specified.
-     */
-    public static final String STUN_USERNAME = "USERNAME";
-
-    /**
-     * The base property name for password of additional STUN servers specified.
-     */
-    public static final String STUN_PASSWORD = "PASSWORD";
-
-    /**
-     * The base property name for the turn supported property of additional
-     * STUN servers specified.
-     */
-    public static final String STUN_IS_TURN_SUPPORTED = "IS_TURN_SUPPORTED";
-
-    /**
-     * Indicates if UPnP should be used with ICE.
-     */
-    public static final String IS_USE_UPNP = "UPNP_ENABLED";
-
-    /**
-     * Indicates if we allow non-TLS connection.
-     */
-    public static final String IS_ALLOW_NON_SECURE = "ALLOW_NON_SECURE";
-
-    /**
-     * Enable notifications for new voicemail messages.
-     */
-    public static final String VOICEMAIL_ENABLED = "VOICEMAIL_ENABLED";
-
-    /**
      * Address used to reach voicemail box, by services able to
      * subscribe for voicemail new messages notifications.
      */
@@ -608,7 +531,7 @@ public abstract class ProtocolProviderFactory
      */
     public void uninstallAccount(AccountID accountID)
     {
-        logger.info("Uninstalling account " + accountID);
+        logger.info("Uninstalling account " + accountID.getLoggableAccountID());
 
         // Unload the account.
         unloadAccount(accountID);
@@ -667,8 +590,7 @@ public abstract class ProtocolProviderFactory
             && getAccountManager().getStoredAccounts().contains(accountID))
         {
             throw new IllegalStateException(
-                "An account for id " + accountID.getUserID()
-                    + " was already loaded!");
+                "An account for id " + accountID.getLoggableAccountID() + " was already loaded!");
         }
 
         try
@@ -743,7 +665,7 @@ public abstract class ProtocolProviderFactory
             throw
                 new IllegalArgumentException(
                         "No previous records found for account ID: "
-                            + accountID.getAccountUniqueID()
+                            + accountID.getLoggableAccountID()
                             + " in package"
                             + getFactoryImplPackageName());
         }
@@ -844,7 +766,19 @@ public abstract class ProtocolProviderFactory
         String userID = accountID
             .getAccountPropertyString(ProtocolProviderFactory.USER_ID);
 
-        logger.info("Loading account " + protocolName + " with ID " + accountID);
+        logger.info("Loading account " + protocolName + " with ID " +
+                    accountID.getLoggableAccountID());
+
+        // Loading accounts that are already loaded (before unloading them) is a bad idea. It will
+        // leak objects (that can't be GC'ed because they created Timers), and over time can cause
+        // OOMs. Raise an error log to get a stack trace of how we end up loading accounts without
+        // unloading first.
+        if (isAccountRegistered(accountID))
+        {
+            logger.error(
+                "Loading already loaded account " + protocolName + " with ID " + accountID.getLoggableAccountID(),
+                new IllegalStateException());
+        }
 
         ProtocolProviderService service = createService(userID, accountID);
 
@@ -865,7 +799,7 @@ public abstract class ProtocolProviderFactory
             synchronized (registeredAccounts)
             {
                 logger.info("Adding registered " + protocolName +
-                             " account with ID " + accountID);
+                             " account with ID " + accountID.getLoggableAccountID());
                 registeredAccounts.put(accountID, serviceRegistration);
             }
             return true;
@@ -885,7 +819,9 @@ public abstract class ProtocolProviderFactory
     {
         // Unregister the protocol provider.
         ServiceReference<?> serRef = getProviderForAccount(accountID);
-        logger.info("Unloading account " + accountID + ", " + serRef);
+        logger.info("Unloading account " +
+                    accountID.getLoggableAccountID() +
+                    ", " + serRef);
 
         if (serRef == null)
         {
@@ -903,7 +839,9 @@ public abstract class ProtocolProviderFactory
         }
         catch (OperationFailedException ex)
         {
-            logger.error("Failed to unregister protocol provider for account : " + accountID + " caused by: " + ex);
+            logger.error("Failed to unregister protocol provider for account : " +
+                         accountID.getLoggableAccountID() +
+                         " caused by: " + ex);
         }
 
         protocolProviderService.shutdown();

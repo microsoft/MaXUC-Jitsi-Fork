@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main;
 
 import java.awt.*;
@@ -22,8 +23,6 @@ import net.java.sip.communicator.util.skin.*;
 
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
-
-import com.explodingpixels.macwidgets.*;
 
 /**
  * The <tt>DialpadDialog</tt> is a popup dialog containing a dialpad.
@@ -62,10 +61,7 @@ public class GeneralDialPadDialog implements DialPadButtonListener
      */
     public GeneralDialPadDialog()
     {
-        dialPadDialog
-            = OSUtils.IS_MAC
-                ? new HudWindow().getJDialog()
-                : new SIPCommDialog(false);
+        dialPadDialog = new SIPCommDialog(false);
         dialPadDialog.setTitle(
                 GuiActivator.getResources().getI18NString(
                         "service.gui.DIALPAD"));

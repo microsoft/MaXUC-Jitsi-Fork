@@ -4,13 +4,16 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.addressbook.calendar;
 
 import java.nio.*;
 import java.text.*;
 import java.util.*;
 
-import net.java.sip.communicator.plugin.addressbook.*;
+import org.apache.commons.lang3.tuple.Pair;
+
+import net.java.sip.communicator.plugin.addressbook.OutlookUtils;
 
 /**
  * The class represents the recurring pattern structure of calendar item.
@@ -202,11 +205,6 @@ public class RecurringPattern
     private List<ExceptionInfo> exceptions;
 
     /**
-     * The source calendar item of the recurrent series.
-     */
-    private ParsedOutlookMeeting parsedMeeting;
-
-    /**
      * List of days of week when the calendar item occurs.
      */
     private List<Integer> allowedDaysOfWeek = new LinkedList<>();
@@ -228,13 +226,11 @@ public class RecurringPattern
      * @param creationTZ the timezone in which the meeting was created
      * @throws IndexOutOfBoundsException if data can't be parsed.
      */
-    public RecurringPattern(byte[] data,
-                            ParsedOutlookMeeting parsedOutlookMeeting,
-                            TimeZone creationTZ,
-                            BusyStatusEnum busyStatus)
+    RecurringPattern(byte[] data,
+                     TimeZone creationTZ,
+                     BusyStatusEnum busyStatus)
     throws IndexOutOfBoundsException
     {
-        parsedMeeting = parsedOutlookMeeting;
         creationTimeZone = creationTZ;
         defaultBusyStatus = busyStatus;
         dataBuffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -491,7 +487,7 @@ public class RecurringPattern
         if (endType == 0x2023 || endType == 0xFFFFFFFF)
             return false;
 
-        Calendar cal = getCalendar();
+        Calendar cal = Calendar.getInstance(creationTimeZone);
         cal.setTime(date);
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
@@ -503,15 +499,15 @@ public class RecurringPattern
     }
 
     /**
-     * Calculates and creates the next calendar item.
-     *
-     * @return the new calendar item or null if there are no more calendar items
-     * from that recurrent series.
+     * Return the Start and End date for the next meeting in the series defined by this recurring
+     * pattern, or null if there are no more instances. By next, we mean the next instance who's
+     * End date is in the future - so it could be a meeting that has or hasn't started.
+     * @return
      */
-    public CalendarItemScheduler next()
+    Pair<Date, Date> getNextMeeting()
     {
         // If the series has ended, then just return.
-        if (dateOutOfRange(getDate()))
+        if (dateOutOfRange(new Date()))
         {
             return null;
         }
@@ -519,146 +515,15 @@ public class RecurringPattern
         Date oldStartDate = getMeetingStartDate();
         Date oldEndDate   = getMeetingEndDate();
 
-        long duration = oldEndDate.getTime() -
-                        oldStartDate.getTime();
-
         switch (patternType)
         {
             case Day:
             {
-                // The recurrence type is day, therefore the pattern contains
-                // the number of minutes until the next event.  E.g. 1440 for
-                // an event that happens every day (1440 = 60 * 24)
-                Calendar startCalendar = getCalendar();
-                startCalendar.setTime(oldStartDate);
-
-                Calendar endCalendar = getCalendar();
-                endCalendar.setTime(oldEndDate);
-
-                // Use days rather than minutes to increment the calendar so
-                // that daylight saving time is taken into account.
-                int periodInDays = period/1440;
-
-                Calendar currentCalendar = getCalendar();
-
-                // Move forward in time until we hit the future
-                while (endCalendar.before(currentCalendar))
-                {
-                    startCalendar.add(Calendar.DATE, periodInDays);
-                    endCalendar.add(Calendar.DATE, periodInDays);
-                }
-
-                // Move forward in time until we hit a non-deleted instance
-                // Note that the deleted instances field contains days, not
-                // dates - i.e. there is no time.
-                // Therefore delCalendar only needs to track dates, not time,
-                // so we can set the time to midnight GMT.
-                int increments = 0;
-
-                Calendar delCalendar = (Calendar) startCalendar.clone();
-                delCalendar.setTimeZone(TimeZone.getTimeZone("GMT"));
-                delCalendar.set(Calendar.HOUR_OF_DAY, 0);
-                delCalendar.set(Calendar.MINUTE, 0);
-                delCalendar.set(Calendar.SECOND, 0);
-                delCalendar.set(Calendar.MILLISECOND, 0);
-
-                while (deletedInstances.contains(delCalendar.getTime()))
-                {
-                    increments++;
-                    delCalendar.add(Calendar.DATE, periodInDays);
-                }
-
-                // We've passed the deletions. Update the start and end calendars
-                startCalendar.add(Calendar.DATE, periodInDays * increments);
-                endCalendar.add(Calendar.DATE, periodInDays * increments);
-
-                return handleExceptions(startCalendar.getTime(),
-                                        endCalendar.getTime());
+                return nextDay(oldStartDate, oldEndDate);
             }
             case Week:
             {
-                // Recurrence type is week, therefore the period is a number of
-                // weeks.  I.e. 2 means every 2 weeks.
-                Calendar cal = getCalendar();
-
-                // The enum for the firstDow field is the same as Calendar day of
-                // week enum + 1 day
-                cal.setFirstDayOfWeek(firstDow + 1);
-                cal.setTime(oldStartDate);
-                int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
-                int index = allowedDaysOfWeek.indexOf(dayOfWeek);
-
-                Date currentDate = getDate();
-
-                // Move forward in time until we hit the future
-                if (oldEndDate.before(currentDate))
-                {
-                    cal.setFirstDayOfWeek(Calendar.SUNDAY);
-                    cal.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(0));
-                    oldEndDate = new Date(cal.getTimeInMillis() + duration);
-                    long offset = (currentDate.getTime() - oldEndDate.getTime());
-
-                    // 1 week = 604800000 is milliseconds
-                    offset -= offset % ((long)period * ONE_WEEK_IN_MSECS);
-
-                    // Offset is now n * period * number of ms in a week, where
-                    // n is the largest integer such that oldEndDate + offset is
-                    // still in the past.
-
-                    if(oldEndDate.getTime() + offset  < currentDate.getTime())
-                    {
-                        cal.add(Calendar.WEEK_OF_YEAR, (int)(offset / ONE_WEEK_IN_MSECS));
-                        int i = 1;
-                        while(((cal.getTimeInMillis() + duration)
-                            < (currentDate.getTime())))
-                        {
-                            if(i == allowedDaysOfWeek.size())
-                            {
-                                cal.add(Calendar.WEEK_OF_YEAR, period);
-                                i = 0;
-                            }
-                            cal.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(i));
-                            i++;
-                        }
-
-                        oldStartDate = cal.getTime();
-                    }
-                    else
-                    {
-                        oldStartDate = new Date(cal.getTimeInMillis() + offset);
-                    }
-                }
-
-                // cal only tracks the date, so we set the time to midnight GMT
-                // cal2 tracks the actual meeting time, which is used for scheduling.
-                cal.setTime(oldStartDate);
-                Calendar cal2 = (Calendar) cal.clone();
-                cal.setTimeZone(TimeZone.getTimeZone("GMT"));
-                cal.set(Calendar.HOUR_OF_DAY, 0);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-                dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
-                index = allowedDaysOfWeek.indexOf(dayOfWeek) + 1;
-
-                // For each deleted instance, move on to the next valid day
-                // of the week. If we run out of days, move to the next week of
-                // the year.
-                while(deletedInstances.contains(cal.getTime()))
-                {
-                    if(index >= allowedDaysOfWeek.size())
-                    {
-                        index = 0;
-                        cal.add(Calendar.WEEK_OF_YEAR, period);
-                        cal2.add(Calendar.WEEK_OF_YEAR, period);
-                    }
-                    cal.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(index));
-                    cal2.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(index));
-                    index++;
-                }
-
-                return handleExceptions(cal2.getTime(),
-                                 new Date(cal2.getTime().getTime() + duration));
+                return nextWeek(oldStartDate, oldEndDate);
             }
             case Month:
             case MonthEnd:
@@ -671,13 +536,169 @@ public class RecurringPattern
             case HjMonthNth:
             {
                 if (patternSpecific1 == 0x7f && patternSpecific2 == 0x05)
+                {
                     return nextMonth(oldStartDate, true);
+                }
                 else
+                {
                     return nextMonthN(oldStartDate);
+                }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Finds the next occurrence for daily recurrence.
+     * @param startDate the start date of the initial meeting
+     * @param endDate the end date of the initial meeting
+     * @return the start/end dates of the next occurrence
+     */
+    private Pair<Date, Date> nextDay(Date startDate, Date endDate)
+    {
+        // The recurrence type is day, therefore the pattern contains
+        // the number of minutes until the next event.  E.g. 1440 for
+        // an event that happens every day (1440 = 60 * 24)
+        Calendar startCalendar = Calendar.getInstance(creationTimeZone);
+        startCalendar.setTime(startDate);
+
+        Calendar endCalendar = Calendar.getInstance(creationTimeZone);
+        endCalendar.setTime(endDate);
+
+        // Use days rather than minutes to increment the calendar so
+        // that daylight saving time is taken into account.
+        int periodInDays = period/1440;
+
+        Calendar currentCalendar = Calendar.getInstance(creationTimeZone);
+
+        // Move forward in time until we hit the future
+        while (endCalendar.before(currentCalendar))
+        {
+            startCalendar.add(Calendar.DATE, periodInDays);
+            endCalendar.add(Calendar.DATE, periodInDays);
+        }
+
+        // Move forward in time until we hit a non-deleted instance
+        // Note that the deleted instances field contains days, not
+        // dates - i.e. there is no time.
+        // Therefore delCalendar only needs to track dates, not time,
+        // so we can set the time to midnight GMT.
+        int increments = 0;
+
+        Calendar delCalendar = (Calendar) startCalendar.clone();
+        delCalendar.setTimeZone(TimeZone.getTimeZone("GMT"));
+        delCalendar.set(Calendar.HOUR_OF_DAY, 0);
+        delCalendar.set(Calendar.MINUTE, 0);
+        delCalendar.set(Calendar.SECOND, 0);
+        delCalendar.set(Calendar.MILLISECOND, 0);
+
+        while (deletedInstances.contains(delCalendar.getTime()))
+        {
+            increments++;
+            delCalendar.add(Calendar.DATE, periodInDays);
+        }
+
+        // We've passed the deletions. Update the start and end calendars
+        startCalendar.add(Calendar.DATE, periodInDays * increments);
+        endCalendar.add(Calendar.DATE, periodInDays * increments);
+
+        return handleExceptions(startCalendar.getTime(),
+                                endCalendar.getTime());
+    }
+
+    /**
+     * Finds the next occurrence for weekly recurrence.
+     * @param startDate the start date of the initial meeting
+     * @param endDate the end date of the initial meeting
+     * @return the start/end dates of the next occurrence
+     */
+    private Pair<Date, Date> nextWeek(Date startDate, Date endDate)
+    {
+        long duration = endDate.getTime() - startDate.getTime();
+
+        // Recurrence type is week, therefore the period is a number of
+        // weeks.  I.e. 2 means every 2 weeks.
+        Calendar cal = Calendar.getInstance(creationTimeZone);
+
+        // The enum for the firstDow field is the same as Calendar day of
+        // week enum + 1 day
+        cal.setFirstDayOfWeek(firstDow + 1);
+        cal.setTime(startDate);
+        int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+        int index = allowedDaysOfWeek.indexOf(dayOfWeek);
+
+        Date currentDate = new Date();
+
+        // Move forward in time until we hit the future
+        if (endDate.before(currentDate))
+        {
+            cal.setFirstDayOfWeek(Calendar.SUNDAY);
+            cal.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(0));
+            endDate = new Date(cal.getTimeInMillis() + duration);
+            long offset = (currentDate.getTime() - endDate.getTime());
+
+            // 1 week = 604800000 is milliseconds
+            offset -= offset % ((long)period * ONE_WEEK_IN_MSECS);
+
+            // Offset is now n * period * number of ms in a week, where
+            // n is the largest integer such that oldEndDate + offset is
+            // still in the past.
+
+            if (endDate.getTime() + offset  < currentDate.getTime())
+            {
+                cal.add(Calendar.WEEK_OF_YEAR, (int)(offset / ONE_WEEK_IN_MSECS));
+                int i = 1;
+                while(((cal.getTimeInMillis() + duration)
+                    < (currentDate.getTime())))
+                {
+                    if(i == allowedDaysOfWeek.size())
+                    {
+                        cal.add(Calendar.WEEK_OF_YEAR, period);
+                        i = 0;
+                    }
+                    cal.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(i));
+                    i++;
+                }
+
+                startDate = cal.getTime();
+            }
+            else
+            {
+                startDate = new Date(cal.getTimeInMillis() + offset);
+            }
+        }
+
+        // cal only tracks the date, so we set the time to midnight GMT
+        // cal2 tracks the actual meeting time, which is used for scheduling.
+        cal.setTime(startDate);
+        Calendar cal2 = (Calendar) cal.clone();
+        cal.setTimeZone(TimeZone.getTimeZone("GMT"));
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+        index = allowedDaysOfWeek.indexOf(dayOfWeek) + 1;
+
+        // For each deleted instance, move on to the next valid day
+        // of the week. If we run out of days, move to the next week of
+        // the year.
+        while(deletedInstances.contains(cal.getTime()))
+        {
+            if(index >= allowedDaysOfWeek.size())
+            {
+                index = 0;
+                cal.add(Calendar.WEEK_OF_YEAR, period);
+                cal2.add(Calendar.WEEK_OF_YEAR, period);
+            }
+            cal.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(index));
+            cal2.set(Calendar.DAY_OF_WEEK, allowedDaysOfWeek.get(index));
+            index++;
+        }
+
+        return handleExceptions(cal2.getTime(),
+                         new Date(cal2.getTime().getTime() + duration));
     }
 
     /**
@@ -708,21 +729,20 @@ public class RecurringPattern
      * @param startDate the start date of the previous calendar item.
      * @param lastDay if <tt>true</tt> we are interested in last day of the
      * month
-     * @return the next item
+     * @return the start/end dates of the next occurrence
      */
-    public CalendarItemScheduler nextMonth(Date startDate,
-                                           boolean lastDay)
+    private Pair<Date, Date> nextMonth(Date startDate, boolean lastDay)
     {
         long duration = getMeetingEndDate().getTime()
                                               - getMeetingStartDate().getTime();
-        Calendar cal = getCalendar();
+        Calendar cal = Calendar.getInstance(creationTimeZone);
         cal.setTime(startDate);
-        Date currentDate = getDate();
+        Date currentDate = new Date();
 
         // Move forward in time until we hit the future
         if(cal.getTimeInMillis() + duration < currentDate.getTime())
         {
-            Calendar cal2 = getCalendar();
+            Calendar cal2 = Calendar.getInstance(creationTimeZone);
             cal2.setTime(currentDate);
             int years
                 = cal2.get(Calendar.YEAR) - cal.get(Calendar.YEAR);
@@ -764,11 +784,11 @@ public class RecurringPattern
      * Finds the occurrence of the events in the next months
      * @param startDate the start date if the calendar item
      * @param dayOfWeekInMonth the number of week days occurrences
-     * @return the date of the next occurrence
+     * @return the start/end dates of the next occurrence
      */
     private Date getMonthNStartDate(Date startDate, int dayOfWeekInMonth)
     {
-        Calendar cal = getCalendar();
+        Calendar cal = Calendar.getInstance(creationTimeZone);
         cal.setTime(startDate);
 
         if(dayOfWeekInMonth == -1)
@@ -798,25 +818,25 @@ public class RecurringPattern
     /**
      * Finds the next occurrence for monthly Nth recurrence.
      * @param startDate the start date of the previous calendar item.
-     * @return the next item
+     * @return the start/end dates of the next occurrence
      */
-    public CalendarItemScheduler nextMonthN(Date startDate)
+    private Pair<Date, Date> nextMonthN(Date startDate)
     {
         // If patternSpecific2 == 5, we want the last day of the month (i.e.
         // day -1)
         int dayOfWeekInMonth = (patternSpecific2 == 5? -1 : patternSpecific2);
         long duration = getMeetingEndDate().getTime()
                                               - getMeetingStartDate().getTime();
-        Calendar cal = getCalendar();
+        Calendar cal = Calendar.getInstance(creationTimeZone);
         cal.setTime(startDate);
         cal.set(Calendar.DAY_OF_MONTH, 1);
         cal.setTime(getMonthNStartDate(cal.getTime(), dayOfWeekInMonth));
-        Date currentDate = getDate();
+        Date currentDate = new Date();
 
         // Add time until we reach the current date
         if(cal.getTimeInMillis() + duration < currentDate.getTime())
         {
-            Calendar cal2 = getCalendar();
+            Calendar cal2 = Calendar.getInstance(creationTimeZone);
             cal2.setTime(currentDate);
             int years
                 = cal2.get(Calendar.YEAR) - cal.get(Calendar.YEAR);
@@ -880,10 +900,9 @@ public class RecurringPattern
      * @param endDate The new end date for the meeting
      * @return the scheduler that will handle the meeting.
      */
-    private CalendarItemScheduler handleExceptions(Date startDate,
-                                                   Date endDate)
+    private Pair<Date, Date> handleExceptions(Date startDate, Date endDate)
     {
-        Date currentDate = getDate();
+        Date currentDate = new Date();
         ExceptionInfo latestException = null;
         Date nextStartDate;
         Date nextEndDate;
@@ -915,8 +934,6 @@ public class RecurringPattern
             }
         }
 
-        CalendarItemScheduler scheduler;
-
         if (latestException == null)
         {
             nextStartDate = startDate;
@@ -931,39 +948,12 @@ public class RecurringPattern
         // Final check that we haven't passed the end date of the series
         if (dateOutOfRange(nextStartDate))
         {
-            scheduler = null;
+            return null;
         }
         else
-            scheduler = new CalendarItemScheduler(parsedMeeting,
-                                                  nextStartDate,
-                                                  nextEndDate);
-
-        return scheduler;
-    }
-
-    /**
-     * Returns a calendar object representing the current time.  Exists so that
-     * we can provide specific dates for UTs,
-     * thus protected so that it can be overridden.
-     *
-     * @return A calendar object representing the current time
-     */
-    protected Calendar getCalendar()
-    {
-        // Use the creation timezone, so that we deal correctly with DST changes
-        return Calendar.getInstance(creationTimeZone);
-    }
-
-    /**
-     * Returns a date object representing the current time.  Exists so that
-     * we can provide specific dates for UTs,
-     * thus protected so that it can be overridden.
-     *
-     * @return A date object representing the current time
-     */
-    protected Date getDate()
-    {
-        return new Date();
+        {
+            return Pair.of(nextStartDate, nextEndDate);
+        }
     }
 
     /**

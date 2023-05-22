@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
+
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.text.*;
 import java.util.*;
@@ -482,7 +485,7 @@ public class CallSipImpl
 
                     peer.addCallPeerListener(stateListener);
                 }
-                logger.debug("sent a ringing response: " + response);
+                logger.debug("sent a ringing response");
             }
         }
         catch (Exception ex)
@@ -562,7 +565,7 @@ public class CallSipImpl
         while (peers.hasNext())
         {
             CallPeerSipImpl peer = peers.next();
-            logger.info("Re-inviting peer: " + peer.getAddress());
+            logger.info("Re-inviting peer: " + sanitiseChatAddress(peer.getAddress()));
             peer.sendReInvite();
         }
     }
@@ -612,15 +615,15 @@ public class CallSipImpl
         }
         catch(ParseException e)
         {
-            logger.error("Failure creating response for invite: " + invite, e);
+            logger.error("Failure creating response for invite: " + sanitiseInvite(invite.toString()), e);
         }
         catch(SipException e)
         {
-            logger.error("Failure sending response for invite: " + invite, e);
+            logger.error("Failure sending response for invite: " + sanitiseInvite(invite.toString()), e);
         }
         catch (InvalidArgumentException e)
         {
-            logger.error("Invalid argument detected for invite: " + invite, e);
+            logger.error("Invalid argument detected for invite: " + sanitiseInvite(invite.toString()), e);
         }
     }
 

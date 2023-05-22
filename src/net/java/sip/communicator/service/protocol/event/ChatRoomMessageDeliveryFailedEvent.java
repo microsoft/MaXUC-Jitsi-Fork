@@ -4,7 +4,11 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.event;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatRoom;
+import static org.jitsi.util.Hasher.logHasher;
 
 import java.util.*;
 
@@ -134,7 +138,7 @@ public class ChatRoomMessageDeliveryFailedEvent extends ChatRoomMessageEvent
          String chatRoomId = (chatRoom == null) ? null : chatRoom.getIdentifier().toString();
          String toAddress = (to == null) ? null : to.getContactAddressAsString();
          return super.toString() +
-             ", chatRoom = " + chatRoomId + ", to = " + toAddress;
+             ", chatRoom = " + sanitiseChatRoom(chatRoomId) + ", to = " + logHasher(toAddress);
      }
 
      public String getSubject()

@@ -3,6 +3,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.media;
 
 import java.awt.*;
@@ -447,7 +448,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             }
 
             logger.info("Using " + (mProbablyUsingWireless ? "WIRELESS": "WIRED") +
-                " codecs for interface " + localAddress.getHostAddress());
+                " codecs for interface");
         }
         catch (Exception e)
         {
@@ -543,11 +544,11 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         // This list MUST NOT contain PII as it is sent to Msw.
         ArrayList<AnalyticsParameter> paramsForMSW = (ArrayList<AnalyticsParameter>)paramsForCP.clone();
 
-        // Add the network info with/out PII.
-        paramsForCP.add(new AnalyticsParameterComplex(AnalyticsParameter.NAME_NETWORK_INFO,
-            getNetworkParams(false)));
-        paramsForMSW.add(new AnalyticsParameterComplex(AnalyticsParameter.NAME_NETWORK_INFO,
-            getNetworkParams(true)));
+        // Add the network info.
+        AnalyticsParameterComplex networkAnalytic = new AnalyticsParameterComplex(AnalyticsParameter.NAME_NETWORK_INFO,
+                                                                                  getNetworkParams());
+        paramsForCP.add(networkAnalytic);
+        paramsForMSW.add(networkAnalytic);
 
         // And send the event.
         ConfigurationService configService = ProtocolMediaActivator.getConfigurationService();
@@ -827,11 +828,11 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         // This list MUST NOT contain PII as it is sent to Msw.
         ArrayList<AnalyticsParameter> paramsForMSW = (ArrayList<AnalyticsParameter>)paramsForCP.clone();
 
-        // Add the network info with/out PII.
-        paramsForCP.add(new AnalyticsParameterComplex(AnalyticsParameter.NAME_NETWORK_INFO,
-                                                 getNetworkParams(false)));
-        paramsForMSW.add(new AnalyticsParameterComplex(AnalyticsParameter.NAME_NETWORK_INFO,
-                                                 getNetworkParams(true)));
+        // Add the network info.
+        AnalyticsParameterComplex networkAnalytic = new AnalyticsParameterComplex(AnalyticsParameter.NAME_NETWORK_INFO,
+                                                                                  getNetworkParams());
+        paramsForCP.add(networkAnalytic);
+        paramsForMSW.add(networkAnalytic);
 
         logger.debug("Sending end of call analytics send");
 
@@ -853,9 +854,8 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
 
     /*
      * Generates the network parameters part of an analytics event.
-     * @param anonymizePII if this is set then hash the ssid (as the data is destined for Msw)
      */
-    private List<AnalyticsParameter> getNetworkParams(boolean anonymizePII)
+    private List<AnalyticsParameter> getNetworkParams()
     {
         //
         // Now the network bit
@@ -877,9 +877,9 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                                                        network));
         if (!mWirelessSSID.equals(""))
         {
-            // Network SSID counts as PII, but it may be useful to spot multiple issues on the
+            // Network SSID counts as Personal Data, but it may be useful to spot multiple issues on the
             // same network, so hash rather than remove it.
-            String ssidToUse = anonymizePII ? Hasher.hashPersonalData(mWirelessSSID) : mWirelessSSID;
+            String ssidToUse = Hasher.logHasher(mWirelessSSID);
 
             networkParams.add(new AnalyticsParameterSimple(AnalyticsParameter.NAME_NETWORK_SSID,
                               ssidToUse));

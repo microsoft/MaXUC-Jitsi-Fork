@@ -4,11 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
-import java.util.Vector;
+import static org.jitsi.util.Hasher.logHasher;
 
-import org.jivesoftware.smack.roster.RosterEntry;
+import java.util.Collections;
 
 /**
  * The Jabber implementation of the Volatile ContactGroup interface.
@@ -33,7 +34,7 @@ public class VolatileContactGroupJabberImpl
                         String groupName,
                         ServerStoredContactListJabberImpl ssclCallback)
     {
-        super(null, new Vector<RosterEntry>().iterator(), ssclCallback, false);
+        super(null, Collections.emptyIterator(), ssclCallback, false);
 
         this.contactGroupName = groupName;
     }
@@ -57,7 +58,7 @@ public class VolatileContactGroupJabberImpl
     public String toString()
     {
         StringBuffer buff = new StringBuffer("VolatileJabberGroup.");
-        buff.append(getGroupName())
+        buff.append(logHasher(getGroupName()))
             .append(", childContacts=")
             .append(countContacts());
         return buff.toString();

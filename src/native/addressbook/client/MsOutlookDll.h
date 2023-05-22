@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 
 #ifndef _MSOUTLOOKDLL_H
 #define _MSOUTLOOKDLL_H

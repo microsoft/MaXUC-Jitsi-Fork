@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
+import static net.java.sip.communicator.service.protocol.ContactGroupType.SIP;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.util.*;
@@ -506,6 +508,12 @@ public class ContactGroupSipImpl
     public String getPersistentData()
     {
         return null;
+    }
+
+    @Override
+    public final ContactGroupType groupType()
+    {
+        return SIP;
     }
 
     /**

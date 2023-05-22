@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.version;
 
 import org.jitsi.service.configuration.*;
@@ -74,7 +75,7 @@ public class VersionActivator
      * registered in the <tt>BundleContext</tt> in which this bundle has been
      * started or <tt>null</tt> if no such implementation was found
      */
-    private static ConfigurationService getConfigurationService()
+    static ConfigurationService getConfigurationService()
     {
         return
             ServiceUtils.getService(bundleContext, ConfigurationService.class);

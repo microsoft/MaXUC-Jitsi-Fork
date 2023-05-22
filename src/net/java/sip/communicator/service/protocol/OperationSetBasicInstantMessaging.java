@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import net.java.sip.communicator.service.protocol.event.*;
@@ -151,15 +152,6 @@ public interface OperationSetBasicInstantMessaging
      * <tt>false</tt> otherwise.
      */
     boolean isOfflineMessagingSupported();
-
-    /**
-     * Determines whether the protocol supports the supplied content type
-     *
-     * @param contentType the type we want to check
-     * @return <tt>true</tt> if the protocol supports it and
-     * <tt>false</tt> otherwise.
-     */
-    boolean isContentTypeSupported(String contentType);
 
     /**
      * Determines whether the protocol supports the supplied content type

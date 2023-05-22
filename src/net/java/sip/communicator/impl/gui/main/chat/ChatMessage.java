@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -94,48 +95,6 @@ public class ChatMessage
      * Boolean indicating that this message is a carbon (XEP-0280) message
      */
     private final boolean isCarbon;
-
-    /**
-     * Creates a <tt>ChatMessage</tt> by specifying all parameters of the
-     * message.
-     * @param contactAddress the address of the contact
-     * @param contactDisplayName the contact display name
-     * @param date the date and time
-     * @param messageType the type (INCOMING or OUTGOING)
-     * @param messageTitle the title of the message
-     * @param message the content
-     * @param contentType the content type (e.g. "text", "text/html", etc.)
-     * @param messageUID The ID of the message.
-     * @param correctedMessageUID The ID of the message being replaced.
-     * @param isArchive indicates that this message is an archive message
-     * @param isCarbon indicates that this message is a carbon (XEP-0280) message
-     */
-    public ChatMessage(String contactAddress,
-                       String contactDisplayName,
-                       Date date,
-                       String messageType,
-                       String messageTitle,
-                       String message,
-                       String contentType,
-                       String messageUID,
-                       String correctedMessageUID,
-                       boolean isArchive,
-                       boolean isCarbon)
-    {
-        this(contactAddress,
-             contactDisplayName,
-             date,
-             messageType,
-             messageTitle,
-             message,
-             contentType,
-             messageUID,
-             correctedMessageUID,
-             null,
-             null,
-             isArchive,
-             isCarbon);
-    }
 
     /**
      * Creates a <tt>ChatMessage</tt> by specifying all parameters of the

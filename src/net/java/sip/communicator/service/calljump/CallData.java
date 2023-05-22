@@ -3,6 +3,11 @@ package net.java.sip.communicator.service.calljump;
 
 import org.json.simple.*;
 
+import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitiseJSON;
+
+import java.util.Set;
+
 import net.java.sip.communicator.util.*;
 
 /**
@@ -24,11 +29,15 @@ public class CallData
      */
     public CallData(JSONObject json)
     {
-        sLog.debug("Creating new call data: " + json);
         mCallState    = (String) json.get("callState");
         mCallerNumber = (String) json.get("callerNumber");
         mCallType     = (String) json.get("callType");
         mCallID       = (String) json.get("callID");
+
+        // For privacy reasons, we cannot include the caller number and name in the logs.
+        sLog.debug("Creating new call data: " + sanitiseJSON(json,
+                                                             Set.of("callerNumber", "callerName", "line", "deviceID", "deviceIdentifier"),
+                                                             Set.of("Diversion_1")));
     }
 
     public CallData(String callState, String callerNumber, String callType, String callID)
@@ -76,7 +85,7 @@ public class CallData
     public String toString()
     {
         return "<Call State: " + mCallState +
-               ", Caller Number: " + mCallerNumber +
+               ", Caller Number: " + logHasher(mCallerNumber) +
                ", Call Type: " + mCallType +
                ", Call ID: " + mCallID + ">";
     }

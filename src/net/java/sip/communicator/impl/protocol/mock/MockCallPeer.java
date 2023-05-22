@@ -6,6 +6,8 @@
  */
 package net.java.sip.communicator.impl.protocol.mock;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 
@@ -52,6 +54,12 @@ public class MockCallPeer
     public String getAddress()
     {
         return peerAddress;
+    }
+
+    /** Returns a loggable String locator for that peer. */
+    public String getLoggableAddress()
+    {
+        return sanitiseChatAddress(peerAddress);
     }
 
     /**
@@ -152,6 +160,12 @@ public class MockCallPeer
     public void removeStreamSoundLevelListener(
         SoundLevelListener listener)
     {
+    }
+
+    @Override
+    public String getDiversionInfo()
+    {
+        return null;
     }
 
     /**

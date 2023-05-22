@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.jabberaccregwizz;
 
 import java.awt.*;
@@ -225,7 +226,7 @@ public class JabberServerChooserDialog
 
             try
             {
-                URL file = new URL("http://xmpp.net/services.xml");
+                URL file = new URL("https://xmpp.net/services.xml");
 
                 try (InputStream stream = file.openStream())
                 {

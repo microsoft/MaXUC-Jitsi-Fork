@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import java.io.IOException;
@@ -454,7 +455,7 @@ public class SipRegistrarConnection
                 , ex);
         }
 
-        logger.debug("All OK, reg request=" + request);
+        logger.debug("All OK");
         this.registerRequest = request;
     }
 
@@ -614,7 +615,7 @@ public class SipRegistrarConnection
             if (grantedExpiration <= 0 || requestedExpiration <= 0)
             {
                 logger.debug("Account "
-                        + sipProvider.getAccountID().getDisplayName()
+                        + sipProvider.getAccountID().getLoggableAccountID()
                         + " unregistered!");
                 setRegistrationState(RegistrationState.UNREGISTERED
                     , RegistrationStateChangeEvent.REASON_USER_REQUEST
@@ -639,7 +640,7 @@ public class SipRegistrarConnection
                 if (getRegistrationState().equals(RegistrationState.REGISTERING))
                 {
                     logger.debug("Account "
-                            + sipProvider.getAccountID().getDisplayName()
+                            + sipProvider.getAccountID().getLoggableAccountID()
                             + " registered!");
                 }
 
@@ -1339,7 +1340,7 @@ public class SipRegistrarConnection
      */
     private void processIntervalTooBrief(Response response)
     {
-        logger.debug("Process interval too brief " + response);
+        logger.debug("Process interval too brief. SIP status code: " + response.getStatusCode());
 
         // interval is too brief, if we have specified correct interval
         // in the response use it and re-register
@@ -1575,8 +1576,7 @@ public class SipRegistrarConnection
             this.ourSipContactAddress = contactAddress;
         }
 
-        logger.info("SIP registrar generated new contact address: " +
-                    contactAddress);
+        logger.info("SIP registrar generated new contact address");
 
         return contactAddress;
     }

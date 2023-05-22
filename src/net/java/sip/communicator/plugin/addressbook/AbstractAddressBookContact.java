@@ -6,6 +6,7 @@ import static org.jitsi.util.Hasher.logHasher;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.GenericDetail;
@@ -306,6 +307,31 @@ public abstract class AbstractAddressBookContact implements Contact
     }
 
     /**
+     * @param detailClass The sort of details that we are interested in.
+     * @return Returns the first value of the supplied detailClass that is a String and non-empty
+     * after trimming. Returns 'null' if no such value exists.
+     */
+    private String getFirstStringDetail(Class<? extends GenericDetail> detailClass)
+    {
+        ArrayList<GenericDetail> details = getDetails(detailClass);
+
+        for (GenericDetail detail : details)
+        {
+            Object detailValue = detail.getDetailValue();
+            if (detailValue instanceof String)
+            {
+                String stringDetail = ((String) detailValue).trim();
+                if (!StringUtils.isNullOrEmpty(stringDetail))
+                {
+                    return stringDetail;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Sets the details of this contact, used for update operations.
      *
      * @param contactDetails
@@ -348,38 +374,36 @@ public abstract class AbstractAddressBookContact implements Contact
 
     public String getDisplayName()
     {
-        StringBuilder displayName = new StringBuilder();
+        // Get the first and last names for this contact. If either exists, use first/last name.
+        String firstName = getFirstStringDetail(ServerStoredDetails.FirstNameDetail.class);
+        String lastName = getFirstStringDetail(ServerStoredDetails.LastNameDetail.class);
 
-        // Get the first and last name details for this contact
-        ArrayList<GenericDetail> firstNameDetails =
-                          getDetails(ServerStoredDetails.FirstNameDetail.class);
-        ArrayList<GenericDetail> lastNameDetails =
-                           getDetails(ServerStoredDetails.LastNameDetail.class);
+        String displayName = Arrays.asList(firstName, lastName).stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(" "));
 
-        // Check the details for first name and last name. Construct a display
-        // name if one or more is found.
-        for (ArrayList<GenericDetail> detail : Arrays.asList(firstNameDetails,
-                                                             lastNameDetails))
+        if (!StringUtils.isNullOrEmpty(displayName))
         {
-            if (detail.size() > 0)
-            {
-                Object detailValue = detail.get(0).getDetailValue();
-                if (detailValue instanceof String &&
-                    !StringUtils.isNullOrEmpty((String) detailValue))
-                {
-                    displayName.append(detailValue).append(" ");
-                }
-            }
+            return displayName;
+        }
+
+        // If we don't have a first/last name, try the AddressBook display name, or failing that,
+        // the AddressBook nickname.
+        displayName = getFirstStringDetail(ServerStoredDetails.DisplayNameDetail.class);
+        if (!StringUtils.isNullOrEmpty(displayName))
+        {
+            return displayName;
+        }
+
+        displayName = getFirstStringDetail(ServerStoredDetails.NicknameDetail.class);
+        if (!StringUtils.isNullOrEmpty(displayName))
+        {
+            return displayName;
         }
 
         // If no display name has been found then revert to using the resource
         // for unknown contact.
-        if (StringUtils.isNullOrEmpty(displayName.toString()))
-        {
-            return AddressBookProtocolActivator.getResources().
-                    getI18NString("service.gui.UNKNOWN");
-        }
-
-        return displayName.toString().trim();
+        contactLogger.warn(this, "Couldn't find display name to use, revert to 'No Name'");
+        return AddressBookProtocolActivator.getResources().getI18NString("service.gui.UNKNOWN");
     }
 }

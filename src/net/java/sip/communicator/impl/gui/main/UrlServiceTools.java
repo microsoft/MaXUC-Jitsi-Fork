@@ -4,21 +4,17 @@ package net.java.sip.communicator.impl.gui.main;
 import java.awt.event.*;
 import java.beans.*;
 import java.util.*;
-import javax.swing.*;
 
 import net.java.sip.communicator.plugin.desktoputil.SIPCommSnakeButton;
 import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.main.configforms.*;
 import net.java.sip.communicator.plugin.provisioning.*;
-import net.java.sip.communicator.service.browserpanel.BrowserPanelDisplayer;
-import net.java.sip.communicator.service.browserpanel.BrowserPanelService;
-import net.java.sip.communicator.service.browserpanel.BrowserPanelService.UrlCreator;
 import net.java.sip.communicator.util.Logger;
 
 public class UrlServiceTools
@@ -95,12 +91,6 @@ public class UrlServiceTools
     private static UcServicesConfigPanel ucServicesConfigPanel;
 
     /**
-     * The separator before the Collab and Webconf items in the Tools menu. This
-     * class is responsible for updating its visibility if the config changes.
-     */
-    private static JSeparator toolsMenuSeparator;
-
-    /**
      * Update the necessary state when the config changes.
      */
     private final PropertyChangeListener configChangeListener =
@@ -119,7 +109,6 @@ public class UrlServiceTools
      */
     public class UrlService
     {
-        public BrowserPanelDisplayer mDisplayer;
         public String name;
         private final String url;
 
@@ -161,34 +150,6 @@ public class UrlServiceTools
         public String toString()
         {
             return name;
-        }
-
-        /**
-         * Gets the browser panel displayer for this service. Each service must
-         * have it's own displayer to ensure that a window is only shown once
-         * if it is launched two or more times.
-         * @return mDisplayer the browser panel displayer for this service
-         */
-        public BrowserPanelDisplayer getDisplayer()
-        {
-            if (mDisplayer == null)
-            {
-                UrlCreator urlCreator = new UrlCreator()
-                {
-                  @Override
-                  public String createUrl(String commpUrl, String sessionId)
-                  {
-                      // This is not a CommPortal Url, so commpUrl and sessionId
-                      // are not required
-                      return url;
-                  }
-                };
-                BrowserPanelService browserService =
-                    GuiActivator.getBrowserPanelService();
-                mDisplayer = browserService.
-                    getBrowserPanelDisplayer(urlCreator, false);
-            }
-            return mDisplayer;
         }
     }
 
@@ -292,9 +253,6 @@ public class UrlServiceTools
 
         String key = CONFIG_PREFIX + "." + service.getConfigName() + "." + SELECTED_SERVICES;
         configService.user().setProperty(key, serviceIndices);
-
-        // Update the appropriate labels on the Tools menu
-        service.refreshAppearance();
     }
 
     /**
@@ -347,7 +305,7 @@ public class UrlServiceTools
 
         // One of the phone number or name to search for can be null, but if
         // both are, then don't create the button.
-        if(name == null && number == null)
+        if (name == null && number == null)
         {
             logger.info("Number and name both null, don't create CRM " +
                                 "button");
@@ -426,33 +384,6 @@ public class UrlServiceTools
         if (ucServicesConfigPanel != null)
         {
             ucServicesConfigPanel.updateConfigPanelVisibility();
-        }
-    }
-
-    /**
-     * Register the separator on the Tools menu with the URL Service class.
-     * This allows URL Service Tools to control the visibility of the panel if
-     * the config changes.
-     * @param sep The separator object.
-     */
-    public void registerToolsMenuSeparator(JSeparator sep)
-    {
-        logger.debug("Register Tools menu separator");
-        UrlServiceTools.toolsMenuSeparator = sep;
-
-        updateToolsMenuSeparatorVisibility();
-    }
-
-    private void updateToolsMenuSeparatorVisibility()
-    {
-        if (toolsMenuSeparator != null)
-        {
-            boolean toolsSeparatorVisible =
-                (isServiceTypeEnabled(ServiceType.WEBCONFERENCING) ||
-                 isServiceTypeEnabled(ServiceType.FILESHARE_COLLABORATION));
-            logger.debug("Set visibility of Tools menu separator: " +
-                                                         toolsSeparatorVisible);
-            toolsMenuSeparator.setVisible(toolsSeparatorVisible);
         }
     }
 
@@ -556,10 +487,6 @@ public class UrlServiceTools
             logger.debug(serviceType + " ActiveURL? " + hasActiveUrl +
                 " serviceTypeEnabled: " + serviceTypeEnabled +
                 " selectedServices: " + selectedServices);
-
-            // Finally, if the service will be launched in an embedded browser,
-            // update the window size in the config.
-            serviceType.updateWindowSize(this);
         }
 
         enabledServicesInConfigPanel = atLeastOneServiceInConfigPanelActive;
@@ -627,12 +554,6 @@ public class UrlServiceTools
     private void updateUIElementVisibility()
     {
         updateConfigPanelVisibility();
-        updateToolsMenuSeparatorVisibility();
         updateUcServicesConfigPanelVisibility();
-
-        for (ServiceType serviceType : ServiceType.values())
-        {
-            serviceType.refreshAppearance();
-        }
     }
 }

@@ -4,10 +4,13 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui;
 
 import static org.jitsi.util.Hasher.logHasher;
 
+import java.awt.*;
+import java.awt.desktop.QuitResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
@@ -29,6 +32,8 @@ import net.java.sip.communicator.impl.gui.main.call.CallManager;
 import net.java.sip.communicator.impl.gui.main.contactlist.AddContactDialog;
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
 import net.java.sip.communicator.impl.gui.main.presence.GlobalStatusServiceImpl;
+import net.java.sip.communicator.impl.gui.main.presence.avatar.SelectAvatarMenu;
+import net.java.sip.communicator.impl.gui.main.presence.avatar.SelectAvatarService;
 import net.java.sip.communicator.impl.gui.utils.ContactChooserServiceImpl;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.service.browserlauncher.BrowserLauncherService;
@@ -94,6 +99,7 @@ import org.jitsi.service.fileaccess.FileAccessService;
 import org.jitsi.service.neomedia.MediaService;
 import org.jitsi.service.packetlogging.PacketLoggingService;
 import org.jitsi.service.resources.ResourceManagementService;
+import org.jitsi.util.OSUtils;
 
 /**
  * The GUI Activator class.
@@ -244,6 +250,10 @@ public class GuiActivator implements BundleActivator, StateDumper
                                           new ContactSyncBarImpl(),
                                           null);
 
+            GuiActivator.bundleContext.registerService(SelectAvatarService.class.getName(),
+                                                       new SelectAvatarMenu(),
+                                                       null);
+
             Hashtable<String, String> containerFilter = new Hashtable<>();
             containerFilter.put(Container.CONTAINER_ID, Container.CONTAINER_MAIN_WINDOW.getID());
 
@@ -312,7 +322,12 @@ public class GuiActivator implements BundleActivator, StateDumper
                                         ShutdownService.class.getName(),
                                         uiServiceImpl,
                                         null);
+
+                                    if (OSUtils.isMac())
+                                    {
+                                        registerMacOSQuitHandler();
                                     }
+                                }
                              }).start();
                          }
                     });
@@ -362,6 +377,30 @@ public class GuiActivator implements BundleActivator, StateDumper
             .user().removePropertyChangeListener(uiServiceImpl);
 
         bContext.removeServiceListener(uiServiceImpl);
+    }
+
+    /**
+     * Registers the quit handler for macOS to perform graceful shutdown
+     * of the app following an external shutdown request (i.e. via Sparkle for
+     * system updates/when a user attempts to skip a mandatory update).
+     */
+    private static void registerMacOSQuitHandler()
+    {
+        Desktop.getDesktop().setQuitHandler((quitEvent, quitResponse)
+                                                    -> quitMacSafely(quitResponse));
+        logger.info("MacOS Quit Handler registered.");
+    }
+
+    /**
+     * Helper method for shutting down app on macOS safely when receiving
+     * an external call to shut down (i.e. a "terminate" call from Sparkle).
+     */
+    private static void quitMacSafely(QuitResponse quitResponse)
+    {
+        logger.info("Mac Quit request received. Begin shutdown: Logout? false" +
+                    ", Mac QuitResponse: " + quitResponse);
+        getUIService()
+                .beginShutdown(false, false, quitResponse, true);
     }
 
     /**

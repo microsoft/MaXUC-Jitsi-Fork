@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,8 +50,9 @@ public class OperationSetSpecialMessagingJabberImpl
     @Override
     public ImMessage createSpecialMessage(String messageType, String messageText)
     {
+        // messageText contains the chat address of the sender/receiver
         logger.debug("Creating special message of type " + messageType +
-                                                " with content " + messageText);
+                     " with content " + sanitisePeerId(messageText));
 
         String content = messageType +
                          SPECIAL_MESSAGE_COMMON_TEXT +

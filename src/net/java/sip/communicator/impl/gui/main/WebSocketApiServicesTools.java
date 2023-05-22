@@ -6,7 +6,7 @@ import static org.jitsi.util.Hasher.logHasher;
 import java.awt.*;
 import javax.swing.*;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.impl.gui.GuiActivator;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
@@ -236,9 +236,7 @@ public class WebSocketApiServicesTools
             String errorMessage = res.getI18NString(
                     "service.websocketserver.WEBSOCKET_CRM_LAUNCH_ACTION_FAILED_ERROR_TEXT");
 
-            new ErrorDialog(null,
-                            errorTitle,
-                            errorMessage).showDialog();
+            new ErrorDialog(errorTitle, errorMessage).showDialog();
 
             // Re-enable the button.
             mCrmLaunchButton.setEnabled(true);

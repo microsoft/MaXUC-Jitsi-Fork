@@ -101,7 +101,7 @@ typedef struct {
 
 /* As of Windows 7 SP1, the number of flag bits has increased to
  * include 0x40 (CONTEXT_XSTATE):
- * https://msdn.microsoft.com/en-us/library/hh134238%28v=vs.85%29.aspx */
+ * http://msdn.microsoft.com/en-us/library/hh134238%28v=vs.85%29.aspx */
 #define MD_CONTEXT_CPU_MASK 0xffffff00
 
 
@@ -239,6 +239,15 @@ typedef struct {
   MDRVA     rva;
 } MDLocationDescriptor;  /* MINIDUMP_LOCATION_DESCRIPTOR */
 
+/* An MDRVA64 is an 64-bit offset into the minidump file.  The beginning of the
+ * MDRawHeader is at offset 0. */
+typedef uint64_t MDRVA64; /* RVA64 */
+
+typedef struct {
+  uint64_t data_size;
+  MDRVA64 rva;
+} MDLocationDescriptor64; /* MINIDUMP_LOCATION_DESCRIPTOR64 */
+
 
 typedef struct {
   /* The base address of the memory range on the host that produced the
@@ -332,6 +341,7 @@ typedef enum {
   MD_JAVASCRIPT_DATA_STREAM      = 20,
   MD_SYSTEM_MEMORY_INFO_STREAM   = 21,
   MD_PROCESS_VM_COUNTERS_STREAM  = 22,
+  MD_THREAD_NAME_LIST_STREAM     = 24, /* MDRawThreadNameList */
   MD_LAST_RESERVED_STREAM        = 0x0000ffff,
 
   /* Breakpad extension types.  0x4767 = "Gg" */
@@ -382,6 +392,20 @@ typedef struct {
 static const size_t MDRawThreadList_minsize = offsetof(MDRawThreadList,
                                                        threads[0]);
 
+#pragma pack(push, 4)
+typedef struct {
+  uint32_t thread_id;
+  MDRVA64 thread_name_rva; /* MDString */
+} MDRawThreadName;         /* MINIDUMP_THREAD_NAME */
+
+typedef struct {
+  uint32_t number_of_thread_names;
+  MDRawThreadName thread_names[1];
+} MDRawThreadNameList; /* MINIDUMP_THREAD_NAME_LIST */
+#pragma pack(pop)
+
+static const size_t MDRawThreadNameList_minsize =
+    offsetof(MDRawThreadNameList, thread_names[0]);
 
 typedef struct {
   uint64_t             base_of_image;
@@ -424,7 +448,7 @@ typedef struct {
 
 
 /* (MDRawModule).cv_record can reference MDCVInfoPDB20 or MDCVInfoPDB70.
- * Ref.: https://www.debuginfo.com/articles/debuginfomatch.html
+ * Ref.: http://www.debuginfo.com/articles/debuginfomatch.html
  * MDCVInfoPDB70 is the expected structure type with recent toolchains. */
 
 typedef struct {
@@ -482,11 +506,11 @@ static const size_t MDCVInfoELF_minsize = offsetof(MDCVInfoELF,
  * directly in the CodeView record itself.  These signature values will
  * be found in the first 4 bytes of the CodeView record.  Additional values
  * not commonly experienced in the wild are given by "Microsoft Symbol and
- * Type Information", https://www.x86.org/ftp/manuals/tools/sym.pdf, section
+ * Type Information", http://www.x86.org/ftp/manuals/tools/sym.pdf, section
  * 7.2.  An in-depth description of the CodeView 4.1 format is given by
  * "Undocumented Windows 2000 Secrets", Windows 2000 Debugging Support/
  * Microsoft Symbol File Internals/CodeView Subsections,
- * https://www.rawol.com/features/undocumented/sbs-w2k-1-windows-2000-debugging-support.pdf
+ * http://www.rawol.com/features/undocumented/sbs-w2k-1-windows-2000-debugging-support.pdf
  */
 #define MD_CVINFOCV41_SIGNATURE 0x3930424e  /* '90BN', CodeView 4.10. */
 #define MD_CVINFOCV50_SIGNATURE 0x3131424e  /* '11BN', CodeView 5.0,

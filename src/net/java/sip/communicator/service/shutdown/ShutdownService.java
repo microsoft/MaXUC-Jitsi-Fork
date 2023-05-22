@@ -4,11 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.shutdown;
 
 import java.awt.desktop.QuitResponse;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 /**
  * Abstracts the shutdown-related procedures of the application so that they

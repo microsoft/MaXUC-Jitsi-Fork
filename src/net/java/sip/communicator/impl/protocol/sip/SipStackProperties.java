@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
 import java.io.*;
@@ -221,7 +222,6 @@ public class SipStackProperties
 
     /**
      * The number of threads in the SIP thread pool.
-     *
      * Limited to one to prevent race conditions in the SIP stack.
      */
     private static final String THREAD_POOL_SIZE = "1";
@@ -293,7 +293,7 @@ public class SipStackProperties
         String logLevel
             = LogManager.getLogManager().getProperty("gov.nist.level");
 
-        String jainSipTraceLevel = null;
+        String jainSipTraceLevel;
 
         //if this is a java logging level - convert it to a NIST level
         if (logLevel == null)
@@ -340,22 +340,24 @@ public class SipStackProperties
         {
             String enabledSslProtocols = SipActivator.getConfigurationService()
                 .global().getString(NSPNAME_TLS_CLIENT_PROTOCOLS);
-            if(StringUtils.isNullOrEmpty(enabledSslProtocols, true))
+            if (StringUtils.isNullOrEmpty(enabledSslProtocols, true))
             {
-                SSLSocket temp = (SSLSocket) SSLSocketFactory
-                    .getDefault().createSocket();
-                String[] enabledDefaultProtocols = temp.getEnabledProtocols();
-                enabledSslProtocols = "";
-                for(int i = 0; i < enabledDefaultProtocols.length; i++)
+                try (final SSLSocket temp = (SSLSocket) SSLSocketFactory.getDefault().createSocket()) // lgtm[java/unsafe-cert-trust] Used for getting SSL protocols, no data transferring
                 {
-                    enabledSslProtocols += enabledDefaultProtocols[i];
-                    if(i < enabledDefaultProtocols.length - 1)
-                        enabledSslProtocols += ",";
+                    final String[] enabledDefaultProtocols = temp.getEnabledProtocols();
+                    final StringBuilder enabledSslProtocolsBuilder = new StringBuilder();
+                    for (int i = 0; i < enabledDefaultProtocols.length; i++)
+                    {
+                        enabledSslProtocolsBuilder.append(enabledDefaultProtocols[i]);
+                        if (i < enabledDefaultProtocols.length - 1)
+                            enabledSslProtocolsBuilder.append(",");
+                    }
+                    enabledSslProtocols = enabledSslProtocolsBuilder.toString();
                 }
             }
             this.setProperty(NSPNAME_TLS_CLIENT_PROTOCOLS, enabledSslProtocols);
         }
-        catch(IOException ex)
+        catch (IOException ex)
         {
             logger.error("Unable to obtain default SSL protocols from Java,"
                 + " using JSIP defaults.", ex);

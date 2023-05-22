@@ -4,9 +4,15 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.provisioning;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitise;
+
 import java.awt.*;
+import java.beans.PropertyChangeListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +25,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -28,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -40,7 +45,9 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
 import net.java.sip.communicator.plugin.desktoputil.ScreenInformation;
+import net.java.sip.communicator.plugin.desktoputil.ErrorDialog.OnDismiss;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
@@ -49,8 +56,12 @@ import net.java.sip.communicator.service.httputil.HTTPResponseResult;
 import net.java.sip.communicator.service.httputil.HttpUtils;
 import net.java.sip.communicator.service.protocol.OperationSetCallPark;
 import net.java.sip.communicator.service.provisioning.ProvisioningService;
+import net.java.sip.communicator.service.threading.CancellableRunnable;
+import net.java.sip.communicator.service.threading.ThreadingService;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
+import net.java.sip.communicator.service.wispaservice.WISPANotion;
+import net.java.sip.communicator.service.wispaservice.WISPANotionType;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
@@ -68,8 +79,7 @@ import org.jitsi.util.StringUtils;
  *
  * @author Sebastien Vincent
  */
-public class ProvisioningServiceImpl
-    implements ProvisioningService
+public class ProvisioningServiceImpl implements ProvisioningService
 {
     /**
      * Logger of this class
@@ -157,12 +167,6 @@ public class ProvisioningServiceImpl
         = "net.java.sip.communicator.plugin.provisioning.METHOD";
 
     /**
-     * Name of the property, whether provisioning is mandatory.
-     */
-    private static final String PROPERTY_PROVISIONING_MANDATORY
-        = "net.java.sip.communicator.plugin.provisioning.MANDATORY";
-
-    /**
      * Name of the property that contains enforce prefix list (separated by
      * pipe) for the provisioning. The retrieved configuration properties will
      * be checked against these prefixes to avoid having incorrect content in
@@ -212,13 +216,6 @@ public class ProvisioningServiceImpl
                                     = "net.java.sip.communicator.im.IM_ENABLED";
 
     /**
-     * Debug mode here determines whether we should display full configuration
-     * options to the user.
-     */
-    private static final String PROPERTY_DEBUG_MODE
-        = "net.java.sip.communicator.DEBUG_MODE";
-
-    /**
      * A config prefix that covers both WIRELESS and WIRED codecs.
      */
     private static final String ENCODING_CONFIG_PROP_WIRED_WIRELESS_SHARED
@@ -260,14 +257,62 @@ public class ProvisioningServiceImpl
                   "net.java.sip.communicator.plugin.generalconfig.VOIP_ENABLED";
 
     /**
+     * List of config entries that expose personal data as their values (the part following
+     * the "=" sign); these regex statements allow us to pick out the values associated with
+     * these entries and apply sanitisation methods on them.
+     *
+     * The URL_SERVICES regex is to address lines like these:
+     * net.java.sip.communicator.impl.gui.main.urlservices.crm.2.url=https
+     *
+     * In this case, only the part after the "=" sign (the "https") would be picked out for hashing.
+     */
+    private static final List<Pattern> SANITISE_CONFIG_PATTERN_LIST = List.of(
+            Pattern.compile(ACCOUNT_UID + "=(.*)"),
+            Pattern.compile(AUTHORIZATION_NAME + "=(.*)"),
+            Pattern.compile(DISPLAY_NAME + "=(.*)"),
+            Pattern.compile(GLOBAL_DISPLAY_NAME + "=(.*)"),
+            Pattern.compile(NUMBER + "=(.*)"),
+            Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.name=(.*)"),
+            Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.url=(.*)"),
+            Pattern.compile(USER_ID + "=(.*)")
+    );
+
+    /**
+     * List of config properties whose values expose personal data.
+     *
+     * The URL_SERVICES regex is to address lines like these:
+     * net.java.sip.communicator.impl.gui.main.urlservices.crm.2.url.
+     *
+     * This differs from <code>SANITISE_CONFIG_PATTERN_LIST</code> in that this
+     * is used to check property names as independent strings, whereas the former
+     * is meant for full server config lines (i.e. "property=value").
+     */
+    private static final List<Pattern> SANITISE_CONFIG_PROPERTY_PATTERN_LIST = List.of(
+            Pattern.compile(ACCOUNT_UID),
+            Pattern.compile(AUTHORIZATION_NAME),
+            Pattern.compile(DISPLAY_NAME),
+            Pattern.compile(GLOBAL_DISPLAY_NAME),
+            Pattern.compile(NUMBER),
+            Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.name"),
+            Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.url"),
+            Pattern.compile(USER_ID)
+    );
+
+    /**
      * List of allowed configuration prefixes.
      */
     private List<String> allowedPrefixes = new ArrayList<>();
 
     /**
-     * Timer for getting config
+     * Runnable for getting config. Synchronisation policy - must use the
+     * runnableLock before accessing this variable.
      */
-    private Timer mTimer;
+    private CancellableRunnable mConfigSyncRunnable;
+
+    /**
+     * Lock for accessing the runnable.
+     */
+    private static final Object sConfigSyncRunnableLock = new Object();
 
     /**
      * Access to the config service
@@ -283,6 +328,11 @@ public class ProvisioningServiceImpl
      * Access to the analytics service
      */
     private final AnalyticsService mAnalyticsService;
+
+    /**
+     * Access to the threading service
+     */
+    private final ThreadingService mThreadingService;
 
     /**
      * Access to the resource management service
@@ -312,11 +362,6 @@ public class ProvisioningServiceImpl
       */
     private static String mAudioSystem = null;
 
-    /**
-     * The reference to the login error dialog for Tests purposes
-     */
-    private static ErrorDialog sLoginErrorDialog = null;
-
      /**
       * A map of the contact source strings returned by provisioning server to
       * the strings that the client expects in the config.
@@ -330,7 +375,22 @@ public class ProvisioningServiceImpl
          contactSources.put("MacAddressBook", "Address Book");
      }
 
-     /**
+    /**
+     * ProvisioningServiceImpl is a singleton.
+     */
+    private static ProvisioningServiceImpl sProvisioningServiceImpl = null;
+
+    /**
+     * Time constant used for scheduled tasks.
+     */
+    private static final long ONE_DAY_IN_MILLISECONDS = 24*60*60*1000L;
+
+    /**
+     * PropertyChangeListener for username updates.
+     */
+    private PropertyChangeListener mUsernameChangeListener;
+
+    /**
       * An enum mapping error strings returned by the provisioning server to
       * the client, to the following:
       *  - error strings to display to the user.
@@ -452,15 +512,58 @@ public class ProvisioningServiceImpl
          }
      }
 
-     /**
+    /**
+     * Returns the instance of ProvisioningServiceImpl.
+     */
+    public static synchronized ProvisioningServiceImpl getProvisioningServiceImpl()
+    {
+        if (sProvisioningServiceImpl == null)
+        {
+            sProvisioningServiceImpl = new ProvisioningServiceImpl();
+            sProvisioningServiceImpl.registerConfigListener();
+        }
+        return sProvisioningServiceImpl;
+    }
+
+    /**
+     * Adds a listener for PROPERTY_PROVISIONING_USERNAME,
+     * which should be called when we first get some user config after
+     * a user logs in.
+     */
+    private void registerConfigListener()
+    {
+        mUsernameChangeListener = onUsernameUpdate();
+        mConfig.global()
+                .addPropertyChangeListener(
+                        PROPERTY_PROVISIONING_USERNAME,
+                        mUsernameChangeListener);
+    }
+
+    /**
+     * PropertyChangeListener that schedules the SIP-PS polling task
+     * once the username property has been populated following a
+     * successful login.
+     */
+    private PropertyChangeListener onUsernameUpdate()
+    {
+        return (evt) ->
+        {
+            logger.debug("Username now written to config. " +
+                         "Begin scheduler to check for config updates via SIP-PS");
+            scheduleTaskToPollPPSConfig();
+        };
+    }
+
+    /**
       * Constructor.
       */
-     public ProvisioningServiceImpl()
+     private ProvisioningServiceImpl()
      {
          // check if UUID is already configured
          mConfig = ProvisioningActivator.getConfigurationService();
          mAnalyticsService = ProvisioningActivator.getAnalyticsService();
          mCredsService = ProvisioningActivator.getCredentialsStorageService();
+         mThreadingService = ProvisioningActivator.getThreadingService();
 
          String uuid = ConfigurationUtils.getUuid();
 
@@ -500,7 +603,7 @@ public class ProvisioningServiceImpl
          // If we already have a user then 'give it a go' at using this
          // user until we're told otherwise.
          String username = getProvisioningNumber();
-         logger.info("Starting with username " + username);
+         logger.info("Starting with username " + logHasher(username));
 
          if (!StringUtils.isNullOrEmpty(username))
          {
@@ -509,6 +612,7 @@ public class ProvisioningServiceImpl
              // Information.  If we change active user, then it is right that this will
              // be updated.
              Hasher.setSalt(username);
+             notifyCoreNotion();
 
              mCredsService.setActiveUser();
          }
@@ -519,47 +623,50 @@ public class ProvisioningServiceImpl
          // timer that sends the analytic that reports we are running
          mAnalyticsService.startSysRunningTimer();
 
-         if (mStoredConfig && !mTerminalError)
+         if (!mTerminalError &&
+             mConfig.global().getProperty(PROPERTY_PROVISIONING_USERNAME) != null)
          {
-             // We got some config and we haven't hit a terminal error, now
-             // set up a task to poll for config:
-             mTimer = new Timer("Provisioning service config poll timer");
-             TimerTask task = new TimerTask()
-             {
-                @Override
-                public void run()
-                {
-                    logger.info("Running a scheduled update check");
-                    getAndStoreConfig();
-                }
-             };
-
-             // By this point, we will already have made our 1st PPS config request.
-             // If a number of seconds until next update was specified in that config,
-             // schedule the next config update for then and subsequent ones daily.
-             // Otherwise, use the default of 1 day.
-
-             // This is part of a strange mechanism to temporally spread the load on PPS
-             // where PPS tells us when we should next poll for updates (i.e. to poll
-             // during night quiet hours).  Why we don't just let the client pick a
-             // quiet hour is beyond me.
-             String secsToPoll = "";
-             if (mConfig.user() != null)
-             {
-                 secsToPoll = mConfig.user().getString(
-                                     "net.java.sip.communicator.SECS_TO_POLL");
-             }
-
-             long scheduleDelay = (!StringUtils.isNullOrEmpty(secsToPoll)) ?
-                 Long.parseLong(secsToPoll) * 1000 : 86400000;
-
-             mTimer.scheduleAtFixedRate(task,
-                                        scheduleDelay,
-                                        86400000);
+             logger.debug("Username config exists! " +
+                          "Begin scheduler to check for config updates " +
+                          "via SIP-PS");
+             scheduleTaskToPollPPSConfig();
          }
      }
 
-     /**
+    /**
+     * Sets up a task to poll for config via SIP-PS. This method does nothing
+     * if a scheduled PPS task has already been submitted.
+     */
+    private void scheduleTaskToPollPPSConfig()
+    {
+        synchronized (sConfigSyncRunnableLock)
+        {
+            if (hasActiveScheduler())
+            {
+                logger.debug("Returning as we already have a " +
+                             "scheduled update task running.");
+                return;
+            }
+
+            mConfigSyncRunnable = new CancellableRunnable()
+            {
+                public void run()
+                {
+                    logger.info("Running a scheduled SIP-PS config request");
+                    getAndStoreConfig();
+                }
+            };
+
+            // By this point, we will already have made our 1st PPS config request, so
+            // request again in 24 hours.
+            mThreadingService.scheduleAtFixedRate("SIP-PS config request",
+                                                  mConfigSyncRunnable,
+                                                  ONE_DAY_IN_MILLISECONDS,
+                                                  ONE_DAY_IN_MILLISECONDS);
+        }
+    }
+
+    /**
       * Get and store a fresh set of config using the provisioning URL from the branding.
       */
      public void getAndStoreFreshConfig()
@@ -622,7 +729,7 @@ public class ProvisioningServiceImpl
              mConfig.global().setProperty(urlProperty, url);
 
              updateConfiguration(config);
-             sendAnalyticsEvent();
+             sendAnalyticsEvent(url);
          }
 
          // Update any accounts that may or may not have been
@@ -640,6 +747,7 @@ public class ProvisioningServiceImpl
          if (wispaService != null)
          {
              wispaService.notify(WISPANamespace.SETTINGS, WISPAAction.UPDATE);
+             notifyCoreNotion();
          }
          else
          {
@@ -651,9 +759,12 @@ public class ProvisioningServiceImpl
       * Send an analytics event for the retrieval of config.
       */
      @VisibleForTesting
-     void sendAnalyticsEvent()
+     void sendAnalyticsEvent(String url)
      {
-         ArrayList<String> parameters = new ArrayList<>();
+         List<String> parameters = new ArrayList<>();
+
+         parameters.add(AnalyticsParameter.PARAM_USING_HTTPS);
+         parameters.add(Boolean.toString(url.startsWith("https://")));
 
          // Find out details of the Jabber accounts
          List<String> jabberAccs = getJabberAccounts();
@@ -710,6 +821,16 @@ public class ProvisioningServiceImpl
          mAnalyticsService.onEvent(AnalyticsEventType.CONFIG_RETRIEVED,
                                    parameters.toArray(new String[parameters.size()]));
      }
+
+    private void notifyCoreNotion() {
+        WISPAService wispaService = ProvisioningActivator.getWISPAService();
+        if (wispaService != null)
+        {
+            String activeUser = mConfig.global().getString(PROPERTY_ACTIVE_USER);
+            WISPANotion wispaNotion = new WISPANotion(WISPANotionType.SEND_SALT, activeUser);
+            wispaService.notify(WISPANamespace.CORE, WISPAAction.NOTION, wispaNotion);
+        }
+    }
 
     /**
      * @return A list of the account IDs of all jabber accounts in the current
@@ -812,7 +933,7 @@ public class ProvisioningServiceImpl
         // credentials, cancelled the login, or selected a CDAP server with
         // no valid SIP PS config.
         String[] params = {"Stored", String.valueOf(mStoredConfig)};
-        mAnalyticsService.onEvent(AnalyticsEventType.GET_CONFIG_RETRIEVED,
+        mAnalyticsService.onEvent(AnalyticsEventType.GETTING_CONFIG_FAILED,
                                   params);
 
         if (!mStoredConfig)
@@ -841,10 +962,14 @@ public class ProvisioningServiceImpl
 
             errorMessage += " " + mResourceService.getI18NString(
                         "plugin.cdap.APPLICATION_CLOSING");
-            displayLoginError(errorMessage);
-        }
 
-        handleConfigError();
+            // Send an error to Electron, which quits the app when dismissed
+            displayLoginError(errorMessage, true);
+        }
+        else
+        {
+            handleConfigError();
+        }
     }
 
     /**
@@ -866,7 +991,7 @@ public class ProvisioningServiceImpl
             setTerminalError(false);
 
             String arg = null;
-            String args[] = null;
+            String[] args = null;
 
             // Process the URL, replacing any parameters that we know and that
             // will not change
@@ -992,7 +1117,7 @@ public class ProvisioningServiceImpl
                     throw new Exception("Failed to get config from server");
                 }
 
-                String userPass[] = res.getCredentials();
+                String[] userPass = res.getCredentials();
                 if(userPass[0] != null && userPass[1] != null)
                 {
                     provUsername = userPass[0];
@@ -1001,9 +1126,12 @@ public class ProvisioningServiceImpl
                 // We have config from the server.  Parse the result into a string
                 String configFromServer = convertResultToString(res);
 
+                // Remove Personal Data from the string (i.e. subscriber DNs)
+                String loggableConfigFromServer = sanitiseServerConfigForLogging(configFromServer);
+
                 try
                 {
-                    logger.info("Config from server\n" + configFromServer);
+                    logger.info("Config from server\n" + loggableConfigFromServer);
 
                     Pattern errorPattern = Pattern.compile("^Error=(.*)$" , Pattern.MULTILINE | Pattern.DOTALL);
                     Matcher errorMatcher = errorPattern.matcher(configFromServer);
@@ -1077,7 +1205,7 @@ public class ProvisioningServiceImpl
                             forgetCreds = errorResponse.isSubscriberError();
                         }
 
-                        displayLoginError(errorMessage);
+                        displayLoginError(errorMessage, false);
 
                         if (forgetCreds)
                         {
@@ -1123,13 +1251,14 @@ public class ProvisioningServiceImpl
                     }
                     else if (!configFromServer.contains("net.java.sip.communicator"))
                     {
-                        // The response content doesn't contain any valid
-                        // config strings, possibly because we're connected to
-                        // a public network that requires the user to log in.
-                        // Return null to see if the client can start with any
-                        // saved config.
+                        // The response content doesn't contain any valid config strings, possibly
+                        // because we're connected to a public network that requires the user to
+                        // log in, or SIP-PS is behind a WAF that has returned some html. If we have
+                        // any saved config then start the client with that, else show an error and
+                        // close the client.
                         logger.warn("Unrecognized config returned - attempt " +
                                     "to start client with saved config");
+                        retrieveConfigurationFileFailed(false);
                         return null;
                     }
 
@@ -1201,21 +1330,18 @@ public class ProvisioningServiceImpl
             webSize +
             "net.java.sip.communicator.impl.neomedia.audioSystem=" + mAudioSystem + "\n";
 
-        // We hide advanced config options from real users but they can be useful
-        // for debugging, so we will enable them if we're running in debug mode.
-        boolean restrictConfig =
-            !ProvisioningActivator.getConfigurationService().global().getBoolean(PROPERTY_DEBUG_MODE, false);
-        String restrictedConfig =
-                "net.java.sip.communicator.plugin.generalconfig.advancedcallconfig.DISABLED={restricted}\n" +
-                "net.java.sip.communicator.plugin.generalconfig.localeconfig.DISABLED={restricted}\n" +
-                "net.java.sip.communicator.plugin.notificationconfiguration.DISABLED={restricted}\n";
+        // Edit this to false to allow manually selecting client language in settings.
+        String restrictedConfig = "net.java.sip.communicator.plugin.generalconfig.localeconfig.DISABLED=true\n";
+
+        // Edit this to false to allow changing the notification mechanism in settings.
+        restrictedConfig += "net.java.sip.communicator.plugin.generalconfig.notificationconfig.DISABLED=true\n";
 
         String sipProxyAutoConfig = extractText("(net\\.java\\.sip\\.communicator\\.impl\\.protocol\\.sip\\.acc\\d+\\.PROXY_AUTO_CONFIG=\\w+)", configFromServer);
         String[] sipAutoConfigSubStrings = sipProxyAutoConfig.split("PROXY_AUTO_CONFIG=");
 
         try
         {
-            restrictedConfig = restrictedConfig.concat(sipAutoConfigSubStrings[0] + "IS_PROTOCOL_HIDDEN={restricted}\n");
+            restrictedConfig = restrictedConfig.concat(sipAutoConfigSubStrings[0] + "IS_PROTOCOL_HIDDEN=true\n");
 
             if ("false".equalsIgnoreCase(sipAutoConfigSubStrings[1]))
             {
@@ -1248,7 +1374,7 @@ public class ProvisioningServiceImpl
             sipDn = extractText(sipDn + "=acc(\\d+)", configFromServer);
             if (sipDn.length() > 0)
             {
-                logger.debug("Scraped directory number: '" + sipDn + "'");
+                logger.debug("Scraped directory number " + logHasher(sipDn) + " successfully.");
                 configFromServer = configFromServer.concat(sipAccConfig + ".DIRECTORY_NUMBER=" + sipDn + "\n");
                 // Use the DN to create the user configuration if it does not already exist.
                 mConfig.createUser(sipDn);
@@ -1367,10 +1493,6 @@ public class ProvisioningServiceImpl
 
         // Add the config from the server to the config string.
         configFromServer = configTemplate.concat(configFromServer);
-
-        restrictedConfig =
-            restrictedConfig.replaceAll("\\{restricted\\}", Matcher.quoteReplacement(String.valueOf(restrictConfig)))
-                            .replaceAll("\\{!restricted\\}", Matcher.quoteReplacement(String.valueOf(!restrictConfig)));
         configFromServer = configFromServer.concat(restrictedConfig);
 
         return configFromServer;
@@ -1409,7 +1531,7 @@ public class ProvisioningServiceImpl
             }
         }
 
-        return out == null ? null : out.toString("UTF-8");
+        return out == null ? null : out.toString(StandardCharsets.UTF_8);
     }
 
     /**
@@ -1688,9 +1810,7 @@ public class ProvisioningServiceImpl
                     new String[] {applicationName});
                 String message = mResourceService.getI18NString("service.gui.CHAT_REPLACED") + " " + restartString;
 
-                ErrorDialog dialog = new ErrorDialog(null, title, message, ErrorDialog.ErrorType.WARNING);
-                dialog.setModal(true);
-                dialog.showDialog();
+                new ErrorDialog(title, message).showDialog();
             }
         }
     }
@@ -1801,7 +1921,8 @@ public class ProvisioningServiceImpl
                 {
                     mConfig.user().removeProperty(jabberAcc);
                     logger.error("Found duplicate IM account, removing account " +
-                        jabberAccId + " with AccountID " + jabberAcc);
+                        sanitiseChatAddress(jabberAccId) +
+                        " with AccountID " + jabberAcc);
                 }
 
                 jabberAccountIds.add(jabberAccId);
@@ -1987,7 +2108,7 @@ public class ProvisioningServiceImpl
 
                             if(inet.equals(ipaddr))
                             {
-                                byte hw[] =
+                                byte[] hw =
                                     ProvisioningActivator.
                                         getNetworkAddressManagerService().
                                             getHardwareAddress(iface);
@@ -2052,16 +2173,15 @@ public class ProvisioningServiceImpl
      *
      * @param errorMessage  The error message to include in the dialog.
      */
-    private void displayLoginError(String errorMessage)
+    private void displayLoginError(String errorMessage, boolean forceExit)
     {
         logger.debug("Displaying error to user: " + errorMessage);
 
-        sLoginErrorDialog =
-            new ErrorDialog(null,
-                            mResourceService.getI18NString("service.gui.ERROR"),
-                            errorMessage);
-        sLoginErrorDialog.setModal(true);
-        sLoginErrorDialog.showDialog();
+        OnDismiss dismissAction =
+            forceExit ? OnDismiss.FORCE_EXIT : OnDismiss.DO_NOTHING;
+
+        new ErrorDialog(mResourceService.getI18NString("service.gui.ERROR"),
+            errorMessage, dismissAction).showDialog();
     }
 
     /**
@@ -2241,7 +2361,7 @@ public class ProvisioningServiceImpl
 
             if(key.equals(PROVISIONING_ALLOW_PREFIX_PROP))
             {
-                String prefixes[] = ((String)value).split("\\|");
+                String[] prefixes = ((String)value).split("\\|");
 
                 /* updates allowed prefixes list */
                 for(String s : prefixes)
@@ -2284,7 +2404,8 @@ public class ProvisioningServiceImpl
                         key.substring(0, key.lastIndexOf(".")),
                         (String)value);
 
-                logger.info("Saving password for property: " + key);
+                logger.info("Saving password for property: " +
+                            sanitise(key, PRIVACY_PATTERNS, str -> "_" + logHasher(str)));
             }
             else if (key.equals(PROP_UPDATE_LINK))
             {
@@ -2315,7 +2436,23 @@ public class ProvisioningServiceImpl
             {
                 configProperties.put(migrateKey(key), migrateValue(key,value));
 
-                logger.info("Saving to config: " + key + "=" + value);
+                // Remove account (subscriber) number from the logs. Returns {key, value}.
+                String loggableKey = sanitiseDirectoryNumberWithAccPrefix(key);
+                String loggableValue = "";
+                if (SANITISE_CONFIG_PROPERTY_PATTERN_LIST
+                        .stream()
+                        .map(pattern -> pattern.matcher(key))
+                        .anyMatch(Matcher::find))
+                {
+                    loggableValue = logHasher(value.toString());
+                }
+                else
+                {
+                    loggableValue = sanitiseDirectoryNumberWithAccPrefix(value.toString());
+                }
+
+                logger.info("Saving to config: " + loggableKey +
+                            "=" + loggableValue);
             }
         }
 
@@ -2392,15 +2529,13 @@ public class ProvisioningServiceImpl
      */
     private void checkEnforcePrefix(String enforcePrefix)
     {
-        String prefixes[] = null;
-
         if(enforcePrefix == null)
         {
             return;
         }
 
         /* must escape the | character */
-        prefixes = enforcePrefix.split("\\|");
+        String[] prefixes = enforcePrefix.split("\\|");
 
         /* get all properties */
         for (String key : mConfig.user().getAllPropertyNames())
@@ -2599,7 +2734,7 @@ public class ProvisioningServiceImpl
                     urlBuilder.append(isFirst ? "?" : "&")
                               .append(tokenNames[i])
                               .append("=")
-                              .append(URLEncoder.encode(tokenValues[i], "UTF-8"));
+                              .append(URLEncoder.encode(tokenValues[i], StandardCharsets.UTF_8));
 
                     isFirst = false;
                 }
@@ -2617,7 +2752,7 @@ public class ProvisioningServiceImpl
                         logger.warn("Error getting data with token");
 
                         // Probably means that the token we have stored is
-                        // invalid.  Therefore clear it out, and try again with
+                        // invalid.  Therefore, clear it out, and try again with
                         // the stored username and password.  If that fails,
                         // then we will ask the user to re-enter their password.
                         mCredsService.user().removePassword(PROPERTY_PROVISIONING_TOKEN);
@@ -2629,14 +2764,14 @@ public class ProvisioningServiceImpl
             if (res == null)
             {
                 logger.debug("Getting config using password");
-                res = HttpUtils.sendDataAsGet(url,
-                                              PROPERTY_PROVISIONING_USERNAME,
-                                              PROPERTY_PROVISIONING_PASSWORD,
-                                              prepopulatedUsername,
-                                              paramNames,
-                                              paramValues,
-                                              usernameIx,
-                                              passwordIx);
+                res = HttpUtils.sendDataAsPostWithFallbackToGet(url,
+                                                                PROPERTY_PROVISIONING_USERNAME,
+                                                                PROPERTY_PROVISIONING_PASSWORD,
+                                                                prepopulatedUsername,
+                                                                paramNames,
+                                                                paramValues,
+                                                                usernameIx,
+                                                                passwordIx);
             }
         }
         catch(IOException e)
@@ -2663,11 +2798,7 @@ public class ProvisioningServiceImpl
     {
         logger.warn("Error retrieving data");
 
-        // The config retrieval failed, check whether
-        // provisioning is mandatory.
-        if (mConfig.global().getBoolean(PROPERTY_PROVISIONING_MANDATORY,
-                               false) &&
-            (!mStoredConfig || mTerminalError))
+        if (!mStoredConfig || mTerminalError)
         {
             // Provisioning failed and there is either no stored config or
             // we have hit a terminal error (e.g. their account is locked
@@ -2676,7 +2807,7 @@ public class ProvisioningServiceImpl
                                        "permitted to start from stored config");
             ServiceUtils.shutdownAll(ProvisioningActivator.bundleContext);
         }
-        else if (mStoredConfig && !mTerminalError)
+        else
         {
             logger.warn("Continuing to start the client with stored config");
             boolean qaMode = ConfigurationUtils.isQaMode();
@@ -2721,15 +2852,34 @@ public class ProvisioningServiceImpl
     }
 
     /**
+     * Returns true if we already have a scheduler.
+     */
+    @VisibleForTesting
+    boolean hasActiveScheduler()
+    {
+        synchronized (sConfigSyncRunnableLock)
+        {
+            return (mConfigSyncRunnable != null) && !mConfigSyncRunnable.isCancelled();
+        }
+    }
+
+    /**
      * Stop the provisioning service
      */
     void stop()
     {
-        if (mTimer != null)
+        synchronized (sConfigSyncRunnableLock)
         {
-            mTimer.cancel();
-            mTimer = null;
+            if (mConfigSyncRunnable != null)
+            {
+                mConfigSyncRunnable.cancel();
+            }
         }
+
+        mConfig.global()
+                .removePropertyChangeListener(
+                        PROPERTY_PROVISIONING_USERNAME,
+                        mUsernameChangeListener);
     }
 
     /**
@@ -2948,5 +3098,27 @@ public class ProvisioningServiceImpl
 
             return useOverride;
         }
+    }
+
+    /**
+     * Sanitise server config strings that contain Personal Data.
+     *
+     * @param configFromServer The server config.
+     * @return The sanitised output.
+     */
+    private static String sanitiseServerConfigForLogging(String configFromServer)
+    {
+        final List<String> result = new ArrayList<>();
+        for (String line : configFromServer.split("\\R"))
+        {
+            String redactedAttrValues = sanitise(line,
+                                                 SANITISE_CONFIG_PATTERN_LIST,
+                                                 Hasher::logHasher);
+
+            String redactedDN = sanitiseDirectoryNumberWithAccPrefix(redactedAttrValues);
+            result.add(redactedDN);
+        }
+
+        return String.join(System.lineSeparator(), result);
     }
 }

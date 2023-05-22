@@ -76,17 +76,12 @@ public class SwingCallListener
     protected void onCallEvent(final CallEvent ev)
     {
         if (SwingUtilities.isEventDispatchThread())
+        {
             onCallEventInEventDispatchThread(ev);
+        }
         else
         {
-            SwingUtilities.invokeLater(
-                    new Runnable()
-                    {
-                        public void run()
-                        {
-                            onCallEventInEventDispatchThread(ev);
-                        }
-                    });
+            SwingUtilities.invokeLater(() -> onCallEventInEventDispatchThread(ev));
         }
     }
 

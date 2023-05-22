@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.service.protocol.ContactGroupType.JABBER;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.util.Hashtable;
@@ -22,6 +24,7 @@ import org.jxmpp.stringprep.XmppStringprepException;
 
 import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.ContactGroup;
+import net.java.sip.communicator.service.protocol.ContactGroupType;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.util.Logger;
 
@@ -431,6 +434,12 @@ public class ContactGroupJabberImpl
     public String getPersistentData()
     {
         return null;
+    }
+
+    @Override
+    public final ContactGroupType groupType()
+    {
+        return JABBER;
     }
 
     /**

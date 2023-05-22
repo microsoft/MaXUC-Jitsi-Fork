@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.*;
@@ -251,9 +252,9 @@ public class ChooseCallAccountPopupMenu
 
                 if (providers == null || providers.size() == 0)
                 {
-                    new ErrorDialog(null,
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.CALL_FAILED"),
+                    new ErrorDialog(
+                        GuiActivator.getResources()
+                            .getI18NString("service.gui.CALL_FAILED"),
                         GuiActivator.getResources().getI18NString(
                             "service.gui.NO_ONLINE_TELEPHONY_ACCOUNT"))
                         .showDialog();

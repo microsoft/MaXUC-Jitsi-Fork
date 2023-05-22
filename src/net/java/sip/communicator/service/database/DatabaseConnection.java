@@ -252,6 +252,29 @@ public interface DatabaseConnection
         throws SQLException;
 
     /**
+     * Return a ResultSet containing all rows which start and end date are
+     * exactly as the provided startDate, and which callPeerIds match the
+     * provided callPeerIds.
+     *
+     * @param tableName The name of the table to query.
+     * @param startDateColName The name of the column representing the start
+     *                         date.
+     * @param endDateColName The name of the column representing the end date.
+     * @param callPeerIdsColName The name of the column representing the call
+     *                           peer ids.
+     * @param startDate The start date to use in the query.
+     * @param callPeerIds IDs of the call peers to use in the query.
+     * @return The ResultSet.  Never null.
+     */
+    ResultSet findZeroLengthCallAtTimeForParticipant(String tableName,
+                                                     String startDateColName,
+                                                     String endDateColName,
+                                                     String callPeerIdsColName,
+                                                     java.util.Date startDate,
+                                                     String callPeerIds)
+            throws SQLException;
+
+    /**
      * Return a ResultSet containing all records for the given local JID and
      * remote JID between the specified dates.
      * @param tableName The name of the table to query.
@@ -502,6 +525,23 @@ public interface DatabaseConnection
                                     java.util.Date date,
                                     int count)
         throws SQLException;
+
+    /**
+     * Return a ResultSet containing the records for the given room JID and any of the given msg UIDs.
+     * @param tableName
+     * @param roomJidColName
+     * @param roomJid
+     * @param msgUidColName
+     * @param msgUids
+     * @return The ResultSet. Never null.
+     * @throws SQLException
+     */
+    ResultSet findMatchingGroupChatMsgUids(String tableName,
+                                           String roomJidColName,
+                                           String roomJid,
+                                           String msgUidColName,
+                                           List<String> msgUids)
+    throws SQLException;
 
     /**
      * Return a ResultSet containing all records for the given local JID and

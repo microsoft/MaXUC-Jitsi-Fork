@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.login;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -62,34 +63,6 @@ public class LoginRendererSwingImpl
     public void removeProtocolProviderUI(AccountID accountID)
     {
         this.mainFrame.removeProtocolProvider(accountID);
-    }
-
-    /**
-     * Starts the connecting user interface for the given protocol provider.
-     *
-     * @param protocolProvider the protocol provider for which we add the
-     * connecting user interface
-     */
-    public void startConnectingUI(ProtocolProviderService protocolProvider)
-    {
-        if (mainFrame.getAccountStatusPanel() != null)
-        {
-            mainFrame.getAccountStatusPanel().startConnecting(protocolProvider);
-        }
-    }
-
-    /**
-     * Stops the connecting user interface for the given protocol provider.
-     *
-     * @param protocolProvider the protocol provider for which we remove the
-     * connecting user interface
-     */
-    public void stopConnectingUI(ProtocolProviderService protocolProvider)
-    {
-        if (mainFrame.getAccountStatusPanel() != null)
-        {
-            mainFrame.getAccountStatusPanel().stopConnecting(protocolProvider);
-        }
     }
 
     /**

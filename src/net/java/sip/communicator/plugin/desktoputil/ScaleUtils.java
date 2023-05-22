@@ -5,8 +5,6 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.Border;
 
-import org.eclipse.swt.internal.win32.OS;
-
 import net.java.sip.communicator.plugin.desktoputil.lookandfeel.LookAndFeelManager;
 import net.java.sip.communicator.util.Logger;
 import org.jitsi.util.OSUtils;
@@ -64,15 +62,10 @@ public class ScaleUtils
             // scale is.
             //
             // This does not account for different scales on different monitors
-            int hwnd = OS.GetDC(0);
-            int x = OS.GetDeviceCaps(hwnd, OS.LOGPIXELSX);
-            int y = OS.GetDeviceCaps(hwnd, OS.LOGPIXELSY);
-
-            // x & y should be the same. If they aren't, take an average
-            scale = ((double) (x + y)) / (2*BASE_DPI);
-
-            logger.info("Setting display scale to: " + scale +
-                ", using DPI: (" + x + "," + y + ")");
+            int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
+            scale = (double) dpi / BASE_DPI;
+            logger.info("Setting display scale to: " + scale + ", using DPI: ("
+                + dpi + ")");
         }
         else
         {

@@ -6,6 +6,8 @@
  */
 package net.java.sip.communicator.impl.certificate;
 
+import java.security.GeneralSecurityException;
+
 import net.java.sip.communicator.service.certificate.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.util.*;
@@ -51,10 +53,17 @@ public class CertificateVerificationActivator
     {
         bundleContext = bc;
 
-        bundleContext.registerService(
-            CertificateService.class.getName(),
-            new CertificateServiceImpl(),
-            null);
+        try
+        {
+            bundleContext.registerService(
+                CertificateService.class.getName(),
+                new CertificateServiceImpl(),
+                null);
+        }
+        catch (GeneralSecurityException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

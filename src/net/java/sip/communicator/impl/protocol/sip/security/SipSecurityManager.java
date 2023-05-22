@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip.security;
 
 import gov.nist.javax.sip.header.*;
@@ -359,8 +360,7 @@ public class SipSecurityManager
                 ccEntry.pushBranchID(retryTran.getBranchId());
             cachedCredentials.cacheEntry(realm, ccEntry);
 
-            logger.debug("Created authorization header: " +
-                 authorization.toString());
+            logger.debug("Created authorization header");
 
             // get the unique Call-ID
             CallIdHeader call = (CallIdHeader)reoriginatedRequest

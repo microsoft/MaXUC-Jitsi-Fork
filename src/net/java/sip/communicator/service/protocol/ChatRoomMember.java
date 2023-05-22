@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import org.jitsi.service.resources.*;
@@ -40,7 +41,7 @@ public interface ChatRoomMember
      * like Jabber, this method would return a full contact id uri.
      *
      * @return a String (contact address), uniquely representing the contact
-     * over the service the service being used by the associated protocol
+     * over the service being used by the associated protocol
      * provider instance/
      */
     String getContactAddressAsString();

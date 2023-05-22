@@ -75,38 +75,30 @@ public class ConfigMigrator implements ConfigMigrationProperties
                            File.separator +
                            mConfigService.user().getScHomeDirName() +
                            File.separator;
-            try
-            {
-                mConfigService.global().debugSetInUpgrade(true);
 
-                doMigrate(PROP_HAS_MIGRATED, new Runnable()
+            doMigrate(PROP_HAS_MIGRATED, new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        // Config is most important, so do that first
-                        migrateConfig();
+                    // Config is most important, so do that first
+                    migrateConfig();
 
-                        // Then history (as it is mostly local, so won't be created)
-                        migrateDirectory(PROP_HAS_MIGRATED_HISTORY, "history_ver1.0");
+                    // Then history (as it is mostly local, so won't be created)
+                    migrateDirectory(PROP_HAS_MIGRATED_HISTORY, "history_ver1.0");
 
-                        // Contact list is mostly stored on server, so isn't too
-                        // important.
-                        migrateFile(PROP_HAS_MIGRATED_CONTACTS, "contactlist.xml");
+                    // Contact list is mostly stored on server, so isn't too
+                    // important.
+                    migrateFile(PROP_HAS_MIGRATED_CONTACTS, "contactlist.xml");
 
-                        // It really isn't the end of the world if we fail to
-                        // migrate the ringtone.
-                        migrateFile(PROP_HAS_MIGRATED_RINGTONE, "ringtone.wav");
+                    // It really isn't the end of the world if we fail to
+                    // migrate the ringtone.
+                    migrateFile(PROP_HAS_MIGRATED_RINGTONE, "ringtone.wav");
 
-                        // We'd like to migrate the avatarcache if we can
-                        migrateDirectory(PROP_HAS_MIGRATED_AVATAR_CACHE, "avatarcache");
-                    }
-                });
-            }
-            finally
-            {
-                mConfigService.global().debugSetInUpgrade(false);
-            }
+                    // We'd like to migrate the avatarcache if we can
+                    migrateDirectory(PROP_HAS_MIGRATED_AVATAR_CACHE, "avatarcache");
+                }
+            });
         }
     }
 

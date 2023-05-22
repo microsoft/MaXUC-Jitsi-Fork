@@ -1,11 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.httputil;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 
-import org.apache.http.*;
-import org.apache.http.impl.client.*;
-import org.apache.http.util.*;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.Credentials;
+import org.apache.http.client.HttpClient;
+import org.apache.http.util.EntityUtils;
 
 /**
  * Utility class wraps the http requests result and some utility methods
@@ -26,18 +30,24 @@ public class HTTPResponseResult
     /**
      * The HttpClient.
      */
-    private final DefaultHttpClient httpClient;
+    private final HttpClient httpClient;
+
+    /**
+     * The Credentials.
+     */
+    private final Credentials credentials;
 
     /**
      * Creates HTTPResponseResult.
      * @param response the HttpResponse.
      * @param httpClient the HttpClient.
      */
-    HTTPResponseResult(HttpResponse response, DefaultHttpClient httpClient)
+    HTTPResponseResult(HttpResponse response, HttpClient httpClient, Credentials cred)
     {
         this.response = response;
         this.entity = response.getEntity();
         this.httpClient = httpClient;
+        this.credentials = cred;
     }
 
     /**
@@ -55,8 +65,8 @@ public class HTTPResponseResult
 
     /**
      * Get an HTTP header from the response.
-     * @param headerName
-     * @return
+     * @param headerName name of the header
+     * @return the response header
      */
     public String getResponseHeader(String headerName)
     {
@@ -107,14 +117,12 @@ public class HTTPResponseResult
      */
     public String[] getCredentials()
     {
-        String cred[] = new String[2];
+        String[] cred = new String[2];
 
-        if(httpClient != null)
+        if(credentials != null)
         {
-            HTTPCredentialsProvider prov = (HTTPCredentialsProvider)
-                    httpClient.getCredentialsProvider();
-            cred[0] = prov.getAuthenticationUsername();
-            cred[1] = prov.getAuthenticationPassword();
+            cred[0] = credentials.getUserPrincipal().getName();
+            cred[1] = credentials.getPassword();
         }
 
         return cred;

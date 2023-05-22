@@ -1,31 +1,31 @@
-<?xml version="1.0" encoding="windows-1250" ?>
+<?xml version="1.0" encoding="WINDOWS-1252" ?>
 <WixLocalization
     xmlns="http://schemas.microsoft.com/wix/2006/localization"
-    Culture="sl-si"
-    Language="1060">
+    Culture="en-us"
+    Language="1033">
 
-  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Nastavitev</String>
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Setup</String>
   <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="CleanSweepDlgDescription" Overridable="yes">Katere dodatne naloge naj bodo še opravljene?</String>
-  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Dodatne naloge</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Which additional tasks should be done?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Additional Tasks</String>
 
-  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Nastavitev</String>
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Setup</String>
   <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Katere dodatne naloge naj bodo še opravljene?</String>
-  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Dodatne naloge</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Which additional tasks should be done?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Additional Tasks</String>
 
-  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Ustvarite bližnjice</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">&amp;Začetni Meni</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Ustvari bližnjico na namizju</String>
-  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Ostala dejanja</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Zaženi @@PRODUCT_NAME_TITLECASE@@ na začetnih nastavitvah</String>
-  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Pridruženi Protokoli</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Create Shortcuts</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">S&amp;tart Menu</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Create Desktop Shortcut</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Other Actions</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Launch @@PRODUCT_NAME_TITLECASE@@ on startup</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Associate Protocols</String>
 
-  <String Id="WelcomeText1" Overridable="yes">To programsko opremo je razvil: @@COMPANY_NAME_LEGAL@@</String>
-  <String Id="WelcomeText2" Overridable="yes">Domača spletna stran je na: @@WEB_PAGE@@</String>
-  <String Id="WelcomeText3" Overridable="yes">{\GreyText} Poganja jitsi.org</String>
+  <String Id="WelcomeText1" Overridable="yes">This software is developed by: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">The homepage is at: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Powered by jitsi.org</String>
 
-  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ ni podprt v tej različici sistema Windows. Zahteva vsaj Windows 7.</String>
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ is not supported on this version of Windows.  It requires at least Windows 7.</String>
 
-  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Zaženi @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Launch @@PRODUCT_NAME_TITLECASE@@</String>
 </WixLocalization>

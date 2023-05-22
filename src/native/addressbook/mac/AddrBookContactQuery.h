@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 
 #ifndef _NET_JAVA_SIP_COMMUNICATOR_PLUGIN_ADDRESSBOOK_ADDRBOOKCONTACTQUERY_H_
 #define _NET_JAVA_SIP_COMMUNICATOR_PLUGIN_ADDRESSBOOK_ADDRBOOKCONTACTQUERY_H_

@@ -4,28 +4,42 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.certificate;
+
+import static java.nio.file.StandardWatchEventKinds.*;
+import static java.util.stream.Collectors.toList;
 
 import java.beans.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.security.*;
 import java.security.KeyStore.*;
 import java.security.cert.*;
 import java.security.cert.Certificate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.*;
 import javax.security.auth.callback.*;
-import javax.swing.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.cert.jcajce.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
 
 import net.java.sip.communicator.launcher.SIPCommunicator;
@@ -34,6 +48,7 @@ import net.java.sip.communicator.plugin.desktoputil.AuthenticationWindow.*;
 import net.java.sip.communicator.service.certificate.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.service.httputil.*;
+import net.java.sip.communicator.service.threading.ThreadFactoryBuilder;
 import net.java.sip.communicator.util.Logger;
 
 /**
@@ -74,9 +89,6 @@ public class CertificateServiceImpl
     private static final Logger logger =
         Logger.getLogger(CertificateServiceImpl.class);
 
-    private final ResourceManagementService R =
-        CertificateVerificationActivator.getResources();
-
     private final ConfigurationService config =
         CertificateVerificationActivator.getConfigurationService();
 
@@ -95,15 +107,6 @@ public class CertificateServiceImpl
     /** Hash algorithm for the cert thumbprint*/
     private static final String THUMBPRINT_HASH_ALGORITHM = "SHA1";
 
-    // ------------------------------------------------------------------------
-    // fields
-    // ------------------------------------------------------------------------
-    /**
-     * Stores the certificates that are trusted as long as this service lives.
-     */
-    private Map<String, List<String>> sessionAllowedCertificates =
-            new HashMap<>();
-
     /**
      * Caches retrievals of AIA information (downloaded certs or failures).
      */
@@ -111,9 +114,33 @@ public class CertificateServiceImpl
             new HashMap<>();
 
     /**
-     * Store object reference in order to prevent duplicate dialogs.
+     * Caches retrievals of TrustManagers based on the identities they were
+     * initialised with.
      */
-    private static VerifyCertificateDialog sCertificateDialog = null;
+    private final ConcurrentMap<List<String>, X509TrustManager> trustManagerCache
+            = new ConcurrentHashMap<>();
+
+    /**
+     * Monitors the macOS keychain for changes to the trusted root certificate
+     * store, and performs actions when a change is detected to ensure all
+     * subsequent secure connections use the most recent root CAs.
+     */
+    private final KeychainChangeMonitor monitor;
+
+    /**
+     * Auxiliary executor service for the keychain monitor task.
+     */
+    private final ExecutorService monitorExecutor =
+            Executors.newSingleThreadExecutor(
+                    new ThreadFactoryBuilder()
+                            .setName("keychain-monitor-thread")
+                            .build());
+    /**
+     * Path and filename of the system root certificate keychain on macOS.
+     */
+    private static String MAC_KEYCHAIN_PATH = "/System/Library/Keychains";
+    private static String MAC_KEYCHAIN_FILE =
+            "SystemRootCertificates.keychain";
 
     /**
      * Used to get hold of the client/server keys/certificates for use on the
@@ -122,23 +149,18 @@ public class CertificateServiceImpl
      */
     private WISPACertificateInfo wispaCertificateInfo = null;
 
+    /**
+     * Email and hostname matchers for certificates.
+     */
+    private static final EMailAddressMatcher EmailMatcher =
+            new EMailAddressMatcher();
+
+    private static final BrowserLikeHostnameMatcher BrowserMatcher =
+            new BrowserLikeHostnameMatcher();
+
     // ------------------------------------------------------------------------
     // Map access helpers
     // ------------------------------------------------------------------------
-    /**
-     * Helper method to avoid accessing null-lists in the session allowed
-     * certificate map
-     *
-     * @param propName the key to access
-     * @return the list for the given list or a new, empty list put in place for
-     *         the key
-     */
-    private List<String> getSessionCertEntry(String propName)
-    {
-        return sessionAllowedCertificates.computeIfAbsent(propName,
-                                                          k -> new LinkedList<>());
-    }
-
     /**
      * AIA cache retrieval entry.
      */
@@ -153,13 +175,111 @@ public class CertificateServiceImpl
         }
     }
 
+    /**
+     * Monitors the macOS keychain for changes to the trusted root certificate
+     * store, and performs actions when a change is detected to ensure all
+     * subsequent secure connections use the most recent root CAs.
+     */
+    private class KeychainChangeMonitor
+    {
+        private final WatchService monitor;
+        /**
+         * This eventTrigger is used by the KeychainChangeMonitor to signal when
+         * a change to the keychain has occurred.
+         */
+        private CompletableFuture<Void> eventTrigger;
+
+        KeychainChangeMonitor(Path dir) throws IOException {
+            Objects.requireNonNull(dir);
+            this.monitor = FileSystems.getDefault().newWatchService();
+            dir.register(monitor, ENTRY_MODIFY, ENTRY_CREATE);
+            this.eventTrigger = new CompletableFuture<>();
+        }
+
+        /**
+         * Looping task that monitors the macOS keychain of system root
+         * certificates for changes. Once a change is detected, we empty the
+         * TrustManager cache and set the eventTrigger for any other tasks
+         * listening for updates based on it.
+         */
+        void startMonitoringKeychain()
+        {
+            logger.debug("Keychain monitor thread started!");
+            while (true)
+            {
+                WatchKey key;
+                try
+                {
+                    key = monitor.take();
+                }
+                catch (InterruptedException ex)
+                {
+                    logger.debug("Keychain monitor thread interrupted!");
+                    return;
+                }
+
+                if (keychainFileModified(key))
+                {
+                    logger.debug("macOS keychain updated! " +
+                                 "Emptying TrustManager cache.");
+                    trustManagerCache.clear();
+                    eventTrigger.complete(null);
+                }
+
+                boolean isKeyValid = key.reset();
+                if (!isKeyValid)
+                {
+                    break;
+                }
+            }
+        }
+
+        /**
+         * Provides the eventTrigger that other tasks can use to monitor whether
+         * a keychain update has been detected.
+         * <p>
+         * Supplies a new trigger for future keychain updates
+         * once the old one has expired (i.e. been completed).
+         */
+        synchronized CompletableFuture<Void> getEventTrigger()
+        {
+            if (eventTrigger.isDone())
+            {
+                eventTrigger = new CompletableFuture<>();
+            }
+            return eventTrigger;
+        }
+
+        /**
+         * Returns true if a change to the macOS system root certificate
+         * keychain file has been detected.
+         */
+        private boolean keychainFileModified(WatchKey key)
+        {
+            return key.pollEvents().stream()
+                    .map(this::castToPath)
+                    .map(WatchEvent::context)
+                    .map(path -> path.getFileName().toString())
+                    .anyMatch(getMacOSKeychainFileName()::contains);
+        }
+
+        /**
+         * Utility method to convert WatchEvents to the correct type.
+         */
+        @SuppressWarnings("unchecked")
+        private WatchEvent<Path> castToPath(WatchEvent<?> watchEvent)
+        {
+            return (WatchEvent<Path>) watchEvent;
+        }
+    }
+
     // ------------------------------------------------------------------------
     // Truststore configuration
     // ------------------------------------------------------------------------
     /**
      * Initializes a new <tt>CertificateServiceImpl</tt> instance.
      */
-    public CertificateServiceImpl()
+    public CertificateServiceImpl() throws GeneralSecurityException
     {
         setTrustStore();
         config.global().addPropertyChangeListener(PNAME_TRUSTSTORE_TYPE, this);
@@ -176,6 +296,25 @@ public class CertificateServiceImpl
             // Generate the certificates required for the WISPA interface.
             wispaCertificateInfo = new WISPACertificateInfo();
         }
+
+        if(OSUtils.isMac())
+        {
+            try
+            {
+                this.monitor = new KeychainChangeMonitor(
+                        Path.of(getMacOSKeychainPath()));
+                monitorExecutor.submit(monitor::startMonitoringKeychain);
+            }
+            catch (IOException e)
+            {
+                throw new GeneralSecurityException(
+                        "Failed to create macOS keychain monitor", e);
+            }
+        }
+        else
+        {
+            this.monitor = null;
+        }
     }
 
     public void propertyChange(PropertyChangeEvent evt)
@@ -185,34 +324,26 @@ public class CertificateServiceImpl
 
     private void setTrustStore()
     {
-//        String tsType = (String)config.global().getProperty(PNAME_TRUSTSTORE_TYPE);
-        String tsFile = (String)config.global().getProperty(PNAME_TRUSTSTORE_FILE);
-        String tsPassword = credService.global().loadPassword(PNAME_TRUSTSTORE_PASSWORD);
-
-//        // use the OS store as default store on Windows
-//        if (tsType == null
-//            && !"meta:default".equals(tsType)
-//            && OSUtils.IS_WINDOWS)
-//        {
-//            config.global().setProperty(PNAME_TRUSTSTORE_TYPE, "Windows-ROOT");
-//        }
-
-//        if(tsType != null && !"meta:default".equals(tsType))
-//            System.setProperty("javax.net.ssl.trustStoreType", tsType);
-//        else
-//        Revert fix from jitsi core. We never want to use the Windows store
-// (for now). By removing the system property, we always use the default store (jks)
-            System.getProperties().remove("javax.net.ssl.trustStoreType");
-
-        if(tsFile != null)
-            System.setProperty("javax.net.ssl.trustStore", tsFile);
-        else
+        System.getProperties().remove("javax.net.ssl.trustStoreType");
+        if (OSUtils.isWindows())
+        {
             System.getProperties().remove("javax.net.ssl.trustStore");
-
-        if(tsPassword != null)
-            System.setProperty("javax.net.ssl.trustStorePassword", tsPassword);
-        else
             System.getProperties().remove("javax.net.ssl.trustStorePassword");
+        }
+        else
+        {
+            String tsFile = (String)config.global().getProperty(PNAME_TRUSTSTORE_FILE);
+            String tsPassword = credService.global().loadPassword(PNAME_TRUSTSTORE_PASSWORD);
+            if(tsFile != null)
+                System.setProperty("javax.net.ssl.trustStore", tsFile);
+            else
+                System.getProperties().remove("javax.net.ssl.trustStore");
+
+            if(tsPassword != null)
+                System.setProperty("javax.net.ssl.trustStorePassword", tsPassword);
+            else
+                System.getProperties().remove("javax.net.ssl.trustStorePassword");
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -312,22 +443,16 @@ public class CertificateServiceImpl
         config.global().removeProperty(PNAME_CLIENTAUTH_CERTCONFIG_BASE + "." + id);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.service.certificate.CertificateService#
-     * getSSLContext()
+    /**
+     * @see CertificateService#getSSLContext()
      */
     public SSLContext getSSLContext() throws GeneralSecurityException
     {
-        return getSSLContext(getTrustManager((Iterable<String>)null));
+        return getSSLContext(getTrustManager(Collections.emptyList()));
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.service.certificate.CertificateService#
-     * getSSLContext(javax.net.ssl.X509TrustManager)
+    /**
+     * @see CertificateService#getSSLContext(javax.net.ssl.X509TrustManager)
      */
     public SSLContext getSSLContext(X509TrustManager trustManager)
         throws GeneralSecurityException
@@ -429,11 +554,9 @@ public class CertificateServiceImpl
         return ksBuilder;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.service.certificate.CertificateService#
-     * getSSLContext(java.lang.String, javax.net.ssl.X509TrustManager)
+    /**
+     * @see CertificateService#getSSLContext(java.lang.String,
+     * javax.net.ssl.X509TrustManager)
      */
     public SSLContext getSSLContext(String clientCertConfig,
         X509TrustManager trustManager)
@@ -472,11 +595,9 @@ public class CertificateServiceImpl
         }
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.service.certificate.CertificateService#
-     * getSSLContext(javax.net.ssl.KeyManager[], javax.net.ssl.X509TrustManager)
+    /**
+     * @see CertificateService#getSSLContext(javax.net.ssl.KeyManager[],
+     * javax.net.ssl.X509TrustManager)
      */
     public SSLContext getSSLContext(KeyManager[] keyManagers,
         X509TrustManager trustManager)
@@ -499,100 +620,63 @@ public class CertificateServiceImpl
         }
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * net.java.sip.communicator.service.certificate
-     * .CertificateService#getTrustManager()
+    /**
+     * @see CertificateService#getTrustManager()
      */
     @Override
     public X509TrustManager getTrustManager() throws GeneralSecurityException
     {
         return getTrustManager(
                 new ArrayList<>(),
-            new EMailAddressMatcher(),
-            new BrowserLikeHostnameMatcher()
+                EmailMatcher,
+                BrowserMatcher
         );
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * net.java.sip.communicator.service.certificate
-     * .CertificateService#getTrustManager(java.lang.Iterable)
+    /**
+     * @see CertificateService#getTrustManager(java.util.List)
      */
-    public X509TrustManager getTrustManager(Iterable<String> identitiesToTest)
+    public X509TrustManager getTrustManager(List<String> identitiesToTest)
         throws GeneralSecurityException
     {
         return getTrustManager(
             identitiesToTest,
-            new EMailAddressMatcher(),
-            new BrowserLikeHostnameMatcher()
+            EmailMatcher,
+            BrowserMatcher
         );
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
-     * @see
-     * net.java.sip.communicator.service.certificate.CertificateService
-     * #getTrustManager(java.lang.String)
-     */
-    public X509TrustManager getTrustManager(String identityToTest)
-        throws GeneralSecurityException
-    {
-        return getTrustManager(
-            Arrays.asList(identityToTest),
-            new EMailAddressMatcher(),
-            new BrowserLikeHostnameMatcher()
-        );
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * net.java.sip.communicator.service.certificate.CertificateService
-     * #getTrustManager(java.lang.String,
+     * @see CertificateService#getTrustManager(java.util.List,
      * net.java.sip.communicator.service.certificate.CertificateMatcher,
      * net.java.sip.communicator.service.certificate.CertificateMatcher)
      */
     public X509TrustManager getTrustManager(
-        String identityToTest,
-        CertificateMatcher clientVerifier,
-        CertificateMatcher serverVerifier)
-        throws GeneralSecurityException
-    {
-        return getTrustManager(
-            Arrays.asList(identityToTest),
-            clientVerifier,
-            serverVerifier
-        );
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * net.java.sip.communicator.service.certificate.CertificateService
-     * #getTrustManager(java.lang.Iterable,
-     * net.java.sip.communicator.service.certificate.CertificateMatcher,
-     * net.java.sip.communicator.service.certificate.CertificateMatcher)
-     */
-    public X509TrustManager getTrustManager(
-        final Iterable<String> identitiesToTest,
+        final List<String> identitiesToTest,
         final CertificateMatcher clientVerifier,
         final CertificateMatcher serverVerifier)
         throws GeneralSecurityException
     {
+        Objects.requireNonNull(identitiesToTest);
+        X509TrustManager cachedTm = queryTrustManagerCache(identitiesToTest);
+        if (cachedTm != null)
+        {
+            logger.debug("Cached TrustManager found with identities: " +
+                         identitiesToTest);
+            return cachedTm;
+        }
+
+        logger.debug("Creating new TrustManager with identities: " +
+                     identitiesToTest);
         // obtain the default X509 trust manager
         X509TrustManager defaultTm = null;
         TrustManagerFactory tmFactory =
             TrustManagerFactory.getInstance(TrustManagerFactory
                 .getDefaultAlgorithm());
-        tmFactory.init((KeyStore) null);
+
+        tmFactory.init(initialiseKeyStore());
         for (TrustManager m : tmFactory.getTrustManagers())
         {
             if (m instanceof X509TrustManager)
@@ -607,7 +691,7 @@ public class CertificateServiceImpl
 
         final X509TrustManager tm = defaultTm;
 
-        return new X509TrustManager()
+        final X509TrustManager tmToReturn = new X509TrustManager()
         {
             private boolean serverCheck;
 
@@ -697,8 +781,7 @@ public class CertificateServiceImpl
 
                    if (!failedToVerify)
                    {
-                       if(identitiesToTest == null
-                            || !identitiesToTest.iterator().hasNext())
+                       if(identitiesToTest.isEmpty())
                        {
                            return;
                        }
@@ -729,82 +812,29 @@ public class CertificateServiceImpl
                    {
                         String thumbprint = getThumbprint(
                             chain[0], THUMBPRINT_HASH_ALGORITHM);
-                        String message = null;
-                        List<String> propNames = new LinkedList<>();
                         List<String> storedCerts = new LinkedList<>();
-                        String appName =
-                            R.getSettingsString("service.gui.APPLICATION_NAME");
 
-                        if (identitiesToTest == null
-                            || !identitiesToTest.iterator().hasNext())
+                        if (identitiesToTest.isEmpty())
                         {
                             String propName =
                                 PNAME_CERT_TRUST_PREFIX + ".server." + thumbprint;
-                            propNames.add(propName);
-
-                            message =
-                                R.getI18NString("service.gui."
-                                    + "CERT_DIALOG_DESCRIPTION_TXT_NOHOST",
-                                    new String[] {
-                                        appName
-                                    }
-                                );
 
                             // get the thumbprints from the permanent allowances
                             String hashes = config.global().getString(propName);
                             if (hashes != null)
-                                for(String h : hashes.split(","))
-                                    storedCerts.add(h);
-
-                            // get the thumbprints from the session allowances
-                            List<String> sessionCerts =
-                                sessionAllowedCertificates.get(propName);
-                            if (sessionCerts != null)
-                                storedCerts.addAll(sessionCerts);
+                                storedCerts.addAll(Arrays.asList(hashes.split(",")));
                         }
                         else
                         {
-                            if (serverCheck)
-                            {
-                                message =
-                                    R.getI18NString(
-                                        "service.gui."
-                                        + "CERT_DIALOG_DESCRIPTION_TXT",
-                                        new String[] {
-                                            appName,
-                                            identitiesToTest.toString()
-                                        }
-                                    );
-                            }
-                            else
-                            {
-                                message =
-                                    R.getI18NString(
-                                        "service.gui."
-                                        + "CERT_DIALOG_PEER_DESCRIPTION_TXT",
-                                        new String[] {
-                                            appName,
-                                            identitiesToTest.toString()
-                                        }
-                                    );
-                            }
                             for (String identity : identitiesToTest)
                             {
                                 String propName =
                                     PNAME_CERT_TRUST_PREFIX + ".param." + identity;
-                                propNames.add(propName);
 
                                 // get the thumbprints from the permanent allowances
                                 String hashes = config.global().getString(propName);
                                 if (hashes != null)
-                                    for(String h : hashes.split(","))
-                                        storedCerts.add(h);
-
-                                // get the thumbprints from the session allowances
-                                List<String> sessionCerts =
-                                    sessionAllowedCertificates.get(propName);
-                                if (sessionCerts != null)
-                                    storedCerts.addAll(sessionCerts);
+                                    Collections.addAll(storedCerts, hashes.split(","));
                             }
                         }
 
@@ -814,28 +844,10 @@ public class CertificateServiceImpl
                                 " stored: " + storedCerts +
                                 " thumbprint: " + thumbprint);
 
-                            switch (verify(chain, message))
-                            {
-                            case DO_NOT_TRUST:
-                                throw new CertificateException(
-                                    "The peer provided certificate with Subject <"
-                                        + chain[0].getSubjectDN()
-                                        + "> is not trusted");
-                            case TRUST_ALWAYS:
-                                for (String propName : propNames)
-                                {
-                                    String current = config.global().getString(propName);
-                                    String newValue = thumbprint;
-                                    if (current != null)
-                                        newValue += "," + current;
-                                    config.global().setProperty(propName, newValue);
-                                }
-                                break;
-                            case TRUST_THIS_SESSION_ONLY:
-                                for(String propName : propNames)
-                                    getSessionCertEntry(propName).add(thumbprint);
-                                break;
-                            }
+                            throw new CertificateException(
+                                "The peer provided certificate with Subject <"
+                                    + chain[0].getSubjectDN()
+                                    + "> is not trusted");
                         }
                         // ok, we've seen this certificate before
                     }
@@ -853,7 +865,7 @@ public class CertificateServiceImpl
                 CertificateException
             {
                 // Only try to build chains for servers that send only their
-                // own cert, but no issuer. This also matches self signed (will
+                // own cert, but no issuer. This also matches self-signed (will
                 // be ignored later) and Root-CA signed certs. In this case we
                 // throw the Root-CA away after the lookup
                 if (chain.length != 1)
@@ -866,10 +878,7 @@ public class CertificateServiceImpl
                 // prepare for the newly created chain
                 List<X509Certificate> newChain =
                         new ArrayList<>(chain.length + 4);
-                for (X509Certificate cert : chain)
-                {
-                    newChain.add(cert);
-                }
+                newChain.addAll(Arrays.asList(chain));
 
                 // search from the topmost certificate upwards
                 CertificateFactory certFactory =
@@ -971,8 +980,131 @@ public class CertificateServiceImpl
                 return chain;
             }
         };
+
+        trustManagerCache.put(identitiesToTest, tmToReturn);
+        return tmToReturn;
     }
 
+    /**
+     * Checks if there is a cached TrustManager associated with a given set of
+     * identities.
+     */
+    private X509TrustManager queryTrustManagerCache(List<String> identitiesToTest)
+    {
+        List<String> sorted = identitiesToTest.stream()
+                .sorted()
+                .collect(toList());
+        return trustManagerCache.get(sorted);
+    }
+
+    /**
+     * Initialises a new KeyStore instance.
+     * <p>
+     * For Windows, we rely on the native OS implementation
+     * (obtained via the SunMSCAPI provider),
+     * so we simply return null here.
+     * <p>
+     * For macOS, we must load the certificates from the system root
+     * into a KeyStore.
+     */
+    private static KeyStore initialiseKeyStore() throws GeneralSecurityException
+    {
+        KeyStore ks = null;
+        if (OSUtils.isWindows())
+        {
+            try
+            {
+                ks = KeyStore.getInstance("Windows-ROOT", "SunMSCAPI");
+                ks.load(null, null);
+            }
+            catch (Exception ex)
+            {
+                throw new GeneralSecurityException("Cannot init KeyStore for Windows", ex);
+            }
+        }
+        else
+        {
+            ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            try
+            {
+                ks.load(null, null);
+                ProcessBuilder pb = new ProcessBuilder("security", "find-certificate", "-a", "-p",
+                                                       getMacOSKeychainPath() + "/" + getMacOSKeychainFileName());
+                Process proc = pb.start();
+                proc.waitFor(100, TimeUnit.MILLISECONDS);
+                try (BufferedInputStream procInputStream = new BufferedInputStream(proc.getInputStream()))
+                {
+                    int certCount = 0;
+                    while (procInputStream.available() > 0)
+                    {
+                        Certificate cert = cf.generateCertificate(procInputStream);
+                        ks.setCertificateEntry(cert.toString(), cert);
+                        certCount++;
+                    }
+                    logger.debug("Loaded " + certCount +
+                                    " certificates from the macOS system root");
+                }
+            }
+            catch (IOException e)
+            {
+                throw new GeneralSecurityException(
+                        "Unable to load certificates from macOS system root", e);
+            }
+            catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return ks;
+    }
+
+    /**
+     * Returns the path to the directory of the file containing
+     * the system root certificates on macOS.
+     */
+    public static String getMacOSKeychainPath()
+    {
+        return MAC_KEYCHAIN_PATH;
+    }
+
+    /**
+     * Returns the name of the file containing the system root certificates on
+     * macOS.
+     */
+    public static String getMacOSKeychainFileName()
+    {
+        return MAC_KEYCHAIN_FILE;
+    }
+
+    @VisibleForTesting
+    public static void setMacOSKeychainFileName(String filename)
+    {
+        MAC_KEYCHAIN_FILE = filename;
+    }
+
+    @VisibleForTesting
+    public static void setMacOSKeychainPath(String path)
+    {
+        MAC_KEYCHAIN_PATH = path;
+    }
+
+    /**
+     * Returns the event trigger from the KeychainChangeMonitor that signals
+     * when an update to the keychain has occurred. macOS only.
+     */
+    @Override
+    public CompletableFuture<Void> getMacOSKeychainUpdateTrigger()
+    {
+        if (OSUtils.isMac())
+        {
+            return monitor.getEventTrigger().copy();
+        }
+        else
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+    }
     @Override
     public boolean useSecureWispa()
     {
@@ -1003,7 +1135,7 @@ public class CertificateServiceImpl
         return useSecureWispa() ? wispaCertificateInfo.getStoreFormat() : null;
     }
 
-    protected class BrowserLikeHostnameMatcher
+    protected static class BrowserLikeHostnameMatcher
         implements CertificateMatcher
     {
         public void verify(Iterable<String> identitiesToTest,
@@ -1034,7 +1166,7 @@ public class CertificateServiceImpl
         }
     }
 
-    protected class EMailAddressMatcher
+    protected static class EMailAddressMatcher
         implements CertificateMatcher
     {
         public void verify(Iterable<String> identitiesToTest,
@@ -1062,126 +1194,6 @@ public class CertificateServiceImpl
                     + cert.getSubjectDN()
                     + "> contains no SAN for <"
                     + identitiesToTest + ">");
-        }
-    }
-
-    /**
-     * chainToString
-     *
-     * @param chain An array of <tt>X509Certificate</tt>s representing a certificate chain
-     * @return A String representing the certificates in the chain suitable for logging.
-     */
-    private String chainToString(X509Certificate[] chain)
-    {
-        StringBuffer result = new StringBuffer("X509 Chain: [");
-
-        for (X509Certificate cert : chain)
-        {
-            StringBuffer certName = new StringBuffer();
-
-            if (cert == null)
-            {
-                certName.append("null");
-            }
-            else
-            {
-                try
-                {
-                    certName.append("SN=");
-                    certName.append(cert.getSerialNumber());
-                    certName.append("\nIssuer=");
-                    certName.append(cert.getIssuerX500Principal());
-                    certName.append("\nSubject=");
-                    certName.append(cert.getSubjectX500Principal());
-
-                    Collection<List<?>> altNames = cert.getSubjectAlternativeNames();
-
-                    if (altNames != null)
-                    {
-                        for (List<?> altName : altNames)
-                        {
-                            certName.append("\n");
-                            certName.append(altName.get(0));
-                            certName.append("=");
-                            certName.append(altName.get(1));
-                        }
-                    }
-                }
-                catch (CertificateParsingException e)
-                {
-                    logger.info("Failed to parse certificate: " + certName, e);
-                    certName = new StringBuffer("ParseError");
-                }
-            }
-
-            result.append("{");
-            certName.append("\n");
-            result.append(certName);
-            certName.append("\n");
-            result.append("}\n");
-        }
-
-        result.append("]");
-        return result.toString();
-    }
-
-    /**
-     * Asks the user whether they trust the supplied chain of certificates.
-     *
-     * @param chain The chain of the certificates to check with user.
-     * @param message A text that describes why the verification failed.
-     * @return The result of the user interaction. One of
-     *         {@link CertificateService#DO_NOT_TRUST},
-     *         {@link CertificateService#TRUST_THIS_SESSION_ONLY},
-     *         {@link CertificateService#TRUST_ALWAYS}
-     */
-    protected int verify(final X509Certificate[] chain, final String message)
-    {
-        logger.warn("Asking user to verify certificate. " +
-                    " chain: " + chainToString(chain) +
-                    " with message: " + message);
-
-        if (config.user() != null && config.user().getBoolean(PNAME_NO_USER_INTERACTION, false))
-            return DO_NOT_TRUST;
-
-        final VerifyCertificateDialog dialog = sCertificateDialog == null?
-            new VerifyCertificateDialog(chain, null, message) : sCertificateDialog;
-
-        sCertificateDialog = dialog;
-
-        try
-        {
-            // show the dialog in the swing thread and wait for the user
-            // choice
-            SwingUtilities.invokeAndWait(new Runnable()
-            {
-                public void run()
-                {
-                    dialog.setVisible(true);
-                }
-            });
-        }
-        catch (Exception e)
-        {
-            logger.error("Cannot show certificate verification dialog", e);
-            return DO_NOT_TRUST;
-        }
-
-        if(!dialog.isTrusted)
-        {
-            logger.warn("User said do not trust");
-            logger.user("Do not trust selected");
-            return DO_NOT_TRUST;
-        }
-        else if(dialog.alwaysTrustCheckBox.isSelected())
-        {
-            logger.user("Always trust selected");
-            return TRUST_ALWAYS;
-        }
-        else
-        {
-            logger.user("Trust only for this session selected");
-            return TRUST_THIS_SESSION_ONLY;
         }
     }
 

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip.net;
 
 import static javax.sip.ListeningPoint.*;
@@ -42,7 +43,8 @@ public class ManualProxyConnection
     public ManualProxyConnection(SipAccountID account)
     {
         super(account);
-        logger.debug("Creating new ManualProxyConnection for " + account);
+        logger.debug("Creating new ManualProxyConnection for " +
+                    account != null ? account.getLoggableAccountID() : account);
         reset();
     }
 
@@ -67,14 +69,15 @@ public class ManualProxyConnection
         //check if the available addresses are exhausted
         if(lookupIndex >= lookups.length)
         {
-            logger.debug("No more addresses for " + account);
+            logger.debug("No more addresses for " + account.getLoggableAccountID());
             lookups = null;
             return false;
         }
 
         //assign the next address and return lookup success
         socketAddress = lookups[lookupIndex];
-        logger.debug("Returning <" + socketAddress + "> as next address for " + account);
+        logger.debug("Returning <" + socketAddress + "> as next address for " +
+                     account.getLoggableAccountID());
         lookupIndex++;
         return true;
     }

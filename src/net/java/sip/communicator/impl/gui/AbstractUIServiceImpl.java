@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+
 import java.awt.*;
 import java.awt.desktop.QuitResponse;
 import java.awt.event.ActionEvent;
@@ -8,7 +10,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.lang.management.ManagementFactory;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,13 +19,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimerTask;
 import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import javax.swing.*;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 import com.sun.jna.platform.WindowUtils;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
@@ -76,6 +77,7 @@ import net.java.sip.communicator.service.protocol.SecurityAuthority;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPAMotion;
+import net.java.sip.communicator.service.wispaservice.WISPAMotionType;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ConfigurationUtils;
@@ -121,11 +123,9 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
             = "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER";
 
     /**
-     * Suffix for several properties that shouldn't be left lying around after logout.
+     * Suffix for the ENCRYPTED_PASSWORD property that shouldn't be left lying around after logout.
      */
-    private static final String ENCRYPTED_PASSWORD = "ENCRYPTED_PASSWORD";
-    private static final String CUSTOMSTATUS = "CUSTOM_STATUS";
-    private static final String CHATSUBJECT = "chatRoomSubject";
+    public static final String ENCRYPTED_PASSWORD = "ENCRYPTED_PASSWORD";
 
     protected AbstractMainFrame mainFrame;
 
@@ -310,7 +310,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
             {
                 wispaService.notify(WISPANamespace.CORE,
                                     WISPAAction.MOTION,
-                                    WISPAMotion.SHUTDOWN);
+                                    new WISPAMotion(WISPAMotionType.SHUTDOWN));
             }
             else
             {
@@ -397,8 +397,8 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
 
             // Remove the PAT, encrypted passwords and PII.
             sConfigService.user().removePropertyBySuffix(ENCRYPTED_PASSWORD);
-            sConfigService.user().removePropertyBySuffix(CUSTOMSTATUS);
-            sConfigService.user().removePropertyBySuffix(CHATSUBJECT);
+            sConfigService.user().removePropertyBySuffix(CUSTOM_STATUS);
+            sConfigService.user().removePropertyBySuffix(CHAT_SUBJECT);
 
             // Flush the config so that the .bak file doesn't contain a copy of the now
             // deleted credentials.
@@ -469,14 +469,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
             // kill the application.
             sConfigService.user().storePendingConfigurationNow(false);
             sConfigService.global().storePendingConfigurationNow(false);
-
-            // If this is a mac application, then we need to kill it, rather
-            // than shutting down normally - the normal approach causes a
-            // crash report (see SFR 446860)
-            if (OSUtils.isMac())
-            {
-                killApplication();
-            }
         }
         finally
         {
@@ -538,35 +530,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
         {
             logger.info("Cancelling Mac shut down");
             quitResponse.cancelQuit();
-        }
-    }
-
-    /**
-     * Kill the application in a horrible way.
-     *
-     * Ensures that the user doesn't see an error pop-up on shutdown
-     */
-    private void killApplication()
-    {
-        try
-        {
-            // Get the process id and execute a kill.  This prevents the
-            // user from seeing a crash report.
-            String id = ManagementFactory.getRuntimeMXBean()
-                .getName().split("@")[0];
-            logger.info("Killing application with id " + id);
-
-            // If we are killing the app, we need to ensure we perform
-            // the application reset now if the user requested it.
-            // Normally this would be done by the Reset Service bundle
-            // stopping, but this won't happen in this case.
-            GuiActivator.getResetService().shutdown();
-
-            new ProcessBuilder("kill", "-9", id).start();
-        }
-        catch (Exception e)
-        {
-            logger.error("Error killing application", e);
         }
     }
 
@@ -1179,11 +1142,9 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
                     ResourceManagementService resources
                         = GuiActivator.getResources();
 
-                    new ErrorDialog(
-                            mainFrame,
-                            resources.getI18NString("service.gui.ERROR"),
-                            resources.getI18NString(
-                                    "service.gui.TRANSPARENCY_NOT_ENABLED"))
+                    new ErrorDialog(resources.getI18NString("service.gui.ERROR"),
+                                    resources.getI18NString(
+                                            "service.gui.TRANSPARENCY_NOT_ENABLED"))
                         .showDialog();
                 }
 
@@ -1734,8 +1695,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
     }
 
     @Override
-    public Chat getChat(ChatRoom chatRoom, boolean create,
-                        boolean requestHistory)
+    public Chat getChat(ChatRoom chatRoom, boolean create)
     {
         return null;
     }

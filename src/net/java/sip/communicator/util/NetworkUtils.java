@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
+
+import static org.jitsi.util.Hasher.*;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -1091,12 +1094,8 @@ public class NetworkUtils
         if (defaultResolver instanceof CustomResolver)
         {
             tag.append("Active DNS servers in custom resolver");
+            params.append(String.join(", ", ((CustomResolver) defaultResolver).getDnsServers()));
 
-            for (String s : ((CustomResolver) defaultResolver).getDnsServers())
-            {
-                params.append(s);
-                params.append(", ");
-            }
         }
         else
         {
@@ -1118,11 +1117,10 @@ public class NetworkUtils
             else
             {
                 tag.append("Active DNS servers in default resolver");
-                for (String s : NetworkUtils.convertServerListToStrings(resolverConfig.servers()))
-                {
-                    params.append(s);
-                    params.append(", ");
-                }
+                params.append(
+                        logCollectionHasher(List.of(
+                                NetworkUtils.convertServerListToStrings(
+                                        resolverConfig.servers()))));
             }
         }
 

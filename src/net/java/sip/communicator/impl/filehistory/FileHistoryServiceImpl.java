@@ -4,14 +4,18 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.filehistory;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+import static org.jitsi.util.Hasher.logHasher;
 
 import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
-
-import org.osgi.framework.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.database.*;
@@ -22,6 +26,8 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.account.*;
+
+import org.osgi.framework.*;
 
 /**
  * File History Service stores info for file transfers from various protocols.
@@ -55,6 +61,12 @@ public class FileHistoryServiceImpl
      * The IM ProtocolProviderService.
      */
     private ProtocolProviderService mImProvider;
+
+    /**
+     * Matches with remote JIDs of the form commportal@1234abcd.
+     */
+    private static final Pattern COMMPORTAL_JID_PREFIX =
+            Pattern.compile("(?<=commportal@)[a-z\\d]+");
 
     public FileHistoryServiceImpl(DatabaseService databaseService)
     {
@@ -190,11 +202,11 @@ public class FileHistoryServiceImpl
      * Gets all the JIDs for the contacts in the given MetaContact.  There is
      * probably only one.
      * @param metaContact MetaContact
-     * @return HashMap.
+     * @return Map of contact to its address
      */
-    private Map<Contact, String> getJidsForMetaContact(MetaContact metaContact)
+    Map<Contact, String> getJidsForMetaContact(MetaContact metaContact)
     {
-        Map<Contact, String> jids = new HashMap<>();
+        Map<Contact, String> jids = new LinkedHashMap<>(2);
 
         Iterator<Contact> iter = metaContact.getContacts();
         while (iter.hasNext())
@@ -207,9 +219,37 @@ public class FileHistoryServiceImpl
             String remoteJid = contact.getAddress().toLowerCase();
             jids.put(contact, remoteJid);
         }
-        sLog.info("Remote JIDs:: " + jids);
 
         return jids;
+    }
+
+    /**
+     * Sanitises chat addresses and CommPortal Jids that expose Personal Data.
+     */
+    static String sanitiseJids(Map<Contact, String> jidMap)
+    {
+        final Map<Contact, String> sanitisedMap = new LinkedHashMap<>(jidMap.size());
+
+        for (Map.Entry<Contact, String> entry : jidMap.entrySet())
+        {
+            String value = entry.getValue();
+
+            final Matcher matcher = COMMPORTAL_JID_PREFIX.matcher(value);
+            if (matcher.find())
+            {
+                // sanitise if it's a CommPortal address
+                value = matcher.replaceFirst(logHasher(matcher.group()));
+            }
+            else
+            {
+                // sanitise if it's a chat address
+                value = sanitiseChatAddress(value);
+            }
+
+            sanitisedMap.put(entry.getKey(), value);
+        }
+
+        return sanitisedMap.toString();
     }
 
     /**
@@ -226,7 +266,7 @@ public class FileHistoryServiceImpl
         List<FileRecord> result = new ArrayList<>();
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
-        sLog.debug("startDate: " + startDate.getTime() + ", jids: " + jids);
+        sLog.debug("startDate: " + startDate.getTime() + ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {
@@ -279,7 +319,7 @@ public class FileHistoryServiceImpl
         List<FileRecord> result = new ArrayList<>();
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
-        sLog.debug("endDate: " + endDate.getTime() + ", jids: " + jids);
+        sLog.debug("endDate: " + endDate.getTime() + ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {
@@ -335,7 +375,7 @@ public class FileHistoryServiceImpl
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
         sLog.debug("startDate: " + startDate.getTime() + ", endDate: " +
-            endDate.getTime() + ", jids: " + jids);
+                   endDate.getTime() + ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {
@@ -487,7 +527,7 @@ public class FileHistoryServiceImpl
         List<FileRecord> result = new ArrayList<>();
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
-        sLog.debug("count: " + count + ", jids: " + jids);
+        sLog.debug("count: " + count + ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {
@@ -540,7 +580,7 @@ public class FileHistoryServiceImpl
         List<FileRecord> result = new ArrayList<>();
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
-        sLog.debug("keyword: " + keyword + ", jids: " + jids);
+        sLog.debug("keyword: " + keyword + ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {
@@ -639,7 +679,7 @@ public class FileHistoryServiceImpl
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
         sLog.debug("date: " + date.getTime() + ", count: " + count +
-            ", jids: " + jids);
+            ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {
@@ -704,7 +744,7 @@ public class FileHistoryServiceImpl
 
         Map<Contact, String> jids = getJidsForMetaContact(metaContact);
         sLog.debug("date: " + date.getTime() + ", count: " + count +
-            ", jids: " + jids);
+            ", jids: " + sanitiseJids(jids));
 
         for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
         {

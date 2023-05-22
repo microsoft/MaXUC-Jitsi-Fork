@@ -78,8 +78,8 @@ using google_breakpad::ByteReader;
 using google_breakpad::DwarfCUToModule;
 using google_breakpad::DwarfLineToModule;
 using google_breakpad::DwarfRangeListHandler;
-using google_breakpad::FileID;
 using google_breakpad::mach_o::FatReader;
+using google_breakpad::mach_o::FileID;
 using google_breakpad::mach_o::Section;
 using google_breakpad::mach_o::Segment;
 using google_breakpad::Module;
@@ -121,6 +121,7 @@ vector<string> list_directory(const string& directory) {
 namespace google_breakpad {
 
 bool DumpSymbols::Read(const string& filename) {
+  selected_object_file_ = nullptr;
   struct stat st;
   if (stat(filename.c_str(), &st) == -1) {
     fprintf(stderr, "Could not access object file %s: %s\n",
@@ -283,7 +284,7 @@ SuperFatArch* DumpSymbols::FindBestMatchForArchitecture(
   // No exact match found.
   // TODO(erikchen): If it becomes necessary, we can copy the implementation of
   // NXFindBestFatArch, located at
-  // https://web.mit.edu/darwin/src/modules/cctools/libmacho/arch.c.
+  // http://web.mit.edu/darwin/src/modules/cctools/libmacho/arch.c.
   fprintf(stderr, "Failed to find an exact match for an object file with cpu "
       "type: %d and cpu subtype: %d. Furthermore, at least one object file is "
       "larger than 2**32.\n", cpu_type, cpu_subtype);
@@ -412,6 +413,13 @@ bool DumpSymbols::CreateEmptyModule(scoped_ptr<Module>& module) {
   const NXArchInfo* selected_arch_info =
       google_breakpad::BreakpadGetArchInfoFromCpuType(
           selected_object_file_->cputype, selected_object_file_->cpusubtype);
+
+  // In certain cases, it is possible that architecture info can't be reliably
+  // determined, e.g. new architectures that breakpad is unware of. In that
+  // case, avoid crashing and return false instead.
+  if (selected_arch_info == NULL) {
+    return false;
+  }
 
   const char* selected_arch_name = selected_arch_info->name;
   if (strcmp(selected_arch_name, "i386") == 0)

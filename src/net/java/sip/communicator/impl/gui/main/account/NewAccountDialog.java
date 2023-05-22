@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.account;
 
 import java.awt.*;
@@ -85,12 +86,6 @@ public class NewAccountDialog
      * The container of the wizard.
      */
     private final AccountRegWizardContainerImpl wizardContainer;
-
-    /**
-     * The Simple form return from the wizardContainer.
-     * Stored to be accessed int the FV UI Server.
-     */
-    private JComponent simpleWizardForm = null;
 
     /**
      * Creates the dialog and initializes the UI.
@@ -349,7 +344,7 @@ public class NewAccountDialog
         fixedWidthPanel.setMaximumSize(fixedWidthSize);
         this.accountPanel.add(fixedWidthPanel, BorderLayout.SOUTH);
 
-        simpleWizardForm = (JComponent) wizard.getSimpleForm(false);
+        JComponent simpleWizardForm = (JComponent) wizard.getSimpleForm(false);
         simpleWizardForm.setOpaque(false);
 
         accountPanel.add(simpleWizardForm);
@@ -418,12 +413,14 @@ public class NewAccountDialog
 
         if (sourceButton.equals(addAccountButton))
         {
+            logger.user("Clicked on add account button");
             startConnecting(wizardContainer);
 
             new Thread(new ProtocolSignInThread(wizard)).start();
         }
         else if (sourceButton.equals(cancelButton))
         {
+            logger.user("Clicked on cancel button");
             this.dispose();
         }
     }
@@ -652,14 +649,12 @@ public class NewAccountDialog
                     stopConnecting(wizardContainer);
                     NewAccountDialog.this.dispose();
 
-                    ErrorDialog errorDialog = new ErrorDialog(
-                        null,
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.ERROR"),
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.LOGIN_INTERNAL_ERROR"));
-                    errorDialog.setModal(false);
-                    errorDialog.showDialog();
+                    new ErrorDialog(
+                        GuiActivator.getResources()
+                            .getI18NString("service.gui.ERROR"),
+                        GuiActivator.getResources()
+                            .getI18NString("service.gui.LOGIN_INTERNAL_ERROR"))
+                        .showDialog();
                 }
                 else
                 {

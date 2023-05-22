@@ -36,12 +36,6 @@ public interface ThreadingService
     void submit(String name, Runnable runnable);
 
     /**
-     * @return Information on the currently scheduled tasks that haven't been run yet.  For
-     * diagnostics purposes.
-     */
-    String getScheduledTasksInfo();
-
-    /**
      * Schedules the specified runnable for execution after the specified delay.
      *
      * <p>
@@ -100,4 +94,17 @@ public interface ThreadingService
                              CancellableRunnable runnable,
                              long delay,
                              long period);
+
+    /**
+     * As per scheduleAtFixedRate, but for a task to be run on the EDT.
+     *
+     * @param name a name for the task to be scheduled
+     * @param runnable the runnable to be scheduled.
+     * @param delay delay in milliseconds before task is to be executed.
+     * @param period period in milliseconds between repeated executions of the task.
+     */
+    void scheduleAtFixedRateOnEDT(String name,
+                                  CancellableRunnable runnable,
+                                  long delay,
+                                  long period);
 }

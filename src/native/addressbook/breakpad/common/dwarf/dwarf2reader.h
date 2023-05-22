@@ -33,7 +33,7 @@
 // This file contains definitions related to the DWARF2/3 reader and
 // it's handler interfaces.
 // The DWARF2/3 specification can be found at
-// https://dwarf.freestandards.org and should be considered required
+// http://dwarf.freestandards.org and should be considered required
 // reading if you wish to modify the implementation.
 // Only a cursory attempt is made to explain terminology that is
 // used here, as it is much better explained in the standard documents
@@ -1062,12 +1062,12 @@ class CallFrameInfo {
   //
   // The extensions the Linux C++ ABI makes to DWARF for exception
   // handling are described here, rather poorly:
-  // https://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
-  // https://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
+  // http://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
+  // http://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
   // 
   // The mechanics of C++ exception handling, personality routines,
   // and language-specific data areas are described here, rather nicely:
-  // https://www.codesourcery.com/public/cxx-abi/abi-eh.html
+  // http://www.codesourcery.com/public/cxx-abi/abi-eh.html
   CallFrameInfo(const uint8_t* buffer, size_t buffer_length,
                 ByteReader* reader, Handler* handler, Reporter* reporter,
                 bool eh_frame = false)
@@ -1332,6 +1332,9 @@ class CallFrameInfo::Handler {
   // should stop.
   virtual bool End() = 0;
 
+  // The target architecture for the data.
+  virtual string Architecture() = 0;
+
   // Handler functions for Linux C++ exception handling data. These are
   // only called if the data includes 'z' augmentation strings.
 
@@ -1384,7 +1387,7 @@ class CallFrameInfo::Handler {
   //
   // The best description of the rationale for and meaning of signal
   // trampoline CFI entries seems to be in the GCC bug database:
-  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=26208
+  // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=26208
   virtual bool SignalHandler() { return true; }
 };
 

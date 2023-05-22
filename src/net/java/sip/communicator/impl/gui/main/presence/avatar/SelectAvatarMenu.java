@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.presence.avatar;
 
 import java.awt.*;
@@ -71,21 +72,14 @@ public class SelectAvatarMenu
      */
     private int nextImageIndex = 0;
 
-    /**
-     * The parent button using us.
-     */
-    private FramedImageWithMenu avatarImage;
+    ImagePickerDialog dialog = new ImagePickerDialog(this, 96, 96);
 
     /**
      * Creates the dialog.
-     * @param avatarImage the button that will trigger this menu.
      */
-    public SelectAvatarMenu(FramedImageWithMenu avatarImage)
+    public SelectAvatarMenu()
     {
-        this.avatarImage = avatarImage;
-
         init();
-
         this.pack();
     }
 
@@ -210,85 +204,85 @@ public class SelectAvatarMenu
     private static void setNewImage(final BufferedImage image)
     {
         // Use separate thread to be sure we don't block UI thread.
-        new Thread("SelectAvatarMenu.setNewImage")
+        if (SwingUtilities.isEventDispatchThread())
         {
-            public void run()
+            GuiActivator.getThreadingService().submit("Set New Avatar Image", ()->setNewImage(image));
+            return;
+        }
+
+        boolean success = false;
+        boolean changeRejected = false;
+
+        AccountManager accountManager
+                = GuiActivator.getAccountManager();
+
+        for(AccountID accountID : accountManager.getStoredAccounts())
+        {
+            if(accountManager.isAccountLoaded(accountID))
             {
-                boolean success = false;
-                boolean changeRejected = false;
+                ProtocolProviderService protocolProvider
+                    = AccountUtils.getRegisteredProviderForAccount(
+                        accountID);
 
-                AccountManager accountManager
-                        = GuiActivator.getAccountManager();
-
-                for(AccountID accountID : accountManager.getStoredAccounts())
+                if(protocolProvider != null
+                   && protocolProvider.isRegistered())
                 {
-                    if(accountManager.isAccountLoaded(accountID))
+                    OperationSetAvatar opSetAvatar
+                        = protocolProvider
+                            .getOperationSet(OperationSetAvatar.class);
+
+                    if(opSetAvatar != null)
                     {
-                        ProtocolProviderService protocolProvider
-                            = AccountUtils.getRegisteredProviderForAccount(
-                                accountID);
-
-                        if(protocolProvider != null
-                           && protocolProvider.isRegistered())
+                        try
                         {
-                            OperationSetAvatar opSetAvatar
-                                = protocolProvider
-                                    .getOperationSet(OperationSetAvatar.class);
-
-                            if(opSetAvatar != null)
+                            logger.info("Setting avatar for account " +
+                                        accountID.getLoggableAccountID());
+                            success = opSetAvatar.setAvatar(new BufferedImageAvailable(image));
+                            if (!success)
                             {
-                                try
-                                {
-                                    logger.info("Setting avatar for account " +
-                                                                     accountID);
-                                    success = opSetAvatar.setAvatar(new BufferedImageAvailable(image));
-                                    if (!success)
-                                    {
-                                        logger.error("Unspecified failure " +
-                                            "setting avatar for account " +
-                                            accountID);
-                                    }
-                                }
-                                catch(Exception e)
-                                {
-                                    logger.error("Error setting image", e);
-                                    if (e instanceof OperationFailedException &&
-                                       ((OperationFailedException) e).getErrorCode() == 405)
-                                    {
-                                        // Change rejected by server.
-                                        changeRejected = true;
-                                        break;
-                                    }
-                                }
+                                logger.error("Unspecified failure " +
+                                    "setting avatar for account " +
+                                    accountID.getLoggableAccountID());
+                            }
+                        }
+                        catch(Exception e)
+                        {
+                            logger.error("Error setting image", e);
+                            if (e instanceof OperationFailedException &&
+                               ((OperationFailedException) e).getErrorCode() == 405)
+                            {
+                                // Change rejected by server.
+                                changeRejected = true;
+                                break;
                             }
                         }
                     }
                 }
-
-                if (success)
-                {
-                    logger.debug("Sending analytic event for successful avatar change");
-
-                    // Avatar change was accepted, so send analytic.
-                    // Value varies based on whether this is a removal or just
-                    // an update.
-                    String paramValue = image == null?
-                        AnalyticsParameter.VALUE_CHANGE_AVATAR_REMOVE :
-                        AnalyticsParameter.VALUE_CHANGE_AVATAR_UPDATE;
-
-                    AnalyticsService analyticsService = GuiActivator.getAnalyticsService();
-                    analyticsService.onEvent(AnalyticsEventType.USER_CHANGE_AVATAR,
-                                             AnalyticsParameter.NAME_CHANGE_AVATAR,
-                                             paramValue);
-                }
-                else
-                {
-                    logger.error("Failed to change user avatar: " +
-                                 "changeRejected=" + changeRejected);
-                    showAvatarChangeError(changeRejected);
-                }
             }
-        }.start();
+        }
+
+        if (success)
+        {
+            logger.debug("Sending analytic event for successful avatar change");
+
+            // Avatar change was accepted, so send analytic.
+            // Value varies based on whether this is a removal or just
+            // an update.
+            String paramValue = image == null?
+                AnalyticsParameter.VALUE_CHANGE_AVATAR_REMOVE :
+                AnalyticsParameter.VALUE_CHANGE_AVATAR_UPDATE;
+
+            AnalyticsService analyticsService = GuiActivator.getAnalyticsService();
+            analyticsService.onEvent(AnalyticsEventType.USER_CHANGE_AVATAR,
+                                     AnalyticsParameter.NAME_CHANGE_AVATAR,
+                                     paramValue);
+        }
+        else
+        {
+            logger.error("Failed to change user avatar: " +
+                         "changeRejected=" + changeRejected);
+            showAvatarChangeError(changeRejected);
+        }
     }
 
     /**
@@ -305,10 +299,7 @@ public class SelectAvatarMenu
             logger.user("Choose new avatar selected in Avatar menu");
 
             // Open the image picker
-            if (innerHandleChooseAvatar())
-            {
-                return;
-            }
+            showChooseAvatarDialog();
         }
         else if (source.getName().equals("removeButton"))
         {
@@ -326,23 +317,35 @@ public class SelectAvatarMenu
         logger.debug("Handling choose avatar - must switch from WISPA thread to UI thread");
 
         // This is called on a non UI thread, so switch to do the work on the UI one
-        SwingUtilities.invokeLater(this::innerHandleChooseAvatar);
+        SwingUtilities.invokeLater(this::showChooseAvatarDialog);
     }
 
-    private boolean innerHandleChooseAvatar()
+    private void showChooseAvatarDialog()
     {
-        logger.debug("Handling choose avatar on UI thread");
+        BufferedImageFuture avatar = GuiActivator.getGlobalDisplayDetailsService().getGlobalDisplayAvatar();
+        Image image = null;
+        if ((avatar != null) && (avatar.getImageIcon() != null))
+        {
+            image = avatar.getImageIcon().resolve().getImage();
+        }
+        dialog.showDialog(image);
+    }
 
-        Image currentImage = this.avatarImage.getAvatar();
+    @Override
+    public void handleAvatarChosen(byte[] newImage)
+    {
+        if (!SwingUtilities.isEventDispatchThread())
+        {
+            SwingUtilities.invokeLater(() -> handleAvatarChosen(newImage));
+            return;
+        }
 
-        ImagePickerDialog dialog = new ImagePickerDialog(96, 96);
-
-        byte[] newImage = dialog.showDialog(currentImage);
+        logger.info("Handling choose avatar on UI thread");
 
         if (newImage == null)
         {
             logger.debug("Avatar selection was cancelled");
-            return true;
+            return;
         }
 
         logger.debug("A new avatar was chosen");
@@ -366,7 +369,6 @@ public class SelectAvatarMenu
 
         // Inform protocols about the new image
         setNewImage(image);
-        return false;
     }
 
     /**
@@ -396,13 +398,6 @@ public class SelectAvatarMenu
         final String errorText = changeRejected ?
             AVATAR_SET_ERROR_MSG_REJECTED : AVATAR_SET_ERROR_MSG_GENERIC;
 
-        SwingUtilities.invokeLater(new Runnable()
-        {
-            public void run()
-            {
-                new ErrorDialog(
-                      null, AVATAR_SET_ERROR_TITLE, errorText).setVisible(true);
-            }
-        });
+        new ErrorDialog(AVATAR_SET_ERROR_TITLE, errorText).showDialog();
     }
 }

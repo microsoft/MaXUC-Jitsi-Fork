@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.ldap;
 
 import java.util.*;
@@ -87,17 +88,24 @@ public class LdapActivator implements BundleActivator
 
             if (settings.isEnabled())
             {
-                LdapDirectory directory = factory.createServer(settings);
-                registerContactSource(directory);
+                try
+                {
+                    LdapDirectory directory = factory.createServer(settings);
+                    registerContactSource(directory);
 
-                AnalyticsService analytics = getAnalyticsService();
-                analytics.onEvent(AnalyticsEventType.LDAP_ENABLED,
-                    AnalyticsParameter.PARAM_USING_LDAPS,
-                    Boolean.toString(LdapConstants.Encryption.SSL.equals(settings.getEncryption())));
+                    AnalyticsService analytics = getAnalyticsService();
+                    analytics.onEvent(AnalyticsEventType.LDAP_ENABLED,
+                        AnalyticsParameter.PARAM_USING_LDAPS,
+                        Boolean.toString(LdapConstants.Encryption.SSL.equals(settings.getEncryption())));
+
+                    logger.trace("LDAP Service ...[REGISTERED]");
+                        }
+                catch (IllegalArgumentException e)
+                {
+                    logger.warn("LDAP enabled but configuration issue: " + e.getMessage());
+                    logger.trace("LDAP Service ...[  FAILED  ]");
+                }
             }
-
-            logger.trace("LDAP Service ...[REGISTERED]");
-
         }
         finally
         {

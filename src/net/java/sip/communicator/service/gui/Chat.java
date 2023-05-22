@@ -4,9 +4,8 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.gui;
-
-import java.util.*;
 
 /**
  * The <tt>Chat</tt> interface is meant to be implemented by the GUI component
@@ -101,25 +100,6 @@ public interface Chat
      * @param message the text that would be set to the chat write area
      */
     void setMessage(String message);
-
-    /**
-     * Adds a message to this <tt>Chat</tt>.
-     *
-     * @param contactName the name of the contact sending the message
-     * @param date the time at which the message is sent or received
-     * @param messageType the type of the message
-     * @param message the message text
-     * @param contentType the content type
-     * @param isArchive indicates that this message is an archive message
-     * @param isCarbon indicates that this message is a carbon message
-     */
-    void addMessage(String contactName,
-                    Date date,
-                    String messageType,
-                    String message,
-                    String contentType,
-                    boolean isArchive,
-                    boolean isCarbon);
 
     /**
      * Gets the caret position in the chat editor.

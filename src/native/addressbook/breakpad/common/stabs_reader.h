@@ -34,7 +34,7 @@
 // information. A description of the STABS debugging format can be
 // found at:
 //
-//    https://sourceware.org/gdb/current/onlinedocs/stabs_toc.html
+//    http://sourceware.org/gdb/current/onlinedocs/stabs_toc.html
 //
 // The comments here assume you understand the format.
 //
@@ -88,7 +88,7 @@ class StabsReader {
   // like .stab/.stabstr, and usually not the case for STABS stored in the
   // actual symbol table; UNITIZED should be true when parsing Linux stabs,
   // false when parsing Mac OS X STABS. For details, see:
-  // https://sourceware.org/gdb/current/onlinedocs/stabs/Stab-Section-Basics.html
+  // http://sourceware.org/gdb/current/onlinedocs/stabs/Stab-Section-Basics.html
   // 
   // Note that, in ELF, the .stabstr section should be found using the
   // 'sh_link' field of the .stab section header, not by name.

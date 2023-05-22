@@ -6,19 +6,23 @@
  */
 package net.java.sip.communicator.util;
 
+import static net.java.sip.communicator.util.ConfigFileSanitiser.*;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
+import java.util.Map;
+import java.util.Set;
 
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinNT;
+import org.jxmpp.jid.Jid;
+import org.jxmpp.jid.impl.JidCreate;
 import org.osgi.framework.ServiceReference;
 
 import net.java.sip.communicator.plugin.provisioning.ProvisioningServiceImpl;
@@ -34,13 +38,11 @@ import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.service.resources.ResourceManagementServiceUtils;
 import net.java.sip.communicator.util.account.AccountUtils;
 import org.jitsi.service.configuration.ConfigurationService;
+import org.jitsi.service.configuration.ScopedConfigurationService;
 import org.jitsi.service.neomedia.MediaType;
 import org.jitsi.service.neomedia.codec.EncodingConfiguration;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.OSUtils;
-import org.jitsi.util.StringUtils;
-import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.impl.JidCreate;
 
 /**
  * Cares about all common configurations. Storing and retrieving configuration
@@ -52,10 +54,40 @@ import org.jxmpp.jid.impl.JidCreate;
 public class ConfigurationUtils
 {
     private static final Logger logger = Logger.getLogger(ConfigurationUtils.class);
+
+    /**
+     * The <tt>Logger</tt> used by this <tt>ConfigurationServiceImpl</tt>
+     * instance for logging config changes.  These are automatically logged
+     * to logger too.
+     */
+    private static final org.jitsi.util.Logger configLogger
+            = org.jitsi.util.Logger.getLogger("jitsi.ConfigLogger");
+
     private static final ResourceManagementService resources = UtilActivator.getResources();
-    public static final String ENTER_COMMAND = resources.getI18NString("service.gui.ENTER_KEY");
-    public static final String CTRL_ENTER_COMMAND =
-        resources.getI18NString("service.gui.ENTER_KEY") + " + " + resources.getI18NString("service.gui.CTRL_KEY");
+
+    /** Parent folder for users' config */
+    private static final String USERS_FOLDER_NAME = "users";
+    /** User configuration file. */
+    private static final String CONFIG_FILE_NAME = "sip-communicator.properties";
+    /**
+     * Backup user configuration file,
+     * basically a copy of the previous version of the main user file.
+     */
+    private static final String BAK_CONFIG_FILE_NAME = "sip-communicator.properties.bak";
+    /** Temporary user configuration file, used only when sanitising the config. */
+    private static final String SAFE_CONFIG_FILE_NAME = "sip-communicator-safe.properties";
+
+    /**
+     * Java properties. These are SYSTEM properties written to logs whose values we want
+     * removed.
+     */
+    private static final String JAVA_TEMP_DIR = "java.io.tmpdir";
+    private static final String JAVA_USER_LANGUAGE = "user.language";
+    private static final String JAVA_USER_HOME = "user.home";
+    private static final String JAVA_USER_NAME = "user.name";
+
+    private static final Set<String> SYSTEM_PRIVACY_PROPERTIES =
+            Set.of(JAVA_USER_NAME, JAVA_USER_HOME, JAVA_USER_LANGUAGE, JAVA_TEMP_DIR);
 
     /**
      * Indicates whether the video call button should be added to the chat window.
@@ -85,6 +117,8 @@ public class ConfigurationUtils
     private static boolean isPresetStatusMessagesEnabled;
 
     private static final ConfigurationService configService = UtilActivator.getConfigurationService();
+
+    private static final PropertyChangeListener LOG_PROPERTY_CHANGE_LISTENER = ConfigurationUtils::logConfigurationPropertyChange;
 
     /**
      * The default location to which recorded calls should be saved.
@@ -132,8 +166,6 @@ public class ConfigurationUtils
     private static final String PHONE_NUMBER_IGNORE_REGEX_PROP = "net.java.sip.communicator.impl.protocol.sip.PHONE_NUMBER_IGNORE_REGEX";
     private static final String ALT_INCOMING_CALL_POPUP = "net.java.sip.communicator.impl.gui.main.call.ALT_INCOMING_CALL_POPUP";
     private static final String ALLOW_GROUP_CONTACT_PROPERTY = "net.java.sip.communicator.impl.protocol.groupcontacts.SUPPORT_GROUP_CONTACTS";
-    private static boolean isNormalizePhoneNumber;
-    private static boolean acceptPhoneNumberWithAlphaChars;
     public static final String CALL_ON_TOP_PROP = "net.java.sip.communicator.impl.gui.main.call.CALL_ALWAYS_ON_TOP";
 
     /**
@@ -178,11 +210,21 @@ public class ConfigurationUtils
     private static final String DONT_ASK_REMOVE_FROM_CHAT_PROP = "net.java.sip.communicator.impl.gui.main.chat.DONT_ASK_REMOVE_FROM_CHAT";
 
     /**
+     * The name of the global configuration property which indicates whether the
+     * client should automatically check for updates each day or not.  This is
+     * set in the branding and applies to all users.
+     */
+    private static final String GLOBAL_AUTO_CHECK_FOR_UPDATES_DAILY_ENABLED_PROP =
+            "net.java.sip.communicator.plugin.update.checkforupdatesmenu.daily.ENABLED";
+
+    /**
      * Configuration property which indicates whether automatic update
      * checking has been disabled for this user. This property is part of the user
      * configuration and is set in SIP PS.
      */
-    private static final String DISABLE_UPDATE_CHECKING_PROP = "net.java.sip.communicator.plugin.update.DISABLE_AUTO_UPDATE_CHECKING";
+    private static final String DISABLE_AUTO_UPDATE_CHECKING_FOR_USER_PROP =
+            "net.java.sip.communicator.plugin.update.DISABLE_AUTO_UPDATE_CHECKING";
+
     public static final String WEBSOCKET_SERVER_ENABLED = "plugin.websocketserver.WEBSOCKET_SERVER_ENABLED";
 
     /**
@@ -219,7 +261,18 @@ public class ConfigurationUtils
     // Loads all cached configuration.
     static
     {
+        // Print out system properties
+        debugPrintSystemProperties();
+
+        // Print out all property values from global and user configurations (if user configuration exists)
+        recordAllConfig(configService.global());
         configService.global().addPropertyChangeListener(new ConfigurationChangeListener());
+
+        if (configService.user() != null)
+        {
+            recordAllConfig(configService.user());
+            configService.user().addPropertyChangeListener(LOG_PROPERTY_CHANGE_LISTENER);
+        }
 
         String isTransparentWindowEnabledProperty = "impl.gui.IS_TRANSPARENT_WINDOW_ENABLED";
         String isTransparentWindowEnabledString = configService.global().getString(isTransparentWindowEnabledProperty);
@@ -303,9 +356,7 @@ public class ConfigurationUtils
         }
 
         autoAnswerDisableSubmenu = configService.global().getBoolean(autoAnswerDisableSubmenuProperty, autoAnswerDisableSubmenu);
-        isNormalizePhoneNumber = configService.global().getBoolean("impl.gui.NORMALIZE_PHONE_NUMBER", true);
         securityStatusHidden = configService.global().getBoolean(SECURITY_STATUS_HIDDEN_PROP, false);
-        acceptPhoneNumberWithAlphaChars = configService.global().getBoolean("impl.gui.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS", true);
     }
 
     /**
@@ -672,29 +723,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Returns <code>true</code> if the "isHistoryShown" property is
-     * true, otherwise - returns <code>false</code>. Indicates to the user
-     * whether the history is shown in the chat window.
-     * @return <code>true</code> if the "isHistoryShown" property is
-     * true, otherwise - returns <code>false</code>.
-     */
-    public static boolean isHistoryShown()
-    {
-        return configService.user().getBoolean("service.gui.IS_MESSAGE_HISTORY_SHOWN", true);
-    }
-
-    /**
-     * Updates the "isHistoryShown" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param isShown indicates if the message history is shown
-     */
-    public static void setHistoryShown(boolean isShown)
-    {
-        configService.user().setProperty("service.gui.IS_MESSAGE_HISTORY_SHOWN", Boolean.toString(isShown));
-    }
-
-    /**
      * Returns <code>true</code> if the "isWindowDecorated" property is
      * true, otherwise - returns <code>false</code>..
      * @return <code>true</code> if the "isWindowDecorated" property is
@@ -948,30 +976,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Returns <code>true</code> if phone numbers should be normalized,
-     * <code>false</code> otherwise.
-     *
-     * @return <code>true</code> if phone numbers should be normalized,
-     * <code>false</code> otherwise.
-     */
-    public static boolean isNormalizePhoneNumber()
-    {
-        return isNormalizePhoneNumber;
-    }
-
-    /**
-     * Updates the "NORMALIZE_PHONE_NUMBER" property.
-     *
-     * @param isNormalize indicates to the user interface whether all dialed
-     * phone numbers should be normalized
-     */
-    public static void setNormalizePhoneNumber(boolean isNormalize)
-    {
-        isNormalizePhoneNumber = isNormalize;
-        configService.global().setProperty("impl.gui.NORMALIZE_PHONE_NUMBER", Boolean.toString(isNormalize));
-    }
-
-    /**
      * Indicates if in call security indication is hidden.
      *
      * @return whether call security indication is hidden.
@@ -1003,31 +1007,6 @@ public class ConfigurationUtils
     public static void setCallAlwaysOnTop(boolean isCallOnTop)
     {
         configService.user().setProperty(CALL_ON_TOP_PROP, Boolean.toString(isCallOnTop));
-    }
-
-    /**
-     * Returns <code>true</code> if a string with an alphabetical character might
-     * be considered as a phone number.  <code>false</code> otherwise.
-     *
-     * @return <code>true</code> if a string with an alphabetical character might
-     * be considered as a phone number.  <code>false</code> otherwise.
-     */
-    public static boolean acceptPhoneNumberWithAlphaChars()
-    {
-        return acceptPhoneNumberWithAlphaChars;
-    }
-
-    /**
-     * Updates the "ACCEPT_PHONE_NUMBER_WITH_CHARS" property.
-     *
-     * @param accept indicates to the user interface whether a string with
-     * alphabetical characters might be accepted as a phone number.
-     */
-    public static void setAcceptPhoneNumberWithAlphaChars(boolean accept)
-    {
-        acceptPhoneNumberWithAlphaChars = accept;
-        configService.global().setProperty(
-            "impl.gui.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS", Boolean.toString(acceptPhoneNumberWithAlphaChars));
     }
 
     /**
@@ -1227,11 +1206,11 @@ public class ConfigurationUtils
     public static void setLanguage(Locale locale)
     {
         String language = locale.getLanguage();
-        String country = locale.getCountry();
+        String countryOrRegion = locale.getCountry();
 
         configService.global().setProperty(
             ResourceManagementService.DEFAULT_LOCALE_CONFIG,
-            (country.length() > 0) ? (language + '_' + country) : language);
+            (countryOrRegion.length() > 0) ? (language + '_' + countryOrRegion) : language);
     }
 
     /**
@@ -1653,12 +1632,24 @@ public class ConfigurationUtils
     }
 
     /**
-     * Listens for changes of the properties.
+     * Listens for changes of the properties to update inner state.
+     * <p>
+     *     When active used is changed, it is forced to forget any stored credentials for other users from previous logins
+     *     (historically, they weren't forgotten on logout, so some may be hanging around).
+     * </p>
+     * <p>
+     *     When username is changed, print the loaded user configuration content
+     *     and ensure that the property change listener is set on the user configuration.
+     *     It may not be if the user configuration has just been created before this method is called.
+     *     To avoid adding duplicated listeners, we try to remove it first.
+     * </p>
      */
     private static class ConfigurationChangeListener implements PropertyChangeListener
     {
         public void propertyChange(PropertyChangeEvent evt)
         {
+            logConfigurationPropertyChange(evt);
+
             // All properties we're interested in here are Strings.
             if (!(evt.getNewValue() instanceof String))
             {
@@ -1678,6 +1669,18 @@ public class ConfigurationUtils
                     break;
                 case "net.java.sip.communicator.impl.gui.call.lastCallConferenceProvider":
                     lastCallConferenceProvider = findProviderFromAccountId(newValue);
+                    break;
+                case "net.java.sip.communicator.plugin.provisioning.auth.USERNAME":
+                    if (configService.user() != null)
+                    {
+                        configService.user().removePropertyChangeListener(LOG_PROPERTY_CHANGE_LISTENER);
+                        configService.user().addPropertyChangeListener(LOG_PROPERTY_CHANGE_LISTENER);
+
+                        recordAllConfig(configService.user());
+                    }
+                    break;
+                case "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER":
+                    forgetOtherUsersCredentials(newValue);
                     break;
             }
         }
@@ -1735,70 +1738,6 @@ public class ConfigurationUtils
     public static void setClientSecurePort(int port)
     {
         configService.user().setProperty(ProtocolProviderFactory.PREFERRED_SECURE_PORT_PROPERTY_NAME, port);
-    }
-
-    /**
-     * Returns the list of enabled SSL protocols.
-     *
-     * @return the list of enabled SSL protocols
-     */
-    public static String[] getEnabledSslProtocols()
-    {
-        String enabledSslProtocols = configService.global().getString("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS");
-
-        if (StringUtils.isNullOrEmpty(enabledSslProtocols, true))
-        {
-            SSLSocket temp;
-            try
-            {
-                temp = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
-                return temp.getEnabledProtocols();
-            }
-            catch (IOException e)
-            {
-                logger.error(e);
-                return getAvailableSslProtocols();
-            }
-        }
-        return enabledSslProtocols.split("(,)|(,\\s)");
-    }
-
-    /**
-     * Returns the list of available SSL protocols.
-     *
-     * @return the list of available SSL protocols
-     */
-    public static String[] getAvailableSslProtocols()
-    {
-        SSLSocket temp;
-        try
-        {
-            temp = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
-            return temp.getSupportedProtocols();
-        }
-        catch (IOException e)
-        {
-            logger.error(e);
-            return new String[]{};
-        }
-    }
-
-    /**
-     * Sets the enables SSL protocols list.
-     *
-     * @param enabledProtocols the list of enabled SSL protocols to set
-     */
-    public static void setEnabledSslProtocols(String[] enabledProtocols)
-    {
-        if (enabledProtocols == null || enabledProtocols.length == 0)
-        {
-            configService.global().removeProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS");
-        }
-        else
-        {
-            String protocols = Arrays.toString(enabledProtocols);
-            configService.user().setProperty("gov.nist.javax.sip.TLS_CLIENT_PROTOCOLS", protocols.substring(1, protocols.length() - 1));
-        }
     }
 
     /**
@@ -2339,20 +2278,33 @@ public class ConfigurationUtils
     }
 
     /**
-     * @return whether automatic update checking is disabled
+     * @return whether automatic update checking is disabled for this user.
      */
-    public static boolean isUpdateCheckingDisabled()
+    public static boolean isAutoUpdateCheckingDisabledForUser()
     {
-        return configService.user().getBoolean(DISABLE_UPDATE_CHECKING_PROP, false);
+        boolean userDisabled = configService.user().getBoolean(DISABLE_AUTO_UPDATE_CHECKING_FOR_USER_PROP, false);
+        logger.debug("Is update checking disabled for the user? " + userDisabled);
+        return userDisabled;
     }
 
     /**
-     * @return whether the WebSocket server is enabled. If the property is
-     * missing from the config, returns false.
+     * @return whether automatic update checking is disabled globally for this
+     *         client's branding.
+     */
+    public static boolean isAutoUpdateCheckingDisabledGlobally()
+    {
+        boolean globallyDisabled = !configService.global().getBoolean(GLOBAL_AUTO_CHECK_FOR_UPDATES_DAILY_ENABLED_PROP, false);
+        logger.debug("Is update checking disabled globally? " + globallyDisabled);
+        return globallyDisabled;
+    }
+
+    /**
+     * @return whether the WebSocket server is enabled. Always return false as the WebSocket
+     * server has been disabled as part of V3.11.
      */
     public static boolean isWebSocketServerEnabled()
     {
-        return configService.user().getBoolean(WEBSOCKET_SERVER_ENABLED, false);
+        return false;
     }
 
     /**
@@ -2467,6 +2419,22 @@ public class ConfigurationUtils
     }
 
     /**
+     * @return whether the incoming call popup should show diversion information
+     */
+    public static boolean displayCallRedirection()
+    {
+        return configService.user().getBoolean("net.java.sip.communicator.service.commportal.redirection.DISPLAY_CALL_REDIRECTION", false);
+    }
+
+    /**
+     * @return whether the latest, rather than the earliest diversion details should be shown
+     */
+    public static boolean useLatestRedirection()
+    {
+        return configService.user().getBoolean("net.java.sip.communicator.service.commportal.redirection.USE_LATEST_REDIRECTION", false);
+    }
+
+    /**
      * Get the OS version info from the system and save in global config. We
      * include special logic for Windows here since the version reported by the
      * OS can be misleading.
@@ -2506,5 +2474,220 @@ public class ConfigurationUtils
 
         configService.global().setProperty(OS_NAME_PROP, osName);
         configService.global().setProperty(OS_VERSION_PROP, osVersion);
+    }
+
+    /**
+     * Forget the credentials for other users (this should have happened on their logout,
+     * but historically didn't, so tidy-up here).
+     *
+     * This method deliberately doesn't use FailSafeTransactionImpl or TransactionBasedFile
+     * as they will add complexity and we'd be slightly fighting them to force deletion of
+     * the backup.  We do not need their transactions, or ability to recover and we are ok
+     * with the rare window condition of the config file being deleted (that user will just
+     * have to set their preferences again).
+     *
+     * We also do not want to use the existing ConfigurationService as we do not want any of
+     * the other user config leaking into the active user.
+     *
+     * @param activeUser The currently active user, whose credentials we DON'T want to forget
+     */
+    private static void forgetOtherUsersCredentials(final String activeUser)
+    {
+        String[] allUsers = configService.listUsers();
+
+        // Configuration items that are considered Personal Data, so we should strip from error reports.
+        String[] linesToRemove = {PASSWORD, CUSTOM_STATUS, CHAT_SUBJECT};
+
+        if (allUsers == null)
+        {
+            logger.debug("Found no users folder, so nothing to forget.");
+            return;
+        }
+
+        logger.debug("Forget other user's credentials and PII, number of users: " + allUsers.length);
+        for (String user : allUsers)
+        {
+            if (!user.equals(activeUser)) {
+                logger.debug("Check stored credentials for inactive user");
+
+                File root = new File(configService.global().getScHomeDirLocation(),
+                                     configService.global().getScHomeDirName());
+                File usersRoot = new File(root, USERS_FOLDER_NAME);
+                File specificUserRoot = new File (usersRoot, user);
+                File userConfigFile = new File(specificUserRoot, CONFIG_FILE_NAME);
+                File userBackupConfigFile = new File(specificUserRoot, BAK_CONFIG_FILE_NAME);
+
+                // 1st check if there is anything to do: in most cases there are either
+                // no other users, or they are already clean.
+                if (ConfigFileSanitiser.isDirty(userConfigFile, linesToRemove) ||
+                    ConfigFileSanitiser.isDirty(userBackupConfigFile, linesToRemove))
+                {
+                    logger.info("Need to sanitise credentials for inactive user");
+                    File safeUserConfigFile = new File(userConfigFile.getParent(), SAFE_CONFIG_FILE_NAME);
+                    ConfigFileSanitiser.sanitiseFile(userConfigFile, safeUserConfigFile, linesToRemove);
+
+                    // If we got here, then regardless of whether the 2nd call to sanitizeFile
+                    // was successful, we need to delete the old file.
+                    // If we cannot replace with the sanitised config this will forget some user settings,
+                    // but that's less important than deleting the credentials.
+                    userConfigFile.delete();
+
+                    // Also need to delete the .bak temporary file! We never bother trying to
+                    // sanitise it, just not worth it.
+                    userBackupConfigFile.delete();
+
+                    if (userConfigFile.exists() || userBackupConfigFile.exists())
+                    {
+                        logger.error("Failed to delete old user config containing stored credentials.");
+                    }
+
+                    if (!safeUserConfigFile.renameTo(userConfigFile))
+                    {
+                        logger.warn("Failed to move sanitised config, just tidy-up");
+                        safeUserConfigFile.delete();
+                    }
+                }
+                else
+                {
+                    logger.debug("Stored credentials already clean for inactive user");
+                }
+            }
+        }
+    }
+
+    /**
+     * Goes over all system properties and outputs their names and values for
+     * debug purposes. The method has no effect if the logger is at a log level
+     * other than DEBUG or TRACE (FINE or FINEST).
+     * * Changed that system properties are printed in INFO level and this way
+     *   they are included in the beginning of every users log file.
+     */
+    private static void debugPrintSystemProperties()
+    {
+        for (Map.Entry<Object, Object> entry : System.getProperties().entrySet())
+        {
+            // We do not need (or want) to log the user language.
+            if (!entry.getKey().toString().equals(JAVA_USER_LANGUAGE))
+            {
+                logger.info(entry.getKey() + "=" +
+                          getLoggableSystemPropertyValue(entry.getKey().toString(), entry.getValue()));
+            }
+        }
+    }
+
+    /**
+     * Write all the config to the config logger.
+     */
+    private static void recordAllConfig(final ScopedConfigurationService scopedConfigurationService)
+    {
+        List<String> propertyNames = scopedConfigurationService.getAllPropertyNames();
+        int size = propertyNames.size();
+
+        if (size == 0)
+        {
+            configLogger.config("No pre-existing config found for " + scopedConfigurationService.getClass().getName());
+        }
+        else
+        {
+            configLogger.config("Configuration for scope: " + scopedConfigurationService.getClass().getName());
+        }
+
+        for (String propertyName : propertyNames)
+        {
+            if (!isPrivacyProperty(propertyName))
+            {
+                configLogger.config(propertyName + ": initialValue=" + scopedConfigurationService.getProperty(propertyName));
+            }
+        }
+    }
+
+    private static void logConfigurationPropertyChange(final PropertyChangeEvent evt)
+    {
+        if (evt.getSource() instanceof ScopedConfigurationService)
+        {
+            final ScopedConfigurationService scopedConfigurationService = (ScopedConfigurationService) evt.getSource();
+            final String propertyName = evt.getPropertyName();
+
+            if (evt.getNewValue() != null)
+            {
+                String oldStringValue = String.valueOf(evt.getOldValue());
+                String newStringValue = String.valueOf(evt.getNewValue());
+
+                setProperty(oldStringValue, newStringValue, scopedConfigurationService, propertyName);
+            }
+            else if (evt.getOldValue() != null)
+            {
+                removeProperty(scopedConfigurationService, propertyName);
+            }
+        }
+        else if (evt.getSource() != null)
+        {
+            logger.warn("Unexpected source of configuration property change: " + evt.getSource().getClass().getName());
+        }
+    }
+
+    private static void setProperty(String oldStringValue, String newStringValue,
+                                    ScopedConfigurationService scopedConfigurationService, String propertyName)
+    {
+        if (oldStringValue.length() > 10000)
+        {
+            logger.warn(propertyName + " has very long old value " +
+                        oldStringValue.length());
+            oldStringValue = oldStringValue.substring(0, 10000);
+        }
+
+        if (newStringValue.length() > 10000)
+        {
+            logger.warn(propertyName + " has very long new value " +
+                        newStringValue.length());
+            newStringValue = newStringValue.substring(0, 10000);
+        }
+
+        if (isPrivacyProperty(propertyName))
+        {
+            configLogger.config(sanitiseConfigPropertyForLogging(propertyName) + "->" +
+                                sanitiseConfigValueForLogging(propertyName, newStringValue) +
+                                ": oldValue=" +
+                                sanitiseConfigValueForLogging(propertyName, oldStringValue) +
+                                ", size=" + scopedConfigurationService.getAllPropertyNames().size() +
+                                ", scope=" + scopedConfigurationService.getClass().getName());
+        }
+        else
+        {
+            configLogger.config(propertyName + "->" + newStringValue +
+                                ": oldValue=" + oldStringValue +
+                                ", size=" + scopedConfigurationService.getAllPropertyNames().size() +
+                                ", scope=" + scopedConfigurationService.getClass().getName());
+        }
+    }
+
+    private static void removeProperty(final ScopedConfigurationService scopedConfigurationService, String propertyName)
+    {
+        configLogger.config("Will remove prop: " + sanitiseConfigPropertyForLogging(propertyName) +
+                            ", size=" + scopedConfigurationService.getAllPropertyNames().size() +
+                            ", scope=" + scopedConfigurationService.getClass().getName());
+    }
+
+    /**
+     * Returns true if a system property (i.e. Java properties, such as user.name)
+     * should be hashed for privacy reasons.
+     */
+    private static boolean isSystemPrivacyProperty(final String propertyName)
+    {
+        return SYSTEM_PRIVACY_PROPERTIES.stream().anyMatch(propertyName::contains);
+    }
+
+    /**
+     * Returns a hashed value of a system property (i.e. Java properties, such as user.name)
+     * if it exposes Personal Data.
+     */
+    private static Object getLoggableSystemPropertyValue(final String propertyName, final Object propertyValue)
+    {
+        if (propertyValue != null)
+        {
+            return isSystemPrivacyProperty(propertyName) ? logHasher(propertyValue) : propertyValue;
+        }
+
+        return null;
     }
 }

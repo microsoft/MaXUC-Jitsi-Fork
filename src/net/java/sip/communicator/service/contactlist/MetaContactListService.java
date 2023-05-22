@@ -4,9 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.contactlist;
 
 import java.util.*;
+
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.service.contactlist.event.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -171,14 +174,15 @@ public interface MetaContactListService
 
     /**
      * Returns a list of MetaContacts containing all contacts whose phone number
-     * equals the given <tt>phoneNumber</tt>, or null if no such MetaContacts
+     * equals the given <tt>phoneNumber</tt>, or empty list if no such MetaContacts
      * could be found.
      *
-     * @param phoneNumber the phone number of the  protocol specific
+     * @param phoneNumber the phone number of the protocol specific
      * <tt>contact</tt> that we're looking for.
      * @return a list of MetaContacts whose phone number equals the given
-     * <tt>phoneNumber</tt>, or null if none are found.
+     * <tt>phoneNumber</tt>
      */
+    @NotNull
     List<MetaContact> findMetaContactByNumber(String phoneNumber);
 
     /**

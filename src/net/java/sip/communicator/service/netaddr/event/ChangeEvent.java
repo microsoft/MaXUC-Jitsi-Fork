@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.netaddr.event;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -190,7 +191,7 @@ public class ChangeEvent
         }
 
         buff.append(", standby=" + standby)
-            .append(", source=" + source)
+            .append(", source=" + logHasher(source))
             .append(", address=" + logHasher(address != null ? address.getHostAddress() : null))
             .append(", isInitial=" + initial);
 

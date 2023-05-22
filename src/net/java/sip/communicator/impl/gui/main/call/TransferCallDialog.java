@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -12,6 +13,7 @@ import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.UIService.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
+import static org.jitsi.util.Hasher.logHasher;
 
 /**
  * Represents a <tt>Dialog</tt> which allows specifying the target contact
@@ -48,13 +50,14 @@ public class TransferCallDialog extends AbstractCallContactInviteDialog
     {
         if (uiContact != null)
         {
-            // A contact was selected - transfer to it
+            // A contact was selected - transfer to it.
+            // No need to hash contact as UIContact's toString() already does so.
             sLog.info("Ok pressed on contact " + uiContact);
             String number = getNumberFromContact(uiContact);
 
             if (number != null)
             {
-                sLog.info("Got a number from the contact " + number);
+                sLog.info("Got a number from the contact " + logHasher(number));
                 CallManager.transferCall(transferPeer, number, Reformatting.NEEDED);
                 setVisible(false);
                 dispose();
@@ -70,7 +73,7 @@ public class TransferCallDialog extends AbstractCallContactInviteDialog
                 {
                     // We should reformat the number if the user has entered
                     // the number in E164 format.
-                    sLog.info("Transferring to a number " + phoneNumber);
+                    sLog.info("Transferring to a number " + logHasher(phoneNumber));
 
                     // Valid phone number - transfer it
                     CallManager.transferCall(transferPeer,

@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
+
+import static org.jitsi.util.Hasher.logHasher;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -304,7 +307,7 @@ public class PresenceStatus
      */
     public String toString()
     {
-        return "PresenceStatus:" + getStatusName();
+        return "PresenceStatus:" + logHasher(getStatusName());
     }
 
     /**

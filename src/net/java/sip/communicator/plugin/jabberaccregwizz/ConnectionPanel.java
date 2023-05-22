@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.jabberaccregwizz;
 
 import java.awt.*;
@@ -47,14 +48,6 @@ public class ConnectionPanel
     private final JCheckBox sendKeepAliveBox = new SIPCommCheckBox(
         Resources.getString("plugin.jabberaccregwizz.ENABLE_KEEP_ALIVE"));
 
-    private final JCheckBox gmailNotificationsBox = new SIPCommCheckBox(
-        Resources.getString(
-            "plugin.jabberaccregwizz.ENABLE_GMAIL_NOTIFICATIONS"));
-
-    private final JCheckBox googleContactsBox = new SIPCommCheckBox(
-            Resources.getString(
-                "plugin.jabberaccregwizz.ENABLE_GOOGLE_CONTACTS_SOURCE"));
-
     private final JLabel resourceLabel
         = new JLabel(Resources.getString("plugin.jabberaccregwizz.RESOURCE"));
 
@@ -86,10 +79,6 @@ public class ConnectionPanel
     private final JCheckBox autoGenerateResource = new SIPCommCheckBox(
             Resources.getString("plugin.jabberaccregwizz.AUTORESOURCE"),
                 JabberAccountRegistration.DEFAULT_RESOURCE_AUTOGEN);
-
-    JCheckBox allowNonSecureBox = new SIPCommCheckBox(
-            Resources.getString("plugin.jabberaccregwizz.ALLOW_NON_SECURE"),
-            false);
 
     private JComboBox<String> dtmfMethodBox = new JComboBox<>(new String[]
                                                                       {
@@ -193,9 +182,6 @@ public class ConnectionPanel
         JPanel checkBoxesPanel
             = new TransparentPanel(new GridLayout(0, 1, 10, 10));
         //checkBoxesPanel.add(sendKeepAliveBox);
-        checkBoxesPanel.add(gmailNotificationsBox);
-        checkBoxesPanel.add(googleContactsBox);
-        checkBoxesPanel.add(allowNonSecureBox);
 
         final JPanel resourcePanel
                 = new TransparentPanel(new BorderLayout(10, 10));
@@ -214,7 +200,6 @@ public class ConnectionPanel
         resourcePanel.add(resSubPanelValue, BorderLayout.CENTER);
 
         // default for new account
-        googleContactsBox.setSelected(true);
         advancedOpPanel.add(checkBoxesPanel, BorderLayout.NORTH);
         advancedOpPanel.add(serverOpPanel, BorderLayout.CENTER);
         advancedOpPanel.add(resourcePanel, BorderLayout.SOUTH);
@@ -406,50 +391,6 @@ public class ConnectionPanel
     }
 
     /**
-     * Returns <tt>true</tt> if the "gmail notifications" check box is selected,
-     * otherwise returns <tt>false</tt>.
-     * @return <tt>true</tt> if the "gmail notifications" check box is selected,
-     * otherwise returns <tt>false</tt>
-     */
-    boolean isGmailNotificationsEnabled()
-    {
-        return gmailNotificationsBox.isSelected();
-    }
-
-    /**
-     * Selects/unselects the "gmail notifications" check box according to the
-     * given <tt>isEnabled</tt> property.
-     * @param isEnabled indicates if the "gmail notifications"
-     * check box should be selected or not
-     */
-    void setGmailNotificationsEnabled(boolean isEnabled)
-    {
-        gmailNotificationsBox.setSelected(isEnabled);
-    }
-
-    /**
-     * Returns <tt>true</tt> if the "Google contacts" check box is selected,
-     * otherwise returns <tt>false</tt>.
-     * @return <tt>true</tt> if the "Google contacts" check box is selected,
-     * otherwise returns <tt>false</tt>
-     */
-    boolean isGoogleContactsEnabled()
-    {
-        return googleContactsBox.isSelected();
-    }
-
-    /**
-     * Selects/unselects the "Google contacts" check box according to the
-     * given <tt>isEnabled</tt> property.
-     * @param isEnabled indicates if the "Google contacts"
-     * check box should be selected or not
-     */
-    void setGoogleContactsEnabled(boolean isEnabled)
-    {
-        googleContactsBox.setSelected(isEnabled);
-    }
-
-    /**
      * Disables Next Button if Port field value is incorrect
      */
     private void setNextButtonAccordingToPortAndPriority()
@@ -497,24 +438,6 @@ public class ConnectionPanel
     boolean isAutogenerateResourceEnabled()
     {
         return autoGenerateResource.isSelected();
-    }
-
-    /**
-     * Set allow non secure value.
-     * @param value the new value.
-     */
-    void setAllowNonSecure(boolean value)
-    {
-        this.allowNonSecureBox.setSelected(value);
-    }
-
-    /**
-     * Is non-TLS allowed.
-     * @return is non-TLS allowed
-     */
-    boolean isAllowNonSecure()
-    {
-        return allowNonSecureBox.isSelected();
     }
 
     /**

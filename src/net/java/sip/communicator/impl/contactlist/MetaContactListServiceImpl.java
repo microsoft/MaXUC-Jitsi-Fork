@@ -4,18 +4,19 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.contactlist;
 
 import static java.util.stream.Collectors.toSet;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.util.*;
 
 import org.jitsi.service.resources.*;
+import org.jitsi.util.CustomAnnotations.*;
 import org.jitsi.util.xml.*;
 import org.osgi.framework.*;
-
-import com.drew.lang.annotations.NotNull;
 
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactlist.event.*;
@@ -126,12 +127,6 @@ public class MetaContactListServiceImpl
     private final MclStorageManager storageManager = new MclStorageManager();
 
     /**
-     * Service exposing an interface for communicating with WISPA, the API for
-     * communicating with applications via websockets (e.g. Electron UI).
-     */
-    private static WISPAService wispaService;
-
-    /**
      * Creates an instance of this class.
      */
     public MetaContactListServiceImpl()
@@ -141,9 +136,6 @@ public class MetaContactListServiceImpl
                     this,
                     "RootMetaContactGroup",
                     "RootMetaContactGroup");
-
-        // Initialise our connection to WISPA.
-        wispaService = ContactlistActivator.getWISPAService();
     }
 
     /**
@@ -209,9 +201,7 @@ public class MetaContactListServiceImpl
         // providers and create the meta contact list
         if (protocolProviderRefs != null)
         {
-            logger.debug("Found "
-                     + protocolProviderRefs.length
-                     + " already installed providers.");
+            logger.debug("Found " + protocolProviderRefs.length + " already installed providers.");
             for (ServiceReference<?> providerRef : protocolProviderRefs)
             {
                 ProtocolProviderService provider
@@ -367,10 +357,9 @@ public class MetaContactListServiceImpl
 
         if (parentMetaGroup == null)
         {
-            throw new MetaContactListException(
-                "orphan Contact: " + metaContact
-                , null
-                , MetaContactListException.CODE_NETWORK_ERROR);
+            throw new MetaContactListException("orphan Contact: " + metaContact,
+                null,
+                MetaContactListException.CODE_NETWORK_ERROR);
         }
 
         addNewContactToMetaContact(provider, parentMetaGroup, metaContact,
@@ -412,15 +401,13 @@ public class MetaContactListServiceImpl
             provider.getOperationSet(OperationSetPersistentPresence.class);
         if (opSetPersPresence == null)
         {
-            /** @todo handle non-persistent presence operation sets as well */
+            // TODO handle non-persistent presence operation sets as well
             return;
         }
 
         if (! (metaContact instanceof MetaContactImpl))
         {
-            throw new IllegalArgumentException(
-                    metaContact
-                    + " is not an instance of MetaContactImpl");
+            throw new IllegalArgumentException(metaContact + " is not an instance of MetaContactImpl");
         }
 
         ContactGroup parentProtoGroup
@@ -428,10 +415,9 @@ public class MetaContactListServiceImpl
 
         if (parentProtoGroup == null)
         {
-            throw new MetaContactListException(
-                "Could not obtain proto group parent for " + metaContact
-                , null
-                , MetaContactListException.CODE_NETWORK_ERROR);
+            throw new MetaContactListException("Could not obtain proto group parent for " + metaContact,
+                null,
+                MetaContactListException.CODE_NETWORK_ERROR);
         }
 
         PendingContactList.Listener listener = pendingContacts.addListener(provider, contactID);
@@ -446,7 +432,7 @@ public class MetaContactListServiceImpl
         {
             //create the contact in the group
             // if its the root group just call subscribe
-            if(parentMetaGroup.equals(rootMetaGroup))
+            if (parentMetaGroup.equals(rootMetaGroup))
                 opSetPersPresence.subscribe(contactID);
             else
                 opSetPersPresence.subscribe(parentProtoGroup, contactID);
@@ -454,36 +440,30 @@ public class MetaContactListServiceImpl
             //wait for a confirmation event
             listener.waitForEvent(CONTACT_LIST_MODIFICATION_TIMEOUT);
         }
-        catch(OperationFailedException ex)
+        catch (OperationFailedException ex)
         {
-            if(ex.getErrorCode()
-               == OperationFailedException.SUBSCRIPTION_ALREADY_EXISTS)
+            if (ex.getErrorCode() == OperationFailedException.SUBSCRIPTION_ALREADY_EXISTS)
             {
-                throw new MetaContactListException(
-                "failed to create contact " + contactID
-                , ex
-                , MetaContactListException.CODE_CONTACT_ALREADY_EXISTS_ERROR);
+                throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
+                    ex,
+                    MetaContactListException.CODE_CONTACT_ALREADY_EXISTS_ERROR);
             }
-            else if(ex.getErrorCode()
-               == OperationFailedException.NOT_SUPPORTED_OPERATION)
+            else if (ex.getErrorCode() == OperationFailedException.NOT_SUPPORTED_OPERATION)
             {
-                throw new MetaContactListException(
-                "failed to create contact " + contactID
-                , ex
-                , MetaContactListException.CODE_NOT_SUPPORTED_OPERATION);
+                throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
+                    ex,
+                    MetaContactListException.CODE_NOT_SUPPORTED_OPERATION);
             }
 
-            throw new MetaContactListException(
-                "failed to create contact " + contactID
-                , ex
-                , MetaContactListException.CODE_NETWORK_ERROR);
+            throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
+                    ex,
+                    MetaContactListException.CODE_NETWORK_ERROR);
         }
         catch (Exception ex)
         {
-            throw new MetaContactListException(
-                "failed to create contact " + contactID
-                , ex
-                , MetaContactListException.CODE_NETWORK_ERROR);
+            throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
+                    ex,
+                    MetaContactListException.CODE_NETWORK_ERROR);
         }
         finally
         {
@@ -499,7 +479,7 @@ public class MetaContactListServiceImpl
             int errorCode = MetaContactListException.CODE_NETWORK_ERROR;
             Contact srcContact = opSetPersPresence.findContactByID(contactID);
 
-            logger.debug("No contact add event retrieved for " + contactID +
+            logger.debug("No contact add event retrieved for " + sanitiseChatAddress(contactID) +
                          ". Contact found on server = " + srcContact);
 
             if (srcContact != null)
@@ -525,7 +505,7 @@ public class MetaContactListServiceImpl
                         contactLogger.debug(srcContact,
                                             "Sending unsubscribe after subscription " +
                                             "subscription timeout for " +
-                                            contactID);
+                                            sanitiseChatAddress(contactID));
                         opSetPersPresence.unsubscribe(srcContact);
                     }
                     catch (Exception e)
@@ -534,16 +514,15 @@ public class MetaContactListServiceImpl
                         // matter if the unsubscribe failed, as we're just
                         // trying to tidy up a potentially broken roster entry.
                         contactLogger.warn("Unsubscribe attempt failed after " +
-                            "subscription timeout for " + contactID, e);
+                            "subscription timeout for " + sanitiseChatAddress(contactID), e);
                     }
                 }
             }
 
-            throw new MetaContactListException(
-                "Failed to create a contact with address: "
-                + contactID
-                , null
-                , errorCode);
+            throw new MetaContactListException("Failed to create a contact with address: " +
+                sanitiseChatAddress(contactID),
+                null,
+                errorCode);
         }
 
         // Check whether the subscription failed
@@ -552,16 +531,15 @@ public class MetaContactListServiceImpl
             SubscriptionEvent.SUBSCRIPTION_FAILED)
         {
             throw new MetaContactListException(
-                "Failed to create a contact with address: "
-                + contactID + " "
-                + listener.evt.getErrorReason()
-                , null
-                , MetaContactListException.CODE_UNKNOWN_ERROR);
+                "Failed to create a contact with address: " +
+                sanitiseChatAddress(contactID) + " " +
+                listener.evt.getErrorReason(),
+                null,
+                MetaContactListException.CODE_UNKNOWN_ERROR);
         }
 
         //now finally - add the contact to the meta contact
-        ( (MetaContactImpl) metaContact).addProtoContact(
-            listener.sourceContact);
+        ( (MetaContactImpl) metaContact).addProtoContact(listener.sourceContact);
 
         //only fire an event here if the calling method wants us to. in case
         //this is the creation of a new contact and not only addition of a
@@ -575,8 +553,7 @@ public class MetaContactListServiceImpl
                                        metaContact,
                                        null);
         }
-        ((MetaContactGroupImpl) parentMetaGroup).addMetaContact(
-                (MetaContactImpl)metaContact);
+        ((MetaContactGroupImpl) parentMetaGroup).addMetaContact((MetaContactImpl)metaContact);
     }
 
     /**
@@ -609,9 +586,8 @@ public class MetaContactListServiceImpl
             findParentMetaContactGroup(metaGroup);
         if (parentMetaGroup == null)
         {
-            logger.error(
-                "Internal Error - Orphan group: Resolve failed at group " +
-                                     logHasher(metaGroup.getGroupName()));
+            logger.error("Internal Error - Orphan group: Resolve failed at group " +
+                         logHasher(metaGroup.getGroupName()));
             return null;
         }
 
@@ -654,9 +630,9 @@ public class MetaContactListServiceImpl
         catch (Exception ex)
         {
             throw new MetaContactListException(
-                "failed to create contact group " + metaGroup.getGroupName()
-                , ex
-                , MetaContactListException.CODE_NETWORK_ERROR);
+                "failed to create contact group " + logHasher(metaGroup.getGroupName()),
+                ex,
+                MetaContactListException.CODE_NETWORK_ERROR);
         }
         finally
         {
@@ -672,10 +648,9 @@ public class MetaContactListServiceImpl
         if (evtRetriever.evt == null)
         {
             throw new MetaContactListException(
-                "Failed to create a proto group named: "
-                + metaGroup.getGroupName()
-                , null
-                , MetaContactListException.CODE_NETWORK_ERROR);
+                "Failed to create a proto group named: " + logHasher(metaGroup.getGroupName()),
+                null,
+                MetaContactListException.CODE_NETWORK_ERROR);
         }
 
         //now add the proto group to the meta group.
@@ -737,8 +712,7 @@ public class MetaContactListServiceImpl
     {
         if (! (child instanceof MetaContactImpl))
         {
-            throw new IllegalArgumentException(child
-                                       + " is not a MetaContactImpl instance.");
+            throw new IllegalArgumentException(child + " is not a MetaContactImpl instance.");
         }
         return ( (MetaContactImpl) child).getParentGroup();
     }
@@ -772,8 +746,8 @@ public class MetaContactListServiceImpl
     {
         if (! (metaContactGroup instanceof MetaContactGroupImpl))
         {
-            throw new IllegalArgumentException(metaContactGroup
-                + " is not an instance of MetaContactGroupImpl");
+            throw new IllegalArgumentException(metaContactGroup +
+                " is not an instance of MetaContactGroupImpl");
         }
 
         MetaContactImpl newMetaContact = new MetaContactImpl();
@@ -783,10 +757,10 @@ public class MetaContactListServiceImpl
             //don't fire a PROTO_CONT_ADDED event we'll
             //fire our own event here.
 
-        fireMetaContactEvent(   newMetaContact,
-                                findParentMetaContactGroup(newMetaContact),
-                                MetaContactEvent.META_CONTACT_ADDED,
-                                null);
+        fireMetaContactEvent(newMetaContact,
+                             findParentMetaContactGroup(newMetaContact),
+                             MetaContactEvent.META_CONTACT_ADDED,
+                             null);
 
         return newMetaContact;
     }
@@ -809,30 +783,27 @@ public class MetaContactListServiceImpl
      *             reason.
      */
     @Override
-    public MetaContactGroup createMetaContactGroup(MetaContactGroup parent,
-                                       String groupName)
+    public MetaContactGroup createMetaContactGroup(MetaContactGroup parent, String groupName)
         throws MetaContactListException
     {
         if (! (parent instanceof MetaContactGroupImpl))
         {
-            throw new IllegalArgumentException(
-                parent
-                + " is not an instance of MetaContactGroupImpl");
+            throw new IllegalArgumentException(parent + " is not an instance of MetaContactGroupImpl");
         }
 
         //make sure that "parent" does not already contain a subgroup called
         //"groupName"
         Iterator<MetaContactGroup> subgroups = parent.getSubgroups();
 
-        while(subgroups.hasNext())
+        while (subgroups.hasNext())
         {
             MetaContactGroup group = subgroups.next();
 
-            if(group.getGroupName().equals(groupName))
+            if (group.getGroupName().equals(groupName))
             {
                 throw new MetaContactListException(
-                    "Parent " + parent.getGroupName() + " already contains a "
-                    + "group called " + groupName,
+                    "Parent " + logHasher(parent.getGroupName()) +
+                    " already contains a group called " + logHasher(groupName),
                     new CloneNotSupportedException("just testing nested exc-s"),
                     MetaContactListException.CODE_GROUP_ALREADY_EXISTS_ERROR);
             }
@@ -890,8 +861,7 @@ public class MetaContactListServiceImpl
                 }
                 catch(Throwable t)
                 {
-                    logger.error("Error renaming protocol group: "
-                        + protoGroup, t);
+                    logger.error("Error renaming protocol group: " + protoGroup, t);
                 }
             }
         }
@@ -1161,6 +1131,8 @@ public class MetaContactListServiceImpl
                 return;
             }
 
+            logger.info("Removing protoContact " + contact +
+                        " from current parent " + currentParentMetaContact);
             currentParentMetaContact.removeProtoContact(contact);
         }
 
@@ -1172,7 +1144,7 @@ public class MetaContactListServiceImpl
 
         if (opSetPresence == null)
         {
-            /** @todo handle non persistent presence operation sets */
+            // TODO handle non persistent presence operation sets
         }
 
         MetaContactGroup newParentGroup
@@ -1184,7 +1156,23 @@ public class MetaContactListServiceImpl
         //if the contact is not currently in the proto group corresponding to
         //its new metacontact group parent then move it
         if(contact.getParentContactGroup() != parentProtoGroup && opSetPresence != null)
-            opSetPresence.moveContactToGroup(contact, parentProtoGroup);
+        {
+            try
+            {
+                opSetPresence.moveContactToGroup(contact, parentProtoGroup);
+            }
+            catch (IllegalArgumentException ex)
+            {
+                logger.error("Failed to move contact to new parent group.", ex);
+                if (currentParentMetaContact != null)
+                {
+                    logger.info("Reverting partial change; adding protoContact " +
+                                contact + " back to " + currentParentMetaContact);
+                    currentParentMetaContact.addProtoContact(contact);
+                }
+                return;
+            }
+        }
 
         ( (MetaContactImpl) newParentMetaContact).addProtoContact(contact);
 
@@ -1273,7 +1261,7 @@ public class MetaContactListServiceImpl
             = (MetaContactGroupImpl) findParentMetaContactGroup(metaContact);
 
         if (currentParent != null)
-            currentParent.removeMetaContact( (MetaContactImpl) metaContact);
+            currentParent.removeMetaContact(metaContact);
 
         ( (MetaContactGroupImpl) newMetaGroup).addMetaContact(
             (MetaContactImpl) metaContact);
@@ -1301,7 +1289,7 @@ public class MetaContactListServiceImpl
 
                 if (opSetPresence == null)
                 {
-                    /** @todo handle non persistent presence operation sets */
+                    // TODO handle non persistent presence operation sets
                 }
                 else
                 {
@@ -1315,7 +1303,7 @@ public class MetaContactListServiceImpl
 
             // now move the contact to previous parent
             ((MetaContactGroupImpl)newMetaGroup).
-                removeMetaContact( (MetaContactImpl) metaContact);
+                removeMetaContact(metaContact);
 
             currentParent.addMetaContact((MetaContactImpl) metaContact);
 
@@ -1356,7 +1344,7 @@ public class MetaContactListServiceImpl
         if (opSetPresence == null)
         {
             opSetPresence =
-                (OperationSetPresence) contact.getProtocolProvider()
+                contact.getProtocolProvider()
                     .getOperationSet(OperationSetPersistentPresence.class);
 
             if (opSetPresence == null)
@@ -1453,7 +1441,7 @@ public class MetaContactListServiceImpl
 
         while (protoContactsIter.hasNext())
         {
-            removeContact( protoContactsIter.next());
+            removeContact(protoContactsIter.next());
         }
 
         //do not fire events. that will be done by the contact listener as soon
@@ -1502,7 +1490,7 @@ public class MetaContactListServiceImpl
 
                 if (opSetPersPresence == null)
                 {
-                    /** @todo handle removal of non persistent proto groups */
+                    // TODO handle removal of non persistent proto groups
                     return;
                 }
 
@@ -1588,7 +1576,7 @@ public class MetaContactListServiceImpl
                         MetaContactGroupImpl parentMetaGroup,
                         ContactGroup         groupToRemove)
     {
-        logger.info("Locally remove all contacts from group " + (groupToRemove != null ? groupToRemove.getGroupName() : "null"));
+        logger.info("Locally remove all contacts from group " + (groupToRemove != null ? logHasher(groupToRemove.getGroupName()) : "null"));
 
         Iterator<MetaContact> childrenContactsIter = parentMetaGroup.getChildContacts();
 
@@ -1716,6 +1704,7 @@ public class MetaContactListServiceImpl
     }
 
     @Override
+    @NotNull
     public List<MetaContact> findMetaContactByNumber(String phoneNumber)
     {
         return rootMetaGroup.findMetaContactByNumber(phoneNumber);
@@ -1944,8 +1933,8 @@ public class MetaContactListServiceImpl
                                             MetaContactGroupImpl metaGroup,
                                             boolean fireEvents)
     {
-        contactLogger.debug("Adding contact group " + protoGroup.getGroupName() +
-                     " to meta group " + metaGroup.getGroupName());
+        contactLogger.debug("Adding contact group " + logHasher(protoGroup.getGroupName()) +
+                     " to meta group " + logHasher(metaGroup.getGroupName()));
 
         // first register the root group
         metaGroup.addProtoGroup(protoGroup);
@@ -2044,7 +2033,7 @@ public class MetaContactListServiceImpl
             }
 
             contactLogger.debug(newMetaContact,
-                       "Added new MetaContact for " + contact.getDisplayName());
+                       "Added new MetaContact for " + logHasher(contact.getDisplayName()));
             metaGroup.addMetaContact(newMetaContact);
 
             if (fireEvents)
@@ -2079,7 +2068,7 @@ public class MetaContactListServiceImpl
     private synchronized void handleProviderAdded(@NotNull ProtocolProviderService provider)
     {
         logger.info("Adding protocol provider "
-                    + provider.getAccountID().getAccountUniqueID());
+                    + provider.getAccountID().getLoggableAccountID());
 
         // check whether the provider has a persistent presence op set
         OperationSetPersistentPresence opSetPersPresence =
@@ -2106,12 +2095,12 @@ public class MetaContactListServiceImpl
                 }
 
                 logger.debug("All contacts loaded for account "
-                               + provider.getAccountID().getAccountUniqueID());
+                               + provider.getAccountID().getLoggableAccountID());
             }
             catch (XMLException exc)
             {
                 logger.error("Failed to load contacts for account "
-                             + provider.getAccountID().getAccountUniqueID(), exc);
+                             + provider.getAccountID().getLoggableAccountID(), exc);
             }
             synchronizeOpSetWithLocalContactList(opSetPersPresence);
         }
@@ -2120,7 +2109,7 @@ public class MetaContactListServiceImpl
             logger.debug("Service did not have a pers. pres. op. set.");
         }
 
-        /** @todo implement handling non persistent presence operation sets */
+        // TODO implement handling non persistent presence operation sets
 
         //add a presence status listener so that we could reorder contacts upon
         //status change. NOTE that we MUST NOT add the presence listener before
@@ -2377,7 +2366,7 @@ public class MetaContactListServiceImpl
                     || !servRefMask.equals(providerMask))
                 {
                     logger.debug("Ignoring masked provider: "
-                                    + provider.getAccountID());
+                            + (provider.getAccountID() != null ? provider.getAccountID().getLoggableAccountID(): null));
                     return;
                 }
             }
@@ -2387,7 +2376,8 @@ public class MetaContactListServiceImpl
                                provider.getAccountID().getAccountUniqueID()))
             {
                 logger.debug("An already installed account: "
-                            + provider.getAccountID() + ". Modifying it.");
+                            + (provider.getAccountID() != null ? provider.getAccountID().getLoggableAccountID(): null)
+                            + ". Modifying it.");
                 // the account is already installed and this event is coming
                 // from a modification. we don't return here as
                 // the account is removed and added again and we must
@@ -2417,7 +2407,8 @@ public class MetaContactListServiceImpl
                         .getStoredAccounts()
                             .contains(accountID))
             {
-                logger.debug("Account still installed " + provider.getAccountID());
+                logger.debug("Account still installed "
+                            + (provider.getAccountID() != null ? provider.getAccountID().getLoggableAccountID(): null));
 
                 //the account is still installed it means we are modifying it.
                 // we remove all its contacts from current contactlist
@@ -2436,8 +2427,8 @@ public class MetaContactListServiceImpl
             else
             {
                 logger.debug("Account uninstalled. acc.id="
-                         +provider.getAccountID() +". Removing from meta "
-                         +"contact list.");
+                        + (provider.getAccountID() != null ? provider.getAccountID().getLoggableAccountID() : null)
+                        +". Removing from meta contact list.");
                 this.handleProviderRemoved( (ProtocolProviderService) sService);
             }
         }
@@ -2577,7 +2568,7 @@ public class MetaContactListServiceImpl
         {
             Listener listener = new Listener(pps, contact);
 
-            logger.debug("Listening for contact: " + contact +
+            logger.debug("Listening for contact: " + sanitiseChatAddress(contact) +
                          " with provider " + pps +
                          " and listener: " + listener);
 
@@ -2587,7 +2578,7 @@ public class MetaContactListServiceImpl
 
             if (providerContacts.containsKey(contact))
             {
-                logger.warn("Contact: " + contact +
+                logger.warn("Contact: " + sanitiseChatAddress(contact) +
                             " with provider " + pps +
                             " was already pending with a different listener: " +
                             providerContacts.get(contact));
@@ -2633,7 +2624,7 @@ public class MetaContactListServiceImpl
             ProtocolProviderService pps = listener.provider();
             String contact = listener.contactID();
 
-            logger.debug("Stopping listening for contact: " + contact +
+            logger.debug("Stopping listening for contact: " + sanitiseChatAddress(contact) +
                          " with provider " + pps +
                          " and listener: " + listener);
 
@@ -2661,7 +2652,7 @@ public class MetaContactListServiceImpl
             }
             else
             {
-                logger.warn("Listener registered for contact: " + contact +
+                logger.warn("Listener registered for contact: " + sanitiseChatAddress(contact) +
                             " was different: " + local +
                             " not: " + listener);
             }
@@ -3081,7 +3072,7 @@ public class MetaContactListServiceImpl
             if (parentMetaGroup == null)
             {
                 logger.error("Failed to identify a parent where group "
-                    + logHasher(logHasher(evt.getSourceGroup().getGroupName())) + "should be placed.");
+                    + logHasher(evt.getSourceGroup().getGroupName()) + "should be placed.");
             }
 
             // check whether the meta group was already existing before
@@ -3402,16 +3393,21 @@ public class MetaContactListServiceImpl
             (MetaContactImpl) findMetaContactByContact(evt.getSourceContact());
 
         //ignore if we have no meta contact.
-        if(metaContactImpl == null)
+        if (metaContactImpl == null)
             return;
 
-        // Update WISPA with the new contact presence.
-        logger.debug("Notifying WISPA of new contact presence");
+        WISPAService wispaService = ContactlistActivator.getWISPAService();
         if (wispaService != null)
         {
+            // Update WISPA with the new contact presence.
+            logger.debug("Notifying WISPA of new contact presence");
             wispaService.notify(WISPANamespace.CONTACTS,
                 WISPAAction.DATA,
                 metaContactImpl);
+        }
+        else
+        {
+            logger.warn("Unable to notify WISPA of new contact presence");
         }
 
         int oldContactIndex = metaContactImpl.getParentGroup()
@@ -3419,7 +3415,7 @@ public class MetaContactListServiceImpl
 
         int newContactIndex = metaContactImpl.reevalContact();
 
-        if(oldContactIndex != newContactIndex)
+        if (oldContactIndex != newContactIndex)
         {
             fireMetaContactGroupEvent(
                 findParentMetaContactGroup(metaContactImpl)
@@ -3599,8 +3595,7 @@ public class MetaContactListServiceImpl
             if(mc != null)
             {
                 contactLogger.warn("Ignoring duplicate proto contact "
-                            + contactDescriptor
-                            + " accountID=" + accountID
+                            + sanitiseChatAddress(contactDescriptor)
                             + ". The contact was also present in the "
                             + "following meta contact:" + mc);
                 continue;
@@ -3618,7 +3613,7 @@ public class MetaContactListServiceImpl
             if (protoContact == null)
             {
                 contactLogger.debug(newMetaContact,
-                     contactDescriptor.contactAddress +
+                    sanitiseChatAddress(contactDescriptor.contactAddress) +
                      " did not create an unresolved contact when requested." +
                      " Assume it will be loaded later.");
                 continue;

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 
 #include "net_java_sip_communicator_plugin_addressbook_OutlookDataHandler.h"
 

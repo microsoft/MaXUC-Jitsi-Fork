@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.callhistory;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -248,6 +249,58 @@ public class CallHistoryServiceImpl
                                          CallHistoryTable.COL_CALL_END,
                                          startDate,
                                          endDate);
+
+            if (rs != null)
+            {
+                while (rs.next())
+                {
+                    result.add(convertDatabaseRecordToCallRecord(rs));
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            sLog.error("Failed to read Call History: ", e);
+        }
+        finally
+        {
+            DatabaseUtils.safeClose(connection, rs);
+        }
+
+        sLog.debug("found " + result.size() + " records");
+        return result;
+    }
+
+    /**
+     * Returns all the calls which start and end date both match the provided
+     * startDate, and which colCallParticipantIDs matches the provided
+     * callPeerIds.
+     *
+     * @param startDate Date the start/end date of the calls.
+     * @param callPeerIds IDs of the call peers.
+     * @return Collection of CallRecords with CallPeerRecord.
+     */
+    public Collection<CallRecord> findZeroLengthCallAtTimeForParticipant(
+            Date startDate,
+            String callPeerIds)
+    {
+        sLog.debug("startDate: " + startDate.getTime() +
+                   ", callPeerIds: " + callPeerIds);
+
+        DatabaseConnection connection = null;
+        ResultSet rs = null;
+        List<CallRecord> result = new ArrayList<>(1);
+
+        try
+        {
+            connection = mDatabaseService.connect();
+            rs = connection.findZeroLengthCallAtTimeForParticipant(
+                CallHistoryTable.NAME,
+                CallHistoryTable.COL_CALL_START,
+                CallHistoryTable.COL_CALL_END,
+                CallHistoryTable.COL_CALL_PARTICIPANT_IDS,
+                startDate,
+                callPeerIds);
 
             if (rs != null)
             {
@@ -823,6 +876,13 @@ public class CallHistoryServiceImpl
                 CallHistoryTable.DIRECTION.OUT : CallHistoryTable.DIRECTION.IN;
         try
         {
+            // A workaround for the CFS taking a while to update the Duration
+            // field. It first sends us a call event with 0 duration, and then
+            // after the call finishes it returns a new one with proper
+            // duration,so here we remove the duplicate one with 0 duration.
+            findZeroLengthCallAtTimeForParticipant(callRecord.getStartTime(), callPeerIDs.toString())
+                    .forEach(record -> removeRecord(record, shouldDispatchEvent));
+
             connection = mDatabaseService.connect();
 
             preparedStatement = connection.prepare("INSERT INTO " +
@@ -887,7 +947,7 @@ public class CallHistoryServiceImpl
      *
      * @param record the record to remove
      */
-    public void removeRecord(CallRecordImpl record)
+    public void removeRecord(CallRecord record)
     {
         removeRecord(record, true);
     }
@@ -898,7 +958,7 @@ public class CallHistoryServiceImpl
      * @param record the record to remove
      * @param shouldDispatchEvent Whether to immediately dispatch an event
      */
-    public void removeRecord(CallRecordImpl record, Boolean shouldDispatchEvent)
+    public void removeRecord(CallRecord record, Boolean shouldDispatchEvent)
     {
         DatabaseConnection connection = null;
         PreparedStatement preparedStatement = null;

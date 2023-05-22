@@ -33,11 +33,12 @@ public enum AnalyticsEventType
     ACCESS_DENIED("Preventing user from using app"),
     GOT_COS("Class of service retrieved"),
     CONFIG_RETRIEVED("Config retrieved"),
-    GET_CONFIG_RETRIEVED("Get Cfg Failed"),
+    GETTING_CONFIG_FAILED("Get Cfg Failed"),
     AUTO_UPDATE_OFF("Auto-update disabled for user"),
     AUTO_UPDATE_ON("Auto-update enabled for user"),
     SHUTDOWN("Application being shut down"),
     ELECTRON_DOWN("Electron can't be reached"),
+    CP_TOKEN_RETRIEVED("CommPortal token retrieved"),
 
     // Errors
     UNCAUGHT_EXCEPTION("Uncaught Exception"),
@@ -46,8 +47,6 @@ public enum AnalyticsEventType
     DEADLOCK("Deadlock Detected"),
     EDT_HANG("EDT hang detected"),
     EDT_RECOVERED("EDT hang recovered"),
-    SWT_HANG("SWT hang detected"),
-    SWT_RECOVERED("SWT hang recovered"),
     SCHEDULED_EXECUTOR_BAD_STATE("Scheduled Executor in Bad State"),
     UNCAUGHT_ELECTRON_EXCEPTION("Uncaught Electron exception"),
     CREATE_ERROR_EMAIL_FOLLOW_UP("Create an email draft as follow-up to an error report"),
@@ -74,6 +73,7 @@ public enum AnalyticsEventType
     CALL_PARKED("Call parked", true),
     CALL_PARK_PICKED_UP("Call park picked up", true),
     CALL_WITH_DIRECT_CALLING_DISABLED("Call made with direct calling disabled", true),
+    INCOMING_DIVERTED_CALL("Incoming Diverted Call"),
 
     // IM
     MAX_IM_ACCOUNTS("Max IM Acc"),
@@ -86,7 +86,6 @@ public enum AnalyticsEventType
     ACCEPT_GROUP_IM("Accept group IM"),
     LEAVE_GROUP_IM("Leave group IM"),
     IM_REMOVE_PARTICIPANT("IM remove participant"),
-    EDIT_IM("Edit IM", true),
     SEND_IM("Send an IM", true),
     RECEIVE_IM("Receive an IM", true),
     SEND_GROUP_IM("Send a group IM", true),
@@ -126,6 +125,7 @@ public enum AnalyticsEventType
     SEND_ERROR_REPORT("User sending error report"),
     SET_CUSTOM_STATUS("Set a custom status", true),
     THIRD_PARTY_INTEGRATION_LAUNCHED("Third party service launched", true),
+    EVENT_RATE_APP("User - Rate app"),
 
     // MaX Meeting
     ACC_MEET_USER_CREATE("User Created new Meeting"),

@@ -4,13 +4,14 @@
 # Distributable under LGPL license.
 # See terms of license at gnu.org.
 #
+# Portions (c) Microsoft Corporation. All rights reserved.
 
 MINGW_HOME ?= C:/mingw
 PRODUCTNAME ?= Jitsi
 PRODUCTBUILDVERSION ?= 1.0.0.0
 TARGET_BASENAME ?= run
 TARGET_DIR ?= ../../../../release/windows/tmp
-JAVA_HOME ?= C:/Program Files (x86)/AdoptOpenJDK/jdk-11.0.15+10
+JAVA_HOME ?= C:/Program Files (x86)/AdoptOpenJDK/jdk-11.0.17+8
 
 ifeq ($(wildcard /bin/cygpath.*),/bin/cygpath.exe)
     target.dir := $(shell cygpath --mixed "$(TARGET_DIR)")
@@ -39,6 +40,11 @@ ifeq ($(wildcard $(MINGW_HOME)/bin/$(MACHINE)-windres.*),$(MINGW_HOME)/bin/$(MAC
 endif
 endif
 
+CONFIG = \#define PRODUCTNAME "$(PRODUCTNAME)"\n\#define OLDPRODUCTNAME "$(OLDPRODUCTNAME)"\n\#define PRODUCTBUILDVERSION "$(PRODUCTBUILDVERSION)"\n\#define TARGET_BASENAME "$(TARGET_BASENAME)"\n\#define TARGET_BASENAME_EXE "$(TARGET_BASENAME).exe"
+ifeq ($(ENABLE_COVERAGE), true)
+	CONFIG := $(CONFIG)\n\#define ENABLE_COVERAGE
+endif
+
 $(cygwin.target.dir)/$(TARGET_BASENAME).exe: $(cygwin.target.dir)/config.h registry.c run.c $(cygwin.target.dir)/run.res ../setup/nls.c
 	$(CC) $(CPPFLAGS) registry.c run.c $(target.dir)/run.res ../setup/nls.c $(LDFLAGS) -o $(target.dir)/$(TARGET_BASENAME).exe $(LIBS)
 	-$(MINGW_HOME)/$(MACHINE)/bin/strip.exe $(target.dir)/$(TARGET_BASENAME).exe
@@ -47,7 +53,7 @@ $(cygwin.target.dir)/$(TARGET_BASENAME).exe: $(cygwin.target.dir)/config.h regis
 
 $(cygwin.target.dir)/config.h:
 	-rm.exe -f ../../../../resources/install/windows/config.h
-	echo.exe -e '#define PRODUCTNAME "$(PRODUCTNAME)"\n#define OLDPRODUCTNAME "$(OLDPRODUCTNAME)"\n#define PRODUCTBUILDVERSION "$(PRODUCTBUILDVERSION)"\n#define TARGET_BASENAME "$(TARGET_BASENAME)"\n#define TARGET_BASENAME_EXE "$(TARGET_BASENAME).exe"' > $(cygwin.target.dir)/config.h
+	echo.exe -e '$(CONFIG)' > $(cygwin.target.dir)/config.h
 
 $(cygwin.target.dir)/run.res: $(cygwin.target.dir)/config.h run.rc
 	$(WINDRES) -I../../../../resources/install/windows -I$(target.dir) run.rc -O coff -o $(target.dir)/run.res

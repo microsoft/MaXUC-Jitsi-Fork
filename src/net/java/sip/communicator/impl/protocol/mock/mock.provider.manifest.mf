@@ -10,5 +10,6 @@ Import-Package: net.java.sip.communicator.service.contactlist,
  net.java.sip.communicator.service.protocol,
  net.java.sip.communicator.service.protocol.emergencylocation,
  net.java.sip.communicator.service.protocol.event,
- net.java.sip.communicator.service.protocol.media
+ net.java.sip.communicator.service.protocol.media,
+ org.jitsi.util
 Export-Package: net.java.sip.communicator.impl.protocol.mock

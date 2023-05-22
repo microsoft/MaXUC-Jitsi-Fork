@@ -4,12 +4,17 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.reconnectplugin;
 
 import java.util.*;
 
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.resources.*;
+
+import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitiseValuesInList;
+
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.gui.*;
@@ -387,7 +392,7 @@ public class ReconnectPluginActivator
 
         ProtocolProviderService pp = (ProtocolProviderService)sService;
         logger.info("Protocol provider service changed: " +
-                    pp.getAccountID().getDisplayName());
+                    logHasher(pp.getAccountID().getDisplayName()));
 
         switch (serviceEvent.getType())
         {
@@ -416,8 +421,7 @@ public class ReconnectPluginActivator
         }
 
         AccountID accountID = provider.getAccountID();
-        logger.info("New protocol provider is comming "
-                                                 + accountID.getDisplayName());
+        logger.info("New protocol provider is coming " + accountID.getLoggableAccountID());
 
         logger.debug("Initialize account to unregistered");
         setAtLeastOneSuccessfulConnection(accountID, false);
@@ -452,8 +456,7 @@ public class ReconnectPluginActivator
         }
 
         AccountID accountID = provider.getAccountID();
-        String displayName = accountID.getDisplayName();
-        logger.info("Provider removed " + displayName);
+        logger.info("Provider removed " + accountID.getLoggableAccountID());
 
         if(hasAtLeastOneSuccessfulConnection(accountID))
         {
@@ -470,8 +473,9 @@ public class ReconnectPluginActivator
         // of reconnecting providers.
         boolean isReloading = accountID.isReloading();
         boolean isReconnecting = mCurrentlyReconnecting.containsKey(accountID);
-        logger.info("Account " + displayName + " is reconnecting? " +
-                    isReconnecting + ", is reloading? "  + isReloading);
+        logger.info("Account " + accountID.getLoggableAccountID() +
+                    " is reconnecting? " + isReconnecting +
+                    ", is reloading? "  + isReloading);
         if(isReconnecting && !isReloading)
         {
             mCurrentlyReconnecting.remove(accountID).cancel();
@@ -495,7 +499,7 @@ public class ReconnectPluginActivator
         }
 
         AccountID accountID = provider.getAccountID();
-        logger.debug(accountID.getDisplayName() + " registered");
+        logger.debug(accountID.getLoggableAccountID() + " registered");
 
         if (!hasAtLeastOneSuccessfulConnection(accountID))
         {
@@ -588,7 +592,7 @@ public class ReconnectPluginActivator
                     else
                     {
                         logger.debug("Provider already null, so no need to " +
-                           "unregister account: " + accountID.getDisplayName());
+                           "unregister account: " + accountID.getLoggableAccountID());
                     }
 
                     // set the connection as failed.
@@ -646,7 +650,8 @@ public class ReconnectPluginActivator
                 }
                 catch (Exception e)
                 {
-                    logger.error("Failed to determine if account " + accountID +
+                    logger.error("Failed to determine if account " +
+                                 (accountID != null ? accountID.getLoggableAccountID() : null) +
                                  " should reconnect: ", e);
                     reconnectAccount = false;
                 }
@@ -656,13 +661,13 @@ public class ReconnectPluginActivator
                     // Only reconnect the account if the change in network
                     // configuration has actually affected the IP address it
                     // is exposing.
-                    logger.info("Account ID " + accountID +
+                    logger.info("Account ID " + accountID.getLoggableAccountID() +
                                              " has changed route. Reconnect.");
                     reconnect(accountID);
                 }
                 else
                 {
-                    logger.debug("Account ID " + accountID + " hasn't changed route");
+                    logger.debug("Account ID " + (accountID != null ? accountID.getLoggableAccountID() : null) + " hasn't changed route");
                 }
             }
         }
@@ -688,8 +693,7 @@ public class ReconnectPluginActivator
                             final long taskDelay)
     {
         AccountID accountID = pp.getAccountID();
-        String displayName = accountID.getDisplayName();
-        logger.info("Start thread to unregister account: " + displayName);
+        logger.info("Start thread to unregister account: " + accountID.getLoggableAccountID());
 
         mUnregisteringAccounts.add(accountID);
 
@@ -708,7 +712,7 @@ public class ReconnectPluginActivator
 
                     RegistrationState registrationState =
                         pp.getRegistrationState();
-                    logger.info(displayName +
+                    logger.info(accountID.getLoggableAccountID() +
                                 " registration state: " +
                                 registrationState.getStateName());
                     logger.info("reconnect: " + reconnect);
@@ -737,7 +741,7 @@ public class ReconnectPluginActivator
                 catch(Throwable t)
                 {
                     logger.error("Error unregistering pp:" +
-                                 displayName, t);
+                                 pp, t);
 
                     // We tried but failed to unregister.  We don't want to
                     // retry, so remove the account ID from the list of
@@ -778,8 +782,8 @@ public class ReconnectPluginActivator
                                                     long taskDelay,
                                                     boolean reload)
     {
-        logger.info("Reconnect " + accountID + " after " + taskDelay +
-                                                     " ms. Reload? " + reload);
+        logger.info("Reconnect " + accountID.getLoggableAccountID() +
+                    " after " + taskDelay + " ms. Reload? " + reload);
 
         if(sTimer != null)
         {
@@ -788,7 +792,8 @@ public class ReconnectPluginActivator
             // scheduled (or cancelled).
             if (mCurrentlyReconnecting.containsKey(accountID))
             {
-                logger.debug("Reconnect task already scheduled for " + accountID);
+                logger.debug("Reconnect task already scheduled for " +
+                             accountID.getLoggableAccountID());
                 mCurrentlyReconnecting.remove(accountID).cancel();
             }
 
@@ -798,7 +803,7 @@ public class ReconnectPluginActivator
         }
         else
         {
-            logger.warn("No timer to reconnect! " + accountID);
+            logger.warn("No timer to reconnect! " + accountID.getLoggableAccountID());
         }
     }
 
@@ -809,13 +814,22 @@ public class ReconnectPluginActivator
     @Override
     public String toString()
     {
+        String loggableAutoReconnEnabledAccounts =
+                sanitiseValuesInList(mAutoReconnEnabledAccounts.keySet(), AccountID::getLoggableAccountID);
+        String loggableCurrentlyReconnecting =
+                sanitiseValuesInList(mCurrentlyReconnecting.keySet(), AccountID::getLoggableAccountID);
+        String loggableNeedsReconnectionAccounts =
+                sanitiseValuesInList(mNeedsReconnection, AccountID::getLoggableAccountID);
+        String loggableUnregisteringAccounts =
+                sanitiseValuesInList(mUnregisteringAccounts, AccountID::getLoggableAccountID);
+
         return "ReconnectPluginActivator[ " +
                 " hashCode: " + hashCode() +
                 " connectedInterfaces: " + connectedInterfaces +
-                " autoReconnEnabledAccounts: " + mAutoReconnEnabledAccounts.keySet() +
-                " currentlyReconnecting: " + mCurrentlyReconnecting.keySet() +
-                " needsReconnection: " + mNeedsReconnection +
-                " unregisteringAccounts: " + mUnregisteringAccounts + "]";
+                " autoReconnEnabledAccounts: [" + loggableAutoReconnEnabledAccounts + "] " +
+                " currentlyReconnecting: [" + loggableCurrentlyReconnecting + "] " +
+                " needsReconnection: [" + loggableNeedsReconnectionAccounts + "] " +
+                " unregisteringAccounts: [" + loggableUnregisteringAccounts + "]]";
     }
 
     /**
@@ -830,7 +844,8 @@ public class ReconnectPluginActivator
         if (evt.getSource() instanceof ProtocolProviderService)
         {
             ProtocolProviderService pp = (ProtocolProviderService)evt.getSource();
-            logger.info(pp.getAccountID().getDisplayName() +
+
+            logger.info(pp.getAccountID().getLoggableAccountID() +
                         " registration state: " +
                         evt.getNewState().getStateName());
         }
@@ -876,7 +891,7 @@ public class ReconnectPluginActivator
     }
 
     /**
-     * Handle a RegistrationState.CONNECTION_FAILED) or a RegistrationState.UNREGISTERED event.
+     * Handle a RegistrationState.CONNECTION_FAILED or a RegistrationState.UNREGISTERED event.
      * @param evt
      * @param pp
      */
@@ -884,15 +899,16 @@ public class ReconnectPluginActivator
         RegistrationStateChangeEvent evt, ProtocolProviderService pp)
     {
         AccountID accountID = pp.getAccountID();
-        String displayName = accountID.getDisplayName();
-        logger.info(displayName + ": registration state changed to " + evt.getNewState().getStateName());
+        String loggableAccountID = accountID.getLoggableAccountID();
+        logger.info(loggableAccountID + ": registration state changed to " + evt.getNewState().getStateName());
 
         if (!hasAtLeastOneSuccessfulConnection(accountID))
         {
             // Because this provider hasn't had a successful connection yet, the account is probably misconfigured.
             if (evt.getReasonCode() == RegistrationStateChangeEvent.REASON_NON_EXISTING_USER_ID)
             {
-                logger.warn("Failed to connect account " + accountID + " - no previous successful connection");
+                logger.warn("Failed to connect account " + loggableAccountID +
+                            " - no previous successful connection");
                 return;
             }
         }
@@ -902,25 +918,25 @@ public class ReconnectPluginActivator
 
         if (connectedInterfaces.isEmpty())
         {
-            logger.info("Adding pp to needsReconnection " + displayName + " state: " + this);
+            logger.info("Adding pp to needsReconnection " + loggableAccountID + " state: " + this);
             mNeedsReconnection.add(accountID);
 
             if (mCurrentlyReconnecting.containsKey(accountID))
             {
-                logger.info("Removing " + displayName + " from currentlyReconnecting");
+                logger.info("Removing " + loggableAccountID + " from currentlyReconnecting");
                 mCurrentlyReconnecting.remove(accountID).cancel();
             }
         }
         else
         {
             // Network is up but we cannot reconnect, so try again after a delay.
-            logger.info("Reconnect failed for " + displayName + " even though we have a network connection.");
+            logger.info("Reconnect failed for " + loggableAccountID + " even though we have a network connection.");
             reconnect(accountID);
         }
 
         // unregister can finish and with connection failed, the protocol is unable to unregister
         mUnregisteringAccounts.remove(accountID);
-        logger.info(this + " got Connection Failed for " + displayName );
+        logger.info(this + " got Connection Failed for " + loggableAccountID);
     }
 
     /**
@@ -931,14 +947,13 @@ public class ReconnectPluginActivator
     {
         ProtocolProviderService pp =
                           getAccountManager().getProviderForAccount(accountID);
-        String accountDisplayName = accountID.getDisplayName();
 
         if (pp == null)
         {
             // This is expected if the account is shutting down, e.g. if the
             // user signs out of chat.
             logger.warn("Unable to reconnect - null provider for account: " +
-                                                           accountDisplayName);
+                        accountID.getLoggableAccountID());
             return;
         }
 
@@ -976,7 +991,7 @@ public class ReconnectPluginActivator
             reload = false;
         }
 
-        logger.info("Schedule reconnect of " + accountDisplayName +
+        logger.info("Schedule reconnect of " + accountID.getLoggableAccountID() +
                     " with delay of " + delay + "ms. Reloading? " + reload);
 
         // start registering after the pp has unregistered
@@ -1093,12 +1108,13 @@ public class ReconnectPluginActivator
             }
             else
             {
-                String displayName = mAccountID.getDisplayName();
 
                 if (mAccountID.isEnabled())
                 {
-                    logger.info("Account is enabled for " + displayName +
-                        ". Delay = " + mDelay + ", reload = " + mReload + ".");
+                    logger.info("Account is enabled for " +
+                                mAccountID.getLoggableAccountID() +
+                                ". Delay = " + mDelay + ", reload = "
+                                + mReload + ".");
 
                     if ((mDelay == MAX_RECONNECT_DELAY*1000) && mReload)
                     {
@@ -1107,7 +1123,8 @@ public class ReconnectPluginActivator
                         // that, as simply trying to re-register isn't working.
 
                         logger.info("Maximum reconnect delay hit for " +
-                            displayName + " - try reloading the account.");
+                                    mAccountID.getLoggableAccountID() +
+                                    " - try reloading the account.");
 
                         // Set reload to false so that, if reloading fails to
                         // reconnect the account, we will try to re-register
@@ -1130,7 +1147,8 @@ public class ReconnectPluginActivator
                                 {
                                     // The account has finished unloading, so
                                     // remove this listener then load it again.
-                                    logger.info("Account removed for " + displayName);
+                                    logger.info("Account removed for " +
+                                                mAccountID.getLoggableAccountID());
                                     getAccountManager().removeListener(this);
                                     loadAccount();
                                 }
@@ -1158,7 +1176,8 @@ public class ReconnectPluginActivator
                             // account. All we can do is log and try to
                             // reconnect again when the timer next pops. Also,
                             // make sure we remove the account manager listener.
-                            logger.error("Failed to unload account " + displayName, e);
+                            logger.error("Failed to unload account " +
+                                         mAccountID.getLoggableAccountID(), e);
                             getAccountManager().removeListener(accountManagerListener);
                         }
                     }
@@ -1169,8 +1188,8 @@ public class ReconnectPluginActivator
                         // attempt to reload the account failed, so we've been
                         // asked to try re-registering again this time instead.
 
-                        logger.info(
-                            "Not reloading, start re-registering " + displayName);
+                        logger.info("Not reloading, start re-registering " +
+                                    mAccountID.getLoggableAccountID());
 
                         // Set reload to true so that, if re-registering fails
                         // to reconnect the account, we will try to reload
@@ -1195,7 +1214,7 @@ public class ReconnectPluginActivator
                             // to recover any disconnected accounts.
                             logger.error(
                                 "cannot re-register provider will keep going " +
-                                    displayName, ex);
+                                    mAccountID.getLoggableAccountID(), ex);
                         }
                     }
                 }
@@ -1205,12 +1224,14 @@ public class ReconnectPluginActivator
                     // that we previously tried to reload the account but
                     // reloading failed.  All we can do is try to load it
                     // again.
-                    logger.info("Account reloading - load account " + displayName);
+                    logger.info("Account reloading - load account " +
+                                mAccountID.getLoggableAccountID());
                     loadAccount();
                 }
                 else
                 {
-                    logger.info("Not reconnecting " + displayName +
+                    logger.info("Not reconnecting " +
+                                mAccountID.getLoggableAccountID() +
                                 " as account disabled");
                 }
             }
@@ -1221,11 +1242,11 @@ public class ReconnectPluginActivator
          */
         protected void loadAccount()
         {
-            String displayName = mAccountID.getDisplayName();
 
             try
             {
-                logger.info("Loading account for " + displayName);
+                logger.info("Loading account for " +
+                            mAccountID.getLoggableAccountID());
                 getAccountManager().loadAccount(mAccountID);
 
                 // We successfully loaded the account, so set the account
@@ -1242,7 +1263,8 @@ public class ReconnectPluginActivator
                 // Something went wrong when loading the account.  All we can
                 // do is log and try to reconnect again when the timer next
                 // pops.
-                logger.error("Failed to load account " + displayName, e);
+                logger.error("Failed to load account " +
+                             mAccountID.getLoggableAccountID(), e);
             }
         }
     }

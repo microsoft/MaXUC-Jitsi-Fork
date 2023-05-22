@@ -3,20 +3,52 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.jabberaccregwizz;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-import javax.swing.*;
-import javax.swing.event.*;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JRadioButton;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 
-import org.jitsi.service.configuration.*;
-import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
+import org.jitsi.service.configuration.ConfigurationService;
+import org.jitsi.service.resources.ResourceManagementService;
+import org.jitsi.util.OSUtils;
+import org.jitsi.util.StringUtils;
 
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommCheckBox;
+import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
+import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
+import net.java.sip.communicator.plugin.desktoputil.TrimTextField;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
@@ -187,9 +219,10 @@ public class AccountPanel
         {
             public void actionPerformed(ActionEvent e)
             {
-                JabberPasswordChangeDialog passwordChangeDialog
-                        = new JabberPasswordChangeDialog();
-                passwordChangeDialog.setVisible(true);
+                // This button is never enabled, and hence never pressed
+//                JabberPasswordChangeDialog passwordChangeDialog
+//                        = new JabberPasswordChangeDialog();
+//                passwordChangeDialog.setVisible(true);
             }
         });
 
@@ -603,200 +636,5 @@ public class AccountPanel
         });
 
         return registerButton;
-    }
-    /**
-     * Shows or hides the "change password" panel
-     */
-    public void showChangePasswordPanel(boolean show)
-    {
-        if(!show)
-        {
-            changePasswordPanel.setVisible(false);
-            return;
-        }
-        else
-        {
-            ProtocolProviderService protocolProvider =
-                        parentForm.getWizard().getProtocolProvider();
-
-            //the button will only be enabled if our preliminary checks (the
-            //account is logged in the server supports inband registers) succeed
-            changePasswordButton.setEnabled(false);
-            if (protocolProvider == null)
-            {
-                //we shouldn't get here, because this dialog only shows
-                //when editing an existing account
-                logger.warn("protocolProvider is null");
-                changePasswordMessagePane.setText(
-                    "Cannot change password for this account");
-            }
-            else if (!protocolProvider.isRegistered())
-            {
-                changePasswordMessagePane.setText(Resources.getString(
-                            "plugin.jabberaccregwizz.HAS_TO_BE_LOGGED_IN"));
-            }
-            else if (!protocolProvider.getOperationSet(
-                OperationSetChangePassword.class).supportsPasswordChange())
-            {
-                changePasswordMessagePane.setText(Resources.getString(
-                                "plugin.jabberaccregwizz."
-                                + "SERVER_NOT_SUPPORT_PASSWORD_CHANGE"));
-            }
-            else
-            {
-                changePasswordMessagePane.setVisible(false);
-                changePasswordButton.setEnabled(true);
-            }
-
-            changePasswordPanel.setVisible(true);
-        }
-    }
-
-    /**
-     * A "change password" dialog.
-     */
-    private class JabberPasswordChangeDialog extends PasswordChangeDialog
-    {
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Default constructor.
-         */
-        public JabberPasswordChangeDialog()
-        {
-            super(false);
-
-            setTitle(Resources.
-                       getString("plugin.jabberaccregwizz.CHANGE_PASSWORD"));
-            setInfoText(Resources.
-                       getString("plugin.jabberaccregwizz.ENTER_NEW_PASSWORD"));
-
-            this.getOkButton().addActionListener(okButtonListener);
-        }
-
-        /**
-         * This is the ActionListener for the "ok" button.
-         */
-        private final ActionListener okButtonListener = new ActionListener()
-        {
-            /**
-             * Action for the "ok" button. Checks whether the account is logged
-             * in, tries to change the password and displays the appropriate
-             * messages.
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                String newPass = getNewPassword();
-
-                ProtocolProviderService protocolProvider =
-                        parentForm.getWizard().getProtocolProvider();
-
-                if (protocolProvider == null)
-                {
-                    //we shouldn't get here, because this dialog only shows
-                    //when editing an existing account
-                    logger.warn("protocolProvider is null in change"
-                            + " password dialog");
-                    displayPopupError("Could not change password");
-                    return;
-                }
-                else if (!protocolProvider.isRegistered())
-                {
-                    //editing an account, which is not logged in
-                    displayPopupError(Resources.getString(
-                            "plugin.jabberaccregwizz.HAS_TO_BE_LOGGED_IN"));
-                    return;
-                }
-                else if (protocolProvider.getTransportProtocol()
-                        != TransportProtocol.TLS)
-                {
-                    //XEP-0077 advices agains changing password unless
-                    //the underlying stream is encrypted
-                    displayPopupError(Resources.getString(
-                            "plugin.jabberaccregwizz.TLS_REQUIRED"));
-                    return;
-                }
-                else //try to change
-                {
-                    logger.info("Trying to change password for jabber"
-                                + " account "
-                                + protocolProvider.
-                                getAccountID().getAccountAddress());
-
-                    OperationSetChangePassword opset =
-                            protocolProvider.getOperationSet(
-                            OperationSetChangePassword.class);
-                    try
-                    {
-                        opset.changePassword(newPass);
-
-                        /**
-                         * If the old password was stored, update it with the
-                         * new one. If the old password was not stored, leave it
-                         * like it is.
-                         */
-                        if (isRememberPassword())
-                        {
-                            try
-                            {
-                                logger.info("Storing new password for"
-                                            + " account " + protocolProvider.
-                                            getAccountID().getAccountAddress());
-
-                                storeNewPassword(newPass);
-                            }
-                            catch (IllegalArgumentException ex)
-                            {
-                                //If we get here its a bug, and showing a
-                                //message like this might be unappropriate. But
-                                //the user would want to know about it!
-                                logger.warn("Failed to store password for"
-                                            + " account " + protocolProvider.
-                                            getAccountID().getAccountAddress(),
-                                        ex);
-                                displayPopupError(Resources.getString(
-                                    "plugin.jabberaccregwizz."
-                                        + "PASSWORD_NOT_STORED"));
-                            }
-                        }
-                        //now update the password field in AccountPanel,
-                        //because it still has the old pass and if the user
-                        //completes the wizard it will store it.
-                        passField.setText(newPass);
-
-                        displayPopupInfo(Resources.getString(
-                                "plugin.jabberaccregwizz.PASSWORD_CHANGED"));
-                        dispose();
-                    }
-                    catch (IllegalStateException ex) {
-                        //we already checked for this, but if the connection
-                        //has since been lost smack will throw this
-                        displayPopupError(Resources.getString(
-                                "plugin.jabberaccregwizz.HAS_TO_BE_LOGGED_IN"));
-                    }
-                    catch (OperationFailedException ex) {
-                        displayPopupError(Resources.getString(
-                                "plugin.jabberaccregwizz."
-                                + "SERVER_NOT_SUPPORT_PASSWORD_CHANGE"));
-                    }
-                }
-            }
-        };
-
-        /**
-         * Stores the new password in the account configuration
-         * @param newPass The new password
-         * @throws IllegalArgumentException on failure (from
-         * ProtocolProviderFactory.storePassword)
-         */
-        void storeNewPassword(String newPass) throws IllegalArgumentException
-        {
-            AccountID accountID = parentForm.getWizard().getProtocolProvider().
-                    getAccountID();
-            ProtocolProviderFactory protocolProviderFactory =
-                JabberAccRegWizzActivator.getJabberProtocolProviderFactory();
-
-            protocolProviderFactory.storePassword(accountID, newPass);
-        }
     }
 }

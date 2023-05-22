@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
 import java.awt.*;
@@ -20,6 +21,7 @@ import net.java.sip.communicator.util.launchutils.ProvisioningParams;
 import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
+import static org.jitsi.util.Hasher.logHasher;
 
 /**
  * The <tt>AuthenticationWindow</tt> is the window where the user should type
@@ -475,15 +477,11 @@ public class AuthenticationWindow extends SIPCommFrame implements ActionListener
                 logger.warn("User selected CDAP ID and login link CDAP ID" +
                             " do not match. Forcing user to close the app.");
 
-                ErrorDialog dialog =
-                    new ErrorDialog(aw,
-                                    aw.mResources.getI18NString("service.gui.ERROR"),
-                                    aw.mResources.getI18NString("plugin.cdap.selection.CDAP_ID_NOT_MATCHING"),
-                                    (String)null,
-                                    aw.mResources.getI18NString("plugin.cdap.selection.CLOSE"));
-
-                dialog.setModal(true);
-                dialog.showDialog();
+                ErrorDialog mErrorDialog = new ErrorDialog(aw.mResources.getI18NString("service.gui.ERROR"),
+                aw.mResources.getI18NString(
+                    "plugin.cdap.selection.CDAP_ID_NOT_MATCHING"));
+                mErrorDialog.setButtonText(aw.mResources.getI18NString("plugin.cdap.selection.CLOSE"));
+                mErrorDialog.showDialog();
                 aw.close(true);
 
                 // Closing the dialog means that this return isn't really
@@ -553,7 +551,7 @@ public class AuthenticationWindow extends SIPCommFrame implements ActionListener
 
         result = aw.result;
         logger.info("AuthenticationWindow dismissed. Username = " +
-                    result.getUserName() + ", cancelled? " +
+                    logHasher(result.getUserName()) + ", cancelled? " +
                     result.isCanceled());
 
         // Finally, remove the window from the map.

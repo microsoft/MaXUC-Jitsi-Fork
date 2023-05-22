@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
+
+import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -2214,7 +2217,7 @@ public class TreeContactList
                             .canBeUsedToSearchContacts())
             {
                 sLog.info("Adding external contact source " +
-                                                contactSource.getDisplayName());
+                                                logHasher(contactSource.getDisplayName()));
 
                 ExternalContactSource extContactSource
                     = new ExternalContactSource(contactSource, this);
@@ -2250,7 +2253,7 @@ public class TreeContactList
                 || ((AsyncContactSourceService) contactSource)
                         .canBeUsedToSearchContacts())
         {
-            sLog.info("Adding contact source " + contactSource.getDisplayName());
+            sLog.info("Adding contact source " + logHasher(contactSource.getDisplayName()));
             synchronized (mContactSources)
             {
                 mContactSources.put(contactSource,
@@ -2269,7 +2272,7 @@ public class TreeContactList
     {
         synchronized (mContactSources)
         {
-            sLog.info("Removing contact source " + contactSource.getDisplayName());
+            sLog.info("Removing contact source " + logHasher(contactSource.getDisplayName()));
             mContactSources.remove(contactSource);
         }
     }

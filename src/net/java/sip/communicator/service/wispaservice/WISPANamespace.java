@@ -20,6 +20,7 @@ public enum WISPANamespace
     LDAP_SEARCHING("/ldapsearching"),
     MEETINGS("/meetings"),
     MESSAGING("/messaging"),
+    EVENTS("/events"),
     PRESENCE("/presence"),
     TELEPHONY("/telephony"),
     SETTINGS("/settings"),

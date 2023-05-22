@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.presence;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -759,7 +760,7 @@ public class GlobalStatusServiceImpl
             ProtocolProviderService protocolProvider,
             String statusName)
     {
-        logger.debug("Saving status of " + statusName);
+        logger.debug("Saving status of " + logHasher(statusName));
         ConfigurationService configService
             = GuiActivator.getConfigurationService();
 
@@ -864,13 +865,13 @@ public class GlobalStatusServiceImpl
                                 protocolProvider.getAccountID().getUserID(),
                                 protocolProvider.getAccountID().getService()});
 
-                    new ErrorDialog(null,
-                        GuiActivator.getResources().getI18NString(
-                        "service.gui.GENERAL_ERROR"), msgText, e1)
-                    .showDialog();
+                    new ErrorDialog(GuiActivator.getResources().getI18NString(
+                        "service.gui.GENERAL_ERROR"), msgText).showDialog();
                 }
-                else if (e1.getErrorCode()
-                    == OperationFailedException.NETWORK_FAILURE)
+                else if (e1
+                    .getErrorCode() == OperationFailedException.NETWORK_FAILURE
+                    || e1
+                        .getErrorCode() == OperationFailedException.PROVIDER_NOT_REGISTERED)
                 {
                     String msgText =
                         GuiActivator.getResources().getI18NString(
@@ -879,25 +880,9 @@ public class GlobalStatusServiceImpl
                                 protocolProvider.getAccountID().getUserID(),
                                 protocolProvider.getAccountID().getService()});
 
-                    new ErrorDialog(null, msgText,
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.NETWORK_FAILURE"), e1)
-                    .showDialog();
-                }
-                else if (e1.getErrorCode()
-                        == OperationFailedException.PROVIDER_NOT_REGISTERED)
-                {
-                    String msgText =
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.STATUS_CHANGE_NETWORK_FAILURE",
-                            new String[]{
-                                protocolProvider.getAccountID().getUserID(),
-                                protocolProvider.getAccountID().getService()});
-
-                    new ErrorDialog(null,
-                        GuiActivator.getResources().getI18NString(
-                        "service.gui.NETWORK_FAILURE"), msgText, e1)
-                    .showDialog();
+                    new ErrorDialog(GuiActivator.getResources().getI18NString(
+                        "service.gui.NETWORK_FAILURE"), msgText)
+                        .showDialog();
                 }
                 logger.error("Error - changing status", e1);
             }

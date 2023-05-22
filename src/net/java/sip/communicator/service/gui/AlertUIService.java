@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.gui;
 
 /**
@@ -38,16 +39,4 @@ public interface AlertUIService
      */
     void showAlertDialog(String title,
                          String message);
-
-    /**
-     * Shows an alert dialog with the given title message and exception
-     * corresponding to the error.
-     *
-     * @param title the title of the dialog
-     * @param message the message to be displayed
-     * @param e the exception corresponding to the error
-     */
-    void showAlertDialog(String title,
-                         String message,
-                         Throwable e);
 }

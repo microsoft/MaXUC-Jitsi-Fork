@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.account;
 
 import java.util.*;
@@ -31,8 +32,6 @@ public class AccountRegWizardContainerImpl
     private static final Logger logger =
         Logger.getLogger(AccountRegWizardContainerImpl.class);
 
-    private final AccountRegSummaryPage summaryPage;
-
     private AccountRegistrationWizard currentWizard;
 
     private final ConfigurationService configService
@@ -47,10 +46,6 @@ public class AccountRegWizardContainerImpl
 
         this.setTitle(GuiActivator.getResources()
             .getI18NString("service.gui.ACCOUNT_REGISTRATION_WIZARD"));
-
-        this.summaryPage = new AccountRegSummaryPage(this);
-
-        this.registerWizardPage(summaryPage.getIdentifier(), summaryPage);
 
         ServiceReference<?>[] accountWizardRefs = null;
         try
@@ -117,16 +112,6 @@ public class AccountRegWizardContainerImpl
         {
             registeredWizards.remove(protocolName);
         }
-    }
-
-    /**
-     * Returns the summary wizard page.
-     *
-     * @return the summary wizard page
-     */
-    public AccountRegSummaryPage getSummaryPage()
-    {
-        return summaryPage;
     }
 
     /**
@@ -220,34 +205,6 @@ public class AccountRegWizardContainerImpl
     }
 
     /**
-     * Sets the currently used <tt>AccountRegistrationWizard</tt>.
-     *
-     * @param wizard the <tt>AccountRegistrationWizard</tt> to set as
-     *            current one
-     */
-    public void setCurrentWizard(AccountRegistrationWizard wizard)
-    {
-        this.currentWizard = wizard;
-
-        if (wizard instanceof DesktopAccountRegistrationWizard)
-            summaryPage.setPreferredSize(
-                ((DesktopAccountRegistrationWizard) currentWizard).getSize());
-
-        Iterator<WizardPage> i = wizard.getPages();
-
-        while(i.hasNext())
-        {
-            WizardPage page = i.next();
-
-            this.registerWizardPage(page.getIdentifier(), page);
-        }
-
-        this.setCurrentPage(wizard.getFirstPageIdentifier());
-
-        this.setWizzardIcon(wizard.getPageImage());
-    }
-
-    /**
      * Unregisters all pages added by the current wizard.
      */
     public void unregisterWizardPages()
@@ -293,13 +250,5 @@ public class AccountRegWizardContainerImpl
             this.removeAccountRegistrationWizard(protocolName, wizard);
             break;
         }
-    }
-
-    /**
-     * Implements the <tt>SIPCommDialog</tt> close method.
-     */
-    protected void close(boolean isEscaped)
-    {
-        summaryPage.dispose();
     }
 }

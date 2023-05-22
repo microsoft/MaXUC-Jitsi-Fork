@@ -8,6 +8,7 @@ import java.util.concurrent.*;
 import javax.swing.*;
 
 import org.jitsi.service.resources.*;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
 
@@ -63,7 +64,7 @@ public class BufferedImageAvailable extends AbstractBufferedImageFuture
     }
 
     @Override
-    public BufferedImage get(long timeout, TimeUnit unit)
+    public BufferedImage get(long timeout, @NotNull TimeUnit unit)
     {
         return mImage;
     }

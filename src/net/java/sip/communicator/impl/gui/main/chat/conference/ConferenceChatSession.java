@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat.conference;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.util.*;
@@ -83,8 +85,7 @@ public class ConferenceChatSession
         this.sessionRenderer = sessionRenderer;
         this.chatRoomWrapper = chatRoomWrapper;
 
-        currentChatTransport
-            = new ConferenceChatTransport(this, chatRoomWrapper.getChatRoom());
+        currentChatTransport = new ConferenceChatTransport(chatRoomWrapper.getChatRoom());
 
         // Save our own user ID so that we can check whether chat room
         // property changed or member presence changed events have come from
@@ -369,8 +370,8 @@ public class ConferenceChatSession
         if (eventType.equals(ChatRoomMemberPresenceChangeEvent.MEMBER_JOINED))
         {
             ConferenceChatContact chatContact = new ConferenceChatContact(chatRoomMember);
-            logger.debug("Member joined: " + logHasher(chatContact.getUID()) + "/" +
-                logHasher(chatContact.getName()));
+            logger.debug("Member joined: " + logHasher(chatContact.getName()) + "/" +
+                sanitiseChatAddress(chatContact.getUID()));
 
             // Check if not ever present in the chat room. In some cases, the
             // considered chatroom member may appear twice in the chat contact
@@ -391,7 +392,7 @@ public class ConferenceChatSession
             String chatRoomMemberName = chatRoomMember.getName();
             String chatRoomMemberAddress = chatRoomMember.getContactAddressAsString();
             logger.debug(
-                "Member left: " + logHasher(chatRoomMemberName) + "/" + logHasher(chatRoomMemberAddress));
+                "Member left: " + logHasher(chatRoomMemberName) + "/" + sanitisePeerId(chatRoomMemberAddress));
 
             ChatContact<?> participantToRemove = null;
             synchronized (chatParticipants)
@@ -413,8 +414,8 @@ public class ConferenceChatSession
                 if (participantToRemove != null)
                 {
                     boolean success = chatParticipants.remove(participantToRemove);
-                    logger.debug("Just removed " + participantToRemove.getUID() +
-                                                       ", success = " + success);
+                    logger.debug("Just removed " + sanitiseChatAddress(participantToRemove.getUID()) +
+                                 ", success = " + success);
                 }
             }
 
@@ -446,59 +447,9 @@ public class ConferenceChatSession
         if (evt.getPropertyName().equals(
             ChatRoomPropertyChangeEvent.CHAT_ROOM_SUBJECT))
         {
-            String oldSubject = (String) evt.getOldValue();
             String newSubject = (String) evt.getNewValue();
 
             sessionRenderer.setChatSubject(newSubject);
-
-            // If the subject has changed (rather than being set for the first
-            // time) then add a message to the chat panel.
-            if (oldSubject != null && !oldSubject.equals(newSubject))
-            {
-              logger.debug("Subject has changed");
-
-              String contactAddress = evt.getFromAddress();
-              String chatRoomId = evt.getSourceChatRoom().getIdentifier().toString();
-
-              // Don't display a chat room subject updated message unless we
-              // know which chat room member changed the subject.
-              if (contactAddress == null ||
-                  contactAddress.isEmpty() ||
-                  contactAddress.equalsIgnoreCase(chatRoomId) ||
-                  contactAddress.startsWith(OperationSetMultiUserChat.CHATROOM_ID_PREFIX))
-              {
-                  logger.info("Not displaying subject change message from " +
-                                         logHasher(contactAddress) + " for " + chatRoomId);
-                  return;
-              }
-
-              // Determine the resource to use for the message text - this may
-              // be different if this message is from ourselves.
-              boolean isSelf =
-                  (contactAddress != null) && contactAddress.equalsIgnoreCase(userID);
-
-              String messageResource = isSelf ?
-                  "service.gui.CHAT_ROOM_USER_SUBJECT_CHANGED" :
-                      "service.gui.CHAT_ROOM_OTHER_USER_SUBJECT_CHANGED";
-
-              // Make sure we escape any % in the subject so that when we later
-              // run String.format on it when constructing the subject change
-              // status message, we don't try and parse the %s in the subject
-              // as format specifiers.
-              newSubject = newSubject.replaceAll("%", "%%");
-
-              ((ChatPanel) sessionRenderer).addMessage(contactAddress,
-                                  new Date(),
-                                  Chat.STATUS_MESSAGE,
-                                  GuiActivator.getResources().getI18NString(
-                                       messageResource,
-                                       new String []{
-                                           GuiUtils.escapeHTMLChars(newSubject)
-                                       }),
-                                  ChatHtmlUtils.TEXT_CONTENT_TYPE,
-                                  false,
-                                  false);
-            }
         }
     }
 
@@ -514,17 +465,17 @@ public class ConferenceChatSession
     }
 
     /**
-     * Loads the given chat room in the this chat conference panel. Loads all
+     * Loads the given chat room in the 'this chat' conference panel. Loads all
      * members and adds all corresponding listeners.
      *
      * @param chatRoom the <tt>ChatRoom</tt> to load
      */
     public void loadChatRoom(ChatRoom chatRoom)
     {
-        logger.debug("Loading chat room: " + chatRoom.getIdentifier());
+        logger.debug("Loading chat room: " +
+                     sanitiseChatRoom(chatRoom.getIdentifier()));
         // Re-init the chat transport, as we have a new chat room object.
-        currentChatTransport
-            = new ConferenceChatTransport(this, chatRoomWrapper.getChatRoom());
+        currentChatTransport = new ConferenceChatTransport(chatRoomWrapper.getChatRoom());
 
         synchronized (chatTransports)
         {
@@ -565,13 +516,13 @@ public class ConferenceChatSession
     public void initChatRoom()
     {
         // If there is no chat room object in the wrapper, it means we've left
-        // the room and we won't receive any messages, so we don't need any
+        // the room, and we won't receive any messages, so we don't need any
         // listeners.
         ChatRoom chatRoom = chatRoomWrapper.getChatRoom();
         if (chatRoom != null)
         {
             logger.debug("Adding member presence listeners for: " +
-                                             chatRoomWrapper.getChatRoomName());
+                         sanitiseChatRoom(chatRoomWrapper.getChatRoomName()));
             chatRoom.addMemberPresenceListener(this);
             chatRoom.addPropertyChangeListener(this);
         }
@@ -589,7 +540,7 @@ public class ConferenceChatSession
                 for (ChatRoomMember member : chatRoom.getMembers())
                 {
                     logger.debug("Adding chat participant for " +
-                                 logHasher(member.getContactAddressAsString()));
+                                 sanitisePeerId(member.getContactAddressAsString()));
                     chatParticipants.add(new ConferenceChatContact(member));
                 }
             }
@@ -605,7 +556,7 @@ public class ConferenceChatSession
 
     /**
      * Indicates if the contact list is supported by this session. The contact
-     * list would be supported for all non private sessions.
+     * list would be supported for all non-private sessions.
      * @return <tt>true</tt> to indicate that the contact list is supported,
      * <tt>false</tt> otherwise.
      */

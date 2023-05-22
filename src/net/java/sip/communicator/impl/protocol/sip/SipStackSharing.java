@@ -4,10 +4,18 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
+
+import static java.util.concurrent.CompletableFuture.delayedExecutor;
+import static net.java.sip.communicator.impl.gui.main.call.CallManager.getInProgressCalls;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.sip.*;
 import javax.sip.address.*;
@@ -20,10 +28,14 @@ import gov.nist.core.net.AddressResolver;
 import gov.nist.javax.sip.*;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.stack.*;
+
+import net.java.sip.communicator.service.certificate.CertificateService;
 import net.java.sip.communicator.service.netaddr.event.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.service.threading.ThreadFactoryBuilder;
 import net.java.sip.communicator.util.*;
+import org.jitsi.util.OSUtils;
 
 /**
  * This class is the <tt>SipListener</tt> for all JAIN-SIP
@@ -81,6 +93,20 @@ public class SipStackSharing
     private final Set<ProtocolProviderServiceSipImpl> listeners
         = new HashSet<>();
 
+    /**
+     * Lock that must be acquired to access the SIP {@code listeners}.
+     */
+    private final Object listenerLock = new Object();
+
+    /**
+     * Executor that runs the thread that will reset the SIP stack following an
+     * update to the macOS keychain.
+     */
+    private final ExecutorService reloadExecutor =
+            Executors.newSingleThreadExecutor(
+                    new ThreadFactoryBuilder()
+                            .setName("sip-stack-keychain-monitor-thread")
+                            .build());
     /**
      * The property indicating whether a random UDP and TCP port should
      * be used by default for clear communications.
@@ -150,13 +176,112 @@ public class SipStackSharing
     public void addSipListener(ProtocolProviderServiceSipImpl listener)
         throws OperationFailedException
     {
-        synchronized(this.listeners)
+        boolean shouldStartListening = false;
+        synchronized (listenerLock)
         {
-            if(this.listeners.size() == 0)
-                startListening();
+            if (this.listeners.size() == 0)
+            {
+                shouldStartListening = true;
+            }
             this.listeners.add(listener);
             logger.trace(this.listeners.size() + " listeners now");
         }
+
+        if (shouldStartListening)
+        {
+            startListening();
+            if (OSUtils.isMac())
+            {
+                startListeningForKeychainUpdates();
+            }
+        }
+    }
+
+    /**
+     * Builds the task that will recreate the SIP stack when
+     * the macOS system root certificate keychain is updated. This task will
+     * be run by the {@code reloadExecutor}.
+     */
+    private void startListeningForKeychainUpdates()
+    {
+        final CertificateService cvs = SipActivator.getCertificateService();
+
+        CompletableFuture.supplyAsync(() -> null, reloadExecutor)
+                .thenComposeAsync((obj) -> cvs.getMacOSKeychainUpdateTrigger(),
+                                reloadExecutor)
+                .thenApply((obj) -> hasCallsInProgress())
+                .thenCompose(this::scheduleSipStackReset)
+                .thenRun(this::resetSipListeners)
+                .exceptionally((ex) -> {
+                    logger.error("Failed to reset SIP Stack", ex);
+                    return null;
+                });
+    }
+
+    /**
+     * Resets the SIP stack by removing all listeners (forcing it to be
+     * destroyed) and adding them back individually, thereby triggering
+     * a rebuild of the stack.
+     */
+    private void resetSipListeners()
+    {
+        synchronized (listenerLock)
+        {
+            Set<ProtocolProviderServiceSipImpl> copiedListeners =
+                    getSipListeners();
+
+            for (var listener : copiedListeners)
+            {
+                removeSipListener(listener);
+            }
+
+            for (var listener : copiedListeners)
+            {
+                try
+                {
+                    addSipListener(listener);
+                }
+                catch (OperationFailedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns true if there are active calls in progress.
+     */
+    private boolean hasCallsInProgress()
+    {
+        return getInProgressCalls().size() != 0;
+    }
+
+    /**
+     * Signals that the SIP stack can be reset by the next CompletionStage in
+     * the pipeline this method is called from if there are no active calls for
+     * this user; if a call is in progress, schedule a retry to check
+     * the call status again after a delay.
+     * @param callsInProgress true if there are any active calls
+     * @return a completed CompletableFuture that signals that an immediate
+     * reset of the SIP stack can occur, or an incomplete CompletableFuture
+     * that will retry the check on the number of active calls
+     * after a given delay.
+     */
+    private CompletableFuture<Void> scheduleSipStackReset(
+            final boolean callsInProgress)
+    {
+        if (!callsInProgress)
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+        final long SIP_STACK_RESET_DELAY = 5L;
+
+        return CompletableFuture.supplyAsync(this::hasCallsInProgress,
+                                             delayedExecutor(SIP_STACK_RESET_DELAY,
+                                                             TimeUnit.MINUTES,
+                                                             reloadExecutor))
+                .thenCompose(this::scheduleSipStackReset);
     }
 
     /**
@@ -168,14 +293,19 @@ public class SipStackSharing
      */
     public void removeSipListener(ProtocolProviderServiceSipImpl listener)
     {
-        synchronized(this.listeners)
+        boolean noMoreListeners = false;
+        synchronized (listenerLock)
         {
             this.listeners.remove(listener);
 
             int listenerCount = listeners.size();
+            noMoreListeners = listenerCount == 0;
             logger.trace(listenerCount + " listeners left");
-            if(listenerCount == 0)
-                stopListening();
+        }
+
+        if(noMoreListeners)
+        {
+            stopListening();
         }
     }
 
@@ -186,7 +316,7 @@ public class SipStackSharing
      */
     private Set<ProtocolProviderServiceSipImpl> getSipListeners()
     {
-        synchronized(this.listeners)
+        synchronized (listenerLock)
         {
             return new HashSet<>(this.listeners);
         }
@@ -378,27 +508,57 @@ public class SipStackSharing
     {
         try
         {
-            this.secureJainSipProvider.removeSipListener(this);
-            this.stack.deleteSipProvider(this.secureJainSipProvider);
-            this.secureJainSipProvider = null;
-            this.clearJainSipProvider.removeSipListener(this);
-            this.stack.deleteSipProvider(this.clearJainSipProvider);
-            this.clearJainSipProvider = null;
-
-            Iterator<? extends ListeningPoint> it = this.stack.getListeningPoints();
-            Vector<ListeningPoint> lpointsToRemove = new Vector<>();
-            while(it.hasNext())
+            if (this.stack != null)
             {
-                lpointsToRemove.add(it.next());
+                if (this.secureJainSipProvider != null)
+                {
+                    this.secureJainSipProvider.removeSipListener(this);
+                    this.stack.deleteSipProvider(this.secureJainSipProvider);
+                    this.secureJainSipProvider = null;
+                }
+                else
+                {
+                    logger.warn("Failed to remove secureJainSipProvider as already null.");
+                }
+
+                if (this.clearJainSipProvider != null)
+                {
+                    this.clearJainSipProvider.removeSipListener(this);
+                    this.stack.deleteSipProvider(this.clearJainSipProvider);
+                    this.clearJainSipProvider = null;
+                }
+                else
+                {
+                    logger.warn("Failed to remove clearJainSipProvider as already null.");
+                }
+
+                Iterator<? extends ListeningPoint> it = this.stack.getListeningPoints();
+                if (it != null)
+                {
+                    Vector<ListeningPoint> lpointsToRemove = new Vector<>();
+                    while (it.hasNext())
+                    {
+                        lpointsToRemove.add(it.next());
+                    }
+
+                    it = lpointsToRemove.iterator();
+                    while (it.hasNext())
+                    {
+                        this.stack.deleteListeningPoint(it.next());
+                    }
+                }
+                else
+                {
+                    logger.warn("Failed to remove ListeningPoints as already null.");
+                }
+
+                this.stack.stop();
+            }
+            else
+            {
+                logger.warn("Failed to stop listening - stack already null.");
             }
 
-            it = lpointsToRemove.iterator();
-            while (it.hasNext())
-            {
-                this.stack.deleteListeningPoint(it.next());
-            }
-
-            this.stack.stop();
             logger.trace("stopped listening");
         }
         catch(ObjectInUseException ex)
@@ -413,19 +573,39 @@ public class SipStackSharing
      *
      * @param transport a <tt>String</tt> like "TCP", "UDP" or "TLS"
      * @return the corresponding <tt>SipProvider</tt>
+     *
+     * @throws IllegalArgumentException if an invalid transport is provided or if there is no available sip provider
      */
     public SipProvider getJainSipProvider(String transport)
     {
+        if(!isValidTransport(transport))
+        {
+            throw new IllegalArgumentException("Invalid transport " + transport);
+        }
+
         SipProvider sp = null;
-        if(transport.equalsIgnoreCase(ListeningPoint.UDP)
-                || transport.equalsIgnoreCase(ListeningPoint.TCP))
+
+        if(transport.equalsIgnoreCase(ListeningPoint.UDP) || transport.equalsIgnoreCase(ListeningPoint.TCP))
+        {
             sp = this.clearJainSipProvider;
+        }
         else if(transport.equalsIgnoreCase(ListeningPoint.TLS))
+        {
             sp = this.secureJainSipProvider;
+        }
 
         if(sp == null)
-            throw new IllegalArgumentException("invalid transport");
+        {
+            throw new IllegalArgumentException("There is no available sip provider. This is probably due to a lost network connection.");
+        }
+
         return sp;
+    }
+
+    private boolean isValidTransport(String transport) {
+        return ListeningPoint.TLS.equalsIgnoreCase(transport)
+               || ListeningPoint.TCP.equalsIgnoreCase(transport)
+               || ListeningPoint.UDP.equalsIgnoreCase(transport);
     }
 
     /**

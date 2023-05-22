@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util.account;
 
 import java.util.*;
@@ -61,8 +62,6 @@ public class LoginManager
      */
     public void login(ProtocolProviderService protocolProvider)
     {
-        loginRenderer.startConnectingUI(protocolProvider);
-
         synchronized (sRegisteringProviders)
         {
             if (!sRegisteringProviders.contains(protocolProvider))
@@ -168,8 +167,10 @@ public class LoginManager
         }
         else if (event.getType() == AccountManagerEvent.ACCOUNT_REMOVED)
         {
+            AccountID accountID = event.getAccountID();
+            String loggableAccount = accountID != null ? accountID.getLoggableAccountID() : "null";
             logger.info("About to try removing UI for protocol " +
-                         "provider of account " + event.getAccountID());
+                         "provider of account " + loggableAccount);
 
             loginRenderer.removeProtocolProviderUI(event.getAccountID());
         }
@@ -188,7 +189,7 @@ public class LoginManager
 
         for (AccountID accountID : providerFactory.getRegisteredAccounts())
         {
-            logger.debug("Adding " + accountID + " account");
+            logger.debug("Adding " + accountID.getLoggableAccountID() + " account");
 
             serRef = providerFactory.getProviderForAccount(accountID);
 
@@ -304,16 +305,6 @@ public class LoginManager
             + " changed its state from " + evt.getOldState().getStateName()
             + " to: " + evt.getNewState().getStateName());
 
-        if (newState.equals(RegistrationState.REGISTERED)
-            || newState.equals(RegistrationState.UNREGISTERED)
-            || newState.equals(RegistrationState.EXPIRED)
-            || newState.equals(RegistrationState.AUTHENTICATION_FAILED)
-            || newState.equals(RegistrationState.CONNECTION_FAILED)
-            || newState.equals(RegistrationState.CHALLENGED_FOR_AUTHENTICATION))
-        {
-            loginRenderer.stopConnectingUI(protocolProvider);
-        }
-
         if (newState.equals(RegistrationState.REGISTERING))
         {
             handleProviderRegistering(protocolProvider);
@@ -397,21 +388,7 @@ public class LoginManager
             {
                 if (!manuallyDisconnected)
                 {
-                    if (evt.getReasonCode() == RegistrationStateChangeEvent
-                                                .REASON_MULTIPLE_LOGINS)
-                    {
-                        msgText = UtilActivator.getResources().getI18NString(
-                            "service.gui.MULTIPLE_LOGINS",
-                            new String[]
-                            { accountID.getUserID(), accountID.getService() });
-
-                        UtilActivator.getAlertUIService().showAlertDialog(
-                            UtilActivator.getResources()
-                                .getI18NString("service.gui.ERROR"),
-                            msgText);
-                    }
-                    else if (evt.getReasonCode() == RegistrationStateChangeEvent
-                                                .REASON_CLIENT_LIMIT_REACHED_FOR_IP)
+                    if (evt.getReasonCode() == RegistrationStateChangeEvent.REASON_CLIENT_LIMIT_REACHED_FOR_IP)
                     {
                         msgText = UtilActivator.getResources().getI18NString(
                             "service.gui.LIMIT_REACHED_FOR_IP", new String[]
@@ -422,23 +399,12 @@ public class LoginManager
                                 .getI18NString("service.gui.ERROR"),
                             msgText);
                     }
-                    else if (evt.getReasonCode() == RegistrationStateChangeEvent
-                                                .REASON_USER_REQUEST)
+                    else if (evt.getReasonCode() == RegistrationStateChangeEvent.REASON_MULTIPLE_CONNECTIONS)
                     {
-                        // do nothing
+                        logger.warn("We have tried connecting multiple times with the same resource. " +
+                                    "The connection should reestablish itself.");
                     }
-//                    else
-//                    {
-//                        msgText = UtilActivator.getResources().getI18NString(
-//                            "service.gui.UNREGISTERED_MESSAGE", new String[]
-//                            { accountID.getUserID(), accountID.getService() });
-//
-//                        UtilActivator.getAlertUIService().showAlertDialog(
-//                            UtilActivator.getResources()
-//                                .getI18NString("service.gui.ERROR"),
-//                            msgText);
-//                    }
-                    logger.trace(evt.getReason());
+                    logger.error(evt.getReason());
                 }
             }
         }
@@ -615,7 +581,7 @@ public class LoginManager
 
                 UtilActivator.getAlertUIService().showAlertDialog(
                     UtilActivator.getResources()
-                        .getI18NString("service.gui.ERROR"), errorMessage, ex);
+                        .getI18NString("service.gui.ERROR"), errorMessage);
             }
                 break;
             case OperationFailedException.INTERNAL_ERROR:
@@ -632,7 +598,7 @@ public class LoginManager
 
                 UtilActivator.getAlertUIService().showAlertDialog(
                     UtilActivator.getResources().getI18NString(
-                        "service.gui.ERROR"), errorMessage, ex);
+                        "service.gui.ERROR"), errorMessage);
             }
                 break;
             case OperationFailedException.NETWORK_FAILURE:
@@ -660,7 +626,7 @@ public class LoginManager
                 UtilActivator.getAlertUIService().showAlertDialog(
                     UtilActivator.getResources()
                         .getI18NString("service.gui.ERROR"),
-                    errorMessage, ex);
+                    errorMessage);
             }
                 break;
             default:

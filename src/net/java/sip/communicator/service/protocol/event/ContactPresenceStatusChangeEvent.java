@@ -4,9 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.event;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitisePeerId;
 
 import java.beans.*;
 
@@ -119,10 +120,10 @@ public class ContactPresenceStatusChangeEvent extends PropertyChangeEvent
      */
     public String toString()
     {
-        StringBuffer buff
-            = new StringBuffer("ContactPresenceStatusChangeEvent-[ ContactID=");
-        buff.append(logHasher(getSourceContact().getAddress()));
-        if(getParentGroup() != null)
+        StringBuilder buff
+            = new StringBuilder("ContactPresenceStatusChangeEvent-[ ContactID=");
+        buff.append(sanitisePeerId(getSourceContact().getAddress()));
+        if (getParentGroup() != null)
             buff.append(", ParentGroup").append(getParentGroup().getGroupName());
         return buff.append(", OldStatus=").append(getOldStatus())
             .append(", NewStatus=").append(getNewStatus()).append("]").toString();

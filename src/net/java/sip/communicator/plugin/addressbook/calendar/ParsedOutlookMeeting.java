@@ -6,10 +6,10 @@ import static net.java.sip.communicator.plugin.addressbook.OutlookUtils.*;
 import java.text.*;
 import java.util.*;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jitsi.util.StringUtils;
 
 import net.java.sip.communicator.plugin.addressbook.*;
-import net.java.sip.communicator.util.*;
 
 /**
  * A Java object representing an Outlook calendar appointment.
@@ -20,8 +20,6 @@ import net.java.sip.communicator.util.*;
  */
 class ParsedOutlookMeeting
 {
-    private static final Logger sLog = Logger.getLogger(ParsedOutlookMeeting.class);
-
     /**
      * The ID of the meeting object
      */
@@ -40,7 +38,7 @@ class ParsedOutlookMeeting
     /**
      * Optional value indicating if this meeting recurs or not.  Null if doesn't
      */
-    private final RecurringPattern mRecurrencyPattern;
+    private final RecurringPattern mRecurringPattern;
 
     /**
      * Human readable version of the recurring pattern.
@@ -62,26 +60,9 @@ class ParsedOutlookMeeting
      */
     private final String mParentId;
 
-    /**
-     * True if the user has marked this instance of the meeting as left. Reset
-     * to false when the end task is run or if the start time changes to a time
-     * in the future.
-     *
-     * If a meeting is marked as left, receiving Outlook updates for the meeting
-     * doesn't cause the user's presence to change back to "In a Meeting".
-     */
-    private boolean mMarkedAsLeft;
-
-    /**
-     * The object responsible for scheduling the start and end meeting tasks for
-     * this meeting
-     */
-    private CalendarItemScheduler mCalendarItemScheduler;
-
-    public ParsedOutlookMeeting(Object[] data, String id) throws IllegalArgumentException
+    ParsedOutlookMeeting(Object[] data, String id) throws IllegalArgumentException
     {
         mId = id;
-        mMarkedAsLeft = false;
 
         try
         {
@@ -133,7 +114,6 @@ class ParsedOutlookMeeting
                 try
                 {
                     parsedRecurrence = new RecurringPattern(hex,
-                                                            this,
                                                             creationTimeZone,
                                                             mBusyStatus);
                 }
@@ -144,7 +124,7 @@ class ParsedOutlookMeeting
                 }
             }
 
-            mRecurrencyPattern = parsedRecurrence;
+            mRecurringPattern = parsedRecurrence;
             mReadablePattern = String.valueOf(data[IDX_CALENDAR_READABLE_PATTERN]);
 
             // Store the ParentID
@@ -162,7 +142,7 @@ class ParsedOutlookMeeting
      * desired start time. Other values are sensible defaults or null.
      * @param startDate the start time to use for the meeting.
      */
-    public ParsedOutlookMeeting(Date startDate)
+    ParsedOutlookMeeting(Date startDate)
     {
         mId = "testMeetingId";
         mStartDate = startDate;
@@ -170,16 +150,15 @@ class ParsedOutlookMeeting
         mEndDate = new Date(startDate.getTime() + 1000*60*60);
         mBusyStatus = BusyStatusEnum.BUSY;
         mResponseStatus = ResponseStatus.respAccepted;
-        mRecurrencyPattern = null;
+        mRecurringPattern = null;
         mReadablePattern = "Test readable pattern";
         mParentId = null;
-        mMarkedAsLeft = false;
     }
 
     /**
      * @return the date when this meeting starts
      */
-    public Date getStartDate()
+    Date getStartDate()
     {
         return mStartDate;
     }
@@ -187,7 +166,7 @@ class ParsedOutlookMeeting
     /**
      * @return the date when this meeting ends
      */
-    public Date getEndDate()
+    Date getEndDate()
     {
         return mEndDate;
     }
@@ -195,7 +174,7 @@ class ParsedOutlookMeeting
     /**
      * @return the response status
      */
-    public ResponseStatus getResponseStatus()
+    ResponseStatus getResponseStatus()
     {
         return mResponseStatus;
     }
@@ -203,43 +182,64 @@ class ParsedOutlookMeeting
     /**
      * @return the busy status
      */
-    public BusyStatusEnum getBusyStatus()
+    BusyStatusEnum getBusyStatus()
     {
         return mBusyStatus;
     }
 
     /**
-     * @return the recurrency pattern (or null if this meeting is not recurring)
+     * @return the recurring pattern (or null if this meeting is not recurring)
      */
-    public RecurringPattern getRecurrencyPattern()
+    RecurringPattern getRecurringPattern()
     {
-        return mRecurrencyPattern;
+        return mRecurringPattern;
     }
 
     /**
-     * Update the scheduler that is responsible for scheduling the start and end
-     * meeting tasks for this meeting
-     *
-     * @param calendarItemScheduler the new item scheduler
+     * @return true iff the meeting is recurring.
      */
-    public void setItemTask(CalendarItemScheduler calendarItemScheduler)
+    boolean isRecurring()
     {
-        mCalendarItemScheduler = calendarItemScheduler;
+        return (mRecurringPattern != null);
     }
 
     /**
-     * @return the scheduler that is responsible for scheduling the start and end
-     *         meeting tasks for this meeting.
+     * @return true iff it's a one off meeting that has finished, or a recurring meeting with no
+     * more instances to come.
      */
-    public CalendarItemScheduler getItemTask()
+    boolean isFinished()
     {
-        return mCalendarItemScheduler;
+        return (!isRecurring() && getEndDate().before(new Date())) ||
+                (isRecurring() && (getRecurringPattern().getNextMeeting() == null));
+
+    }
+
+    boolean isHappening()
+    {
+        Date now = new Date();
+
+        if (mStartDate.before(now) && mEndDate.after(now))
+        {
+            return true;
+        }
+
+        if (mRecurringPattern != null)
+        {
+            Pair<Date, Date> nextMeeting = mRecurringPattern.getNextMeeting();
+
+            if ((nextMeeting != null) && nextMeeting.getLeft().before(now) && nextMeeting.getRight().after(now))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * @return the parentID of this meeting
      */
-    public String getParentId()
+    String getParentId()
     {
         return mParentId;
     }
@@ -247,48 +247,26 @@ class ParsedOutlookMeeting
     /**
      * @return the ID of this meeting
      */
-    public String getId()
+    String getId()
     {
         return mId;
-    }
-
-    /**
-     * @return whether the user has marked the meeting as left
-     */
-    public boolean isMarkedAsLeft()
-    {
-        return mMarkedAsLeft;
-    }
-
-    /**
-     * Set whether to treat the meeting as "left"
-     * @param left whether to treat the meeting as "left"
-     */
-    public void markAsLeft(boolean left)
-    {
-        sLog.debug("Meeting " + mId + " marked as left: " + left);
-        mMarkedAsLeft = left;
     }
 
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder("\n\nParsedOutlookMeeting, busy = " + mBusyStatus +
+        StringBuilder sb = new StringBuilder("\n\nParsedOutlookMeeting " + mId +
+                                   ", busy = " + mBusyStatus +
                                    ", response = " + mResponseStatus +
                                    ", start = " + mStartDate +
-                                   ", end = " + mEndDate +
-                                   ", marked as left = " + mMarkedAsLeft);
+                                   ", end = " + mEndDate);
         if (!StringUtils.isNullOrEmpty(mReadablePattern))
         {
             sb.append(",\nreadable recurrence = " + mReadablePattern);
         }
-        if (mRecurrencyPattern != null)
+        if (mRecurringPattern != null)
         {
-            sb.append(",\n\nrecurrency pattern = \n" + mRecurrencyPattern);
-        }
-        if (mCalendarItemScheduler != null)
-        {
-            sb.append(",\n\ncalendar item scheduler = " + mCalendarItemScheduler + "; " + mCalendarItemScheduler.getState());
+            sb.append(",\n\nrecurrency pattern = \n" + mRecurringPattern);
         }
         sb.append("\n");
 

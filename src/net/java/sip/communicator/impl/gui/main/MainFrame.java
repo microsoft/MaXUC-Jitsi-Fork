@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main;
 
 import java.awt.*;
@@ -15,6 +16,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -27,8 +30,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.swing.*;
 
-import com.explodingpixels.macwidgets.MacUtils;
-import com.explodingpixels.macwidgets.UnifiedToolBar;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
@@ -47,10 +48,9 @@ import net.java.sip.communicator.impl.gui.main.contactlist.NoFavoritesPanel;
 import net.java.sip.communicator.impl.gui.main.contactlist.NoMessagesPanel;
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
 import net.java.sip.communicator.impl.gui.main.contactlist.UnknownContactPanel;
-import net.java.sip.communicator.impl.gui.main.presence.AccountStatusPanel;
 import net.java.sip.communicator.impl.gui.utils.Constants;
 import net.java.sip.communicator.plugin.desktoputil.ComponentUtils;
-import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
+import net.java.sip.communicator.plugin.desktoputil.LegacyErrorDialog;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommButton;
 import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
@@ -92,12 +92,14 @@ import net.java.sip.communicator.service.protocol.event.CallListener;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.PrivacyUtils;
 import net.java.sip.communicator.util.ServiceUtils;
 import net.java.sip.communicator.util.skin.Skinnable;
 import org.jitsi.service.resources.BufferedImageFuture;
 import org.jitsi.service.resources.ImageIconFuture;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.OSUtils;
+import org.jitsi.util.SanitiseUtils;
 
 /**
  * The main application window. This class is the core of this UI
@@ -164,11 +166,6 @@ public class MainFrame
      */
     private final HashMap<ProtocolProviderService, Integer> protocolProviders
         = new LinkedHashMap<>();
-
-    /**
-     * The panel containing the accounts status menu.
-     */
-    private AccountStatusPanel accountStatusPanel;
 
     /**
      * The panel replacing the contact list, shown when no matching is found
@@ -346,6 +343,26 @@ public class MainFrame
     private boolean showPermissionsDialog = true;
 
     /**
+     * The prefix of all keys in the config that relate to jabber accounts.
+     */
+    private static final String JABBER_ACC_CONFIG_PREFIX =
+        "net.java.sip.communicator.impl.protocol.jabber";
+
+    /**
+     * The suffix to account config strings that indicate whether the
+     * configured account is disabled.
+     */
+    private static final String ACCOUNT_DISABLED_SUFFIX = ".IS_ACCOUNT_DISABLED";
+
+    /**
+     * The prefix of the config string used by the reconnect plugin to track
+     * whether accounts are online.
+     */
+    private static final String RECONNECTPLUGIN_PREFIX =
+        "net.java.sip.communicator.plugin.reconnectplugin." +
+            "ATLEAST_ONE_SUCCESSFUL_CONNECTION.";
+
+    /**
      * Creates an instance of <tt>MainFrame</tt>.
      */
     public MainFrame()
@@ -354,8 +371,6 @@ public class MainFrame
 
         contactListPanel = new ContactListPane(this);
         contactList = contactListPanel.getContactList();
-
-        this.accountStatusPanel = new AccountStatusPanel(this);
 
         // This will show the default hint and button, which may be
         // updated when the CoS is received.
@@ -375,6 +390,53 @@ public class MainFrame
                                                                 searchField,
                                                                 this);
         keyManager.addKeyEventDispatcher(clKeyDispatcher);
+
+        // Listen for changes to whether the chat account has gone
+        // online/offline or has been enabled/disabled by the user.
+        configService.user().addPropertyChangeListener(new PropertyChangeListener()
+        {
+            public void propertyChange(PropertyChangeEvent e)
+            {
+                String propertyName = e.getPropertyName();
+
+                boolean connectionChanged =
+                    propertyName.startsWith(RECONNECTPLUGIN_PREFIX + "Jabber");
+
+                boolean userChanged =
+                    propertyName.startsWith(JABBER_ACC_CONFIG_PREFIX) &&
+                    propertyName.endsWith(ACCOUNT_DISABLED_SUFFIX);
+
+                if (connectionChanged || userChanged)
+                {
+                    logger.debug("IM account connectivity has changed");
+
+                    String oldValue = (String) e.getOldValue();
+                    String newValue = (String) e.getNewValue();
+
+                    // If the value has changed or the returned values are
+                    // null so we don't know whether they have changed, update
+                    // the chat offline icon.
+                    if (oldValue == null || !oldValue.equals(newValue))
+                    {
+                        String loggablePropertyName = connectionChanged ?
+                                                      SanitiseUtils.sanitise(propertyName, PrivacyUtils.SUCCESSFUL_JABBER_CONNECTION) :
+                                                      propertyName;
+                        logger.debug(loggablePropertyName + " has changed from " +
+                            oldValue + " to " + newValue +
+                            ". Updating chat offline icon.");
+
+                        // Send an analytics event to log the change.
+                        AnalyticsEventType event = connectionChanged ?
+                            AnalyticsEventType.IM_CONNECTED :
+                            AnalyticsEventType.IM_SIGNED_IN;
+
+                        GuiActivator.getAnalyticsService().onEvent(
+                            event , "newValue", newValue);
+                        GuiActivator.getAccountManager().refreshAccountInfo();
+                    }
+                }
+            }
+        });
 
         /*
          * If the application is configured to quit when this frame is closed,
@@ -505,7 +567,6 @@ public class MainFrame
 
         searchPanel.add(createButtonPanel(), BorderLayout.EAST);
 
-        northPanel.add(accountStatusPanel, BorderLayout.CENTER);
         northPanel.add(searchPanel, BorderLayout.SOUTH);
 
         logger.debug("Styling UI for tabs");
@@ -881,7 +942,7 @@ public class MainFrame
         }
     }
 
-    class PermissionsDialog extends ErrorDialog
+    class PermissionsDialog extends LegacyErrorDialog
     {
         private static final long serialVersionUID = 1L;
 
@@ -1457,36 +1518,9 @@ public class MainFrame
     private JComponent createTopComponent()
     {
         JComponent topComponent = null;
-
-        if (OSUtils.IS_MAC)
-        {
-            UnifiedToolBar macToolbarPanel = new UnifiedToolBar();
-
-            MacUtils.makeWindowLeopardStyle(getRootPane());
-
-            macToolbarPanel.getComponent().setLayout(new BorderLayout(5, 5));
-            macToolbarPanel.getComponent()
-                .setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
-            macToolbarPanel.disableBackgroundPainter();
-            macToolbarPanel.installWindowDraggerOnWindow(this);
-
-            // Set the color of the center panel.
-            centerPanel.setOpaque(true);
-            centerPanel.setBackground(
-                new Color(GuiActivator.getResources()
-                    .getColor("service.gui.MAC_PANEL_BACKGROUND")));
-
-            topComponent = macToolbarPanel.getComponent();
-        }
-        else
-        {
-            JPanel panel = new TransparentPanel(new BorderLayout(5, 5));
-
-            panel.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
-
-            topComponent = panel;
-        }
-
+        JPanel panel = new TransparentPanel(new BorderLayout(5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
+        topComponent = panel;
         return topComponent;
     }
 
@@ -1856,7 +1890,7 @@ public class MainFrame
         }
 
         logger.info("Add the following protocol provider to the gui: "
-                     + protocolProvider.getAccountID().getAccountAddress()
+                     + protocolProvider.getAccountID().getLoggableAccountID()
                      + " , hashcode: " + Integer.toHexString(hashCode()));
 
         this.addProtocolSupportedOperationSets(protocolProvider);
@@ -1868,8 +1902,6 @@ public class MainFrame
             contactHandler = new DefaultContactEventHandler();
 
         this.addProviderContactHandler(protocolProvider, contactHandler);
-
-        accountStatusPanel.addAccount(protocolProvider);
         GuiActivator.getGlobalStatusService().addProvider(protocolProvider);
     }
 
@@ -1895,7 +1927,7 @@ public class MainFrame
     public void removeProtocolProvider(ProtocolProviderService protocolProvider)
     {
         logger.info("Remove the following protocol provider from the gui: "
-                    + protocolProvider.getAccountID().getAccountAddress()
+                    + protocolProvider.getAccountID().getLoggableAccountID()
                     + " , hashcode: " + protocolProvider.hashCode());
 
         synchronized(this.protocolProviders)
@@ -1909,7 +1941,6 @@ public class MainFrame
 
         this.updateProvidersIndexes(protocolProvider);
 
-        accountStatusPanel.removeAccount(protocolProvider);
         GuiActivator.getGlobalStatusService().removeProvider(protocolProvider);
     }
 
@@ -1921,7 +1952,7 @@ public class MainFrame
     public void removeProtocolProvider(AccountID accountID)
     {
         logger.info("Attempt to remove protocol provider with account ID "
-                    + accountID
+                    + (accountID != null ? accountID.getLoggableAccountID() : "null")
                     + " from the gui");
 
         ProtocolProviderService providerToRemove = null;
@@ -2685,15 +2716,6 @@ public class MainFrame
         {
             this.statusBarPanel.remove(c);
         }
-    }
-
-    /**
-     * Returns the account status panel.
-     * @return the account status panel.
-     */
-    public AccountStatusPanel getAccountStatusPanel()
-    {
-        return accountStatusPanel;
     }
 
     /**

@@ -5,16 +5,18 @@
  * See terms of license at gnu.org.
  */
 
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat.conference;
 
-import java.io.*;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
-import net.java.sip.communicator.impl.gui.main.chat.*;
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.impl.gui.main.chat.ChatTransport;
+import net.java.sip.communicator.service.protocol.ChatRoom;
+import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications;
 import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications.TypingState;
-import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.account.*;
+import net.java.sip.communicator.service.protocol.PresenceStatus;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.util.account.AccountUtils;
 
 /**
  * The conference implementation of the <tt>ChatTransport</tt> interface that
@@ -25,14 +27,6 @@ import net.java.sip.communicator.util.account.*;
 public class ConferenceChatTransport
     implements  ChatTransport
 {
-    /**
-     * The logger.
-     */
-    private static final Logger sLog =
-        Logger.getLogger(ConferenceChatTransport.class);
-
-    private final ChatSession mChatSession;
-
     private final ChatRoom mChatRoom;
 
     private String mChatRoomName;
@@ -41,12 +35,10 @@ public class ConferenceChatTransport
      * Creates an instance of <tt>ConferenceChatTransport</tt> by specifying the
      * parent chat session and the chat room associated with this transport.
      *
-     * @param chatSession the parent chat session.
      * @param chatRoom the chat room associated with this conference transport.
      */
-    public ConferenceChatTransport(ChatSession chatSession, ChatRoom chatRoom)
+    public ConferenceChatTransport(ChatRoom chatRoom)
     {
-        mChatSession = chatSession;
         mChatRoom = chatRoom;
         mChatRoomName = (chatRoom == null) ? null : chatRoom.getIdentifier().toString();
     }
@@ -85,17 +77,6 @@ public class ConferenceChatTransport
     public String getResourceName()
     {
         return null;
-    }
-
-    /**
-     * Indicates if the display name should only show the resource.
-     *
-     * @return <tt>true</tt> if the display name shows only the resource,
-     * <tt>false</tt> - otherwise
-     */
-    public boolean isDisplayResourceOnly()
-    {
-        return false;
     }
 
     /**
@@ -159,81 +140,10 @@ public class ConferenceChatTransport
     }
 
     /**
-     * Sends the given instant message trough this chat transport, by specifying
-     * the mime type (html or plain text).
-     *
-     * @param messageText The message to send.
-     * @param mimeType The mime type of the message to send: text/html or
-     * text/plain.
-     */
-    public void sendInstantMessage(String messageText, String mimeType)
-        throws Exception
-    {
-        // If this chat transport does not support instant messaging we do
-        // nothing here.
-        if (!allowsInstantMessage())
-        {
-            sLog.debug("Not sending as this transport does not support IM");
-            return;
-        }
-
-        ImMessage message = mChatRoom.createMessage(messageText, null);
-
-        // Send the message but don't fire an event, otherwise we will display
-        // our sent message in the UI, along with the one from us that we
-        // receive from the group chat.
-        mChatRoom.sendMessage(message, false);
-    }
-
-    /**
-     * Determines whether this chat transport supports the supplied content type
-     *
-     * @param contentType the type we want to check
-     * @return <tt>true</tt> if the chat transport supports it and
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isContentTypeSupported(String contentType)
-    {
-        // we only support plain text for chat rooms for now
-        return OperationSetBasicInstantMessaging.DEFAULT_MIME_TYPE
-                .equals(contentType);
-    }
-
-    /**
-     * Sending sms messages is not supported by this chat transport.
-     */
-    public void sendSmsMessage(String phoneNumber, String message)
-    {}
-
-    /**
-     * Sending sms messages is not supported by this chat transport.
-     */
-    public void sendSmsMessage(Contact contact, String message)
-    {}
-
-    /**
      * Sending typing notifications is not supported by this chat transport implementation.
      */
     public void sendTypingNotification(TypingState typingState)
     {
-    }
-
-    /**
-     * Sending files through a chat room is not yet supported by this chat
-     * transport implementation.
-     */
-    public FileTransfer sendFile(File file, String transferId)
-    {
-        return null;
-    }
-
-    /**
-     * Returns the maximum file length supported by the protocol in bytes.
-     * @return the file length that is supported.
-     */
-    public long getMaximumFileLength()
-    {
-        return -1;
     }
 
     /**
@@ -246,78 +156,6 @@ public class ConferenceChatTransport
     {
         if (mChatRoom != null)
             mChatRoom.invite(contactAddress, reason);
-    }
-
-    @Override
-    public void join() throws OperationFailedException
-    {
-        if (mChatRoom != null)
-            mChatRoom.join();
-    }
-
-    /**
-     * Returns the parent session of this chat transport. A <tt>ChatSession</tt>
-     * could contain more than one transports.
-     *
-     * @return the parent session of this chat transport
-     */
-    public ChatSession getParentChatSession()
-    {
-        return mChatSession;
-    }
-
-    /**
-     * Sending sms messages is not supported by this chat transport.
-     * @param l The message listener to add.
-     */
-    public void addSmsMessageListener(MessageListener l)
-    {
-    }
-
-    /**
-     * Adds an instant message listener to this chat transport.
-     *
-     * @param l The message listener to add.
-     */
-    public void addInstantMessageListener(MessageListener l)
-    {
-        // If this chat transport does not support instant messaging we do
-        // nothing here.
-        if (!allowsInstantMessage())
-            return;
-
-        OperationSetBasicInstantMessaging imOpSet
-            = getProtocolProvider()
-                    .getOperationSet(OperationSetBasicInstantMessaging.class);
-
-        imOpSet.addMessageListener(l);
-    }
-
-    /**
-     * Sending sms messages is not supported by this chat transport.
-     * @param l The message listener to remove.
-     */
-    public void removeSmsMessageListener(MessageListener l)
-    {
-    }
-
-    /**
-     * Removes the instant message listener from this chat transport.
-     *
-     * @param l The message listener to remove.
-     */
-    public void removeInstantMessageListener(MessageListener l)
-    {
-        // If this chat transport does not support instant messaging we do
-        // nothing here.
-        if (!allowsInstantMessage())
-            return;
-
-        OperationSetBasicInstantMessaging imOpSet
-            = getProtocolProvider()
-                    .getOperationSet(OperationSetBasicInstantMessaging.class);
-
-        imOpSet.removeMessageListener(l);
     }
 
     public void dispose()
@@ -333,37 +171,10 @@ public class ConferenceChatTransport
         return mChatRoom;
     }
 
-    /**
-     * Sends <tt>message</tt> as a message correction through this transport,
-     * specifying the mime type (html or plain text) and the id of the
-     * message to replace.
-     *
-     * @param message The message to send.
-     * @param mimeType The mime type of the message to send: text/html or
-     * text/plain.
-     * @param correctedMessageUID The ID of the message being corrected by
-     * this message.
-     */
-  public void correctInstantMessage(String message, String mimeType,
-            String correctedMessageUID)
-    {}
-
-    /**
-     * Returns <code>true</code> if this chat transport supports message
-     * corrections and false otherwise.
-     *
-     * @return <code>true</code> if this chat transport supports message
-     * corrections and false otherwise.
-     */
-    public boolean allowsMessageCorrections()
-    {
-        return false;
-    }
-
     @Override
     public String toString()
     {
         return "<" + super.toString() + ", Chat Room = " + mChatRoom +
-               ", Chat Room ID = " + mChatRoomName + ">";
+               ", Chat Room ID = " + sanitiseChatRoom(mChatRoomName) + ">";
     }
 }

@@ -4,13 +4,24 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util.launchutils;
 
-import java.io.*;
-import java.util.*;
-import java.util.logging.*;
+import static java.util.stream.Collectors.joining;
+import static org.jitsi.util.SanitiseUtils.sanitise;
 
-import net.java.sip.communicator.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import net.java.sip.communicator.util.ScStdOut;
+import org.jitsi.util.Hasher;
 
 /**
  * The <tt>LauncherArgHandler</tt> class handles invocation arguments that have
@@ -91,15 +102,25 @@ public class LaunchArgHandler
     public static final int ERROR_CODE_CREATE_DIR_FAILED = 3;
 
     /**
+     * Pattern to redact id param in URI
+     */
+    public static final Pattern ID_PARAM_PATTERN = Pattern.compile("(?<=id=)([^&]+)");
+
+    /**
+     * Pattern to redact parameters of protocol handler e.g. "sip: 123456789".
+     */
+    public static final Pattern PROTOCOL_PATTERN = Pattern.compile("(?:maxuccall|sip|tel|callto): (.+)");
+
+    /**
      * The property name containing the name of the application
      * (e.g. SIP Communicator)
      */
-    private  static final String PNAME_APPLICATION_NAME = "APPLICATION_NAME";
+    private static final String PNAME_APPLICATION_NAME = "APPLICATION_NAME";
 
     /**
      * The package name of the applications (e.g. jitsi).
      */
-    private  static final String PNAME_PACKAGE_NAME = "PACKAGE_NAME";
+    private static final String PNAME_PACKAGE_NAME = "PACKAGE_NAME";
 
     /**
      * The property name containing the current version.
@@ -212,7 +233,7 @@ public class LaunchArgHandler
         for (String arg : args)
         {
             log.append('"');
-            log.append(arg);
+            log.append(sanitiseArgument(arg));
             log.append("\",");
         }
 
@@ -229,7 +250,7 @@ public class LaunchArgHandler
         for(int i = 0; i < args.length; i++)
         {
             String arg = args[i];
-            logger.debug("Handling arg " + i + ": " + arg);
+            logger.debug("Handling arg " + i + ": " + sanitiseArgument(arg));
 
             if (arg.equals("--version") || arg.equals("-v"))
             {
@@ -354,7 +375,7 @@ public class LaunchArgHandler
      */
     private void handleUri(String uri)
     {
-        logger.info("Handling uri: " + uri);
+        logger.info("Handling uri: " + sanitiseArgument(uri));
 
         // If this is a CDAP provisioning URI then we should handle it
         // separately to other URIs as we need to deal with it before we've
@@ -575,7 +596,10 @@ public class LaunchArgHandler
      */
     public void handleConcurrentInvocationRequestArgs(String[] args)
     {
-        logger.debug("handleConcurrentInvocationRequestArgs " + Arrays.toString(args));
+        logger.debug("handleConcurrentInvocationRequestArgs " +
+                     Stream.of(args)
+                             .map(LaunchArgHandler::sanitiseArgument)
+                             .collect(joining(",")));
 
         // If we have 1 or more args then we only care about the last one since
         // the only interinstance arg we currently know how to handle are URIs.
@@ -593,5 +617,15 @@ public class LaunchArgHandler
             // stuff like showing the contact list for example.
             this.mArgDelegator.handleConcurrentInvocationRequest();
         }
+    }
+
+    /**
+     * Sanitises application launch argument.
+     * If it is protocol URI, it hashes the destination parameter.
+     * If it is Meeting URI, it hashes "id" parameter value.
+     */
+    public static String sanitiseArgument(String value)
+    {
+        return sanitise(value, List.of(PROTOCOL_PATTERN, ID_PARAM_PATTERN), Hasher::logHasher);
     }
 }

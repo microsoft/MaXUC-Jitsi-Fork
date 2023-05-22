@@ -9,11 +9,16 @@
 extern "C" {
 #endif
 
-@interface SUUpdaterDelegateImpl : NSObject <SUUpdaterDelegate>
+@interface SPUUpdaterDelegateImpl : NSObject <SPUUpdaterDelegate>
 
 @property (atomic, retain) NSString *updateURL;
+@property (atomic, retain) SPUStandardUserDriver *userDriver;
+@property (nonatomic) BOOL isBelowMinVersion;
 
-- (NSString *)feedURLStringForUpdater:(SUUpdater *)updater;
+- (nullable NSString *)feedURLStringForUpdater:(SPUUpdater *)updater;
+- (void)updater:(SPUUpdater *)updater failedToDownloadUpdate:(SUAppcastItem *)item error:(NSError *)error;
+- (void)userDidCancelDownload:(SPUUpdater *)updater;
+
 @end
 
 
@@ -23,7 +28,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;ZILjava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_net_java_sip_communicator_impl_sparkle_SparkleActivator_initSparkle
-  (JNIEnv *, jclass, jstring, jboolean, jint, jstring, jstring, jstring);
+  (JNIEnv *, jclass, jstring, jboolean, jint, jstring, jstring, jstring, jboolean);
 
 /*
  * Class:     net_java_sip_communicator_impl_sparkle_SparkleActivator
@@ -33,6 +38,15 @@ JNIEXPORT void JNICALL Java_net_java_sip_communicator_impl_sparkle_SparkleActiva
 JNIEXPORT void JNICALL Java_net_java_sip_communicator_impl_sparkle_SparkleActivator_setDownloadLink
   (JNIEnv *, jclass, jstring);
   
+/*
+ * Class:     net_java_sip_communicator_impl_sparkle_SparkleActivator
+ * Method:    setIsAppBelowMinVersion
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL
+Java_net_java_sip_communicator_impl_sparkle_SparkleActivator_setIsAppBelowMinVersion
+  (JNIEnv *, jclass, jboolean);
+
 /*
  * Class:     net_java_sip_communicator_impl_sparkle_SparkleActivator
  * Method:    setNewUpdateCheckInterval

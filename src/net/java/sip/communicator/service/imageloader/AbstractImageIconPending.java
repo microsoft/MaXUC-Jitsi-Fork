@@ -9,6 +9,7 @@ import javax.swing.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 
 import org.jitsi.service.resources.*;
+import org.jitsi.util.CustomAnnotations.*;
 
 /**
  * This is a helper class to make it easy to represent
@@ -154,7 +155,7 @@ public abstract class AbstractImageIconPending extends AbstractImageIconFuture
     }
 
     @Override
-    public synchronized ImageIcon get(long timeout, TimeUnit unit)
+    public synchronized ImageIcon get(long timeout, @NotNull TimeUnit unit)
         throws InterruptedException,
             TimeoutException
     {

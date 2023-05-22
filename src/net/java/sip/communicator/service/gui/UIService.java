@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.gui;
 
 import java.awt.Dimension;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
 
 import javax.swing.*;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.impl.gui.main.chat.history.HistoryWindowManager;
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
@@ -257,10 +258,9 @@ public interface UIService
      * @param create <tt>true</tt> to create a <tt>ChatPanel</tt> corresponding
      * to the specified <tt>ChatRoom</tt> if such <tt>ChatPanel</tt> does not
      * exist yet
-     * @param requestHistory If true, then load the history for the chat
      * @return the <tt>Chat</tt> corresponding to the given <tt>ChatRoom</tt>.
      */
-    Chat getChat(ChatRoom chatRoom, boolean create, boolean requestHistory);
+    Chat getChat(ChatRoom chatRoom, boolean create);
 
     /**
      * Get the MetaContact corresponding to the chat.

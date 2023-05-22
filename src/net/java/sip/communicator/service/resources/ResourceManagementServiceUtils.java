@@ -22,7 +22,7 @@ public final class ResourceManagementServiceUtils
      * Constructs a new <tt>Locale</tt> instance from a specific locale
      * identifier which can either be a two-letter language code or contain a
      * two-letter language code and a two-letter country code in the form
-     * <tt>&lt;language&gt;_&lt;country&gt;</tt>.
+     * <tt>&lt;language&gt;_&lt;country/region&gt;</tt>.
      *
      * @param localeId the locale identifier describing the new <tt>Locale</tt>
      * instance to be created

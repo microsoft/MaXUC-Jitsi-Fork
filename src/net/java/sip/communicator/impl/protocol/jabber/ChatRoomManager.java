@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatRoom;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -183,7 +185,7 @@ public class ChatRoomManager
             else
             {
                 logger.debug(
-                    "Adding chat room " + chatRoomId + " to chat rooms to join");
+                    "Adding chat room " + sanitiseChatRoom(chatRoomId) + " to chat rooms to join");
                 chatRoomIdsToJoin.add(chatRoomId);
             }
         }
@@ -191,7 +193,7 @@ public class ChatRoomManager
         if (joinNow)
         {
             logger.debug(
-                "Joining chat room " + chatRoomId + " with date " + joinDate);
+                "Joining chat room " + sanitiseChatRoom(chatRoomId) + " with date " + joinDate);
             addAndJoinChatRoomOnTimer(chatRoomId, joinDate);
         }
     }
@@ -221,14 +223,14 @@ public class ChatRoomManager
             }
             else
             {
-                logger.debug("Adding chat room " + chatRoomId + " to chat rooms to leave");
+                logger.debug("Adding chat room " + sanitiseChatRoom(chatRoomId) + " to chat rooms to leave");
                 chatRoomIdsToLeave.add(chatRoomId);
             }
         }
 
         if (leaveNow)
         {
-            logger.debug("Leaving chat room " + chatRoomId + " with date " + leaveDate);
+            logger.debug("Leaving chat room " + sanitiseChatRoom(chatRoomId) + " with date " + leaveDate);
             removeAndLeaveChatRoomOnTimer(chatRoomId, leaveDate);
         }
     }
@@ -247,12 +249,12 @@ public class ChatRoomManager
         {
             if (chatRoomIdsToJoin.remove(chatRoomId))
             {
-                logger.debug("Joining chat room " + chatRoomId + " with date " + joinDate);
+                logger.debug("Joining chat room " + sanitiseChatRoom(chatRoomId) + " with date " + joinDate);
                 addAndJoinChatRoomOnTimer(chatRoomId, joinDate);
             }
             else
             {
-                logger.debug("Adding chat room " + chatRoomId + " to chat rooms to join");
+                logger.debug("Adding chat room " + sanitiseChatRoom(chatRoomId) + " to chat rooms to join");
                 chatRoomJoinDates.put(chatRoomId, joinDate);
             }
         }
@@ -272,12 +274,12 @@ public class ChatRoomManager
         {
             if (chatRoomIdsToLeave.remove(chatRoomId))
             {
-                logger.debug("Leaving chat room " + chatRoomId + " with date " + leaveDate);
+                logger.debug("Leaving chat room " + sanitiseChatRoom(chatRoomId) + " with date " + leaveDate);
                 removeAndLeaveChatRoomOnTimer(chatRoomId, leaveDate);
             }
             else
             {
-                logger.debug("Adding chat room " + chatRoomId + " to chat rooms to leave");
+                logger.debug("Adding chat room " + sanitiseChatRoom(chatRoomId) + " to chat rooms to leave");
                 chatRoomLeaveDates.put(chatRoomId, leaveDate);
             }
         }
@@ -331,14 +333,14 @@ public class ChatRoomManager
 
             for (Jid chatRoomIdToJoin : chatRoomIdsToJoin)
             {
-                logger.debug("Joining chat room " + chatRoomIdToJoin);
+                logger.debug("Joining chat room " + sanitiseChatRoom(chatRoomIdToJoin));
                 addAndJoinChatRoomOnTimer(
                     chatRoomIdToJoin, chatRoomJoinDates.remove(chatRoomIdToJoin));
             }
 
             for (Jid chatRoomIdToLeave : chatRoomIdsToLeave)
             {
-                logger.debug("Leaving chat room " + chatRoomIdToLeave);
+                logger.debug("Leaving chat room " + sanitiseChatRoom(chatRoomIdToLeave));
                 removeAndLeaveChatRoomOnTimer(
                     chatRoomIdToLeave, chatRoomLeaveDates.remove(chatRoomIdToLeave));
             }
@@ -412,7 +414,7 @@ public class ChatRoomManager
     private void removeAndLeaveChatRoom(Jid chatRoomId, Date leaveDate)
     {
         logger.info(
-            "Removing chat room with id " + chatRoomId + " and date " + leaveDate);
+            "Removing chat room with id " + sanitiseChatRoom(chatRoomId) + " and date " + leaveDate);
         String chatRoomIdString = chatRoomId.toString();
         ConfigurationUtils.deleteChatRoom(jabberProvider, chatRoomIdString);
 
@@ -426,7 +428,7 @@ public class ChatRoomManager
         catch (OperationFailedException | OperationNotSupportedException e)
         {
             logger.error("Failed to find chat room with id: "
-                + chatRoomId, e);
+                + sanitiseChatRoom(chatRoomId), e);
         }
 
         // If we find a chat room, mark it as left in history so that it is
@@ -437,7 +439,7 @@ public class ChatRoomManager
             // the room, leave it now.
             if (chatRoom.isJoined())
             {
-                logger.info("Leaving chat room with id: " + chatRoomId);
+                logger.info("Leaving chat room with id: " + sanitiseChatRoom(chatRoomId));
                 chatRoom.leave(false,
                                leaveDate,
                                LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT,
@@ -448,13 +450,13 @@ public class ChatRoomManager
                                      JabberActivator.getMessageHistoryService();
             if (msgHistoryService != null)
             {
-                logger.debug("Setting chat room as closed: " + chatRoomId);
+                logger.debug("Setting chat room as closed: " + sanitiseChatRoom(chatRoomId));
                 msgHistoryService.setChatroomClosedStatus(chatRoom, true);
             }
             else
             {
                 logger.warn("Unable to set chat room as closed as message " +
-                                      "history service is null: " + chatRoomId);
+                                      "history service is null: " + sanitiseChatRoom(chatRoomId));
             }
         }
     }
@@ -510,10 +512,11 @@ public class ChatRoomManager
      */
     private boolean addAndJoinChatRoom(Jid chatRoomId, Date joinDate)
     {
-        logger.info(
-            "Joining chat room with id " + chatRoomId + " and date " + joinDate);
-
         String chatRoomIdString = chatRoomId.toString();
+        String sanitisedChatRoomIdString = sanitiseChatRoom(chatRoomIdString);
+        logger.info(
+            "Joining chat room with id " + sanitisedChatRoomIdString + " and date " + joinDate);
+
         ConfigurationUtils.saveChatRoom(
              jabberProvider, chatRoomIdString, chatRoomIdString, chatRoomIdString, null);
 
@@ -522,32 +525,32 @@ public class ChatRoomManager
         try
         {
             // First, see if we can find an existing chat room with this ID.
-            logger.debug("Looking for existing chat room: " + chatRoomId);
+            logger.debug("Looking for existing chat room: " + sanitisedChatRoomIdString);
             chatRoom = getOpSetMuc().findRoom(chatRoomIdString);
 
             // If we don't find an existing chat room, create one.
             if (chatRoom == null)
             {
-                logger.debug("Creating new chat room with id: " + chatRoomId);
+                logger.debug("Creating new chat room with id: " + sanitisedChatRoomIdString);
                 chatRoom = getOpSetMuc().createChatRoom(chatRoomIdString, null);
             }
 
             // Finally , join the chat room.
             if (chatRoom != null)
             {
-                logger.debug("Joining chat room with id: " + chatRoomId);
+                logger.debug("Joining chat room with id: " + sanitisedChatRoomIdString);
                 chatRoom.join(joinDate);
             }
             else
             {
-                logger.error("Failed to find or create chat room with id: " + chatRoomId);
+                logger.error("Failed to find or create chat room with id: " + sanitisedChatRoomIdString);
                 return false;
             }
         }
         catch (OperationFailedException | OperationNotSupportedException e)
         {
             logger.error("Failed to find or create chat room with id: "
-                + chatRoomId, e);
+                + sanitisedChatRoomIdString, e);
             return false;
         }
 

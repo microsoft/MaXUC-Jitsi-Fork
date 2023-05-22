@@ -4,9 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -14,9 +15,12 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Window;
-import java.awt.event.*;
-import java.beans.*;
-import java.io.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -27,40 +31,58 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Vector;
-import java.util.concurrent.atomic.*;
 
-import javax.swing.*;
-import javax.swing.text.*;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
 
-import org.jitsi.service.configuration.*;
-import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
+import org.jitsi.service.resources.ImageIconFuture;
+import org.jitsi.util.OSUtils;
 
-import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.impl.gui.main.chat.conference.*;
-import net.java.sip.communicator.impl.gui.main.chat.filetransfer.*;
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.plugin.desktoputil.SwingWorker;
-import net.java.sip.communicator.service.analytics.AnalyticsEventType;
-import net.java.sip.communicator.service.analytics.AnalyticsService;
-import net.java.sip.communicator.service.contactlist.*;
-import net.java.sip.communicator.service.database.schema.FileHistoryTable;
-import net.java.sip.communicator.service.filehistory.*;
-import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.msghistory.*;
+import net.java.sip.communicator.impl.gui.GuiActivator;
+import net.java.sip.communicator.impl.gui.main.chat.conference.ConferenceChatManager;
+import net.java.sip.communicator.impl.gui.main.chat.conference.ConferenceChatSession;
+import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
+import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
+import net.java.sip.communicator.service.contactlist.MetaContact;
+import net.java.sip.communicator.service.gui.Chat;
+import net.java.sip.communicator.service.gui.ChatRoomWrapper;
+import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.notification.NotificationData;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.OperationSetExtendedAuthorizations.*;
-import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications.TypingState;
-import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.service.protocol.ChatRoom;
+import net.java.sip.communicator.service.protocol.ChatRoomMember;
+import net.java.sip.communicator.service.protocol.Contact;
+import net.java.sip.communicator.service.protocol.FileTransfer;
+import net.java.sip.communicator.service.protocol.IncomingFileTransferRequest;
+import net.java.sip.communicator.service.protocol.OperationFailedException;
+import net.java.sip.communicator.service.protocol.OperationSetExtendedAuthorizations;
+import net.java.sip.communicator.service.protocol.OperationSetExtendedAuthorizations.SubscriptionStatus;
+import net.java.sip.communicator.service.protocol.OperationSetFileTransfer;
+import net.java.sip.communicator.service.protocol.OperationSetMultiUserChat;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.service.protocol.event.FileTransferStatusChangeEvent;
+import net.java.sip.communicator.service.protocol.event.FileTransferStatusListener;
+import net.java.sip.communicator.service.protocol.event.LocalUserChatRoomPresenceChangeEvent;
+import net.java.sip.communicator.service.protocol.event.LocalUserChatRoomPresenceListener;
+import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
+import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeListener;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.GuiUtils;
 import net.java.sip.communicator.util.Logger;
-import net.java.sip.communicator.util.account.*;
-import net.java.sip.communicator.util.skin.*;
+import net.java.sip.communicator.util.account.AccountUtils;
 
 /**
  * The <tt>ChatPanel</tt> is the panel, where users can write and send messages,
@@ -81,7 +103,6 @@ public class ChatPanel
                 ChatConversationContainer,
                 LocalUserChatRoomPresenceListener,
                 FileTransferStatusListener,
-                Skinnable,
                 RegistrationStateChangeListener
 {
     /**
@@ -129,29 +150,10 @@ public class ChatPanel
     private static final int DEFAULT_MESSAGE_PANEL_HEIGHT = ScaleUtils.scaleInt(72);
 
     /**
-     * The configuration service.
-     */
-    private final ConfigurationService mConfigService =
-        GuiActivator.getConfigurationService();
-
-    /**
      * The ChatTransport used for the most recently received message in this
      * panel.
      */
     private ChatTransport mLatestChatTransport;
-
-    /**
-     * A task that resets the current chat transport to send to all registered
-     * resources for this chat session after a given period of time since we
-     * last received a message.
-     */
-    private TimerTask mChatTransportResetTask;
-
-    /**
-     * Timer used to schedule the task to reset the current chat transport to
-     * send to all registered resources for this chat session.
-     */
-    private static Timer mTimer = new Timer("Global chat transport reset timer", true);
 
     /**
      * Component that contains any notification - either typing or offline warning
@@ -163,35 +165,6 @@ public class ChatPanel
      */
     private final ImageIconFuture mTypingIcon = GuiActivator.getResources()
         .getImage("service.gui.icons.TYPING");
-
-    /**
-     * The default number of ms since we last received a chat message after
-     * which we reset the current chat transport to send to all registered
-     * resources for this chat session (default 5 mins).
-     */
-    private static final int CHAT_TRANSPORT_RESET_DEFAULT_DELAY = 300000;
-
-    /**
-     * The property which holds the configured number of ms since we last
-     * received a chat message after which we reset the current chat transport
-     * to send to all registered resources for this chat session.
-     */
-    private static final String CHAT_TRANSPORT_RESET_DELAY_PROP =
-        "net.java.sip.communicator.impl.gui.main.chat.CHAT_TRANSPORT_RESET_DELAY";
-
-    /**
-     * The property which holds the maximum permissible length of XMPP message
-     * that the user may send.
-     */
-    private static final String MAX_XMPP_MESSAGE_LENGTH_PROP =
-        "net.java.sip.communicator.impl.gui.main.chat.MAX_XMPP_MESSAGE_LENGTH";
-
-    /**
-     * The property which holds the error message shown if the user tries to
-     * send an XMPP message which is too long.
-     */
-    private static final String XMPP_MESSAGE_TOO_LONG_PROP =
-        "service.gui.XMPP_MESSAGE_TOO_LONG";
 
     private boolean mIsShown = false;
 
@@ -206,29 +179,11 @@ public class ChatPanel
     private ProtocolProviderService mImProvider;
 
     /**
-     * Buffer to store received messages.  This should be only used to store messages that are received
-     * whilst the history is being loaded, to make sure that new messages are displayed after old loaded
-     * messages.
-     */
-    private final Vector<Object> mIncomingEventBuffer = new Vector<>();
-
-    /**
-     * If true, the chat panel has finished loading history.
-     */
-    private final AtomicBoolean mIsHistoryLoaded = new AtomicBoolean();
-
-    /**
      * Stores all active  file transfer requests and effective transfers with
      * the identifier of the transfer.
      */
     private final Hashtable<String, Object> mActiveFileTransfers
         = new Hashtable<>();
-
-    /**
-     * The ID of the message being corrected, or <tt>null</tt> if
-     * not correcting any message.
-     */
-    private String mCorrectedMessageUID = null;
 
     /**
      * The ID of the last sent message in this chat.
@@ -318,19 +273,12 @@ public class ChatPanel
      * Creates a <tt>ChatPanel</tt> which is added to the given chat window.
      *
      * @param chatContainer The parent window of this chat panel.
-     * @param loadHistory whether to load chat history into this chat panel
-     * when it first becomes visible.
      */
-    public ChatPanel(ChatContainer chatContainer,
-                     boolean loadHistory)
+    public ChatPanel(ChatContainer chatContainer)
     {
         super(new BorderLayout());
 
         mChatContainer = chatContainer;
-
-        // If we're not going to load history, mark it as already loaded.
-        mIsHistoryLoaded.set(!loadHistory);
-
         mConversationPanel = new ChatConversationPanel(this);
         mConversationPanel.setPreferredSize(new Dimension(400, 200));
         mConversationPanel.getChatTextPane()
@@ -570,8 +518,8 @@ public class ChatPanel
         else
         {
             sLog.debug(
-                "Not showing contact offline warning - chat session offline <" +
-                                           mChatSession.getDescriptor() + ">");
+                    "Not showing contact offline warning - chat session offline <" +
+                    (mChatSession != null ? mChatSession.getDescriptor() : "null chat session") + ">");
         }
 
         mNotificationArea.setText(textToDisplay);
@@ -596,11 +544,6 @@ public class ChatPanel
     {
         sLog.debug(
             "Disposing chat panel for <" + mChatSession.getDescriptor() + ">");
-
-        if (mChatTransportResetTask != null)
-        {
-            mChatTransportResetTask.cancel();
-        }
 
         if (mLostContactGroupChatPanel != null)
         {
@@ -850,647 +793,6 @@ public class ChatPanel
     }
 
     /**
-     * Process history messages.
-     *
-     * @param historyList The collection of messages coming from history.
-     */
-    private void processHistory(Collection<Object> historyList)
-    {
-        sLog.debug("Processing history.");
-        Iterator<Object> iterator = historyList.iterator();
-
-        while (iterator.hasNext())
-        {
-            Object o = iterator.next();
-            String historyString = "";
-
-            if (o instanceof MessageEvent)
-            {
-                MessageEvent evt = (MessageEvent) o;
-                ImMessage sourceMessage = evt.getSourceMessage();
-
-                // Only add the message if it should be displayed to the user
-                if (evt.isDisplayed())
-                {
-                    historyString = processHistoryMessage(
-                        evt.getContactAddress(),
-                        evt.getContactDisplayName(),
-                        evt.getTimestamp(),
-                        evt.getMessageType(),
-                        sourceMessage.getContent(),
-                        sourceMessage.getContentType(),
-                        sourceMessage.getMessageUID(),
-                        evt.getErrorMessage());
-                }
-            }
-            else if (o instanceof FileRecord)
-            {
-                // If a file transfer is received when the chat window is
-                // closed, it may already have made it into the chat history
-                // at the point when the chat window is opened.  If so, it
-                // would be added to the chat window twice - once when loaded
-                // from history here and once as a new incoming file transfer,
-                // after history has been loaded into the window.  Also, the
-                // file transfer UI element added from history in that case
-                // would be broken, as history is not designed to handle
-                // active file transfers.  Therefore, to avoid displaying a
-                // duplicate, broken UI element, we ignore any active file
-                // transfers whilst loading history here.
-                FileRecord fileRecord = (FileRecord) o;
-                if (!FileHistoryTable.STATUS.ACTIVE.equals(fileRecord.getStatus()))
-                {
-                    FileHistoryConversationComponent component
-                        = new FileHistoryConversationComponent(fileRecord);
-                    mConversationPanel.addComponent(component);
-                }
-                else
-                {
-                    sLog.debug(
-                        "Not loading active file transfer from history: " +
-                                                           fileRecord.getID());
-                }
-            }
-
-            if (historyString != null)
-            {
-                mConversationPanel.appendMessageToEnd(
-                    historyString, ChatHtmlUtils.TEXT_CONTENT_TYPE);
-            }
-        }
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and appends it at the end of the conversationPanel
-     * document.
-     *
-     * @param contactAddress the address of the contact sending the message
-     * @param date the time at which the message is sent or received
-     * @param messageType the type of the message. One of OUTGOING_MESSAGE
-     * or INCOMING_MESSAGE
-     * @param message the message text
-     * @param contentType the content type
-     * @param contactAddress the address of the contact sending the message
-     * @param isArchive indicates that this message is an archive message
-     * @param isCarbon indicates that this message is a carbon message
-     */
-    @Override
-    public void addMessage(String contactAddress,
-                           Date date,
-                           String messageType,
-                           String message,
-                           String contentType,
-                           boolean isArchive,
-                           boolean isCarbon)
-    {
-        addMessage(contactAddress,
-                   null,
-                   date,
-                   messageType,
-                   message,
-                   contentType,
-                   null,
-                   null,
-                   isArchive,
-                   isCarbon);
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and appends it at the end of the conversationPanel
-     * document.
-     *
-     * @param contactAddress the address of the contact sending the message
-     * @param displayName the display name of the contact
-     * @param date the time at which the message is sent or received
-     * @param messageType the type of the message. One of OUTGOING_MESSAGE
-     * or INCOMING_MESSAGE
-     * @param message the message text
-     * @param contentType the content type
-     * @param messageUID The ID of the message.
-     * @param correctedMessageUID The ID of the message being replaced.
-     * @param isArchive indicates that this message is an archive message
-     * @param isCarbon indicates that this message is a carbon message
-     */
-    public void addMessage(String contactAddress,
-                           String displayName,
-                           Date date,
-                           String messageType,
-                           String message,
-                           String contentType,
-                           String messageUID,
-                           String correctedMessageUID,
-                           boolean isArchive,
-                           boolean isCarbon)
-    {
-        addMessage(contactAddress,
-                   displayName,
-                   date,
-                   messageType,
-                   message,
-                   contentType,
-                   messageUID,
-                   correctedMessageUID,
-                   null,
-                   null,
-                   isArchive,
-                   isCarbon);
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and appends it at the end of the conversationPanel
-     * document.
-     *
-     * @param contactAddress the address of the contact sending the message
-     * @param displayName the display name of the contact
-     * @param date the time at which the message is sent or received
-     * @param messageType the type of the message. One of OUTGOING_MESSAGE
-     * or INCOMING_MESSAGE
-     * @param message the message text
-     * @param contentType the content type
-     * @param messageUID The ID of the message.
-     * @param correctedMessageUID The ID of the message being replaced.
-     * @param failedMessageUID The ID of the message that failed to send that
-     *                         this message should replace (can be null).
-     * @param errorMessage The error to display about the message failure
-     *                     (can be null).
-     * @param isArchive indicates that this message is an archive message
-     * @param isCarbon indicates that this message is a carbon message
-     */
-    public void addMessage(String contactAddress,
-                           String displayName,
-                           Date date,
-                           String messageType,
-                           String message,
-                           String contentType,
-                           String messageUID,
-                           String correctedMessageUID,
-                           String failedMessageUID,
-                           String errorMessage,
-                           boolean isArchive,
-                           boolean isCarbon)
-    {
-        sLog.debug("Getting display name for " + logHasher(contactAddress));
-        String contactDisplayName =
-                    AccountUtils.getDisplayNameFromChatAddress(contactAddress);
-
-        // Always display the latest display name for the contact.
-        if (!contactDisplayName.equals(contactAddress))
-        {
-            displayName = contactDisplayName;
-        }
-
-        ChatMessage chatMessage = new ChatMessage(contactAddress,
-                                                  displayName,
-                                                  date,
-                                                  messageType,
-                                                  null,
-                                                  message,
-                                                  contentType,
-                                                  messageUID,
-                                                  correctedMessageUID,
-                                                  failedMessageUID,
-                                                  errorMessage,
-                                                  isArchive,
-                                                  isCarbon);
-
-        addChatMessage(chatMessage);
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and appends it at the end of the conversationPanel
-     * document.
-     *
-     * @param contactAddress the address of the contact sending the message
-     * @param date the time at which the message is sent or received
-     * @param messageType the type of the message. One of OUTGOING_MESSAGE
-     * or INCOMING_MESSAGE
-     * @param title the title of the message
-     * @param message the message text
-     * @param contentType the content type
-     * @param isArchive true if the message to add is an archive message
-     * @param isCarbon indicates that this message is a carbon message
-     */
-    public void addMessage(String contactAddress,
-                           Date date,
-                           String messageType,
-                           String title,
-                           String message,
-                           String contentType,
-                           boolean isArchive,
-                           boolean isCarbon)
-    {
-        String contactDisplayName =
-                    AccountUtils.getDisplayNameFromChatAddress(contactAddress);
-
-        ChatMessage chatMessage = new ChatMessage(contactAddress,
-                                                  contactDisplayName,
-                                                  date,
-                                                  messageType,
-                                                  title,
-                                                  message,
-                                                  contentType,
-                                                  null,
-                                                  null,
-                                                  isArchive,
-                                                  isCarbon);
-
-        addChatMessage(chatMessage);
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and appends it at the end of the conversationPanel
-     * document.
-     *
-     * @param chatMessage the chat message to add
-     */
-    private void addChatMessage(final ChatMessage chatMessage)
-    {
-        // We need to be sure that chat messages are added in the event dispatch
-        // thread.
-        if (!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    addChatMessage(chatMessage);
-                }
-            });
-            return;
-        }
-
-        if (!mIsHistoryLoaded.get())
-        {
-            synchronized (mIncomingEventBuffer)
-            {
-                sLog.debug(
-                    "Adding new chat message to incoming event buffer: " +
-                                                   chatMessage.getMessageUID());
-                mIncomingEventBuffer.add(chatMessage);
-            }
-        }
-        else
-        {
-            displayChatMessage(chatMessage);
-        }
-    }
-
-    /**
-     * Adds the given error message to the chat window conversation area.
-     *
-     * @param contactAddress the address of the contact, for which the error occured
-     * @param message the error message
-     */
-    public void addErrorMessage(String contactAddress,
-                                String message)
-    {
-        addMessage(contactAddress,
-                    new Date(),
-                    Chat.ERROR_MESSAGE,
-                    "",
-                    message,
-                    "text",
-                    false,
-                    false);
-    }
-
-    /**
-     * Adds the given error message to the chat window conversation area.
-     *
-     * @param contactAddress the address of the contact, for which the error occurred
-     * @param title the title of the error
-     * @param message the error message
-     */
-    public void addErrorMessage(String contactAddress,
-                                String title,
-                                String message)
-    {
-        addMessage(contactAddress,
-                   new Date(),
-                   Chat.ERROR_MESSAGE,
-                   title,
-                   message,
-                   "text",
-                   false,
-                   false);
-    }
-
-    /**
-     * Displays the given file transfer request and either sends the file or
-     * sets new message notifications, as appropriate.
-     *
-     * @param component the FileTransferConversationComponent to display.
-     */
-    public void displayFileTransfer(FileTransferConversationComponent component)
-    {
-        getChatConversationPanel().addComponent(component);
-
-        if (component instanceof SendFileConversationComponent)
-        {
-            SendFileConversationComponent sendFileComponent =
-                                     (SendFileConversationComponent) component;
-            sendFile(sendFileComponent);
-        }
-        if (component instanceof ReceiveFileConversationComponent)
-        {
-            if (isChatFocused())
-            {
-                sLog.debug(
-                    "Chat panel focussed - clear new message notifications");
-                // We've received a new message so make sure we don't just refresh
-                // the 'Recent' tab entry in place, as we want it to move to the
-                // top of the list.
-                clearNewMessageNotifications(false);
-            }
-            else
-            {
-                // The chat panel is not in focus, so set a new message
-                // notification for sender address, if we have one.
-                IncomingFileTransferRequest request =
-                    ((ReceiveFileConversationComponent) component).
-                                              getIncomingFileTransferRequest();
-                if (request != null)
-                {
-                    Contact sender = request.getSender();
-                    if (sender != null)
-                    {
-                        String senderAddress = sender.getAddress();
-                        if (!StringUtils.isNullOrEmpty(senderAddress))
-                        {
-                            setNewMessageNotification(senderAddress);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Displays the given chat message and sets new message notifications, if
-     * necessary.
-     *
-     * @param chatMessage the chat message to display
-     */
-    private void displayChatMessage(ChatMessage chatMessage)
-    {
-        String correctedUID = chatMessage.getCorrectedMessageUID();
-        boolean isCorrected = correctedUID != null &&
-                mConversationPanel.getMessageContents(correctedUID) != null;
-
-        String failedUID = chatMessage.getFailedMessageUID();
-        boolean isFailed = failedUID != null;
-
-        if (isFailed)
-        {
-            if (mConversationPanel.getMessageContents(failedUID) == null)
-            {
-                // If the failed message isn't currently being displayed in
-                // the panel, there's nothing for us to mark as failed, so
-                // just return.
-                sLog.debug(
-                    "Failed message not loaded in chat panel: " + failedUID);
-                return;
-            }
-        }
-
-        // If an existing message is either being corrected or has failed to be
-        // delivered, update the existing message.  Otherwise, append a new
-        // message to the end of the conversation.
-        if (isCorrected || isFailed)
-        {
-            applyMessageUpdate(chatMessage);
-        }
-        else
-        {
-            appendChatMessage(chatMessage);
-        }
-
-        String messageType = chatMessage.getMessageType();
-
-        // We only want to set or clear unread message notifications based on
-        // incoming messages.
-        if (messageType.equals(Chat.INCOMING_MESSAGE) ||
-            messageType.equals(Chat.INCOMING_SMS_MESSAGE))
-        {
-            if (isChatFocused() || chatMessage.isCarbon())
-            {
-                sLog.debug("Chat panel focussed or carbon - " +
-                           "clear new message notifications");
-                // We've received a new message so make sure we don't just
-                // refresh the 'Recent' tab entry in place, as we want it to
-                // move to the top of the list.
-                // If this is a carbon then we must have responded to any
-                // new messages on another client, so the notification can be
-                // cleared. This is not true for archive messages, which can
-                // be received alongside new messages, so do not clear the
-                // notifications in that case.
-                clearNewMessageNotifications(false);
-            }
-            else if (!chatMessage.isArchive())
-            {
-                // The chat panel is not in focus, so set a new message
-                // notification for the IM address / SMS number that sent the
-                // message.  If this is a MetaContactChatSession, we don't
-                // know which of the MetaContact's IM addresses / SMS numbers
-                // sent the message so we need to get the address that sent
-                // the message from the ChatMessage.  Otherwise, we can just
-                // use the chat name, as that will be either the ID of the
-                // chat room for a ConferenceChatSession or the SMS number for
-                // an SMSChatSession.
-                //
-                String contactAddress =
-                    (mChatSession instanceof MetaContactChatSession) ?
-                                              chatMessage.getContactAddress() :
-                                              mChatSession.getChatName();
-                sLog.debug("Chat panel not focussed - " +
-                           "set new message notification from " + logHasher(contactAddress));
-                setNewMessageNotification(contactAddress);
-            }
-        }
-        else if (messageType.equals(Chat.OUTGOING_MESSAGE))
-        {
-            mLastSentMessageUID = chatMessage.getMessageUID();
-            if (chatMessage.isCarbon())
-            {
-                sLog.debug("Carbon for sent message - " +
-                           "clear new message notifications");
-                // If this is a carbon then we must have responded to any
-                // new messages on another client, so the notification can be
-                // cleared. This is not true for archive messages, which can
-                // be received alongside new messages, so do not clear the
-                // notifications in that case.
-                clearNewMessageNotifications(false);
-            }
-        }
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and appends it at the end of the conversationPanel
-     * document.
-     *
-     * @param chatMessage the message to append
-     */
-    private void appendChatMessage(ChatMessage chatMessage)
-    {
-        ChatTransport transport = mChatSession.getCurrentChatTransport();
-
-        ProtocolProviderService protocolProvider;
-        String name;
-        if (transport == null)
-        {
-            if (chatMessage.getMessageType().equals(Chat.ERROR_MESSAGE))
-            {
-                protocolProvider = AccountUtils.getImProvider();
-                name = "";
-            }
-            else
-            {
-                return;
-            }
-        }
-        else
-        {
-            protocolProvider = transport.getProtocolProvider();
-            name = transport.getName();
-        }
-
-        String processedMessage
-            = mConversationPanel.processMessage(chatMessage,
-                                                protocolProvider,
-                                                name);
-
-        mConversationPanel.appendMessageToEnd(
-            processedMessage, chatMessage.getContentType());
-
-        // If we haven't received an incoming message for a while, we reset
-        // the current chat transport to send to all registered resources for
-        // this chat session.  Therefore, if this is an incoming message, we
-        // need to restart the timer that resets the chat transport.
-        if (chatMessage.getMessageType().equals(Chat.INCOMING_MESSAGE))
-        {
-            sLog.debug("Incoming chat message - reset chat transport timer");
-            resetChatTransportTimer();
-
-            ChatTransport currentChatTransport = transport;
-            String resourceName = currentChatTransport.getResourceName();
-
-            if (resourceName != null)
-            {
-                sLog.debug("Updating mLatestChatTransport to " + resourceName );
-                mLatestChatTransport = currentChatTransport;
-            }
-        }
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing and updates it either to correct its text or add an error
-     * message.
-     *
-     * @param message The message containing the updated text or error message.
-     */
-    private void applyMessageUpdate(ChatMessage message)
-    {
-        mConversationPanel.updateMessage(message);
-    }
-
-    /**
-     * Passes the message to the contained <code>ChatConversationPanel</code>
-     * for processing.
-     *
-     * @param contactAddress The name of the contact sending the message.
-     * @param contactDisplayName the display name of the contact sending the
-     * message
-     * @param date The time at which the message is sent or received.
-     * @param messageType The type of the message. One of OUTGOING_MESSAGE
-     * or INCOMING_MESSAGE.
-     * @param message The message text.
-     * @param contentType the content type of the message (html or plain text)
-     * @param messageId The ID of the message.
-     * @param errorMessage the error message to display (will be null if the
-     *                     message hasn't failed)
-     * @return a string containing the processed message.
-     */
-    private String processHistoryMessage(String contactAddress,
-                                         String contactDisplayName,
-                                         Date date,
-                                         String messageType,
-                                         String message,
-                                         String contentType,
-                                         String messageId,
-                                         String errorMessage)
-    {
-        String displayName =
-                    AccountUtils.getDisplayNameFromChatAddress(contactAddress);
-
-        if (displayName == null)
-        {
-            // If there is no display name, this will just be a dummy history
-            // message so return null so we don't display it.
-            return null;
-        }
-
-        // Always display the latest display name for the contact.
-        if (!displayName.equals(contactAddress))
-        {
-            contactDisplayName = displayName;
-        }
-
-        ChatMessage chatMessage = new ChatMessage(
-            contactAddress, contactDisplayName, date, messageType, null, message,
-            contentType, messageId, null, null, errorMessage, false, false);
-
-        ChatTransport chatTransport = mChatSession.getCurrentChatTransport();
-
-        // ChatTransport can be null if the other party is offline or has been
-        // deleted.
-        //
-        // One way to hit this is: we are offline, the other party sends a
-        // message to us (which the server queues) then the other party goes
-        // offline.  When we come online, we receive the message which triggers
-        // the ChatWindow to open and this code to be executed, but there is no
-        // ChatTransport.
-        ProtocolProviderService protocolProvider = (chatTransport != null) ?
-            chatTransport.getProtocolProvider() :
-            AccountUtils.getImProvider();
-
-        String chatName = (chatTransport != null) ? chatTransport.getName() : "";
-
-        return mConversationPanel.processMessage(
-            chatMessage,
-            protocolProvider,
-            chatName);
-    }
-
-    /**
-     * Refreshes write area editor pane. Deletes all existing text
-     * content.
-     */
-    public void refreshWriteArea()
-    {
-        if (!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    refreshWriteArea();
-                }
-            });
-            return;
-        }
-
-        mWriteMessagePanel.clearWriteArea();
-    }
-
-    /**
      * Adds text to the write area editor.
      *
      * @param text The text to add.
@@ -1499,24 +801,6 @@ public class ChatPanel
     {
         JEditorPane editorPane = mWriteMessagePanel.getEditorPane();
         editorPane.setText(editorPane.getText() + text);
-    }
-
-    /**
-     * Returns the text contained in the write area editor.
-     * @param mimeType the mime type
-     * @return The text contained in the write area editor.
-     */
-    public String getTextFromWriteArea(String mimeType)
-    {
-        if (mimeType.equals(
-                OperationSetBasicInstantMessaging.DEFAULT_MIME_TYPE))
-        {
-            return mWriteMessagePanel.getText();
-        }
-        else
-        {
-            return mWriteMessagePanel.getTextAsHtml();
-        }
     }
 
     /**
@@ -1573,20 +857,21 @@ public class ChatPanel
      */
     public void sendButtonDoClick()
     {
-        if (!isWriteAreaEmpty())
-        {
-            new Thread("ChatPanel sendButtonDoClick")
-            {
-                @Override
-                public void run()
-                {
-                    sendMessage();
-                }
-            }.start();
-        }
-
-        //make sure the focus goes back to the write area
-        requestFocusInWriteArea();
+//        never called, send button is hidden.
+//        if (!isWriteAreaEmpty())
+//        {
+//            new Thread("ChatPanel sendButtonDoClick")
+//            {
+//                @Override
+//                public void run()
+//                {
+//                    sendMessage();
+//                }
+//            }.start();
+//        }
+//
+//        //make sure the focus goes back to the write area
+//        requestFocusInWriteArea();
     }
 
     /**
@@ -1700,473 +985,6 @@ public class ChatPanel
     }
 
     /**
-     * Sends the given file through the currently selected chat transport by
-     * using the given fileComponent to visualize the transfer process in the
-     * chat conversation panel.
-     *
-     * @param fileComponent the file component to use for visualization
-     */
-    public void sendFile(final SendFileConversationComponent fileComponent)
-    {
-        final ChatTransport sendFileTransport
-            = findFileTransferChatTransport();
-
-        setSelectedChatTransport(sendFileTransport);
-
-        final File file = fileComponent.getFile();
-
-        if (file.length() > sendFileTransport.getMaximumFileLength())
-        {
-            addMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                new Date(),
-                Chat.ERROR_MESSAGE,
-                GuiActivator.getResources()
-                    .getI18NString("service.gui.FILE_TOO_BIG",
-                    new String[]{
-                        sendFileTransport.getMaximumFileLength()/1024/1024
-                        + " MB"}),
-                "",
-                "text",
-                false,
-                false);
-
-            fileComponent.setFailed();
-
-            return;
-        }
-
-        SwingWorker worker = new SwingWorker()
-        {
-            @Override
-            public Object construct()
-                throws Exception
-            {
-                final String fileTransferId = fileComponent.getId();
-                final FileTransfer fileTransfer
-                    = sendFileTransport.sendFile(file, fileTransferId);
-
-                addActiveFileTransfer(fileTransferId, fileTransfer);
-
-                // Add the status listener that would notify us when the file
-                // transfer has been completed and should be removed from
-                // active components.
-                fileTransfer.addStatusListener(ChatPanel.this);
-
-                fileComponent.setProtocolFileTransfer(fileTransfer);
-
-                return "";
-            }
-
-            @Override
-            public void catchException(Throwable ex)
-            {
-                sLog.error("Failed to send file.", ex);
-
-                if (ex instanceof IllegalStateException)
-                {
-                    addErrorMessage(
-                        mChatSession.getCurrentChatTransport().getName(),
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.MSG_SEND_CONNECTION_PROBLEM"));
-                }
-                else if (ex instanceof OperationNotSupportedException)
-                {
-                    // Remote client doesn't support file transfers.
-                    addErrorMessage(
-                        mChatSession.getCurrentChatTransport().getName(),
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.MSG_REMOTE_DOES_NOT_SUPPORT"));
-                }
-                else
-                {
-                    addErrorMessage(
-                        mChatSession.getCurrentChatTransport().getName(),
-                        GuiActivator.getResources().getI18NString(
-                            "service.gui.MSG_DELIVERY_ERROR",
-                            new String[]{ex.getMessage()}));
-                }
-            }
-        };
-
-        worker.start();
-    }
-
-    /**
-     * Sends the given file through the currently selected chat transport.
-     *
-     * @param file the file to send
-     */
-    public void sendFile(final File file)
-    {
-        // We need to be sure that the following code is executed in the event
-        // dispatch thread.
-        if (!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    sendFile(file);
-                }
-            });
-            return;
-        }
-
-        final ChatTransport fileTransferTransport
-            = findFileTransferChatTransport();
-
-        // If there's no operation set we show some "not supported" messages
-        // and we return.
-        if (fileTransferTransport == null)
-        {
-            sLog.error("Failed to send file.");
-
-            addErrorMessage(
-                mChatSession.getChatName(),
-                GuiActivator.getResources().getI18NString(
-                    "service.gui.FILE_SEND_FAILED",
-                    new String[]{file.getName()}),
-                GuiActivator.getResources().getI18NString(
-                    "service.gui.FILE_TRANSFER_NOT_SUPPORTED"));
-
-            return;
-        }
-
-        // By default, set the recipient display name to the display name of the
-        // underlying chat contact.
-        String displayName = fileTransferTransport.getDisplayName();
-
-        if (getChatSession() instanceof MetaContactChatSession)
-        {
-            // We know we're chatting to a single MetaContact, so use their name
-            // as the recipient display name.
-            MetaContactChatSession session = (MetaContactChatSession) getChatSession();
-            displayName = session.getMetaContact().getDisplayName();
-        }
-
-        final SendFileConversationComponent fileComponent
-            = new SendFileConversationComponent(
-                this,
-                displayName,
-                file);
-
-        if (!mIsHistoryLoaded.get())
-        {
-            synchronized (mIncomingEventBuffer)
-            {
-                mIncomingEventBuffer.add(fileComponent);
-            }
-        }
-        else
-            displayFileTransfer(fileComponent);
-    }
-
-    /**
-     * Sends the text contained in the write area as an SMS message or an
-     * instance message depending on the "send SMS" check box.
-     */
-    protected void sendMessage()
-    {
-        if (mWriteMessagePanel.isSmsSelected())
-        {
-            sendSmsMessage();
-        }
-        else
-        {
-            sendInstantMessage();
-        }
-    }
-
-    /**
-     * Sends the text contained in the write area as an SMS message.
-     */
-    public void sendSmsMessage()
-    {
-        String messageText = getTextFromWriteArea(
-            OperationSetBasicInstantMessaging.DEFAULT_MIME_TYPE);
-
-        ChatTransport smsChatTransport = mChatSession.getCurrentChatTransport();
-        if (!smsChatTransport.allowsSmsMessage())
-        {
-            Iterator<ChatTransport> chatTransports
-                = mChatSession.getChatTransports();
-
-            while (chatTransports.hasNext())
-            {
-                ChatTransport transport = chatTransports.next();
-
-                if (transport.allowsSmsMessage())
-                {
-                    smsChatTransport = transport;
-                    break;
-                }
-            }
-        }
-
-        // If there's no operation set we show some "not supported" messages
-        // and we return.
-        if (!smsChatTransport.allowsSmsMessage())
-        {
-            sLog.error("Failed to send SMS.");
-
-            refreshWriteArea();
-
-            addMessage(
-                smsChatTransport.getName(),
-                new Date(),
-                Chat.OUTGOING_MESSAGE,
-                messageText,
-                "plain/text",
-                false,
-                false);
-
-            addErrorMessage(
-                smsChatTransport.getName(),
-                GuiActivator.getResources().getI18NString(
-                    "service.gui.SEND_SMS_NOT_SUPPORTED"));
-
-            return;
-        }
-
-        smsChatTransport.addSmsMessageListener(
-                new SmsMessageListener(smsChatTransport));
-
-        // We open the send SMS dialog.
-        SendSmsDialog smsDialog
-            = new SendSmsDialog(this, smsChatTransport, messageText);
-
-        smsDialog.setPreferredSize(new Dimension(400, 200));
-        smsDialog.setVisible(true);
-    }
-
-    /**
-     * Implements the <tt>ChatPanel.sendMessage</tt> method. Obtains the
-     * appropriate operation set and sends the message, contained in the write
-     * area, through it.
-     */
-    protected void sendInstantMessage()
-    {
-        String htmlText;
-        String plainText;
-
-        // read the text and clear it as quick as possible
-        // to avoid double sending if the user hits enter too quickly
-        synchronized(mWriteMessagePanel)
-        {
-            if (isWriteAreaEmpty())
-                return;
-
-            // Trims the html message, as it sometimes contains a lot of empty
-            // lines, which causes some problems to some protocols.
-            htmlText = getTextFromWriteArea(
-                OperationSetBasicInstantMessaging.HTML_MIME_TYPE).trim();
-
-            plainText = getTextFromWriteArea(
-                OperationSetBasicInstantMessaging.DEFAULT_MIME_TYPE).trim();
-
-            // clear the message earlier
-            // to avoid as much as possible to not sending it twice (double enter)
-            refreshWriteArea();
-        }
-
-        if (mChatSession.getCurrentChatTransport() == null)
-        {
-            addErrorMessage("", GuiActivator.getResources().getI18NString(
-                "service.gui.MSG_NOT_DELIVERED"));
-            return;
-        }
-
-        String messageText;
-        String mimeType;
-        if (mChatSession.getCurrentChatTransport().isContentTypeSupported(
-                    OperationSetBasicInstantMessaging.HTML_MIME_TYPE)
-             && (htmlText.contains("<b")
-                || htmlText.contains("<i")
-                || htmlText.contains("<u")
-                || htmlText.contains("<font")))
-        {
-            messageText = htmlText;
-            mimeType = OperationSetBasicInstantMessaging.HTML_MIME_TYPE;
-        }
-        else
-        {
-            messageText = plainText;
-            mimeType = OperationSetBasicInstantMessaging.DEFAULT_MIME_TYPE;
-        }
-
-        // Ensure the message is not too long.
-        int arbitraryDefaultMessageLength = Chat.MAX_CHAT_MESSAGE_LENGTH;
-        int maxLength = mConfigService.global().getInt(MAX_XMPP_MESSAGE_LENGTH_PROP,
-                                             arbitraryDefaultMessageLength);
-        if (messageText.length() > maxLength)
-        {
-            sLog.warn("User tried to send a message which was too long.");
-            String[] params = {Integer.toString(maxLength)};
-            addErrorMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                GuiActivator.getResources().getI18NString(
-                    XMPP_MESSAGE_TOO_LONG_PROP, params));
-
-            // Restore the write-area text so the user can edit it.
-            synchronized(mWriteMessagePanel)
-            {
-                setMessage(messageText);
-                JEditorPane writeArea = mWriteMessagePanel.getEditorPane();
-                writeArea.setCaretPosition(writeArea.getDocument().getLength());
-            }
-
-            return;
-        }
-
-        // Ensure that there is at least one participant in this conversation
-        // who can be messaged (i.e. we haven't been defriended by all the
-        // participants).
-        boolean participantsOnline = false;
-        for (ChatContact<?> chatContact : mChatSession.getParticipants())
-        {
-            Object descriptor = chatContact.getDescriptor();
-            if (descriptor instanceof MetaContact)
-            {
-                MetaContact contact = (MetaContact)descriptor;
-                participantsOnline = contact.canBeMessaged();
-                if (participantsOnline)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                // Give non-metacontact participants the benefit of the doubt,
-                // and assume they can be messaged.
-                participantsOnline = true;
-                break;
-            }
-        }
-
-        if (!participantsOnline)
-        {
-            sLog.warn("User tried to send a message after the recipient stopped being a buddy.");
-            for (ChatContact<?> chatContact : mChatSession.getParticipants())
-            {
-                sLog.info("chatContact name " + logHasher(chatContact.getName()) +
-                    ", UID " + logHasher(chatContact.getUID()) + " can't be messaged");
-            }
-
-            String[] params = {Integer.toString(maxLength)};
-            addErrorMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_NOT_POSSIBLE", params));
-
-            return;
-        }
-
-        try
-        {
-            // Before sending the message, check whether the last message we
-            // received was from a different chat transport than the one the
-            // chat session is currently set to use and, if so, reset to
-            // sending messages to all registered resources for this session.
-            checkChatTransport();
-
-            if (isMessageCorrectionActive()
-                    && mChatSession.getCurrentChatTransport()
-                        .allowsMessageCorrections())
-            {
-                mChatSession.getCurrentChatTransport().correctInstantMessage(
-                        messageText, mimeType, mCorrectedMessageUID);
-            }
-            else
-            {
-                mChatSession.getCurrentChatTransport().sendInstantMessage(
-                        messageText, mimeType);
-            }
-            stopMessageCorrection();
-        }
-        catch (IllegalStateException ex)
-        {
-            sLog.error("Failed to send message.", ex);
-
-            addMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                new Date(),
-                Chat.OUTGOING_MESSAGE,
-                messageText,
-                mimeType,
-                false,
-                false);
-
-            addErrorMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_SEND_CONNECTION_PROBLEM"));
-        }
-        catch (Exception ex)
-        {
-            sLog.error("Failed to send message.", ex);
-
-            refreshWriteArea();
-
-            addMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                new Date(),
-                Chat.OUTGOING_MESSAGE,
-                messageText,
-                mimeType,
-                false,
-                false);
-
-            addErrorMessage(
-                mChatSession.getCurrentChatTransport().getName(),
-                GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_ERROR"));
-        }
-
-        getChatWritePanel().updateTypingState(TypingState.NOT_TYPING);
-
-        AnalyticsService analytics = GuiActivator.getAnalyticsService();
-
-        analytics.onEventWithIncrementingCount(AnalyticsEventType.SEND_IM, new ArrayList<>());
-
-        if(mChatSession instanceof ConferenceChatSession)
-        {
-            analytics.onEventWithIncrementingCount(AnalyticsEventType.SEND_GROUP_IM, new ArrayList<>());
-        }
-    }
-
-    /**
-     * Enters editing mode for the last sent message in this chat.
-     */
-    public void startLastMessageCorrection()
-    {
-        startMessageCorrection(mLastSentMessageUID);
-    }
-
-    /**
-     * Enters editing mode for the message with the specified id - puts the
-     * message contents in the write panel and changes the background.
-     *
-     * @param correctedMessageUID The ID of the message being corrected.
-     */
-    public void startMessageCorrection(String correctedMessageUID)
-    {
-        if (mChatSession.getCurrentChatTransport().allowsMessageCorrections())
-        {
-            if (!showMessageInWriteArea(correctedMessageUID))
-            {
-                return;
-            }
-
-            mCorrectedMessageUID = correctedMessageUID;
-            Color bgColor = new Color(GuiActivator.getResources()
-                .getColor("service.gui.CHAT_EDIT_MESSAGE_BACKGROUND"));
-            mWriteMessagePanel.setEditorPaneBackground(bgColor);
-        }
-    }
-
-    /**
      * Shows the last sent message in the write area, either in order to
      * correct it or to send it again.
      *
@@ -2195,7 +1013,6 @@ public class ChatPanel
          }
 
          messageContents = processMessageTextForWriteAreaDisplay(messageContents);
-         refreshWriteArea();
          setMessage(messageContents);
 
          return true;
@@ -2215,208 +1032,6 @@ public class ChatPanel
              GuiUtils.replaceBreakTags(
              GuiUtils.removePlaintextTags(message))));
      }
-
-    /**
-     * Exits editing mode, clears the write panel and the background.
-     */
-    public void stopMessageCorrection()
-    {
-        mCorrectedMessageUID = null;
-        mWriteMessagePanel.setEditorPaneBackground(Color.WHITE);
-        refreshWriteArea();
-    }
-
-    /**
-     * Returns whether a message is currently being edited.
-     *
-     * @return <tt>true</tt> if a message is currently being edited,
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isMessageCorrectionActive()
-    {
-        return mCorrectedMessageUID != null;
-    }
-
-    /**
-     * Listens for SMS messages and shows them in the chat.
-     */
-    private class SmsMessageListener implements MessageListener
-    {
-        /**
-         * Initializes a new <tt>SmsMessageListener</tt> instance.
-         *
-         * @param chatTransport Currently unused
-         */
-        public SmsMessageListener(ChatTransport chatTransport)
-        {
-        }
-
-        @Override
-        public void messageDelivered(MessageDeliveredEvent evt)
-        {
-            ImMessage msg = evt.getSourceMessage();
-
-            Contact contact = evt.getPeerContact();
-
-            addMessage(
-                contact.getDisplayName(),
-                new Date(),
-                Chat.OUTGOING_MESSAGE,
-                msg.getContent(),
-                msg.getContentType(),
-                msg.isArchive(),
-                msg.isCarbon());
-
-            addMessage(
-                    contact.getDisplayName(),
-                    new Date(),
-                    Chat.ACTION_MESSAGE,
-                    GuiActivator.getResources().getI18NString(
-                        "service.gui.SMS_SUCCESSFULLY_SENT"),
-                    "text",
-                    msg.isArchive(),
-                    msg.isCarbon());
-        }
-
-        @Override
-        public void messageDeliveryFailed(MessageDeliveryFailedEvent evt)
-        {
-            sLog.error(evt.getReason());
-
-            String errorMsg = null;
-
-            ImMessage sourceMessage = (ImMessage) evt.getSource();
-
-            Contact sourceContact = evt.getPeerContact();
-            String peerIdentifier = evt.getPeerIdentifier();
-            String displayName = "";
-            MetaContact metaContact = null;
-
-            if (sourceContact != null)
-            {
-                displayName = sourceContact.getDisplayName();
-                metaContact = GuiActivator.getContactListService().
-                                        findMetaContactByContact(sourceContact);
-            }
-            else
-            {
-                displayName = peerIdentifier;
-                metaContact = GuiActivator.getContactListService().
-                                    findMetaContactForSmsNumber(peerIdentifier);
-            }
-
-            if (evt.getErrorCode()
-                    == MessageDeliveryFailedEvent.OFFLINE_MESSAGES_NOT_SUPPORTED)
-            {
-                errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_NOT_SUPPORTED",
-                    new String[]{displayName});
-            }
-            else if (evt.getErrorCode()
-                    == MessageDeliveryFailedEvent.NETWORK_FAILURE)
-            {
-                errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_NOT_DELIVERED");
-            }
-            else if (evt.getErrorCode()
-                    == MessageDeliveryFailedEvent.PROVIDER_NOT_REGISTERED)
-            {
-                errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_SEND_CONNECTION_PROBLEM");
-            }
-            else if (evt.getErrorCode()
-                    == MessageDeliveryFailedEvent.INTERNAL_ERROR)
-            {
-                errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_INTERNAL_ERROR");
-            }
-            else
-            {
-                errorMsg = GuiActivator.getResources().getI18NString(
-                    "service.gui.MSG_DELIVERY_UNKNOWN_ERROR");
-            }
-
-            // Log the error message and internal reason to file
-            sLog.debug(errorMsg + evt.getReason());
-
-            if (metaContact != null)
-            {
-                displayName = metaContact.getDisplayName();
-            }
-
-            String messageType =
-                (evt.getEventType() == MessageEvent.SMS_MESSAGE) ?
-                    Chat.OUTGOING_SMS_MESSAGE : Chat.OUTGOING_MESSAGE;
-
-            addMessage(
-                    displayName,
-                    new Date(),
-                    messageType,
-                    sourceMessage.getContent(),
-                    sourceMessage.getContentType(),
-                    sourceMessage.isArchive(),
-                    sourceMessage.isCarbon());
-
-            addErrorMessage(
-                    displayName,
-                    errorMsg);
-        }
-
-        @Override
-        public void messageReceived(MessageReceivedEvent evt) {}
-    }
-
-    /**
-     * Loads history messages ignoring the message with the specified id.
-     */
-    private void loadHistory()
-    {
-        SwingWorker historyWorker = new SwingWorker()
-        {
-            private Collection<Object> historyList;
-
-            @Override
-            public Object construct()
-            {
-                // If there are events (i.e. received IMs/file transfers) before we've even started
-                // loading the history, then these were messages received that didn't cause the chat
-                // window to be visible (because of a user setting to not open chat windows on
-                // receiving IMs). Make sure we load enough messages from history to display all unseen
-                // messages.
-                int numNewEvents;
-                synchronized(mIncomingEventBuffer)
-                {
-                    numNewEvents = mIncomingEventBuffer.size();
-                }
-
-                // Load the last N=CHAT_HISTORY_SIZE messages from history, or the number of newly
-                // received messages if that's larger.
-                historyList = mChatSession.getHistory(
-                    Math.max(numNewEvents, ConfigurationUtils.getChatHistorySize()));
-
-                return historyList;
-            }
-
-            /**
-             * Called on the event dispatching thread (not on the worker thread)
-             * after the <code>construct</code> method has returned.
-             */
-            @Override
-            public void finished()
-            {
-                if (historyList != null && historyList.size() > 0)
-                {
-                    processHistory(historyList);
-                }
-
-                // Add incoming events accumulated while the history was loading
-                // at the end of the chat.
-                addIncomingEvents();
-            }
-        };
-
-        historyWorker.start();
-    }
 
     /**
      * Changes the "Send as SMS" check box state.
@@ -2631,41 +1246,6 @@ public class ChatPanel
     }
 
     /**
-     * Schedules a task to reset the current chat transport to send to all
-     * registered resources for this chat session.  This method also first
-     * cancels the existing chat transport reset task, if one exists.
-     */
-    private void resetChatTransportTimer()
-    {
-        if (mChatTransportResetTask != null)
-        {
-            sLog.debug(
-                    "Cancelling chat transport reset task on incoming message");
-            mChatTransportResetTask.cancel();
-        }
-
-        mChatTransportResetTask = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                if (!(mChatSession.getCurrentChatTransport() instanceof SMSChatTransport))
-                {
-                    sLog.debug("Resetting chat transport as no incoming " +
-                                 "message received (" + this + " : " +
-                                 mChatSession.getChatName() + ")");
-                    resetChatTransport();
-                }
-            }
-        };
-
-        long delay = mConfigService.global().getLong(
-            CHAT_TRANSPORT_RESET_DELAY_PROP, CHAT_TRANSPORT_RESET_DEFAULT_DELAY);
-        sLog.debug("Scheduling chat transport reset task in " + delay + "ms");
-        mTimer.schedule(mChatTransportResetTask, delay);
-    }
-
-    /**
      * Adds the given <tt>chatContact</tt> to the list of chat contacts
      * participating in the corresponding to this chat panel chat.
      * @param chatContact the contact to add
@@ -2765,22 +1345,6 @@ public class ChatPanel
         }
 
         addActiveFileTransfer(request.getID(), request);
-
-        ReceiveFileConversationComponent component
-            = new ReceiveFileConversationComponent(
-                this, fileTransferOpSet, request, date);
-
-        if (!mIsHistoryLoaded.get())
-        {
-            synchronized (mIncomingEventBuffer)
-            {
-                mIncomingEventBuffer.add(component);
-            }
-        }
-        else
-        {
-            displayFileTransfer(component);
-        }
     }
 
     /**
@@ -2989,8 +1553,8 @@ public class ChatPanel
                 if (addChatContacts.contains(participantAddress))
                 {
                     addChatContacts.remove(participantAddress);
-                    sLog.info("Not adding " + participantAddress + " as they "
-                                            + "are already in the chat room");
+                    sLog.info("Not adding " + sanitiseChatAddress(participantAddress) +
+                              " as they are already in the chat room");
                 }
             }
 
@@ -3147,41 +1711,6 @@ public class ChatPanel
     }
 
     /**
-     * Adds all events accumulated in the incoming event buffer to the
-     * chat conversation panel.
-     */
-    private void addIncomingEvents()
-    {
-        synchronized (mIncomingEventBuffer)
-        {
-            sLog.debug("Adding incoming events");
-            Iterator<Object> eventBufferIter = mIncomingEventBuffer.iterator();
-
-            while (eventBufferIter.hasNext())
-            {
-                Object incomingEvent = eventBufferIter.next();
-
-                if (incomingEvent instanceof ChatMessage)
-                {
-                    displayChatMessage((ChatMessage) incomingEvent);
-                }
-                else if (incomingEvent instanceof FileTransferConversationComponent)
-                {
-                    displayFileTransfer(
-                             (FileTransferConversationComponent)incomingEvent);
-                }
-            }
-
-            // We've finished adding incoming events, which means we've also
-            // finished loading history.  We set this flag here, rather than at
-            // the end of the loadHistory method to be sure that no new events
-            // are added to the chat panel while we are still processing
-            // incoming events after we finish loading history.
-            mIsHistoryLoaded.set(true);
-        }
-    }
-
-    /**
      * Adds the given file transfer <tt>id</tt> to the list of active file
      * transfers.
      *
@@ -3232,37 +1761,28 @@ public class ChatPanel
     @Override
     public void setVisible(boolean isVisible)
     {
-        super.setVisible(isVisible);
-
-        if (isVisible)
-        {
-            // Make sure the UI is displaying the correct connected state, as
-            // we're making the UI visible.
-            refreshUIConnectedState();
-
-            // We're making the panel visible so, if we haven't already loaded
-            // history, do so now.  We wait until we're making the panel
-            // visible to load history, partly because there is no point in
-            // loading it until then, but mostly because Swing may not render
-            // the messages correctly if the panel is not visible when the
-            // messages are added.
-            if (!mIsHistoryLoaded.get())
-            {
-                sLog.debug("Loading history.");
-                loadHistory();
-            }
-        }
-    }
-
-    /**
-     * Reloads chat messages.
-     */
-    @Override
-    public void loadSkin()
-    {
-        getChatConversationPanel().clear();
-        loadHistory();
-        getChatConversationPanel().setDefaultContent();
+//        never called, because ChatWindow setVisible is commented out.
+//
+//        super.setVisible(isVisible);
+//
+//        if (isVisible)
+//        {
+//            // Make sure the UI is displaying the correct connected state, as
+//            // we're making the UI visible.
+//            refreshUIConnectedState();
+//
+//            // We're making the panel visible so, if we haven't already loaded
+//            // history, do so now.  We wait until we're making the panel
+//            // visible to load history, partly because there is no point in
+//            // loading it until then, but mostly because Swing may not render
+//            // the messages correctly if the panel is not visible when the
+//            // messages are added.
+//            if (!mIsHistoryLoaded.get())
+//            {
+//                sLog.debug("Loading history.");
+//                loadHistory();
+//            }
+//        }
     }
 
     @Override
@@ -3279,7 +1799,7 @@ public class ChatPanel
             {
                 sLog.debug(
                     "User left the group chat - clear notifications: " +
-                                                           chatRoom.getIdentifier());
+                    sanitiseChatRoom(chatRoom.getIdentifier()));
                 // We haven't received a new message in this chat room -
                 // we've just left it, so make sure we just update the
                 // 'Recent' tab entry in place, rather than moving it to
@@ -3292,7 +1812,7 @@ public class ChatPanel
                 // chat room, so initialize the chat room.
                 sLog.debug(
                     "User joined the group chat - initialize chat room: " +
-                                                           chatRoom.getIdentifier());
+                    sanitiseChatRoom(chatRoom.getIdentifier()));
                 if (mChatSession != null)
                 {
                     ((ConferenceChatSession) mChatSession).initChatRoom();
@@ -3301,7 +1821,7 @@ public class ChatPanel
                 {
                     sLog.debug("Chat session is null - " +
                                "unable to initialize chat room : "  +
-                                                           chatRoom.getIdentifier());
+                               sanitiseChatRoom(chatRoom.getIdentifier()));
                 }
             }
         }
@@ -3408,22 +1928,6 @@ public class ChatPanel
                                          extras)
             );
         }
-    }
-
-    /**
-     * Sets a new message notification for a new message from the given contact
-     * ID (IM address or SMS number).
-     *
-     * @param contactId The contact ID (IM address or SMS number) from which
-     * we have received a new message.
-     */
-    private void setNewMessageNotification(String contactId)
-    {
-        sLog.debug("Setting new message notification from " + contactId);
-        // We've received a new message so make sure we don't just refresh the
-        // 'Recent' tab entry in place, as we want it to move to the top of the
-        // list.
-        setLastMessageReadStatus(false, false);
     }
 
     /**

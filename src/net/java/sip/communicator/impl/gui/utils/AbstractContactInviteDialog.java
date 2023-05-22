@@ -6,8 +6,6 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-import javax.swing.*;
-
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -27,11 +25,6 @@ import net.java.sip.communicator.util.*;
 public abstract class AbstractContactInviteDialog extends ContactInviteDialog
 {
     private static final long serialVersionUID = 1L;
-
-    /**
-     * The error dialog that we may or may not be showing
-     */
-    private JDialog mErrorDialog = null;
 
     /**
      * If true, the user can select offline contacts.
@@ -109,30 +102,7 @@ public abstract class AbstractContactInviteDialog extends ContactInviteDialog
         String title = res.getI18NString(titleRes);
         String message = res.getI18NString(messageRes);
 
-        if (mErrorDialog != null)
-        {
-            mErrorDialog.setVisible(false);
-        }
-
-        mErrorDialog = new ErrorDialog(null, title, message);
-        mErrorDialog.setModalExclusionType(
-                                 Dialog.ModalExclusionType.TOOLKIT_EXCLUDE);
-        mErrorDialog.setVisible(true);
-
-        if(ConfigurationUtils.isCallAlwaysOnTop())
-            mErrorDialog.setAlwaysOnTop(true);
-    }
-
-    public void dispose()
-    {
-        if (mErrorDialog != null)
-        {
-            mErrorDialog.setVisible(false);
-            mErrorDialog.dispose();
-            mErrorDialog = null;
-        }
-
-        super.dispose();
+        new ErrorDialog(title, message).showDialog();
     }
 
     /**
@@ -153,13 +123,8 @@ public abstract class AbstractContactInviteDialog extends ContactInviteDialog
         {
             // No details - show an error dialog to the user
             ResourceManagementService res = GuiActivator.getResources();
-            mErrorDialog = new ErrorDialog(null,
-                                           res.getI18NString("service.gui.ERROR"),
-                                           res.getI18NString("service.gui.NO_NUMBER"));
-
-            mErrorDialog.setModal(true);
-            mErrorDialog.setVisible(true);
-
+            new ErrorDialog(res.getI18NString("service.gui.ERROR"),
+                res.getI18NString("service.gui.NO_NUMBER")).showDialog();
             number = null;
         }
         else if (size == 1)

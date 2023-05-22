@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
 import static net.java.sip.communicator.util.UtilActivator.bundleContext;
@@ -21,6 +22,7 @@ import org.osgi.framework.ServiceReference;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPAMotion;
+import net.java.sip.communicator.service.wispaservice.WISPAMotionType;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 
@@ -262,13 +264,34 @@ public class ServiceUtils
      */
     public static void shutdownAll(BundleContext callingContext)
     {
+        shutdownAll(callingContext, false, false);
+    }
+
+    /**
+     * Cleanly shuts down the application.
+     *
+     * This should be used for shutdown in places where we cannot be certain
+     * that the ShutdownService will have started (e.g cancelling login or CoS
+     * check failure on startup).  It first tries to use the ShutdownService,
+     * but if it isn't registered, it asks the Electron UI to shut down then
+     * shuts down all of the OSGI bundles cleanly, one by one.
+     *
+     * If the ShutdownService is available, we will respect the logOut and
+     * electronTriggered booleans, and ignore them otherwise.
+     *
+     * @param callingContext
+     * @param logOut
+     * @param electronTriggered
+     */
+    public static void shutdownAll(BundleContext callingContext, boolean logOut, boolean electronTriggered)
+    {
         // If the ShutdownService has registered, we should use that to shut
         // down the client in a clean and consistent way.
         ShutdownService shutdownService = UtilActivator.getShutdownService();
         if (shutdownService != null)
         {
             logger.info("Shutting down via shutdown service");
-            shutdownService.beginShutdown();
+            shutdownService.beginShutdown(logOut, electronTriggered);
         }
         else
         {
@@ -336,7 +359,7 @@ public class ServiceUtils
             logger.info("Sending shutdown request to Electron.");
             wispaService.notify(WISPANamespace.CORE,
                                 WISPAAction.MOTION,
-                                WISPAMotion.SHUTDOWN);
+                                new WISPAMotion(WISPAMotionType.SHUTDOWN));
         }
         else
         {

@@ -52,7 +52,7 @@ public class DatabaseServiceImpl implements DatabaseService
         // All database files live in the home directory under "database".
         File databaseDir = fileAccessService
             .getPrivatePersistentActiveUserDirectory(DATABASE_DIRECTORY);
-        sLog.info("Database location: " + databaseDir.getPath());
+        sLog.info("Database location: subscriber home directory under 'database'");
 
         String databaseUrl = "jdbc:hsqldb:file:" + databaseDir +
             File.separator +

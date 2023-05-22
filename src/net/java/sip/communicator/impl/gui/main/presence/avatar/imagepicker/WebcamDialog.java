@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.presence.avatar.imagepicker;
 
 import java.awt.*;
@@ -77,8 +78,7 @@ public class WebcamDialog
         this.setAlwaysOnTop(true);
 
         JButton cancelButton = new SIPCommBasicTextButton(
-            GuiActivator.getResources()
-                .getI18NString("service.gui.avatar.imagepicker.CANCEL"));
+            GuiActivator.getResources().getI18NString("service.gui.CANCEL"));
         cancelButton.setName("cancel");
         cancelButton.addActionListener(this);
 
@@ -346,7 +346,7 @@ public class WebcamDialog
 
             g2d.setColor(Color.WHITE);
             g2d.setFont(textFont);
-            g2d.drawString(this.second, 7, 21);
+            g2d.drawString(this.second, 9, 22);
         }
     }
 }

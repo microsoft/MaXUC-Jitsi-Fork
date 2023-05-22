@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.awt.image.*;
 import java.io.*;
@@ -498,7 +501,7 @@ public class AvatarCacheUtils
             BasicFileAttributes attr = Files.readAttributes(
                                 avatarFile.toPath(), BasicFileAttributes.class);
             long modifiedDate = attr.lastModifiedTime().toMillis();
-            logger.debug("Avatar '" + avatarPath + "' last modified " +
+            logger.debug("Avatar '" + sanitiseChatAddress(avatarPath) + "' last modified " +
                          (System.currentTimeMillis() - modifiedDate) +
                          " ms ago");
 
@@ -507,7 +510,7 @@ public class AvatarCacheUtils
         catch (IOException | SecurityException e)
         {
             logger.error("Error performing expiry check for cached avatar " +
-                         avatarPath, e);
+                         sanitiseChatAddress(avatarPath), e);
             return false;
         }
     }

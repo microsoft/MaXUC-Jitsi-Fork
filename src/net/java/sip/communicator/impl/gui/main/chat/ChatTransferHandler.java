@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
 import java.awt.datatransfer.*;
@@ -324,13 +325,12 @@ public class ChatTransferHandler
             }
             else
                 new ErrorDialog(
-                    null,
-                    GuiActivator.getResources().getI18NString(
-                        "service.gui.ERROR"),
+                    GuiActivator.getResources()
+                        .getI18NString("service.gui.ERROR"),
                     GuiActivator.getResources().getI18NString(
                         "service.gui.CONTACT_NOT_SUPPORTING_CHAT_CONF",
-                        new String[]{uiContact.getDisplayName()}))
-                .showDialog();
+                        new String[]
+                        { uiContact.getDisplayName() })).showDialog();
         }
 
         return false;
@@ -360,10 +360,6 @@ public class ChatTransferHandler
                     continue;
                 }
 
-                URL url = new URL(urlString);
-                File file = new File(
-                    URLDecoder.decode(url.getFile(), "UTF-8"));
-                chatPanel.sendFile(file);
                 dataProcessed = true;
             }
 
@@ -391,13 +387,6 @@ public class ChatTransferHandler
 
             if (o instanceof java.util.Collection)
             {
-                @SuppressWarnings("unchecked")
-                Collection<File> files = (Collection<File>) o;
-
-                for (File file: files)
-                    chatPanel.sendFile(file);
-
-                // Otherwise fire files dropped event.
                 return true;
             }
         }

@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.jabberaccregwizz;
 
 import net.java.sip.communicator.service.protocol.*;
@@ -33,11 +34,6 @@ public class JabberAccountRegistration
      * The default value of the resource property.
      */
     public static final String DEFAULT_RESOURCE = "jitsi";
-
-    /**
-     * The default value of stun server port for jabber accounts.
-     */
-    public static final String DEFAULT_STUN_PORT = "3478";
 
     /**
      * Default value for resource auto generating.
@@ -99,26 +95,6 @@ public class JabberAccountRegistration
      * Indicates if keep alive packets should be send.
      */
     private boolean sendKeepAlive = true;
-
-    /**
-     * Indicates if gmail notifications should be enabled.
-     */
-    private boolean enableGmailNotification = false;
-
-    /**
-     * Indicates if Google Contacts should be enabled.
-     */
-    private boolean enableGoogleContacts = false;
-
-    /**
-     * Indicates if UPnP should be used.
-     */
-    private boolean isUseUPNP = false;
-
-    /**
-     * If non-TLS connection is allowed.
-     */
-    private boolean isAllowNonSecure = false;
 
     /**
      * Indicates if the server is overriden.
@@ -249,30 +225,6 @@ public class JabberAccountRegistration
     }
 
     /**
-     * Determines whether SIP Communicator should be querying Gmail servers
-     * for unread mail messages.
-     *
-     * @return <tt>true</tt> if we are to enable Gmail notifications and
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isGmailNotificationEnabled()
-    {
-        return enableGmailNotification;
-    }
-
-    /**
-     * Determines whether SIP Communicator should use Google Contacts as
-     * ContactSource
-     *
-     * @return <tt>true</tt> if we are to enable Google Contacts and
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isGoogleContactsEnabled()
-    {
-        return enableGoogleContacts;
-    }
-
-    /**
      * Sets the User ID of the jabber registration account.
      *
      * @param userID the identifier of the jabber registration account.
@@ -345,30 +297,6 @@ public class JabberAccountRegistration
     }
 
     /**
-     * Specifies whether SIP Communicator should be querying Gmail servers
-     * for unread mail messages.
-     *
-     * @param enabled <tt>true</tt> if we are to enable Gmail notification and
-     * <tt>false</tt> otherwise.
-     */
-    public void setGmailNotificationEnabled(boolean enabled)
-    {
-        this.enableGmailNotification = enabled;
-    }
-
-    /**
-     * Specifies whether SIP Communicator should use Google Contacts as
-     * ContactSource.
-     *
-     * @param enabled <tt>true</tt> if we are to enable Google Contacts and
-     * <tt>false</tt> otherwise.
-     */
-    public void setGoogleContactsEnabled(boolean enabled)
-    {
-        this.enableGoogleContacts = enabled;
-    }
-
-    /**
      * Returns the resource.
      * @return the resource
      */
@@ -402,46 +330,6 @@ public class JabberAccountRegistration
     public void setPriority(int priority)
     {
         this.priority = priority;
-    }
-
-    /**
-     * Indicates if UPnP should be used for this account.
-     * @return <tt>true</tt> if UPnP should be used for this account, otherwise
-     * returns <tt>false</tt>
-     */
-    public boolean isUseUPNP()
-    {
-        return isUseUPNP;
-    }
-
-    /**
-     * Sets the <tt>useUPNP</tt> property.
-     * @param isUseUPNP <tt>true</tt> to indicate that UPnP should be used for
-     * this account, <tt>false</tt> - otherwise.
-     */
-    public void setUseUPNP(boolean isUseUPNP)
-    {
-        this.isUseUPNP = isUseUPNP;
-    }
-
-    /**
-     * Indicates if non-TLS is allowed for this account
-     * @return <tt>true</tt> if non-TLS is allowed for this account, otherwise
-     * returns <tt>false</tt>
-     */
-    public boolean isAllowNonSecure()
-    {
-        return isAllowNonSecure;
-    }
-
-    /**
-     * Sets the <tt>isAllowNonSecure</tt> property.
-     * @param isAllowNonSecure <tt>true</tt> to indicate that non-TLS is allowed
-     * for this account, <tt>false</tt> - otherwise.
-     */
-    public void setAllowNonSecure(boolean isAllowNonSecure)
-    {
-        this.isAllowNonSecure = isAllowNonSecure;
     }
 
     /**

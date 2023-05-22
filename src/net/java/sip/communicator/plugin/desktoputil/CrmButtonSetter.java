@@ -3,7 +3,7 @@ package net.java.sip.communicator.plugin.desktoputil;
 
 import javax.swing.*;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.protocol.CallPeer;

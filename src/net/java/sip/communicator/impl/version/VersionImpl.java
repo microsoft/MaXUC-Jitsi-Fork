@@ -4,10 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.version;
 
 import org.jitsi.service.resources.*;
 import org.jitsi.service.version.*;
+import org.jitsi.util.CustomAnnotations.*;
 
 import net.java.sip.communicator.util.*;
 
@@ -46,7 +48,7 @@ public class VersionImpl
      * See DUIR-6751 for more details, and consider reworking this code in the
      * future!
      */
-    public static final int VERSION_MINOR = 10;
+    public static final int VERSION_MINOR = 11;
 
     /**
      * The version minor field. Default value is VERSION_MINOR.
@@ -227,13 +229,8 @@ public class VersionImpl
      * represents a version that is earlier, same, or more recent than the one
      * referenced by the <tt>version</tt> parameter.
      */
-    public int compareTo(Version version)
+    public int compareTo(@NotNull Version version)
     {
-        if(version == null)
-        {
-            return -1;
-        }
-
         if(getVersionMajor() != version.getVersionMajor())
         {
             return getVersionMajor() - version.getVersionMajor();

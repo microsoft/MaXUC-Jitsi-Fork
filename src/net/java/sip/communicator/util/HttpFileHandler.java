@@ -5,7 +5,11 @@
  */
 package net.java.sip.communicator.util;
 
-import java.io.*;
+import static net.java.sip.communicator.util.PrivacyUtils.getLoggableCPURL;
+import static org.jitsi.util.SanitiseUtils.sanitise;
+
+import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * Extends DefaultFileHandler, using specific <tt>ConfigFileHandler</tt>
@@ -19,6 +23,8 @@ public class HttpFileHandler
      * specified in logging.properties.
      */
     private static final String DEFAULT_PATTERN = "/log/accession-httpheaders%u.log";
+
+    private static final Pattern COOKIE_PATTERN = Pattern.compile("Cookie: [^=]+=(.+)");
 
     /**
      * Construct an <tt>HttpFileHandler</tt>.  This will be configured entirely
@@ -41,5 +47,19 @@ public class HttpFileHandler
     protected void setFilter() throws SecurityException
     {
         // Do nothing - we want to use the default filter
+        setFilter(logRecord ->
+        {
+            // first remove Personal Data from URL
+            if (logRecord.getMessage().contains("HTTP/") || logRecord.getMessage().contains("Location:"))
+            {
+                logRecord.setMessage(getLoggableCPURL(logRecord.getMessage()));
+            }
+            else if (logRecord.getMessage().contains("Cookie"))
+            {
+                logRecord.setMessage(
+                        sanitise(logRecord.getMessage(), COOKIE_PATTERN, PrivacyUtils::obfuscateSessionId));
+            }
+            return true;
+        });
     }
 }

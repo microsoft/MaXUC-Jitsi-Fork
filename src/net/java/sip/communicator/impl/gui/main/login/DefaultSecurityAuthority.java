@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.login;
 
 import java.util.*;
@@ -248,13 +249,13 @@ public class DefaultSecurityAuthority
             {
                 if (serverAddressValidated)
                 {
-                    logger.debug(
+                    logger.info(
                         "Server address validated - taking IM account offline");
                     accountManager.toggleAccountEnabled(jabberAccount);
                 }
                 else
                 {
-                    logger.debug(
+                    logger.info(
                         "Server address not validatd - deleting IM account");
                     jabberAccount.deleteAccount(false);
                 }

@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
-import java.awt.*;
 import java.beans.*;
 import java.text.*;
 import java.util.*;
@@ -12,9 +11,9 @@ import org.jitsi.service.configuration.*;
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.OperationSetCallPark.*;
+import net.java.sip.communicator.service.protocol.OperationSetCallPark.CallParkOrbit;
+import net.java.sip.communicator.service.protocol.OperationSetCallPark.CallParkOrbitState;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.systray.*;
 import net.java.sip.communicator.util.*;
@@ -32,6 +31,12 @@ public class CallParkOrbitImpl implements CallParkOrbit
      * else's freshly-parked call when instead they meant to park their own.
      */
     private static final long RETRIEVE_DELAY_MS = 400;
+    /**
+     * How long to disable the call park 'pick up' button after picking up a call.
+     * During this time, the call is being set up and we want to avoid consecutive
+     * clicks on the button from the user
+     */
+    private static final long PICKUP_DELAY_MS = 2000;
 
     private static final Logger logger =
         Logger.getLogger(CallParkOrbitImpl.class);
@@ -84,9 +89,13 @@ public class CallParkOrbitImpl implements CallParkOrbit
     private ContactGroupSipImpl group;
     private ContactSipImpl sipContact;
 
-    private static Timer busyTimer = new Timer("Call Park Orbit busy timer");
+    private Timer timer = new Timer("Call Park Orbit timer");
+
     private TimerTask busyTimerTask;
     private final Object busyTimerTaskLock = new Object();
+
+    private TimerTask freeTimerTask;
+    private final Object freeTimerTaskLock = new Object();
 
     /**
      * Create a new call park orbit object.<p>
@@ -127,6 +136,7 @@ public class CallParkOrbitImpl implements CallParkOrbit
         group = grp;
         state = CallParkOrbitState.UNKNOWN;
         busyTimerTask = null;
+        freeTimerTask = null;
         friendlyName = name;
 
         logger.debug("New call park orbit created: (" + orbit + ", '" + name + "' ['" + friendlyName + "'], " + dept + ")");
@@ -247,15 +257,11 @@ public class CallParkOrbitImpl implements CallParkOrbit
                                 String... messageArgs)
     {
         ResourceManagementService res = SipActivator.getResources();
-        ExportedWindow callParkWindow = SipActivator.getUIService()
-                            .getExportedWindow(ExportedWindow.CALL_PARK_WINDOW);
 
         String title = res.getI18NString(titleKey);
         String msg = res.getI18NString(messageKey, messageArgs);
 
-        Frame parent = (Frame)callParkWindow;
-        ErrorDialog errorDialog = new ErrorDialog(parent, title, msg);
-        errorDialog.setVisible(true);
+        new ErrorDialog(title, msg).showDialog();
     }
 
     @Override
@@ -349,18 +355,21 @@ public class CallParkOrbitImpl implements CallParkOrbit
     public void onPresenceStatusChanged(ContactPresenceStatusChangeEvent evt)
     {
         /*
-         * States: 0 unknown, 1 free, 2 busy_disabled, 3 busy
-         * Inputs: notif_free, notif_busy, notif_offline, timer_pop
+         * States: 0 unknown, 1 free, 2 busy_disabled, 3 busy, 4 free_disabled
+         * Inputs: notif_free, notif_busy, notif_offline, user_picks_up_call, busy_timer_pop, free_timer_pop
          *
-         *            | 0| 1| 2| 3
-         * notif_busy |A2|A2| -| -
-         * notif_free |B1| -|B1|B1
-         * notif_offln|B0|B0|B0|B0
-         * timer_pop  | !| !| 3| -
+         *                      |  0|  1|  2|  3| 4
+         * notif_busy           | A2| A2|  -|  -| -
+         * notif_free           |BC1|  -|BC1|BC1|BC1
+         * notif_offln          |BC0|BC0|BC0|BC0|BC0
+         * busy_timer_pop       |  !|  !|  3|  -| -
+         * free_timer_pop       |  -|  -|  3|  3|  3
+         * user_picks_up_call   |  -|  -|  -|  4| -
          *
          * Actions:
-         * A - start the timer
-         * B - cancel the timer
+         * A - start the busy timer
+         * B - cancel the busy timer
+         * C - cancel the free timer
          * (plus all state changes result in a call to callParkStateChanged())
          */
         PresenceStatus newStatus = evt.getNewStatus();
@@ -372,39 +381,52 @@ public class CallParkOrbitImpl implements CallParkOrbit
 
         if (offline)
         {
-            if (!OperationSetCallPark.CallParkOrbitState.UNKNOWN.equals(state))
+            if (!CallParkOrbitState.UNKNOWN.equals(state))
             {
                 // "offline" counts as non-busy, so we should cancel the busy
                 // timer (a busy state means the orbit is in use and a call may
                 // be retrieved - when the orbit is offline that's definitely
                 // not the case).
                 cancelBusyTimer();
-                newState = OperationSetCallPark.CallParkOrbitState.UNKNOWN;
+                // cancel the free timer as we don't want to update the
+                // state to BUSY once the timer pops
+                cancelFreeTimer();
+                newState = CallParkOrbitState.UNKNOWN;
             }
         }
         else if (nowFree)
         {
-            if (!OperationSetCallPark.CallParkOrbitState.FREE.equals(state))
+            if (!CallParkOrbitState.FREE.equals(state))
             {
                 // Moving from a busy to non-busy state
                 cancelBusyTimer();
-                newState = OperationSetCallPark.CallParkOrbitState.FREE;
+                // Orbit is free so the timer can be cancelled
+                cancelFreeTimer();
+                newState = CallParkOrbitState.FREE;
             }
         }
         else
         {
-            if (OperationSetCallPark.CallParkOrbitState.FREE.equals(state) ||
-                OperationSetCallPark.CallParkOrbitState.UNKNOWN.equals(state))
+            if (CallParkOrbitState.FREE.equals(state) || CallParkOrbitState.UNKNOWN.equals(state))
             {
                 // Moving to a busy state.  Start in 'disabled_busy'
                 // to prevent too-quick-clicking resulting in
                 // picking up a just-parked call
                 startBusyTimer();
-                newState = OperationSetCallPark.CallParkOrbitState.DISABLED_BUSY;
+                newState = CallParkOrbitState.DISABLED_BUSY;
             }
         }
 
         updateOrbitState(newState);
+    }
+
+    @Override
+    public void pickUpCall()
+    {
+        startFreeTimer();
+        updateOrbitState(CallParkOrbitState.DISABLED_FREE);
+
+        retrieveCall();
     }
 
     /**
@@ -415,7 +437,7 @@ public class CallParkOrbitImpl implements CallParkOrbit
     {
         if (newState != state)
         {
-            logger.debug("Call Park state of orbit " + orbitCode + " changed to " + newState);
+            logger.debug("Call Park state of orbit " + orbitCode + " changed from " + state + " to " + newState);
             CallParkOrbitState oldState = state;
             state = newState;
             opSetCallParkSipImpl.callParkStateChanged(this, oldState);
@@ -437,7 +459,7 @@ public class CallParkOrbitImpl implements CallParkOrbit
                     @Override
                     public synchronized void run()
                     {
-                        if (!OperationSetCallPark.CallParkOrbitState.DISABLED_BUSY.equals(state))
+                        if (!CallParkOrbitState.DISABLED_BUSY.equals(state))
                         {
                             // The timer shouldn't be running when in these states
                             logger.error("Timer popped when in incorrect state: " + state);
@@ -451,7 +473,53 @@ public class CallParkOrbitImpl implements CallParkOrbit
                     }
                 };
 
-                busyTimer.schedule(busyTimerTask, RETRIEVE_DELAY_MS);
+                timer.schedule(busyTimerTask, RETRIEVE_DELAY_MS);
+            }
+            else
+            {
+                logger.debug("Ignore: timer already running");
+            }
+        }
+    }
+
+    /**
+     * Start a timer when the 'pick up' button is clicked.
+     * If the orbit is not free when the timer pops, move the orbit to state BUSY.
+     */
+    private void startFreeTimer()
+    {
+        synchronized (freeTimerTaskLock)
+        {
+            if (freeTimerTask == null)
+            {
+                freeTimerTask = new TimerTask()
+                {
+                    @Override
+                    public synchronized void run()
+                    {
+                        if(CallParkOrbitState.FREE.equals(state) || CallParkOrbitState.UNKNOWN.equals(state)) {
+                            logger.debug("Free timer popped when in expected state " + state);
+                        }
+                        else
+                        {
+                            // We expect to have been moved into state CallParkOrbitState.FREE,
+                            // via a notif_free from the network, by the time the freeTimer pops.
+                            // If that hasn't happened, we could be in one of two scenarios
+                            // - in both cases we want to move back to state CallParkOrbitState.BUSY:
+                            // 1. The call retrieval wasn't successful, so there will never be a notif_free
+                            // for that attempt, and thus the orbit is still busy
+                            // 2. There will be a notif_free but it hasn't arrived yet, in which case moving back
+                            // to CallParkOrbitState.BUSY is still fine because when it does arrive we will move
+                            // to CallParkOrbitState.FREE at that point.
+                            logger.info("Free timer popped when in unexpected state " + state);
+                            updateOrbitState(CallParkOrbitState.BUSY);
+                        }
+
+                        freeTimerTask = null;
+                    }
+                };
+
+                timer.schedule(freeTimerTask, PICKUP_DELAY_MS);
             }
             else
             {
@@ -472,6 +540,22 @@ public class CallParkOrbitImpl implements CallParkOrbit
                 logger.debug("Cancel busy timer");
                 busyTimerTask.cancel();
                 busyTimerTask = null;
+            }
+        }
+    }
+
+    /**
+     * Cancel the free timer for this orbit.
+     */
+    private void cancelFreeTimer()
+    {
+        synchronized (freeTimerTaskLock)
+        {
+            if (freeTimerTask != null)
+            {
+                logger.debug("Cancel free timer");
+                freeTimerTask.cancel();
+                freeTimerTask = null;
             }
         }
     }

@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+
 #include <client/windows/handler/exception_handler.h>
 #include <Tchar.h>
 

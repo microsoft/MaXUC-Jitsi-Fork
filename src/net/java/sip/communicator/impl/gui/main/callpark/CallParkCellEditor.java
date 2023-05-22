@@ -133,16 +133,17 @@ public class CallParkCellEditor extends AbstractCellEditor implements TreeCellEd
             switch (state)
             {
             case BUSY:
-                // Hide the window before retrieving the call, because that can take a while and we
-                // don't want the user to interact with the UI anymore until that's happened.
-                CallParkWindow.hideWindow();
-                orbit.retrieveCall();
+                orbit.pickUpCall();
                 break;
 
             case DISABLED_BUSY:
                 showError("impl.protocol.sip.CALL_PARK_FAILED_BUSY_TITLE",
                           "impl.protocol.sip.CALL_PARK_FAILED_BUSY_TEXT",
                           orbit.getFriendlyName());
+                break;
+
+            case DISABLED_FREE:
+                sLog.debug("Pick up button clicked consecutive times. State is still " + state);
                 break;
 
             default:
@@ -409,8 +410,7 @@ public class CallParkCellEditor extends AbstractCellEditor implements TreeCellEd
         String title = mRes.getI18NString(titleRes);
         String msg = mRes.getI18NString(msgRes, msgArgs);
 
-        Frame parent = (Frame) SwingUtilities.getWindowAncestor(mComponent);
-        new ErrorDialog(parent, title, msg).setVisible(true);
+        new ErrorDialog(title, msg).showDialog();
     }
 
     /**

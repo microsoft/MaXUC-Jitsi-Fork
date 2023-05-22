@@ -28,12 +28,12 @@ public class HTTPCredentialsProvider
         "net.java.sip.communicator.util.http.credential.";
 
     /**
-     * Should we continue retrying, this is set when user hits cancel.
+     * If we should continue retrying, this is set when user hits cancel.
      */
     private boolean retry = true;
 
     /**
-     * The last scope we have used, no problem overriding cause
+     * The last scope we have used, no problem overriding because
      * we use new HTTPCredentialsProvider instance for every
      * httpclient/request.
      */
@@ -148,7 +148,7 @@ public class HTTPCredentialsProvider
 
             if(!result.isCanceled())
             {
-                authUsername = new String(result.getUserName());
+                authUsername = result.getUserName();
                 authPassword = new String(result.getPassword());
                 Credentials cred = new UsernamePasswordCredentials(
                         authUsername,authPassword);
@@ -236,7 +236,7 @@ public class HTTPCredentialsProvider
 
     /**
      * Constructs property name for save if one is not specified.
-     * Its in the form
+     * It is in the form
      * HTTP_CREDENTIALS_PREFIX.host.realm.port
      * @param authscope the scope, holds host,realm, port info about
      * the host we are reaching.
@@ -244,13 +244,9 @@ public class HTTPCredentialsProvider
      */
     private static String getCredentialProperty(AuthScope authscope)
     {
-        StringBuilder pref = new StringBuilder();
-
-        pref.append(HTTP_CREDENTIALS_PREFIX).append(authscope.getHost())
-            .append(".").append(authscope.getRealm())
-            .append(".").append(authscope.getPort());
-
-        return  pref.toString();
+        return HTTP_CREDENTIALS_PREFIX + authscope.getHost() +
+                      "." + authscope.getRealm() +
+                      "." + authscope.getPort();
     }
 
     /**

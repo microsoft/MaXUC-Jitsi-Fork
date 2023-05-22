@@ -1378,9 +1378,9 @@ public class CallFrame extends SIPCommFrame implements ActionListener
                         }
                         else
                         {
-                            // TODO: DUIR-5256 Joining names should be localizable
-                            peerDisplayNames =
-                                peerDisplayNames + " & " + peerDisplayName;
+                            peerDisplayNames = resources.getI18NString(
+                                    "service.gui.MULTIPLE_PEER_DISPLAY_NAMES",
+                                    new String[]{peerDisplayNames, peerDisplayName});
                         }
                     }
                 }

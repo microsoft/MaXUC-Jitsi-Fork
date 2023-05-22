@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.util.Hashtable;
@@ -16,6 +17,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
 import net.java.sip.communicator.service.analytics.AnalyticsService;
+import net.java.sip.communicator.service.certificate.CertificateService;
 import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
@@ -186,6 +188,11 @@ public class JabberActivator implements BundleActivator
     private static GlobalStatusService globalStatusService;
 
     /**
+     * The certificate service
+     */
+    private static CertificateService certificateService;
+
+    /**
      * Regular expression to match 'special' messages that are used to pass on
      * custom system messages and should not be displayed to the user.
      *
@@ -312,6 +319,11 @@ public class JabberActivator implements BundleActivator
 
         // disco items request does not receive a response for this class
         SmackConfiguration.addDisabledSmackClass("org.jivesoftware.smackx.httpfileupload.HttpFileUploadManager");
+
+        // Smack defaults to 5s timeout waiting for a reply. Lengthen that to 30s because AMS can be
+        // slow when it's overloaded, and timing out will cause the client to try to reconnect -
+        // adding even more traffic to AMS and exacerbating the problem.
+        SmackConfiguration.setDefaultReplyTimeout(30000);
 
         // Configure XMPP traffic logger. Do this first so that we
         // have the logger as soon as possible
@@ -757,5 +769,20 @@ public class JabberActivator implements BundleActivator
                  ServiceUtils.getService(bundleContext, GlobalStatusService.class);
         }
         return globalStatusService;
+    }
+
+    /**
+     * Returns the <tt>CertificateService</tt> obtained from the bundle context
+     *
+     * @return the <tt>CertificateService</tt> obtained from the bundle context
+     */
+    public static CertificateService getCertificateService()
+    {
+        if (certificateService == null)
+        {
+            certificateService =
+                    ServiceUtils.getService(bundleContext, CertificateService.class);
+        }
+        return certificateService;
     }
 }

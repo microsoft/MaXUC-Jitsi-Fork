@@ -4,10 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import static net.java.sip.communicator.impl.protocol.jabber.OperationSetPersistentPresenceJabberImpl.*;
 import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -193,15 +195,15 @@ public class ContactJabberImpl
     }
 
     /**
-     * Returns the Jabber Userid (Bare JID) of this contact as a String
+     * Returns the Jabber Userid (Bare JID) of this contact as a String.
+     * If the JID is null, it returns an empty String.
+     *
      * @return the Jabber Userid (Bare JID) of this contact as a String
      */
     public String getAddress()
     {
-        if(isResolved)
-            return this.jid.toString();
-        else
-            return tempId.toString();
+        BareJid bareJid = getAddressAsJid();
+        return bareJid != null ? bareJid.toString() : "";
     }
 
     /**
@@ -211,10 +213,7 @@ public class ContactJabberImpl
      */
     public BareJid getAddressAsJid()
     {
-        if(isResolved)
-            return this.jid;
-        else
-            return tempId;
+        return isResolved ? jid : tempId;
     }
 
     /**
@@ -334,7 +333,7 @@ public class ContactJabberImpl
     public String toString()
     {
         StringBuffer buff =  new StringBuffer("ContactJabberImpl[ id=");
-        buff.append(logHasher(getAddress())).
+        buff.append(sanitiseChatAddress(getAddress())).
             append(", isPersistent=").append(isPersistent).
             append(", isResolved=").append(isResolved).append("]");
 
@@ -647,7 +646,7 @@ public class ContactJabberImpl
             while (it.hasNext())
             {
                 Presence presence = it.next();
-                String loggableBareJid = logHasher(jid);
+                String loggableBareJid = sanitiseChatAddress(jid);
                 FullJid fullJid = presence.getFrom().asFullJidIfPossible();
                 Resourcepart resource = fullJid != null ? fullJid.getResourceOrEmpty() : null;
 
@@ -703,7 +702,7 @@ public class ContactJabberImpl
                                 if (altResource != null)
                                 {
                                     logger.debug(
-                                        "Removed old LSM resource for " + logHasher(bareJid) + "/" + altFullJid);
+                                        "Removed old LSM resource for " + sanitiseChatAddress(bareJid) + "/" + altFullJid);
 
                                     fireContactResourceEvent(
                                         new ContactResourceEvent(this, altResource,
@@ -713,7 +712,7 @@ public class ContactJabberImpl
                             catch (XmppStringprepException e)
                             {
                                 logger.error("Error removing old LSM resource for "
-                                    + fullJid.asBareJid(), e);
+                                    + sanitiseChatAddress(fullJid.asBareJid()), e);
                             }
                         }
 

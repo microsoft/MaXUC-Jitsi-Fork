@@ -3,6 +3,7 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.configforms;
 
 import java.awt.*;
@@ -13,10 +14,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 
 import org.jitsi.service.configuration.*;
-import org.jitsi.util.*;
 import org.osgi.framework.*;
-
-import com.explodingpixels.macwidgets.*;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.main.*;
@@ -506,30 +504,9 @@ public class ConfigurationFrame
     private JComponent createTopComponent()
     {
         JComponent topComponent = null;
-
-        if (OSUtils.IS_MAC && ConfigurationUtils.useNativeTheme())
-        {
-            UnifiedToolBar macToolbarPanel = new UnifiedToolBar();
-
-            MacUtils.makeWindowLeopardStyle(getRootPane());
-
-            macToolbarPanel.getComponent().setLayout(new BorderLayout());
-            macToolbarPanel.disableBackgroundPainter();
-            macToolbarPanel.installWindowDraggerOnWindow(this);
-            centerPanel.setOpaque(true);
-            centerPanel.setBackground(
-                new Color(GuiActivator.getResources()
-                    .getColor("service.gui.MAC_PANEL_BACKGROUND")));
-
-            topComponent = macToolbarPanel.getComponent();
-        }
-        else
-        {
-            topComponent = new TransparentPanel(new BorderLayout());
-            topComponent.setBorder(
-                new EmptyBorder(BORDER_SIZE / 2, BORDER_SIZE, 0, 0));
-        }
-
+        topComponent = new TransparentPanel(new BorderLayout());
+        topComponent.setBorder(
+            new EmptyBorder(BORDER_SIZE / 2, BORDER_SIZE, 0, 0));
         return topComponent;
     }
 

@@ -4,9 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.contactsource;
 
 import java.util.*;
+
+import org.jitsi.util.CustomAnnotations.*;
 
 /**
  * The <tt>ProtocolSourceContact</tt> provides a sorted
@@ -71,7 +74,7 @@ public class SortedGenericSourceContact
      * @return  a negative integer, zero, or a positive integer as this
      *  object is less than, equal to, or greater than the specified object.
      */
-    public int compareTo(SourceContact o)
+    public int compareTo(@NotNull SourceContact o)
     {
         SourceContact target = o;
 

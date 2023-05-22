@@ -4,10 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.version;
 
 import java.util.regex.*;
 
+import net.java.sip.communicator.util.Logger;
 import org.jitsi.service.version.*;
 
 /**
@@ -23,6 +25,8 @@ import org.jitsi.service.version.*;
 public class VersionServiceImpl
     implements VersionService
 {
+    private static final Logger logger
+            = Logger.getLogger(VersionServiceImpl.class);
     /**
      * The pattern that will parse strings to version object.
      */
@@ -64,5 +68,28 @@ public class VersionServiceImpl
         }
 
         return null;
+    }
+
+    /**
+     * Returns true if the client is running a version below the minimum
+     * allowed version specified in the current subscriber's config (false if
+     * no such minimum version is provided in the config).
+     */
+    public boolean isOutOfDate()
+    {
+        final String minimumVersionString = VersionActivator
+                .getConfigurationService()
+                .user()
+                .getString("net.java.sip.communicator.MIN_VERSION");
+        Version currentVersion = getCurrentVersion();
+
+        Version minimumVersion = minimumVersionString == null ? null :
+                parseVersionString(minimumVersionString);
+
+        logger.debug("Comparing current and minimum versions: " +
+                    currentVersion + ", " + minimumVersion);
+
+        return minimumVersion != null &&
+               currentVersion.compareTo(minimumVersion) < 0;
     }
 }

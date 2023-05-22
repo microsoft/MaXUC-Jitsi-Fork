@@ -5,29 +5,44 @@ import static net.java.sip.communicator.plugin.addressbook.OutlookUtils.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.*;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.plugin.addressbook.*;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.diagnostics.*;
-import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 /**
  * Class responsible for getting and tracking Outlook Meetings
  */
 public class OutlookCalendarDataHandler
-    implements StateDumper, OperationSetCalendar
+    implements StateDumper
 {
     private static final Logger sLog = Logger.getLogger(OutlookCalendarDataHandler.class);
+    private static final Logger outlookCalendarLogger = Logger.getLogger("jitsi.OutlookCalendarLogger");
+
+    /** Initial backoff interval is 1000 ms. */
+    public static final long INITIAL_FAIL_BACKOFF = 1000;
+
+    /** Double the backoff interval 8 times (~ 4 minutes). */
+    public static final int MAX_NUMBER_FAILURE_DOUBLES = 8;
 
     /**
-     * A map of all the meetings that we have been told about.  Map is from the
-     * ID of the item to the parsed version of that item.
+     * A map of all the meetings that we have been told about where the user is marked as 'Busy'.
+     * The Map is from the ID of the item to the parsed version of that item.
      */
-    private final HashMap<String, ParsedOutlookMeeting> mMeetings =
-            new HashMap<>();
+    private static final Map<String, ParsedOutlookMeeting> sMeetings = new ConcurrentHashMap<>();
+
+    /**
+     * A set containing any time zone strings received from Outlook that we were
+     * unable to parse. Used for diags.
+     */
+    private static final Set<String> sFailedTimeZoneStrings = new HashSet<>();
 
     /**
      * Outlook client used to make calendar requests
@@ -51,10 +66,11 @@ public class OutlookCalendarDataHandler
                                       AbstractAddressBookProtocolProviderService provider)
     {
         sLog.info("Creating calendar");
-        mClient = client;
 
-        // Add an operation set for calendar
-        provider.addSupportedOperationSet(OperationSetCalendar.class, this);
+        // Clear sMeetings because it's static but really pertains to the class, which is basically
+        // a quasi-singleton.
+        sMeetings.clear();
+        mClient = client;
     }
 
     /**
@@ -67,7 +83,7 @@ public class OutlookCalendarDataHandler
         sLog.info("Got default calendar folder: " + mDefaultCalendarFolder);
 
         mUpdateExecutor = new Timer("OutlookCalendarDataHandler.updateExecutor");
-        backoff = new AccessionOutlookServerBackoff();
+        backoff = new ServerBackoff(MAX_NUMBER_FAILURE_DOUBLES, INITIAL_FAIL_BACKOFF);
         mClient.queryCalendar();
 
         BundleContext context = AddressBookProtocolActivator.getBundleContext();
@@ -96,22 +112,6 @@ public class OutlookCalendarDataHandler
         }
 
         DiagnosticsServiceRegistrar.unregisterStateDumper(this);
-
-        // Cancel the existing meetings.  If we restart, we will get them again
-        Collection<ParsedOutlookMeeting> meetings;
-
-        synchronized (mMeetings)
-        {
-            meetings = new ArrayList<>(mMeetings.values());
-            mMeetings.clear();
-        }
-
-        for (ParsedOutlookMeeting meeting : meetings)
-        {
-            CalendarItemScheduler task = meeting.getItemTask();
-            if (task != null)
-                task.cancelTasks();
-        }
     }
 
     /**
@@ -170,7 +170,7 @@ public class OutlookCalendarDataHandler
         // Therefore check to see if it contains "Appointment".
         // Note that we can't just check the type, as deleted items have type of
         // "unknown"
-        return mMeetings.containsKey(id) ||
+        return sMeetings.containsKey(id) ||
                (type != null && type.contains("Appointment"));
     }
 
@@ -199,36 +199,93 @@ public class OutlookCalendarDataHandler
 
         if (status != BusyStatusEnum.BUSY || startDate == null || endDate == null)
         {
+            outlookCalendarLogger.info("Ignore meeting " + id + " - status: " + status + ", startDate: " + startDate + ", endDate " + endDate);
             return;
         }
 
         Date currentDate = new Date();
 
         // Nothing to do if it isn't recurring and has already happened
-        RecurringPattern pattern = meeting.getRecurrencyPattern();
+        RecurringPattern pattern = meeting.getRecurringPattern();
         if (endDate.before(currentDate) && pattern == null)
         {
+            outlookCalendarLogger.info("Ignore meeting " + id + ", already finished - endDate " + endDate);
             return;
         }
 
         // This meeting is busy and either recurs, or hasn't yet happened. So
         // we need to create a scheduler for it to enter and exit the meeting
         // state
-        CalendarItemScheduler task = pattern == null ?
-                            new CalendarItemScheduler(meeting) : pattern.next();
-
-        // Task could be null if this is a recurrent meeting that has completed
-        if (task != null)
+        boolean scheduledTasks;
+        if (pattern != null)
         {
-            task.scheduleTasks();
-
-            // We should only be storing meetings that are still relevant.
-            // Otherwise the list of meetings can become unmanageable.
-            synchronized (mMeetings)
+            Pair<Date, Date> nextInstance = pattern.getNextMeeting();
+            if (nextInstance != null)
             {
-                mMeetings.put(id, meeting);
+                Date nextStartDate = nextInstance.getLeft();
+                Date nextEndDate = nextInstance.getRight();
+
+                outlookCalendarLogger.debug("Next instance of " + id + " is from " + nextStartDate + " to " + nextEndDate);
+                CalendarItemScheduler.scheduleTasks(id, pattern, nextStartDate, nextEndDate);
+                scheduledTasks = true;
+            }
+            else
+            {
+                outlookCalendarLogger.debug(id + " has no more instances");
+                scheduledTasks = false;
             }
         }
+        else
+        {
+            scheduledTasks = true;
+            CalendarItemScheduler.scheduleTasks(meeting);
+        }
+
+        // We should only be storing meetings that are still relevant.
+        // Otherwise the list of meetings can become unmanageable.
+        if (scheduledTasks)
+        {
+            sMeetings.put(id, meeting);
+        }
+    }
+
+    /**
+     * Iterate through the meetings we know about, and determine whether we are in one. Update the
+     * GlobalStatusService based on that. We also use this opportunity to stop tracking any meetings
+     * that are finished.
+     */
+    static void evaluateMeetingPresence()
+    {
+        boolean inMeeting = false;
+        for (Iterator<Map.Entry<String, ParsedOutlookMeeting>> it = sMeetings.entrySet().iterator(); it.hasNext();)
+        {
+            Map.Entry<String, ParsedOutlookMeeting> entry = it.next();
+            String id = entry.getKey();
+            ParsedOutlookMeeting meeting = entry.getValue();
+
+            // Stop tracking any non-recurring meeting that's ended, or a recurring meeting with no
+            // more to come.
+            if (meeting.isFinished())
+            {
+                outlookCalendarLogger.info("Meeting " + id + " is done. Stop tracking it.");
+                it.remove();
+                continue;
+            }
+
+            // Don't bother checking the times if we've already ascertained we're in a meeting, just
+            // keep cycling through to remove meetings we don't care about anymore.
+            if (!inMeeting)
+            {
+                if (meeting.isHappening())
+                {
+                    outlookCalendarLogger.debug("Meeting " + meeting.getId() + " is happening");
+                    inMeeting = true;
+                }
+            }
+        }
+
+        sLog.info("In a meeting? " + inMeeting);
+        AddressBookProtocolActivator.getGlobalStatusService().setInMeeting(inMeeting);
     }
 
     /**
@@ -299,10 +356,7 @@ public class OutlookCalendarDataHandler
                 ParsedOutlookMeeting oldMeeting;
 
                 // Get and remove any old meeting associated with this ID.
-                synchronized (mMeetings)
-                {
-                    oldMeeting = mMeetings.remove(id);
-                }
+                oldMeeting = sMeetings.remove(id);
 
                 // Try to create a new meeting from the ID we've been given.
                 ParsedOutlookMeeting newMeeting = createMeeting(id);
@@ -332,38 +386,15 @@ public class OutlookCalendarDataHandler
                     // has changed.  It could be that we know about this meeting
                     // under another ID - look to see if this is the case by
                     // comparing the id with the IDs we know already about.
-                    List<String> otherIds = new ArrayList<>(mMeetings.keySet());
+                    List<String> otherIds = new ArrayList<>(sMeetings.keySet());
                     int matchingIdx = mClient.compareIds(id, otherIds);
 
                     if (matchingIdx != -1)
                     {
                         // The ID we've been passed is for a meeting that we
                         // already know about.  Use it.
-                        String newId = otherIds.get(matchingIdx);
-
-                        synchronized (mMeetings)
-                        {
-                            oldMeeting = mMeetings.remove(newId);
-                        }
+                        oldMeeting = sMeetings.remove(otherIds.get(matchingIdx));
                     }
-                }
-
-                if (oldMeeting != null)
-                {
-                    msg.append(" - has been updated");
-
-                    // If the old meeting was marked as left the new meeting
-                    // should also be marked as left.
-                    if ((newMeeting != null) && oldMeeting.isMarkedAsLeft())
-                    {
-                        newMeeting.markAsLeft(true);
-                    }
-
-                    // Cancel the tasks associated with this meeting as we need
-                    // to update it
-                    CalendarItemScheduler task = oldMeeting.getItemTask();
-                    if (task != null)
-                        task.cancelTasks();
                 }
 
                 // Only handle the meeting if we've got one to handle, and if
@@ -424,72 +455,77 @@ public class OutlookCalendarDataHandler
     @Override
     public String getStateDumpName()
     {
-        return "CalendarDataHandler";
+        return "OutlookCalendarDataHandler";
     }
 
     @Override
     public String getState()
     {
         StringBuilder sb = new StringBuilder();
-        HashMap<String, ParsedOutlookMeeting> meetings;
-
         sb.append("Timer: ")
           .append(mUpdateExecutor)
           .append("\n")
-          .append("Nb Meetings in: ")
-          .append(CalendarItemScheduler.getNbMeetingsInProgress())
-          .append("\n")
-          .append("Meeting ids: ")
-          .append(CalendarItemScheduler.getIdsMeetingsInProgress())
-          .append("\n")
           .append("Unrecognised Outlook timezone strings: ");
 
-        for (String failedTimeZone : CalendarItemScheduler.getFailedTimeZoneStrings())
+        for (String failedTimeZone : getFailedTimeZoneStrings())
         {
             sb.append(failedTimeZone).append("\n");
         }
 
         sb.append("\n");
 
-        synchronized (mMeetings)
-        {
-            meetings = new HashMap<>(mMeetings);
-        }
-
-        for (Map.Entry<String, ParsedOutlookMeeting> entry : meetings.entrySet())
+        for (Map.Entry<String, ParsedOutlookMeeting> entry : sMeetings.entrySet())
         {
             sb.append("\n============================Meeting====================")
               .append("========================\n\n")
               .append(entry.getKey())
               .append(" : ")
               .append(entry.getValue())
+              .append(entry.getValue().isHappening() ? "\nMeeting is happening!" : "")
               .append("\n\n");
         }
 
         return sb.toString();
     }
 
-    //-------------------------------------------------------------------------
-    // METHODS FOR OperationSetCalendar:
-    //-------------------------------------------------------------------------
+    /**
+     * @return a set of the time zone strings we've been unable to parse
+     */
+    private static HashSet<String> getFailedTimeZoneStrings()
+    {
+        synchronized (sFailedTimeZoneStrings)
+        {
+            return new HashSet<>(sFailedTimeZoneStrings);
+        }
+    }
 
     /**
-     * Mark the current meetings as left so that if we receive further updates
-     * from Outlook we don't change presence back to "In a Meeting".
+     * Add the given string to the set of failed time zone strings, if it's not
+     * already in it.
+     * If we've been unable to parse a string, it's probably because there's no
+     * matching entry in the ZONEMAPPINGS list in TimeZoneList. If there is a
+     * matching entry, the problem could be that the JRE doesn't recognise the
+     * matching time zone ID.
+     *
+     * @param unknownTz the unrecognised string
+     * @param usedTz the TimeZone ID actually used
      */
-    public void markMeetingsAsLeft()
+    public static void addFailedTimeZoneString(String unknownTz, String usedTz)
     {
-        Collection<String> currentMeetingIds =
-                               CalendarItemScheduler.getIdsMeetingsInProgress();
-        synchronized(mMeetings)
+        synchronized (sFailedTimeZoneStrings)
         {
-            for (String id : currentMeetingIds)
+            if (sFailedTimeZoneStrings.add(unknownTz))
             {
-                ParsedOutlookMeeting meeting = mMeetings.get(id);
-                if (meeting != null)
-                {
-                    meeting.markAsLeft(true);
-                }
+                // Only log if we haven't seen this string before
+                sLog.warn("Unrecognised timezone string " + unknownTz +
+                                              ". Using timezone ID: " + usedTz);
+
+                // Send an analytic
+                AddressBookProtocolActivator
+                        .getAnalyticsService()
+                        .onEvent(AnalyticsEventType.UNRECOGNIZED_OUTLOOK_TIME_ZONE,
+                                 AnalyticsParameter.NAME_TIME_ZONE_STRING,
+                                 unknownTz);
             }
         }
     }

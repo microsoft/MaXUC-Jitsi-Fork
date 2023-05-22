@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -943,7 +944,6 @@ public class MetaContactRightButtonMenu
         if (ust.isServiceTypeEnabled(ServiceType.CRM))
         {
             sLog.debug("Create menu item for CRM");
-            crmItem = ServiceType.CRM.createMenuItems().get(0);
             ScaleUtils.scaleFontAsDefault(crmItem);
             add(crmItem);
             crmItem.setName(ServiceType.CRM.getConfigName());
@@ -1316,8 +1316,6 @@ public class MetaContactRightButtonMenu
                     = GuiActivator.getUIService().
                         getChatWindowManager().getContactChat(metaContact, true);
 
-                chatPanel.sendFile(selectedFile);
-
                 GuiActivator.getUIService().
                     getChatWindowManager().openChatAndAlertWindow(chatPanel, true);
             }
@@ -1601,9 +1599,7 @@ public class MetaContactRightButtonMenu
         String errorMessage =
             resources.getI18NString("service.gui.chat.REMOVE_USER_ERROR",
                                      new String[]{displayName});
-        ErrorDialog errorDialog =
-            new ErrorDialog(null, errorTitle, errorMessage);
-        errorDialog.showDialog();
+        new ErrorDialog(errorTitle, errorMessage).showDialog();
     }
 
     /**
@@ -1709,13 +1705,10 @@ public class MetaContactRightButtonMenu
 
         if(toMetaContact.equals(metaContact))
         {
-            new ErrorDialog(mainFrame,
-                resources
-                    .getI18NString("service.gui.MOVE_SUBCONTACT"),
-                resources
-                    .getI18NString("service.gui.MOVE_SUBCONTACT_FAILED"),
-                ErrorDialog.ErrorType.WARNING)
-                    .showDialog();
+            new ErrorDialog(
+                resources.getI18NString("service.gui.MOVE_SUBCONTACT"),
+                resources.getI18NString("service.gui.MOVE_SUBCONTACT_FAILED"))
+                .showDialog();
         }
         else
         {

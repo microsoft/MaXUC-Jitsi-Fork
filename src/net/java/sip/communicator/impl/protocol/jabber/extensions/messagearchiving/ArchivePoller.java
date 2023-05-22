@@ -297,7 +297,7 @@ public class ArchivePoller implements RegistrationStateChangeListener,
                 catch (NotConnectedException | InterruptedException ex)
                 {
                     sLog.error("Error sending Archive Query for acc:" +
-                        account.getAccountUniqueID());
+                        account.getLoggableAccountID());
                 }
             }
         });

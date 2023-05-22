@@ -4,11 +4,13 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
 import java.text.*;
 
 import org.jitsi.service.resources.*;
+import org.jitsi.util.CustomAnnotations.*;
 
 /**
  * Acknowledgment: This file was originally provided by the Ignite Realtime
@@ -54,7 +56,7 @@ public class ByteFormat
      * @return A formatted string representing the given bytes in more
      * human-readable form.
      */
-    public StringBuffer format(Object obj, StringBuffer buf, FieldPosition pos)
+    public StringBuffer format(Object obj, @NotNull StringBuffer buf, @NotNull FieldPosition pos)
     {
         if (obj instanceof Long)
         {
@@ -101,7 +103,7 @@ public class ByteFormat
      * @param pos Position to parse from.
      * @return returns null in this implementation.
      */
-    public Object parseObject(String source, ParsePosition pos)
+    public Object parseObject(String source, @NotNull ParsePosition pos)
     {
         return null;
     }

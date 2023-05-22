@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.util.*;
@@ -313,12 +314,15 @@ public abstract class AbstractProtocolProviderService
 
     /**
      * A clear display for ProtocolProvider when its printed in logs.
+     * We now redact the account ID for privacy purposes.
      * @return the class name and the currently handled account.
      */
     public String toString()
     {
         return getClass().getSimpleName() +
-            "(" + (getAccountID() != null ? getAccountID().getDisplayName() : "no account ID") + ") " +
+            "(" +
+            (getAccountID() != null ? getAccountID().getLoggableAccountID() : "no account ID") +
+            ") " +
             Integer.toHexString(System.identityHashCode(this));
     }
 

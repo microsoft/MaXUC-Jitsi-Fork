@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
 import java.awt.*;
@@ -86,7 +87,7 @@ public class FileUtils
 
     /**
      * Copies a specified file to the given destination. This is available
-     * natively in Java 7, but is provided here to maintain Java 6
+     * natively in Java 7, but was provided here to maintain Java 6
      * compatibility.
      *
      * @param src The file to be copied.
@@ -95,7 +96,7 @@ public class FileUtils
      */
     public static void copyFile(File src, File dest) throws IOException
     {
-        logger.debug("Copying file from " + src + " to " + dest + ".");
+        logger.debug("Attempting to copy file");
         InputStream in = new FileInputStream(src);
         OutputStream out = null;
         try
@@ -121,7 +122,7 @@ public class FileUtils
                     out.close();
             }
         }
-        logger.debug("Copy of " + src + " to " + dest + " successful.");
+        logger.debug("Copy of file successful.");
     }
 
     /**

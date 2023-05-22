@@ -4,9 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import static net.java.sip.communicator.impl.protocol.jabber.OperationSetPersistentPresenceJabberImpl.EXT_CLIENT_RESOURCE;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+import static org.jitsi.util.Hasher.logHasher;
 import static org.jivesoftware.smack.filter.MessageTypeFilter.*;
 
 import java.util.ArrayList;
@@ -51,12 +54,6 @@ import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
 
 import net.java.sip.communicator.impl.protocol.jabber.JabberActivator.GroupMembershipAction;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.mailnotification.MailThreadInfo;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.mailnotification.MailboxIQ;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.mailnotification.MailboxIQProvider;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.mailnotification.MailboxQueryIQ;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.mailnotification.NewMailNotificationIQ;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.mailnotification.NewMailNotificationProvider;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtension;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtensionProvider;
 import net.java.sip.communicator.service.contactlist.MetaContact;
@@ -80,7 +77,6 @@ import net.java.sip.communicator.service.protocol.event.MessageEvent;
 import net.java.sip.communicator.service.protocol.event.MessageReceivedEvent;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeListener;
-import net.java.sip.communicator.service.protocol.jabberconstants.JabberStatusEnum;
 import net.java.sip.communicator.service.threading.CancellableRunnable;
 import net.java.sip.communicator.service.threading.ThreadingService;
 import net.java.sip.communicator.util.ConfigurationUtils;
@@ -108,19 +104,11 @@ public class OperationSetBasicInstantMessagingJabberImpl
         Logger.getLogger(OperationSetBasicInstantMessagingJabberImpl.class);
 
     /**
-     * The maximum number of unread threads that we'd be notifying the user of.
-     */
-    private static final String PNAME_MAX_GMAIL_THREADS_PER_NOTIFICATION
-        = "net.java.sip.communicator.impl.protocol.jabber."
-            +"MAX_GMAIL_THREADS_PER_NOTIFICATION";
-
-    /**
      * A table mapping contact addresses to full jids that can be used to
      * target a specific resource (rather than sending a message to all logged
      * instances of a user).
      */
-    private final Map<Jid, TargetAddress> jids
-                                    = new Hashtable<>();
+    private final Map<Jid, TargetAddress> jids = new Hashtable<>();
 
     /**
      * The smackMessageListener instance listens for incoming messages.
@@ -147,13 +135,6 @@ public class OperationSetBasicInstantMessagingJabberImpl
      * before considering them dead.
      */
     private static final long JID_INACTIVITY_TIMEOUT = 10*60*1000;//10 min.
-
-    /**
-     * Indicates the time of the last Mailbox report that we received from
-     * Google (if this is a Google server we are talking to). Should be included
-     * in all following mailbox queries
-     */
-    private long lastReceivedMailboxResultTime = -1;
 
     /**
      * The provider that created us.
@@ -320,20 +301,6 @@ public class OperationSetBasicInstantMessagingJabberImpl
     public boolean isOfflineMessagingSupported()
     {
         return true;
-    }
-
-    /**
-     * Determines whether the protocol supports the supplied content type
-     *
-     * @param contentType the type we want to check
-     * @return <tt>true</tt> if the protocol supports it and
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isContentTypeSupported(String contentType)
-    {
-        return
-            (contentType.equals(DEFAULT_MIME_TYPE)
-                || contentType.equals(HTML_MIME_TYPE));
     }
 
     /**
@@ -609,7 +576,7 @@ public class OperationSetBasicInstantMessagingJabberImpl
             }
 
             // No need to hash PII as explicitly sending/receiving message.
-            logger.trace("Will send a message to:" + toJID
+            logger.trace("Will send a message to:" + sanitiseChatAddress(toJID.toString())
                         + " chat.jid=" + chat.getXmppAddressOfChatPartner());
 
             MessageDeliveredEvent msgDeliveryPendingEvt
@@ -656,7 +623,7 @@ public class OperationSetBasicInstantMessagingJabberImpl
 
             return new MessageDeliveredEvent(message, to, smsNumber, messageType);
         }
-        catch (XmppStringprepException | NotConnectedException | InterruptedException ex)
+        catch (XmppStringprepException | NotConnectedException | InterruptedException | IllegalStateException ex)
         {
             MessageDeliveredEvent msgDeliveredEvt =
                 new MessageDeliveredEvent(message,
@@ -888,20 +855,6 @@ public class OperationSetBasicInstantMessagingJabberImpl
                             StanzaTypeFilter.MESSAGE,
                             new ArchiveMessageStanzaFilter()));
             }
-            else if (evt.getNewState() == RegistrationState.REGISTERED)
-            {
-                //subscribe for Google (Gmail or Google Apps) notifications
-                //for new mail messages.
-                boolean enableGmailNotifications
-                   = jabberProvider
-                       .getAccountID()
-                           .getAccountPropertyBoolean(
-                               "GMAIL_NOTIFICATIONS_ENABLED",
-                               false);
-
-                if (enableGmailNotifications)
-                    subscribeForGmailNotifications();
-            }
             else if (evt.getNewState() == RegistrationState.UNREGISTERED
                 || evt.getNewState() == RegistrationState.CONNECTION_FAILED
                 || evt.getNewState() == RegistrationState.AUTHENTICATION_FAILED)
@@ -921,7 +874,6 @@ public class OperationSetBasicInstantMessagingJabberImpl
     /**
      * The listener that we use in order to handle incoming messages.
      */
-    @SuppressWarnings("unchecked")
     private class SmackMessageListener
         implements StanzaListener
     {
@@ -1338,7 +1290,7 @@ public class OperationSetBasicInstantMessagingJabberImpl
                 if (!getHistoryService().updateSmppId(smsNumber, xmppId, smppId))
                 {
                     logger.error("Failed to save SMPP ID " + smppId +
-                       " for XMPP ID " + xmppId + " and peer ID " + smsNumber);
+                       " for XMPP ID " + xmppId + " and peer ID " + logHasher(smsNumber));
                 }
             }
             else
@@ -1392,14 +1344,13 @@ public class OperationSetBasicInstantMessagingJabberImpl
                         GroupMembershipAction.created.toString().equals(msgBody))
                     {
                         logger.debug("Got an archive joined or created " +
-                                     "message for ourself for chat room " +
-                                                                    chatRoomId);
+                                     "message for ourself for chat room " + sanitiseChatRoom(chatRoomId));
                         chatRoomManager.chatRoomJoinDateReceived(chatRoomId, date);
                     }
                     else if (GroupMembershipAction.left.toString().equals(msgBody))
                     {
                         logger.debug("Got an archive left message for " +
-                                     "ourself for chat room " + chatRoomId);
+                                     "ourself for chat room " + sanitiseChatRoom(chatRoomId));
                         chatRoomManager.chatRoomLeaveReceived(chatRoomId, date);
                     }
                 }
@@ -1453,18 +1404,16 @@ public class OperationSetBasicInstantMessagingJabberImpl
                 // before or not.
                 if (isArchive)
                 {
-                    // No need to hash PII as explicitly sending/receiving message.
-                    logger.error("Ignoring message without ID, from " + otherAddress);
+                    logger.error("Ignoring message without ID, from " + sanitiseChatAddress(otherAddress));
                     return;
                 }
 
                 // If it is not an archive message, generate a random UID for
                 // it so that we can correctly store it in and retrieve it from
                 // history.
-                // No need to hash PII as explicitly sending/receiving message.
                 xmppId = UUID.randomUUID().toString();
                 logger.debug("Generated random UID " + xmppId +
-                             " for message without ID, from " + otherAddress);
+                             " for message without ID, from " + sanitiseChatAddress(otherAddress));
             }
             else
             {
@@ -1472,12 +1421,11 @@ public class OperationSetBasicInstantMessagingJabberImpl
                 record = getHistoryService().findByXmppId(otherUserId, xmppId);
             }
 
-            // No need to hash PII as explicitly sending/receiving message.
             logger.debug("Message received: is archive " + isArchive +
                          ", is carbon " + isCarbon +
                          ", is sent " + isSent +
                          ", is error " + isError +
-                         ", other user " + otherUserId +
+                         ", other user " + sanitiseChatAddress(otherUserId) +
                          ", received before? " + (record != null) +
                          ", xmpp id " + xmppId);
 
@@ -1606,8 +1554,7 @@ public class OperationSetBasicInstantMessagingJabberImpl
                     sourceContact = metaContact.getContactForSmsNumber(smsNumber);
                 }
 
-                // No need to hash PII as explicitly sending/receiving message.
-                logger.debug("SMS received from number " + smsNumber +
+                logger.debug("SMS received from number " + logHasher(smsNumber) +
                                                  ", contact : " + sourceContact);
             }
             else
@@ -1626,9 +1573,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
                 StanzaError.Type errorType = msgError.getType();
                 StanzaError.Condition errorCondition = msgError.getCondition();
 
-                // No need to hash PII as explicitly sending/receiving message.
                 logger.info("Message error '" + errorMessage  +
-                            "' received from " + otherUserId +
+                            "' received from " + sanitiseChatAddress(otherUserId) +
                             ", type: " + errorType +
                             ", condition: " + errorCondition +
                             ", id: " + xmppId);
@@ -1638,10 +1584,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
                 int errorResultCode = MessageDeliveryFailedEvent.UNKNOWN_ERROR;
                 if (errorCondition == StanzaError.Condition.internal_server_error)
                 {
-                    // No need to hash PII as explicitly sending/receiving
-                    // message.
                     logger.debug(
-                        "Offline message queue is full for " + otherUserId);
+                        "Offline message queue is full for " + sanitiseChatAddress(otherUserId));
                     errorResultCode =
                         MessageDeliveryFailedEvent.OFFLINE_MESSAGE_QUEUE_FULL;
 
@@ -1653,10 +1597,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
                             msg.getExtensionElement("x", "jabber:x:event");
                     if (msgEvent != null && msgEvent.isOffline())
                     {
-                        // No need to hash PII as explicitly sending/receiving
-                        // message.
                         logger.debug(
-                            "Offline messages are not supported by " + otherUserId);
+                            "Offline messages are not supported by " + sanitiseChatAddress(otherUserId));
                         errorResultCode =
                             MessageDeliveryFailedEvent.OFFLINE_MESSAGES_NOT_SUPPORTED;
                     }
@@ -1698,10 +1640,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
                             failedMessageXmppId =
                                 failedMessage.getSourceMessage().getMessageUID();
 
-                            // No need to hash PII as explicitly sending/receiving
-                            // message.
                             logger.debug("Found XMPP ID " + failedMessageXmppId +
-                                " for SMPP ID " + smppId + " and peerID " + peerId);
+                                " for SMPP ID " + smppId + " and peerID " + sanitisePeerId(peerId));
 
                             // Create a new message with the correct XMPP ID
                             String encoding = newMessage.getEncoding();
@@ -1758,11 +1698,9 @@ public class OperationSetBasicInstantMessagingJabberImpl
                     }
                     else
                     {
-                        // No need to hash PII as explicitly sending/receiving
-                        // message.
                         logger.warn("Unable to find message with id " +
                                      failedMessageXmppId + " for peer id " +
-                                     peerId + " to mark as failed.");
+                                     sanitisePeerId(peerId) + " to mark as failed.");
                     }
                 }
 
@@ -1780,8 +1718,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
             }
 
             // No need to hash PII as explicitly sending/receiving message.
-            logger.trace("just mapped: " + otherUserId
-                                + " to " + otherAddress);
+            logger.trace("just mapped: " + sanitiseChatAddress(otherUserId)
+                                + " to " + sanitiseChatAddress(otherAddress));
 
             if (sourceContact == null)
             {
@@ -1791,7 +1729,7 @@ public class OperationSetBasicInstantMessagingJabberImpl
                 // No need to create a volatile contact for SMS messages.
                 if (messageType != MessageEvent.SMS_MESSAGE)
                 {
-                    logger.trace("creating volatile contact for " + otherUserId);
+                    logger.trace("creating volatile contact for " + sanitiseChatAddress(otherUserId));
                     sourceContact = opSetPersPresence
                         .createVolatileContact(otherUserId);
                 }
@@ -2145,250 +2083,6 @@ public class OperationSetBasicInstantMessagingJabberImpl
             // Accept it if this isn't an archived message.  I.e. if the ext is
             // null or the wrong type.
             return !(ext instanceof ArchivedMessageExtensionElement);
-        }
-    }
-
-    /**
-     * Subscribes this provider as interested in receiving notifications for
-     * new mail messages from Google mail services such as Gmail or Google Apps.
-     */
-    private void subscribeForGmailNotifications()
-    {
-        Jid accountIDService = JidCreate.fromOrNull(
-                jabberProvider.getAccountID().getService());
-        if (accountIDService == null)
-        {
-            logger.debug(jabberProvider.getAccountID().getService()
-                         + " does not seem to be a valid JID");
-            return;
-        }
-
-        // first check support for the notification service
-        boolean notificationsAreSupported =
-                jabberProvider.isFeatureSupported(accountIDService,
-                    NewMailNotificationIQ.NAMESPACE);
-
-        if (!notificationsAreSupported)
-        {
-            logger.debug(accountIDService
-                    +" does not seem to provide a Gmail notification "
-                    +" service so we won't be trying to subscribe for it");
-            return;
-        }
-
-        logger.debug(accountIDService
-                    +" seems to provide a Gmail notification "
-                    +" service so we will try to subscribe for it");
-
-        ProviderManager.addIQProvider(
-                MailboxIQ.ELEMENT_NAME,
-                MailboxIQ.NAMESPACE,
-                new MailboxIQProvider());
-        ProviderManager.addIQProvider(
-                NewMailNotificationIQ.ELEMENT_NAME,
-                NewMailNotificationIQ.NAMESPACE,
-                new NewMailNotificationProvider());
-
-        XMPPConnection connection = jabberProvider.getConnection();
-
-        connection.addStanzaListener(
-                new MailboxIQListener(), new StanzaTypeFilter(MailboxIQ.class));
-        connection.addStanzaListener(
-                new NewMailNotificationListener(),
-                new StanzaTypeFilter(NewMailNotificationIQ.class));
-
-        if (opSetPersPresence.getCurrentStatusMessage().equals(
-                JabberStatusEnum.OFFLINE))
-           return;
-
-        //create a query with -1 values for newer-than-tid and
-        //newer-than-time attributes
-        MailboxQueryIQ mailboxQuery = new MailboxQueryIQ();
-
-        logger.trace("sending mailNotification for acc: "
-                    + jabberProvider.getAccountID().getAccountUniqueID());
-        try
-        {
-            jabberProvider.getConnection().sendStanza(mailboxQuery);
-        }
-        catch (NotConnectedException | InterruptedException e)
-        {
-            logger.error("Failed to send mailNotification for acc: "
-                + jabberProvider.getAccountID().getAccountUniqueID());
-        }
-    }
-
-    /**
-     * Creates an html description of the specified mailbox.
-     *
-     * @param mailboxIQ the mailboxIQ that we are to describe.
-     *
-     * @return an html description of <tt>mailboxIQ</tt>
-     */
-    private String createMailboxDescription(MailboxIQ mailboxIQ)
-    {
-        int threadCount = mailboxIQ.getThreadCount();
-
-        String resourceHeaderKey = threadCount > 1
-            ? "service.gui.NEW_GMAIL_MANY_HEADER"
-            : "service.gui.NEW_GMAIL_HEADER";
-
-        String resourceFooterKey = threadCount > 1
-            ? "service.gui.NEW_GMAIL_MANY_FOOTER"
-            : "service.gui.NEW_GMAIL_FOOTER";
-
-        String newMailHeader = JabberActivator.getResources().getI18NString(
-            resourceHeaderKey,
-            new String[]
-                {
-                    jabberProvider.getAccountID()
-                                .getService(),     //{0} - service name
-                    mailboxIQ.getUrl(),            //{1} - inbox URI
-                    Integer.toString( threadCount )//{2} - thread count
-                });
-
-        StringBuffer message = new StringBuffer(newMailHeader);
-
-        //we now start an html table for the threads.
-        message.append("<table width=100% cellpadding=2 cellspacing=0 ");
-        message.append("border=0 bgcolor=#e8eef7>");
-
-        Iterator<MailThreadInfo> threads = mailboxIQ.threads();
-
-        String maxThreadsStr = (String)JabberActivator.getConfigurationService()
-            .global().getProperty(PNAME_MAX_GMAIL_THREADS_PER_NOTIFICATION);
-
-        int maxThreads = 5;
-
-        try
-        {
-            if (maxThreadsStr != null)
-                maxThreads = Integer.parseInt(maxThreadsStr);
-        }
-        catch (NumberFormatException e)
-        {
-            logger.debug("Failed to parse max threads count: "+maxThreads
-                         +". Going for default.");
-        }
-
-        //print a maximum of MAX_THREADS
-        for (int i = 0; i < maxThreads && threads.hasNext(); i++)
-        {
-            message.append(threads.next().createHtmlDescription());
-        }
-        message.append("</table><br/>");
-
-        if (threadCount > maxThreads)
-        {
-            String messageFooter = JabberActivator.getResources().getI18NString(
-                resourceFooterKey,
-                new String[]
-                {
-                    mailboxIQ.getUrl(),            //{0} - inbox URI
-                    Integer.toString(
-                        threadCount - maxThreads )//{1} - thread count
-                });
-            message.append(messageFooter);
-        }
-
-        return message.toString();
-    }
-
-    /**
-     * Receives incoming MailNotification Packets
-     */
-    private class MailboxIQListener
-        implements StanzaListener
-    {
-        /**
-         * Handles incoming <tt>MailboxIQ</tt> packets.
-         *
-         * @param stanza the IQ that we need to handle in case it is a
-         * <tt>MailboxIQ</tt>.
-         */
-        public void processStanza(Stanza stanza)
-        {
-            if (stanza != null &&  !(stanza instanceof MailboxIQ))
-                return;
-
-            MailboxIQ mailboxIQ = (MailboxIQ) stanza;
-
-            if (mailboxIQ.getTotalMatched() < 1)
-                return;
-
-            //Get a reference to a dummy volatile contact
-            Contact sourceContact = opSetPersPresence
-                .findContactByID(jabberProvider.getAccountID().getService());
-
-            if (sourceContact == null)
-                sourceContact = opSetPersPresence.createVolatileContact(
-                                jabberProvider.getAccountID().getService());
-
-            lastReceivedMailboxResultTime = mailboxIQ.getResultTime();
-
-            String newMail = createMailboxDescription(mailboxIQ);
-
-            ImMessage newMailMessage = new MessageJabberImpl(
-                newMail, HTML_MIME_TYPE, DEFAULT_MIME_ENCODING, null, false, false, false);
-
-            MessageReceivedEvent msgReceivedEvt = new MessageReceivedEvent(
-                newMailMessage, sourceContact, new Date(),
-                MessageReceivedEvent.SYSTEM_MESSAGE);
-
-            fireMessageEvent(msgReceivedEvt);
-        }
-    }
-
-    /**
-     * Receives incoming NewMailNotification Packets.
-     */
-    private class NewMailNotificationListener
-        implements StanzaListener
-    {
-        /**
-         * Handles incoming <tt>NewMailNotificationIQ</tt> packets.
-         *
-         * @param stanza the IQ that we need to handle in case it is a
-         * <tt>NewMailNotificationIQ</tt>.
-         */
-        public void processStanza(Stanza stanza)
-        {
-            if (stanza != null &&  !(stanza instanceof NewMailNotificationIQ))
-                return;
-
-            //check whether we are still enabled.
-            boolean enableGmailNotifications
-                = jabberProvider
-                    .getAccountID()
-                        .getAccountPropertyBoolean(
-                            "GMAIL_NOTIFICATIONS_ENABLED",
-                            false);
-
-            if (!enableGmailNotifications)
-                return;
-
-            if (opSetPersPresence.getCurrentStatusMessage()
-                    .equals(JabberStatusEnum.OFFLINE))
-                return;
-
-            MailboxQueryIQ mailboxQueryIQ = new MailboxQueryIQ();
-
-            if (lastReceivedMailboxResultTime != -1)
-                mailboxQueryIQ.setNewerThanTime(
-                                lastReceivedMailboxResultTime);
-
-            logger.trace("send mailNotification for jabber account"
-                + jabberProvider.getAccountID().getAccountUniqueID());
-
-            try
-            {
-                jabberProvider.getConnection().sendStanza(mailboxQueryIQ);
-            }
-            catch (NotConnectedException | InterruptedException e)
-            {
-                logger.error("Failed to send mailNotification for jabber account"
-                    + jabberProvider.getAccountID().getAccountUniqueID(), e);
-            }
         }
     }
 

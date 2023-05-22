@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- Portions (c) Microsoft Corporation. All rights reserved. -->
 <!--
    The install scripts are located inside the resources/install directory . The
    files are separated in subdirectories according to distribution - generic,
@@ -193,6 +194,7 @@
         <property name="light.dir" value="${windows.app.dir}/tmp/light" />
         <mkdir dir="${light.dir}" />
 
+        <echo message="About to make run.exe with coverage set to ${env.ENABLE_COVERAGE}" />
         <!-- Build run.exe (which is the launcher of the application). -->
         <exec
                 dir="${src}/native/windows/run"
@@ -205,6 +207,7 @@
             <arg value="TARGET_DIR=${light.dir}" />
             <arg value="PRODUCTBUILDVERSION=${sip-communicator.version}" />
             <arg value="TARGET_BASENAME=${wix.app.launcher.name}" />
+            <arg value="ENABLE_COVERAGE=${env.ENABLE_COVERAGE}" />
         </exec>
         <antcall target="wix-sign-file">
             <param name="file.to.sign" value="${light.dir}/${wix.app.launcher.name}.exe"/>
@@ -234,9 +237,6 @@
             <fileset dir="${sc.basedir}/lib">
                 <include name="*.jar" />
             </fileset>
-            <fileset dir="${sc.basedir}/lib/os-specific/windows">
-                <include name="*.jar" />
-            </fileset>
             <fileset dir="${sc.basedir}/lib">
                 <include name="felix.client.run.properties" />
             </fileset>
@@ -262,6 +262,22 @@
                 <include name="*.jar" />
             </fileset>
         </copy>
+
+        <!-- Bundle in the jacoco runtime agent if we're configured to get coverage from the built client -->
+        <if>
+            <equals arg1="${env.ENABLE_COVERAGE}" arg2="true"/>
+            <then>
+                <echo message="ENABLE_COVERAGE is set to true so bundling in org.jacoco.agent-runtime.jar" />
+                <copy todir="${light.dir}/lib/bundle" overwrite="true">
+                    <fileset dir="${project.basedir}/buildtools">
+                        <include name="org.jacoco.agent-runtime.jar" />
+                    </fileset>
+                </copy>
+            </then>
+            <else>
+                <echo message="Not bundling in org.jacoco.agent-runtime.jar as ENABLE_COVERAGE is not set to true: ${env.ENABLE_COVERAGE}" />
+            </else>
+        </if>
 
         <!-- Include Electron client if configured to do so -->
         <runtarget target="windows-electron"/>
@@ -458,72 +474,6 @@
         <delete dir="${light.dir}" />
         <!-- tmp folder can cause problems uploading gitlab artifacts and is no longer needed -->
         <delete dir="${windows.app.dir}/tmp" />
-    </target>
-
-    <target name="build-run.c"
-                    depends="version,load-properties,buildtools.init-ant-contrib" >
-
-        <property name="windows_native_path" value="${sc.basedir}\lib\native\windows"/>
-        <property name="windows.jre.arch.file" value="${windows.jre.file}"/>
-        <condition property="windows.jre.arch.zip" value="${windows.jre.zip}">
-            <isset property="windows.jre.zip" />
-        </condition>
-        <property name="windows.download.link" value="${link.download.windows32}"/>
-        <property name="windows.package.name.suffix" value="x86.exe"/>
-        <property name="windows.msi.package.name.suffix" value="x86.msi"/>
-        <property name="windows.arch" value="32"/>
-        <property name="mingw.home" value="C:/mingw/x86" />
-
-        <!-- removes spaces,-,_ and & from app.exe.filename if any -->
-        <propertyregex property="app.exe.filename"
-            input="${application.name.ascii}"
-            regexp="[-_&amp; ]"
-            replace=""
-            override="true"
-            global="true"
-            defaultValue="${application.name.ascii}"/>
-        <!-- if wix.app.launcher.name is not set use app.exe.filename
-            If using wix.app.launcher.name make sure not to use spaces,-,_
-            in the name.
-        -->
-        <condition property="wix.app.launcher.name"
-                   value="${app.exe.filename}">
-            <not>
-                <isset property="wix.app.launcher.name" />
-            </not>
-        </condition>
-
-        <!--
-            Prepare for the execution of heat.exe (which is part of the
-            preparation for the execution of candle.exe). Create a directory for
-            light.exe, and a directory to store the cabinet cache.
-        -->
-        <property name="light.dir" value="${windows.app.dir}/tmp/light" />
-        <mkdir dir="${light.dir}" />
-        <mkdir dir="${light.dir}/cabcache"/>
-
-        <!-- Build run.exe (which is the launcher of the application). -->
-        <exec
-                dir="${src}/native/windows/run"
-                executable="make.exe"
-                failonerror="true">
-            <env key="PATH" path="${mingw.home}/bin;${env.PATH}" />
-            <arg value="PRODUCTNAME=${application.name.ascii}" />
-        	<arg value="OLDPRODUCTNAME=${application.oldname.ascii}" />
-            <arg value="MINGW_HOME=${mingw.home}" />
-            <arg value="TARGET_DIR=${light.dir}" />
-            <arg value="PRODUCTBUILDVERSION=${sip-communicator.version}" />
-            <arg value="TARGET_BASENAME=${wix.app.launcher.name}" />
-        </exec>
-        <antcall target="wix-sign-file">
-            <param name="file.to.sign" value="${light.dir}/${wix.app.launcher.name}.exe"/>
-        </antcall>
-        <delete>
-            <fileset dir="${light.dir}">
-                <include name="config.h" />
-                <include name="run.res" />
-            </fileset>
-        </delete>
     </target>
 
     <target name="build-installation-wix-msi" if="${wix.store.msi}">
@@ -747,7 +697,7 @@
                 <echo file="${windows.app.dir}\tmp\wix-locales.txt" append="true">@{locale.id}${line.separator}</echo>
             </sequential>
         </for>
-        <exec executable="python2.7.exe" outputproperty="wix.locales.without.cultures">
+        <exec executable="python3.8.exe" outputproperty="wix.locales.without.cultures">
             <arg path="${ext}/scripts/calculate_set_xor.py"/>
             <arg value="${windows.app.dir}\tmp\wix-locales.txt" />
             <arg path="${windows.app.dir}\tmp\built-locales.txt" />
@@ -1072,13 +1022,21 @@
         <symlink action="delete" failonerror="false"
                  link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Headers"/>
         <symlink action="delete" failonerror="false"
-                 link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Resources/fr_CA.lproj"/>
-        <symlink action="delete" failonerror="false"
                  link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Resources"/>
         <symlink action="delete" failonerror="false"
                  link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Sparkle"/>
         <symlink action="delete" failonerror="false"
                  link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/Current"/>
+        <symlink action="delete" failonerror="false"
+                 link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Autoupdate"/>
+        <symlink action="delete" failonerror="false"
+                 link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Modules"/>
+        <symlink action="delete" failonerror="false"
+                 link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/PrivateHeaders"/>
+        <symlink action="delete" failonerror="false"
+                 link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Updater.app"/>
+        <symlink action="delete" failonerror="false"
+                 link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/XPCServices"/>
     </target>
 
     <target name="macosx" depends="version,load-properties,buildtools.init-ant-contrib,buildtools.init-appbundler,bundle-identifier"
@@ -1186,6 +1144,18 @@
         <condition property="sparkle.bundle.name" value="${application.name.ascii}" else="${su.bundle.name}">
             <equals arg1="${su.bundle.name}" arg2=""/>
         </condition>
+
+        <!-- Attach the jacoco runtime agent to gather code coverage data, if configured to do so.
+             If not, set a property that we don't actually use so that the app will still run (we
+             can't nest an if statement inside bundleapp, so we have to set this to something as
+             the app crashes if we set an empty option string.  Ick.).  -->
+        <condition property="coverage.option.string"
+                   value="-javaagent:$APP_ROOT/Contents/Java/org.jacoco.agent-runtime.jar=destfile=$APP_ROOT/Contents/coverage/${application.name.ascii}/installed.jacoco.exec"
+                   else="-Dnet.java.sip.communicator.ENABLE_COVERAGE=false">
+            <equals arg1="${env.ENABLE_COVERAGE}" arg2="true"/>
+        </condition>
+        <echo message="Coverage enabled? ${env.ENABLE_COVERAGE}. Setting javaagent string to: ${coverage.option.string}"/>
+
         <!-- Unzip the jdk into dist/branding-name -->
         <gunzip src="lib/OpenJDK11U-jdk_x64_mac_hotspot.tar.gz"/>
         <untar src="lib/OpenJDK11U-jdk_x64_mac_hotspot.tar" dest="."/>
@@ -1212,11 +1182,13 @@
             <option value="-Dapple.awt.showGrowBox=true"/>
             <option value="-Dapple.awt.UIElement=true"/> <!-- Hide Java dock icon and menu bar by default -->
             <option value="-Dnet.java.sip.communicator.SC_HOME_DIR_NAME=${application.name.ascii}"/>
+            <option value="-Dnet.java.sip.communicator.ELECTRON_APP_NAME=${application.name}"/>
             <option value="-Dnet.java.sip.communicator.SC_OLD_APP_NAME=${application.oldname.ascii}"/>
             <option value="-Dnet.java.sip.communicator.BUNDLE_IDENTIFIER=${bundle.identifier}"/>
             <option value="-XX:+UseG1GC" />
             <option value="-Xss576k"/>
             <option value="-Xmx256m"/>
+            <option value="${coverage.option.string}"/>
 
             <!-- Remove limit on javacpp physicalBytes counter, due to issues where it miscounts on Mac. See https://github.com/bytedeco/javacpp/issues/516 and linked issues-->
             <option value="-Dorg.bytedeco.javacpp.maxPhysicalBytes=0"/>
@@ -1245,8 +1217,6 @@
 
             <classpath dir=".">
                 <include name="lib/*.jar"/>
-                <include name="lib/os-specific/mac/*.jar"/>
-                <include name="lib/os-specific/mac/*.dylib"/>
                 <include name="lib/bundle/*.jar"/>
                 <include name="${bundles.dest}/*.jar"/>
                 <exclude name="${bundles.dest}/*-slick.jar"/>
@@ -1273,6 +1243,18 @@
         <delete file="${macosx.app.jre.dir}/Contents/MacOS/libjli.dylib" />
 
         <copy file="${env.JRE_HOME}/lib/jli/libjli.dylib" tofile="${macosx.app.jre.dir}/Contents/MacOS/libjli.dylib" />
+
+        <!-- Bundle in the jacoco runtime agent if we're configured to get coverage from the built client -->
+        <if>
+            <equals arg1="${env.ENABLE_COVERAGE}" arg2="true"/>
+            <then>
+                <echo message="ENABLE_COVERAGE is set to true so bundling in org.jacoco.agent-runtime.jar" />
+                <copy file="${project.basedir}/buildtools/org.jacoco.agent-runtime.jar" todir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java" overwrite="true"/>
+            </then>
+            <else>
+                <echo message="Not bundling in org.jacoco.agent-runtime.jar as ENABLE_COVERAGE is not set to true: ${env.ENABLE_COVERAGE}" />
+            </else>
+        </if>
 
         <property name="cfbundleurltypes.start" >
             <![CDATA[<key>CFBundleURLTypes</key>
@@ -1404,10 +1386,6 @@
       <copy file="lib/native/mac/libsparkle_init.dylib"
             todir="${macosx.app.dir}/${application.name.ascii}.app/Contents/MacOS"/>
 
-      <!-- Add public key file to the application bundle -->
-      <copy file="${sparkle.signature.location.pub}"
-            todir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources"/>
-
       <!-- Add the Sparkle properties in the Info.plist file -->
       <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Info.plist">
         <replacetoken><![CDATA[<key>CFBundleName</key>]]></replacetoken>
@@ -1417,8 +1395,8 @@
     <string>YES</string>
     <key>SUScheduledCheckInterval</key>
     <string>86400</string>
-    <key>SUPublicDSAKeyFile</key>
-    <string>sparkle_dsa_pub.pem</string>
+    <key>SUPublicEDKey</key>
+    <string>iWZ5qKeRSGktmrg1b5cbUODa46Kd9W6vCP21/VA3S64=</string>
     <key>SUFeedURL</key>
     <string>_DOWNLOAD_LINK_</string>
     <key>SUShowReleaseNotes</key>
@@ -1454,6 +1432,8 @@
             <string>_LOCATION_USAGE_STRING_</string>
             <key>NSRemovableVolumesUsageDescription</key>
             <string>_REMOVABLE_DRIVES_USAGE_STRING_</string>
+            <key>NSBluetoothAlwaysUsageDescription</key>
+            <string>_BLUETOOTH_USAGE_STRING_</string>
             <key>CFBundleName</key>]]></replacevalue>
         </replace>
 
@@ -1463,24 +1443,32 @@
             dest="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks"/>
       <!-- Ant unzip tasks does not preserve symlinks, so we recreate them -->
       <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/Current"
-            resource="./A"/>
+            resource="./B"/>
+      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Autoupdate"
+            resource="./Versions/Current/Autoupdate"/>
       <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Headers"
             resource="./Versions/Current/Headers"/>
+      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Modules"
+            resource="./Versions/Current/Modules"/>
+      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/PrivateHeaders"
+            resource="./Versions/Current/PrivateHeaders"/>
       <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Resources"
             resource="./Versions/Current/Resources"/>
       <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Sparkle"
             resource="./Versions/Current/Sparkle"/>
-      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Resources/fr_CA.lproj"
-            resource="./fr.lproj"/>
-      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Resources/pt.lproj"
-            resource="./pt_BR.lproj" failonerror="false"/>
+      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Updater.app"
+            resource="./Versions/Current/Updater.app"/>
+      <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/XPCServices"
+            resource="./Versions/Current/XPCServices"/>
 
-      <!-- Restore the file permissions to the Sparkle relaunch tool -->
+        <!-- Restore the file permissions to the Sparkle relaunch tool -->
       <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Resources/relaunch"
                perm="ugo+rx"/>
-      <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/A/Sparkle"
+      <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle"
                perm="ugo+rx"/>
-      <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate"
+      <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate"
+               perm="ugo+rx"/>
+      <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater"
                perm="ugo+rx"/>
 
             <!-- If the customer wants a none ASCII app name, we need to fix up the Info.plist file :( -->
@@ -1526,20 +1514,35 @@
         <!-- Create InfoPlist.strings files in the Mac OS resources folders for each supported language -->
         <if><available file="${sc.basedir}/resources/languages/resources_${jitsi.available.lang.resource}.properties"/>
             <then>
-                <echo message="Including InfoPlist.strings in ${jitsi.available.lang.resource}.lproj" />
-                <copy file="${sc.basedir}/resources/install/macosx/InfoPlist.strings"
-                      todir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj"/>
-
-                <!-- load the default values for the permission strings -->
-                <loadproperties srcFile="${sc.basedir}/resources/languages/resources.properties">
+                <echo message="Including InfoPlistPermissions.strings in ${jitsi.available.lang.resource}.lproj" />
+                <!-- Combine optional branding strings (excluding permission strings) with permissions strings we always need (in separate append concat)-->
+                <concat destfile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings" ignoreempty="false">
+                    <fileset file="${sc.basedir}/resources/install/macosx/InfoPlist.strings"/>
                     <filterchain>
-                        <linecontains>
-                            <contains value="service.macospermissions"/>
+                        <linecontains negate="true">
+                            <contains value="UsageDescription"/>
                         </linecontains>
                     </filterchain>
-                </loadproperties>
+                </concat>
+                <concat destfile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings" append="true">
+                    <fileset file="${sc.basedir}/resources/install/macosx/InfoPlistPermissions.strings" />
+                </concat>
 
-                <!-- override them with any language specific ones -->
+                <!-- Permission strings -->
+                <!-- Load the branding provided permission strings -->
+                <if><available file="${sc.basedir}/resources/install/macosx/InfoPlist.strings"/>
+                    <then>
+                        <loadproperties srcFile="${sc.basedir}/resources/install/macosx/InfoPlist.strings" prefix="service.macospermissions.">
+                            <filterchain>
+                                <linecontains>
+                                    <contains value="UsageDescription"/>
+                                </linecontains>
+                            </filterchain>
+                        </loadproperties>
+                    </then>
+                </if>
+
+                <!-- Load the language specific permission strings -->
                 <loadproperties srcFile="${sc.basedir}/resources/languages/resources_${jitsi.available.lang.resource}.properties">
                     <filterchain>
                         <linecontains>
@@ -1548,34 +1551,92 @@
                     </filterchain>
                 </loadproperties>
 
+                <!-- Fill any remaining with default values -->
+                <loadproperties srcFile="${sc.basedir}/resources/languages/resources.properties">
+                    <filterchain>
+                        <linecontains>
+                            <contains value="service.macospermissions"/>
+                        </linecontains>
+                    </filterchain>
+                </loadproperties>
+
+                <!-- Replace key with provided permissions string, preferring the branding provided string over the language-specific string -->
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSMicrophoneUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSMicrophoneUsageDescription}"/>
+                    <param name="permissions.key" value="_MICROPHONE_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_MICROPHONE_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSCameraUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSCameraUsageDescription}"/>
+                    <param name="permissions.key" value="_CAMERA_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_CAMERA_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSContactsUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSContactsUsageDescription}"/>
+                    <param name="permissions.key" value="_CONTACTS_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_CONTACTS_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSDownloadsFolderUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSDownloadsFolderUsageDescription}"/>
+                    <param name="permissions.key" value="_DOWNLOADS_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_DOWNLOADS_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSDesktopFolderUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSDesktopFolderUsageDescription}"/>
+                    <param name="permissions.key" value="_DESKTOP_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_DESKTOP_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSDocumentsFolderUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSDocumentsFolderUsageDescription}"/>
+                    <param name="permissions.key" value="_DOCUMENTS_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_DOCUMENTS_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSNetworkVolumesUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSNetworkVolumesUsageDescription}"/>
+                    <param name="permissions.key" value="_NETWORK_DRIVES_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_NETWORK_DRIVES_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSRemovableVolumesUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSRemovableVolumesUsageDescription}"/>
+                    <param name="permissions.key" value="_REMOVABLE_DRIVES_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_REMOVABLE_DRIVES_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSLocationUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSLocationUsageDescription}"/>
+                    <param name="permissions.key" value="_LOCATION_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_LOCATION_USAGE_STRING}"/>
+                </antcall>
+                <antcall target="permissions-string-replace">
+                    <param name="branding.key" value="service.macospermissions.NSBluetoothAlwaysUsageDescription"/>
+                    <param name="branding.string" value="${service.macospermissions.NSBluetoothAlwaysUsageDescription}"/>
+                    <param name="permissions.key" value="_BLUETOOTH_USAGE_STRING_"/>
+                    <param name="permissions.string" value="${service.macospermissions.MAC_BLUETOOTH_USAGE_STRING}"/>
+                </antcall>
+            </then>
+        </if>
+    </target>
+    <target name="permissions-string-replace">
+        <if><isset property="${branding.key}"/>
+            <then>
                 <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_MICROPHONE_USAGE_STRING_" value="${service.macospermissions.MAC_MICROPHONE_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_CAMERA_USAGE_STRING_" value="${service.macospermissions.MAC_CAMERA_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_CONTACTS_USAGE_STRING_" value="${service.macospermissions.MAC_CONTACTS_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_DOWNLOADS_USAGE_STRING_" value="${service.macospermissions.MAC_DOWNLOADS_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_DESKTOP_USAGE_STRING_" value="${service.macospermissions.MAC_DESKTOP_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_DOCUMENTS_USAGE_STRING_" value="${service.macospermissions.MAC_DOCUMENTS_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_NETWORK_DRIVES_USAGE_STRING_" value="${service.macospermissions.MAC_NETWORK_DRIVES_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_REMOVABLE_DRIVES_USAGE_STRING_" value="${service.macospermissions.MAC_REMOVABLE_DRIVES_USAGE_STRING}"/>
-                </replace>
-                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
-                    <replacefilter token="_LOCATION_USAGE_STRING_" value="${service.macospermissions.MAC_LOCATION_USAGE_STRING}"/>
+                    <!-- branding.string already contains the '"' and ';' so replace these characters too -->
+                    <replacefilter token='"${permissions.key}";' value="${branding.string}"/>
                 </replace>
             </then>
+            <else>
+                <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Resources/${jitsi.available.lang.resource}.lproj/InfoPlist.strings">
+                    <replacefilter token="${permissions.key}" value="${permissions.string}"/>
+                </replace>
+            </else>
         </if>
     </target>
 
@@ -1584,10 +1645,13 @@
             if="is.running.macos"
             description="Create a .dmg package for MACOSX (only works on MACOSX)">
 
+      <propertyregex property="package.name.despaced" input="${package.name}"
+                     regexp="\s" replace="" global="true"/>
+
       <property name="macosx.dmg.name"
-                value="${package.name}-${sip-communicator.version}.dmg"/>
+                value="${package.name.despaced}-${sip-communicator.version}.dmg"/>
       <property name="macosx.dmg.tmpname"
-                value="${package.name}-tmp.dmg"/>
+                value="${package.name.despaced}-tmp.dmg"/>
       <delete file="${macosx.app.dir}/${macosx.dmg.name}"
               quiet="yes" failonerror="false"/>
 
@@ -1670,6 +1734,24 @@
       <delete file="${macosx.app.dir}/${macosx.dmg.tmpname}"
               quiet="yes" failonerror="false"/>
 
+      <!-- Unlock the keychain with 20 minute timeout -->
+      <antcall target="macosx-unlock-keychain"/>
+
+        <!-- Sign the .dmg -->
+        <echo message="Codesigning .dmg disk image"/>
+        <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
+            <arg value="-f"/>
+            <arg value="-s"/>
+            <arg value="${macosx.sign.certid}"/>
+            <arg value="--timestamp"/>
+            <arg value="-i"/>
+            <arg value="${bundle.identifier}"/>
+            <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
+        </exec>
+
+      <!-- Lock the keychain again -->
+      <antcall target="macosx-lock-keychain"/>
+
       <!-- Notarize the app if required -->
       <if>
         <equals arg1="${env.SKIP_NOTARIZATION}" arg2="true"/>
@@ -1678,6 +1760,37 @@
         </then>
         <else>
             <runtarget target="macosx-notarize-app"/>
+
+            <!-- Verify that the package has been notarised correctly -->
+            <echo message="Assessing .app after notarisation"/>
+            <!-- Attach disk image -->
+            <exec executable="/usr/bin/hdiutil" failonerror="true">
+                <arg value="attach"/>
+                <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
+                <arg value="-mountroot"/>
+                <arg value="${macosx.app.dir}/Test"/>
+            </exec>
+            <!-- Check the app passes Gatekeeper execution checks -->
+            <exec executable="/usr/sbin/spctl" resultproperty="return-code" errorproperty="error-message">
+                <arg value="-a"/>
+                <arg value="-t"/>
+                <arg value="exec"/>
+                <arg value="-vvv"/>
+                <arg value="${macosx.app.dir}/Test/${application.name.ascii}/${application.name.ascii}.app"/>
+            </exec>
+            <!-- Detach disk image -->
+            <exec executable="/usr/bin/hdiutil" failonerror="true">
+                <arg value="detach"/>
+                <arg value="${macosx.app.dir}/Test/${application.name.ascii}"/>
+            </exec>
+            <!-- Remove temporary directory -->
+            <delete dir="${macosx.app.dir}/Test"
+                    quiet="yes" failonerror="false"/>
+            <!-- Fail the build on unsuccessful spctl check -->
+            <fail>
+                <condition><not><equals arg1="${return-code}" arg2="0"/></not></condition>
+                Gatekeeper check failed. Error: ${error-message}
+            </fail>
         </else>
       </if>
 
@@ -1709,7 +1822,6 @@
         <apply executable="/usr/bin/codesign" parallel="false" os="Mac OS X" failonerror="true">
             <arg value="-v"/>
             <arg value="-f"/>
-            <arg value="--deep"/>
             <arg value="--options"/>
             <arg value="runtime"/>
             <arg value="--entitlements"/>
@@ -1722,30 +1834,49 @@
 
         <echo message="Codesigning Sparkle/.../finish_installation.app/.../Autoupdate"/>
         <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
-            <arg value="-v"/>
             <arg value="-f"/>
-            <arg value="--deep"/>
-            <arg value="--options"/>
-            <arg value="runtime"/>
-            <arg value="--entitlements"/>
-            <arg value="${sc.basedir}/resources/install/macosx/entitlements.xml"/>
             <arg value="-s"/>
             <arg value="${macosx.sign.certid}"/>
-            <arg value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate"/>
+            <arg value="-o"/>
+            <arg value="runtime"/>
+            <arg value="--generate-entitlement-der"/>
+            <arg value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate"/>
+        </exec>
+
+        <echo message="Codesigning Sparkle/.../finish_installation.app/.../Updater.app"/>
+        <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
+            <arg value="-f"/>
+            <arg value="-s"/>
+            <arg value="${macosx.sign.certid}"/>
+            <arg value="-o"/>
+            <arg value="runtime"/>
+            <arg value="--generate-entitlement-der"/>
+            <arg value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app"/>
+        </exec>
+
+        <echo message="Codesigning Sparkle.framework"/>
+        <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
+            <arg value="-f"/>
+            <arg value="-s"/>
+            <arg value="${macosx.sign.certid}"/>
+            <arg value="-o"/>
+            <arg value="runtime"/>
+            <arg value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework"/>
         </exec>
 
         <!-- signing the entire application -->
-        <echo message="!About to run: codesign -v -f --deep --options runtime --entitlements ${sc.basedir}/resources/install/macosx/entitlements.xml -s ${macosx.sign.certid} ${macosx.app.dir}/${application.name.ascii}.app"/>
+        <echo message="!About to run: codesign -v --deep -f --options runtime --entitlements ${sc.basedir}/resources/install/macosx/entitlements.xml -s ${macosx.sign.certid} ${macosx.app.dir}/${application.name.ascii}.app"/>
         <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
             <arg value="-v"/>
-            <arg value="-f"/>
             <arg value="--deep"/>
+            <arg value="-f"/>
             <arg value="--options"/>
             <arg value="runtime"/>
             <arg value="--entitlements"/>
             <arg value="${sc.basedir}/resources/install/macosx/entitlements.xml"/>
             <arg value="-s"/>
             <arg value="${macosx.sign.certid}"/>
+            <arg value="--generate-entitlement-der"/>
             <arg value="${macosx.app.dir}/${application.name.ascii}.app"/>
         </exec>
 
@@ -1760,8 +1891,9 @@
         <antcall target="macosx-lock-keychain"/>
     </target>
 
-    <target name="macosx-sparkle-files" if="sparkle.signature.location">
+    <target name="macosx-sparkle-files" if="env.SPARKLE_EDDSA_KEY">
         <!-- Now is as good a time as any to delete files from the sparkle_generate_app cache, which quickly takes up a huge space -->
+        <mkdir dir="~/Library/Caches/Sparkle_generate_appcast"/>
         <exec executable="/bin/sh" failonerror="true">
             <arg value="-c" />
             <arg value="find ~/Library/Caches/Sparkle_generate_appcast -maxdepth 1 -name '*.dmg' -mtime +1 -exec rm -rf {} \;" />
@@ -1769,7 +1901,8 @@
 
         <!-- Create basic appcast file using Sparkle's generate_appcast tool -->
         <exec executable="${ext}/scripts/generate_appcast" os="Mac OS X" failonerror="true">
-            <arg value="${sparkle.signature.location}"/>
+            <arg value="--ed-key-file"/>
+            <arg value="${env.SPARKLE_EDDSA_KEY}"/>
             <arg value="${macosx.app.dir}"/>
         </exec>
 
@@ -1787,23 +1920,24 @@
         <property name="sparkle.timestamp" value="${appcast.rss.channel.item.pubDate}"/>
 
         <!-- If ${link.download.macosx} contains the string literal ${package.name} (true for dev branding)
-             replace it with the value of ${package.name} in the download link, otherwise
+             replace it with the value of ${package.name.despaced} in the download link, otherwise
              keep the original download link -->
         <propertyregex property="link.download.macosx.expanded"
                        input="${link.download.macosx}"
                        regexp="\$\{package.name\}"
-                       replace="${package.name}"
+                       replace="${package.name.despaced}"
                        defaultvalue="${link.download.macosx}"/>
+
+        <!-- Replace minimumSystemVersion to 10.13 (Sparkle 2.3.0 requires macOS 10.13+/Xcode 14+) -->
+        <property name="sparkle.minsysversion" value="10.13"/>
+        <replaceregexp file="${macosx.app.dir}/${sparkle.appcast.file}"
+                       match="minimumSystemVersion&gt;.*&lt;"
+                       replace="minimumSystemVersion&gt;${sparkle.minsysversion}&lt;"/>
 
         <!-- Replace download link in appcast (value of url attribute) with full path to dmg-->
         <replaceregexp file="${macosx.app.dir}/${sparkle.appcast.file}"
                        match="url=&quot;.*?&quot;"
                        replace="url=&quot;${link.download.macosx.expanded}&quot;"/>
-
-        <!-- Add required version section-->
-        <replace file="${macosx.app.dir}/${sparkle.appcast.file}"
-                 token="sparkle:dsaSignature"
-                 value="sparkle:requiredVersion=&quot;&quot; sparkle:dsaSignature"/>
 
         <!-- Add changelog section (not used by Sparkle) -->
         <replace file="${macosx.app.dir}/${sparkle.appcast.file}">
@@ -1857,7 +1991,7 @@
 
     <!-- task only finishes generating sparkle files if needed -->
     <target name="macosx-sparkle-files-finish"
-            if="sparkle.signature.location">
+            if="env.SPARKLE_EDDSA_KEY">
         <!-- To be able to insert deltas in the updates xml
             we use the token @SPARKLE_DELTAS@. And when finished
             putting deltas (no matter if there were any at all if option
@@ -1914,7 +2048,7 @@
         <!-- copy data for next delta builds-->
         <mkdir dir="${delta.history.location}/${sparkle.build}"/>
         <copy file="${macosx.app.dir}/${macosx.dmg.name}"
-              tofile="${delta.history.location}/${sparkle.build}/${package.name}.dmg"/>
+              tofile="${delta.history.location}/${sparkle.build}/${package.name.despaced}.dmg"/>
 
         <!-- now delete old one -->
         <antcall target="-delete-oldest-delta-data"/>
@@ -1932,7 +2066,7 @@
         <!-- Attach the  image -->
         <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
             <arg value="attach"/>
-            <arg value="${build-location}/${package.name}.dmg"/>
+            <arg value="${build-location}/${package.name.despaced}.dmg"/>
             <arg value="-mountroot"/>
             <arg value="${macosx.app.dir}/tmp/${old.sparkle.build}"/>
         </exec>
@@ -1958,7 +2092,7 @@
         <exec executable="bash" os="Mac OS X" failonerror="true"
               outputproperty="delta.signature.base64">
             <arg value="-c"/>
-            <arg value="openssl dgst -sha1 -binary &lt; '${macosx.app.dir}/${application.name.ascii}-${old.sparkle.build}-to-${sparkle.build}.delta' | openssl dgst -dss1 -sign ${sparkle.signature.location} | openssl enc -base64"/>
+            <arg value="openssl dgst -sha1 -binary &lt; '${macosx.app.dir}/${application.name.ascii}-${old.sparkle.build}-to-${sparkle.build}.delta' | openssl dgst -dss1 -sign ${env.SPARKLE_EDDSA_KEY} | openssl enc -base64"/>
         </exec>
 
         <length file="${macosx.app.dir}/${application.name.ascii}-${old.sparkle.build}-to-${sparkle.build}.delta"
@@ -2048,7 +2182,10 @@
 
     <!--
         Construct the mac app's bundle identifier
-        The bundle identifier must always stay consistent with its original value, even after app rename
+        The bundle identifier must always stay consistent with its original value, even after app rename.
+        Bundle identifiers should not contain spaces, but some of the packagenames historically did, and we cannot change that.
+        We continue to set the bundle.identifier using the value in package.name, not the despaced one, and hope that
+        various tools simply handle the invalid bundle id in a consistent way.
     -->
     <target name="bundle-identifier">
         <condition property="bundle.identifier" value="org.${package.name}" else="org.${package.name.original}">

@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.callpark;
 
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -659,7 +661,8 @@ public class CallParkWindow extends SIPCommFrame implements CallParkListener,
      */
     public static synchronized void parkCall(CallPeer peer, Window window)
     {
-        sLog.info("Open call park window for call " + peer.getDisplayName());
+        sLog.info("Open call park window for call " + logHasher(peer.getDisplayName()));
+        final boolean windowWasHidden = sWindow == null || !sWindow.isVisible();
 
         // Add a listener for the  call to be dismissed.
         peer.getCall().addCallChangeListener(new CallChangeAdapter()
@@ -671,9 +674,11 @@ public class CallParkWindow extends SIPCommFrame implements CallParkListener,
 
                 if (CallState.CALL_ENDED.equals(evt.getNewValue()))
                 {
-                    sLog.debug("Call ended so hiding window");
-
-                    hideWindow();
+                    if (windowWasHidden)
+                    {
+                        sLog.debug("Call ended so hiding window");
+                        hideWindow();
+                    }
                 }
             }
         });

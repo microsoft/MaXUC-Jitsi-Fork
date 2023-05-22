@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.generalconfig;
 
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.io.*;
 import java.util.*;
 
@@ -62,7 +64,7 @@ public class CallRecordingDirSelectorComboBox
         String name = new File(path).getName();
 
         logger.debug("Dropdown selector determines call recording folder to " +
-                     "be " + path);
+                     "be " + logHasher(path));
         return new LabelledPath(name, path);
     }
 

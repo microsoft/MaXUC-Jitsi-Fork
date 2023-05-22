@@ -1190,8 +1190,8 @@ public class OutlookUtils
 
             // Note that we are guessing here - we don't know this ID, so it
             // should be added to the unknown IDs
-            CalendarItemScheduler.addFailedTimeZoneString(outlookString,
-                                                          timeZoneId);
+            OutlookCalendarDataHandler.addFailedTimeZoneString(outlookString,
+                                                               timeZoneId);
         }
 
         TimeZone timeZone;

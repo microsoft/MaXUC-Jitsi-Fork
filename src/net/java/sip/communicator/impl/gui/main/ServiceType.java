@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main;
 
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.awt.Desktop;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -12,14 +14,13 @@ import java.util.List;
 
 import javax.swing.JMenuItem;
 
-import com.drew.lang.annotations.Nullable;
+import org.jitsi.util.CustomAnnotations.*;
 import com.google.common.annotations.VisibleForTesting;
 
 import net.java.sip.communicator.impl.gui.GuiActivator;
 import net.java.sip.communicator.impl.gui.main.UcServicesConfigPanel.UrlServiceConfigPanel;
 import net.java.sip.communicator.impl.gui.main.UrlServiceTools.UrlService;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
-import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.analytics.AnalyticsParameterSimple;
@@ -60,20 +61,6 @@ public enum ServiceType
     {
         public String getConfigName() { return "crm"; }
         public String getShortConfigName() { return "CRM"; }
-
-        @Override
-        public ArrayList<JMenuItem> getMenuItems()
-        {
-            // Use createMenuItem() instead (to get a unique instance).
-            return null;
-        }
-
-        @Override
-        protected void refreshAppearance()
-        {
-            // CRM doesn't have a single menu item, so this method is not
-            // valid.
-        }
 
         @Override
         public String getMenuText(String name)
@@ -117,22 +104,6 @@ public enum ServiceType
         }
 
         @Override
-        public void launchServiceFromName(String serviceName)
-        {
-            UrlService service = findServiceToLaunch(serviceName);
-
-            if (service == null)
-            {
-                logger.error("service could not be found for " + serviceName);
-                return;
-            }
-
-            service.getDisplayer().setVisible(true);
-
-            logger.debug("Launching browser panel for " + service.name);
-        }
-
-        @Override
         public int numberOfSelectedServicesAllowed()
         {
             return UrlServiceTools.N_SERVICES_PER_TYPE;
@@ -148,75 +119,12 @@ public enum ServiceType
             return false;
         }
 
-        @Override
-        public void updateWindowSize(UrlServiceTools ust)
-        {
-            ArrayList<UrlService> selectedServices = ust.getSelectedServices(this);
-
-            for (UrlService service : selectedServices)
-            {
-                //set default as full screen.
-                String windowSize = GuiActivator.getConfigurationService().user().getString(getPrefix(
-                    service.serviceIndex) + "." + WINDOW_SIZE, FULL_SCREEN);
-
-                if (windowSize.equals(SMALL) || windowSize.equals(MEDIUM))
-                {
-                    int height;
-                    int width;
-
-                    if (windowSize.equals(SMALL))
-                    {
-                        height = SMALL_HEIGHT;
-                        width = SMALL_WIDTH;
-                    }
-                    else
-                    {
-                        height = MEDIUM_HEIGHT;
-                        width = MEDIUM_WIDTH;
-                    }
-
-                    GuiActivator.getConfigurationService().user().setProperty(getPrefix(
-                                service.serviceIndex) + ".HEIGHT", height);
-                    GuiActivator.getConfigurationService().user().setProperty(getPrefix(
-                                service.serviceIndex) + ".WIDTH", width);
-                    GuiActivator.getConfigurationService().user().setProperty(getPrefix(
-                                service.serviceIndex) + ".fullscreen", false);
-                }
-                else
-                {
-                    // If the window size is set to anything other than small
-                    // or medium, we default to fullscreen.
-                    GuiActivator.getConfigurationService().user().setProperty(getPrefix(
-                                service.serviceIndex) + ".fullscreen", true);
-                }
-            }
-        }
-
-        @Override
-        public String getNameOfSelectedService()
-        {
-            logger.error("There is no concept of a selected service for the Cloud Hosted category because all services are visible to user");
-            return null;
-        }
     };
 
     private static final String CALLER_VALUE_TOKEN = "\\{SEARCH_VALUE\\}";
     private static final String CALLER_NUMBER_TOKEN = "\\{SEARCH_NUMBER_ONLY\\}";
 
     private static final String AUTO_LAUNCH_TYPE = "autolaunch";
-
-    private static final String WINDOW_SIZE = "windowsize";
-    private static final String SMALL = "small";
-    private static final String MEDIUM = "medium";
-    private static final String FULL_SCREEN = "fullscreen";
-
-    // The dimensions of the small window have been chosen to match the default
-    // size of the CommPortal windows. Consider both sets of dimensions before
-    //making any changes.
-    protected final int SMALL_HEIGHT = 385;
-    protected final int SMALL_WIDTH = 575;
-    protected final int MEDIUM_HEIGHT = 770;
-    protected final int MEDIUM_WIDTH = 1285;
 
     private static final Logger logger = Logger.getLogger(ServiceType.class);
 
@@ -325,29 +233,27 @@ public enum ServiceType
     /**
      * We need to present the current selected service for each category in Electron, therefore we have to send the
      * current selected names over WISPA. This method finds the current selected service for each category and returns
-     * the corresponding name of the service, returning null if there no selected service.
+     * the corresponding name of the service, returning an empty list if there no selected service.
      *
-     * This method is called on all categories except "Cloud hosted", this is because the cloud hosted services are all
-     * visible to the user unlike the other categories.
+     * For all categories except "Cloud hosted", this will return either an empty list or a list with 1 item.
+     * All cloud hosted services should be shown if enabled, so there can be up to 5.
      *
-     * @return The name of the current selected service for this category, null if no selected service.
+     * @return A list of names of the current selected service for this category.
      */
-    public String getNameOfSelectedService()
+    public List<String> getNameOfSelectedService()
     {
         boolean isEnabled = UrlServiceTools.getUrlServiceTools().isServiceTypeEnabled(this);
         ArrayList<UrlService> selectedUrlServices = UrlServiceTools.getUrlServiceTools().getSelectedServices(this);
+        ArrayList<String> selectedServicesNames = new ArrayList<>();
 
-        if (isEnabled && !selectedUrlServices.isEmpty())
+        if (isEnabled)
         {
-            // There is only ever one selected service for the categories this method can be called on (all except cloud
-            // hosted). Therefore, if the list is non-empty, then we know the selected service is the one in the first
-            // (and only) index.
-            return selectedUrlServices.get(0).name;
+            for (UrlServiceTools.UrlService urlService: selectedUrlServices)
+            {
+                selectedServicesNames.add(urlService.name);
+            }
         }
-        else
-        {
-            return null;
-        }
+        return selectedServicesNames;
     }
 
     /**
@@ -443,7 +349,8 @@ public enum ServiceType
 
     private void launchURLInternal(String url)
     {
-        logger.info("Launch a " + getConfigName() + " session");
+        final String loggableUrl = logHasher(url);
+        logger.info("Launch a " + getConfigName() + " session to: " + loggableUrl);
         boolean error = false;
         String errorTitle = "";
         String errorText = "";
@@ -457,7 +364,7 @@ public enum ServiceType
             }
             catch (IOException e)
             {
-                logger.warn("Exception using URL: " + url);
+                logger.warn("Exception using URL: " + loggableUrl);
                 error = true;
                 errorTitle = GuiActivator.getResources().getI18NString(
                     "service.gui.UC_SERVICES.URL_ERROR.FAILED.TITLE");
@@ -467,7 +374,7 @@ public enum ServiceType
             }
             catch (URISyntaxException e)
             {
-                logger.warn("Syntax error in URL: " + url, e);
+                logger.warn("Syntax error in URL: " + loggableUrl, e);
                 error = true;
                 errorTitle = GuiActivator.getResources().getI18NString(
                     "service.gui.UC_SERVICES.URL_ERROR.FAILED.TITLE");
@@ -480,7 +387,7 @@ public enum ServiceType
                 // Seriously! We hit this on Mac when trying to load a URL
                 // containing invalid characters. Use the "Invalid URL"
                 // error text.
-                logger.warn("Exception loading URL: " + url, e);
+                logger.warn("Exception loading URL: " + loggableUrl, e);
                 error = true;
                 errorTitle = GuiActivator.getResources().getI18NString(
                     "service.gui.UC_SERVICES.URL_ERROR.FAILED.TITLE");
@@ -499,104 +406,8 @@ public enum ServiceType
 
         if (error)
         {
-            ErrorDialog popup = new ErrorDialog(null, errorTitle, errorText);
-            popup.setVisible(true);
+            new ErrorDialog(errorTitle, errorText).showDialog();
         }
-    }
-
-    /**
-     * Get (or create as necessary) the JMenuItem for the tools menu.
-     * @return A JMenuItem, or null if this service shouldn't appear in the
-     * Tools menu.
-     */
-    public ArrayList<JMenuItem> getMenuItems()
-    {
-        if (menuItems == null)
-        {
-            menuItems = createMenuItems();
-        }
-
-        return menuItems;
-    }
-
-    /**
-     * Refresh visibility of this service's JMenuItem.
-     */
-    protected void refreshAppearance()
-    {
-        refreshAppearance(menuItems);
-    }
-
-    /**
-     * Refresh visibility of the passed-in JMenuItem.
-     * @param items a list of menu items for the service type.
-     */
-    private void refreshAppearance(ArrayList<JMenuItem> items)
-    {
-        if (items == null || items.isEmpty())
-
-        {
-            logger.debug(this + ": No item to refresh");
-            return;
-        }
-
-        if (UrlServiceTools.getUrlServiceTools().isServiceTypeEnabled(this))
-        {
-            logger.debug("Enable the " + getConfigName() + " menu");
-
-            ArrayList<UrlService> selectedServices = UrlServiceTools.getUrlServiceTools().getSelectedServices(this);
-
-            int selectedServicesIndex = 0;
-            for (JMenuItem item : items)
-            {
-                if (selectedServicesIndex < selectedServices.size())
-                {
-                    String menuName = selectedServices.get(selectedServicesIndex).name;
-                    item.setText(getMenuText(menuName));
-
-                    if (this != CRM)
-                    {
-                        // Don't have a tool-tip on Contacts (the CRM item)
-                        item.setToolTipText(selectedServices.get(selectedServicesIndex).getURL());
-                    }
-
-                    item.setVisible(true);
-                }
-                else
-                {
-                    item.setVisible(false);
-                }
-                selectedServicesIndex++;
-            }
-        }
-        else
-        {
-            logger.debug("Hide the " + getConfigName() + " menu");
-            for (JMenuItem item : items)
-            {
-                item.setVisible(false);
-            }
-        }
-    }
-        /**
-         * Create a menu item to appear in a menu.
-         */
-    public ArrayList<JMenuItem> createMenuItems()
-    {
-        logger.debug("Creating " + numberOfSelectedServicesAllowed() +
-             " menu items: " + getConfigName());
-        ArrayList<JMenuItem> menuItemArray = new ArrayList<>();
-
-        for (int i = 0; i < numberOfSelectedServicesAllowed(); i++)
-        {
-            JMenuItem newMenuItem = new JMenuItem(getConfigName());
-            newMenuItem.setName(getConfigName());
-            ScaleUtils.scaleFontAsDefault(newMenuItem);
-            menuItemArray.add(newMenuItem);
-        }
-        refreshAppearance(menuItemArray);
-
-        return menuItemArray;
     }
 
     /**
@@ -612,16 +423,6 @@ public enum ServiceType
      * and is overridden by subclasses.
      */
     public void setAutoLaunchType(String value)
-    {
-    }
-
-    /**
-     * Updates the height and width of the window if the Url service is to
-     * be launched in an embedded browser. Defaults to noop as most
-     * services are launched in the native browser. It should be
-     * overridden if the service is to be launched in an embedded browser.
-     */
-    public void updateWindowSize(UrlServiceTools ust)
     {
     }
 
@@ -683,5 +484,15 @@ public enum ServiceType
         }
 
         return name;
+    }
+
+    boolean shouldAppearInConfigPanel(String shortConfigName)
+    {
+        if(!shortConfigName.equals("CRM")) {
+            return false;
+        }
+        else {
+            return true;
+        }
     }
 }

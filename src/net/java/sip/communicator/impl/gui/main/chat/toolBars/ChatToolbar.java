@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat.toolBars;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.*;
@@ -18,7 +20,7 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 
-import com.drew.lang.annotations.NotNull;
+import org.jitsi.util.CustomAnnotations.*;
 
 import org.jitsi.service.resources.*;
 
@@ -972,7 +974,7 @@ public class ChatToolbar
             GroupChatParticipant participantUI = new GroupChatParticipant(chatParticipant);
             mChatParticipantsPanel.add(participantUI);
             mChatParticipantMap.put(participantAddress, participantUI);
-            sLog.debug("Added new participant to UI: " + participantAddress);
+            sLog.debug("Added new participant to UI: " + sanitiseChatAddress(participantAddress));
         }
 
         resizeChatParticipantsPanel();
@@ -1040,7 +1042,7 @@ public class ChatToolbar
                     mChatParticipantsPanel.remove(chatParticipant);
                 }
                 mChatParticipantMap.remove(participant);
-                sLog.debug("Removed participant: " + participant);
+                sLog.debug("Removed participant: " + sanitiseChatAddress(participant));
             }
         }
 
@@ -1167,7 +1169,6 @@ public class ChatToolbar
             {
                 ConfigurationUtils.setSendFileLastDir(
                     selectedFile.getParent());
-                mChatContainer.getCurrentChat().sendFile(selectedFile);
             }
         }
         else if (buttonName.equals("history"))
@@ -1341,7 +1342,7 @@ public class ChatToolbar
                 getDescriptor()).getChatRoom();
 
             sLog.info("Creating audio conference for chat room: " +
-                chatRoom.getIdentifier());
+                      sanitiseChatRoom(chatRoom.getIdentifier()));
 
             sConferenceService.createOrAdd(chatRoom, true);
         }

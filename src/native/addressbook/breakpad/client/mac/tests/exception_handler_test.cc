@@ -612,7 +612,7 @@ TEST_F(ExceptionHandlerTest, InstructionPointerMemoryNullPointer) {
     // Try calling a NULL pointer.
     typedef void (*void_function)(void);
     // Volatile markings are needed to keep Clang from generating invalid
-    // opcodes.  See https://crbug.com/498354 for details.
+    // opcodes.  See http://crbug.com/498354 for details.
     volatile void_function memory_function =
       reinterpret_cast<void_function>(NULL);
     memory_function();

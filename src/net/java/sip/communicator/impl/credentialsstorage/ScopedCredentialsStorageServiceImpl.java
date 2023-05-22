@@ -4,7 +4,11 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.credentialsstorage;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseDirectoryNumberWithAccPrefix;
+import static org.jitsi.util.Hasher.logHasher;
 
 import java.security.SecureRandom;
 import java.util.*;
@@ -103,7 +107,8 @@ public class ScopedCredentialsStorageServiceImpl
             String accountPrefix,
             String password)
     {
-        sLog.info("Store password for " + accountPrefix);
+        sLog.info("Store password for " +
+                  sanitiseDirectoryNumberWithAccPrefix(accountPrefix));
 
         if (createCryptoInstance())
         {
@@ -143,7 +148,9 @@ public class ScopedCredentialsStorageServiceImpl
      */
     public synchronized String loadPassword(String accountPrefix)
     {
-        sLog.debug("Load password for " + accountPrefix);
+        // Redact phone number from accountPrefix
+        sLog.debug("Load password for " +
+                   sanitiseDirectoryNumberWithAccPrefix(accountPrefix));
         String password = null;
         if (isStoredEncrypted(accountPrefix) && createCryptoInstance())
         {
@@ -175,7 +182,9 @@ public class ScopedCredentialsStorageServiceImpl
     public boolean removePassword(String accountPrefix)
     {
         setEncrypted(accountPrefix, null);
-        sLog.info("Password for '" + accountPrefix + "' removed");
+        sLog.info("Password for '" +
+                  sanitiseDirectoryNumberWithAccPrefix(accountPrefix) +
+                  "' removed");
         return true;
     }
 
@@ -294,7 +303,8 @@ public class ScopedCredentialsStorageServiceImpl
                         prefix,
                         new String(Base64.decode(encodedPassword))))
                 {
-                    sLog.warn("Failed to move password for prefix " + prefix);
+                    sLog.warn("Failed to move password for prefix " +
+                              sanitiseDirectoryNumberWithAccPrefix(prefix));
                 }
             }
         }
@@ -311,7 +321,8 @@ public class ScopedCredentialsStorageServiceImpl
      */
     private boolean encryptPasswordProperty(String accountPrefix, String password)
     {
-        sLog.info("Encrypt password for " + accountPrefix);
+        sLog.info("Encrypt password for " +
+                  sanitiseDirectoryNumberWithAccPrefix(accountPrefix));
         if (createCryptoInstance())
         {
             try
@@ -432,7 +443,7 @@ public class ScopedCredentialsStorageServiceImpl
             mConfigurationService.getGlobalConfigurationService().getProperty(
                 ConfigurationServiceImpl.PROPERTY_ACTIVE_USER);
         StoredToken storedToken = sTokenStorage.get(tokenName);
-        sLog.info("Retrieved token under " + tokenName + ": " + (storedToken != null));
+        sLog.info("Retrieved token under " + logHasher(tokenName) + ": " + (storedToken != null));
         return storedToken != null ? storedToken.getValue() : null;
     }
 
@@ -451,7 +462,7 @@ public class ScopedCredentialsStorageServiceImpl
                                mConfigurationService.getGlobalConfigurationService().getProperty(
                                        ConfigurationServiceImpl.PROPERTY_ACTIVE_USER);
             sTokenStorage.add(tokenName, token);
-            sLog.info("Added/Updated token to OS Credential Manager under the key: " + tokenName);
+            sLog.info("Added/Updated token to OS Credential Manager under the key: " + logHasher(tokenName));
         }
         finally
         {

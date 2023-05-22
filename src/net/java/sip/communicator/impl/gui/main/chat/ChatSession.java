@@ -4,7 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
+
+import static org.jitsi.util.Hasher.logHasher;
 
 import java.util.*;
 
@@ -303,7 +306,7 @@ public abstract class ChatSession implements  MetaContactListListener,
                     String peerIdentifier = lastMessage.getPeerIdentifier();
                     chatTransport = findChatTransportForSmsNumber(peerIdentifier);
                     contactLogger.debug("Found SMS transport for " +
-                                        peerIdentifier + "?: " + chatTransport);
+                                        logHasher(peerIdentifier) + "?: " + chatTransport);
                 }
                 else
                 {

@@ -1,3 +1,5 @@
+# Portions (c) Microsoft Corporation. All rights reserved.
+
 # Note to translators:
 # - For a string that is used n times in the codebase, the context string should be made up of n "usage" detail sections, and one "requirement" section. These are detailed below:
 #   Usage:
@@ -57,6 +59,7 @@ service.macospermissions.MAC_DOCUMENTS_USAGE_STRING=Este app requiere tener acce
 service.macospermissions.MAC_NETWORK_DRIVES_USAGE_STRING=Este app requiere tener acceso a esta carpeta por si desea guardar o usar archivos de la carpeta.
 service.macospermissions.MAC_REMOVABLE_DRIVES_USAGE_STRING=Este app requiere tener acceso a esta carpeta por si desea guardar o usar archivos de la carpeta.
 service.macospermissions.MAC_LOCATION_USAGE_STRING=Se necesita la informaci\u00f3n de localizaci\u00f3n para transmitir su localizaci\u00f3n en una llamada de emergencia.
+service.macospermissions.MAC_BLUETOOTH_USAGE_STRING=Esta aplicaci\u00f3n requiere acceso a Bluetooth para buscar y conectarse a dispositivos de audio Bluetooth.
 
 service.gui.CONNECTION_EXPIRED_MSG=Est\u00e1 desconectado del servidor.
 service.gui.HISTORY_CONTACT=Historial - {0}
@@ -79,7 +82,6 @@ service.gui.STATUS_CHANGE_NETWORK_FAILURE=No pudimos cambiar su estado. Verifiqu
 service.gui.ABOUT=&Acerca de
 service.gui.ACCEPT=&Aceptar
 service.gui.ACCOUNT=Cuenta
-service.gui.ACCOUNT_ME=Yo
 service.gui.ACCOUNT_REGISTRATION_WIZARD=Asistente de registro de cuenta
 service.gui.ACCOUNTS=Cuentas
 service.gui.ADD=&A\u00f1adir
@@ -176,9 +178,6 @@ service.gui.chat.DISABLE_CHAT_SMS=&Deshabilitar chat y SMS
 service.gui.chat.ENABLE_CHAT_SMS=&Habilitar chat y SMS
 service.gui.chat.ENABLE_DISABLE_CHAT_SMS=&Habilitar/deshabilitar chat y SMS
 
-service.gui.chat.CHAT_OFFLINE=Chat fuera de l\u00ednea
-service.gui.chat.ERROR_CONTACTING_SERVER=Error al contactarse con el servidor de chat
-
 service.gui.chat.CHAT_WRITE_PANEL_DESCRIPTION=Utilizar CTRL U y CTRL D para desplazarse hacia arriba y hacia abajo en el historial del chat
 
 service.gui.chat.CHAT_WRITE_PANEL_PREV_KEY=U
@@ -208,6 +207,8 @@ service.gui.chat.LEAVE=Salir
 service.gui.call.ACCEPT=Aceptar
 service.gui.call.CALL_FROM=Llamada de {0}
 
+service.gui.call.CALL_VIA=V\u00eda {0}
+
 service.gui.conf.SCHEDULED_CONFERENCES=Ver &pr\u00f3ximas reuniones
 service.gui.conf.RECORDED_CONFERENCES=Ver &reuniones grabadas
 service.gui.conf.INVITE_IM_NOT_IN_CONFERENCE=Invitar a una reuni\u00f3n
@@ -228,12 +229,6 @@ service.gui.conf.CREATE_NEW_CONFERENCE_TITLE=Crear una reuni\u00f3n
 service.gui.conf.SCHEDULE_CONFERENCE=&Programar una reuni\u00f3n\u2026
 service.gui.conf.JOIN_CONFERENCE=&Unirse a una reuni\u00f3n\u2026
 service.gui.conf.JOIN_CONFERENCE_TITLE=Unirse a una reuni\u00f3n
-service.gui.conf.STANDALONE_CREATE_CONFERENCE_BUTTON=Crear
-service.gui.conf.STANDALONE_SCHEDULE_CONFERENCE_BUTTON=Programar
-service.gui.conf.STANDALONE_JOIN_CONFERENCE_BUTTON=&Unirse a una reuni\u00f3n
-service.gui.conf.STANDALONE_UPCOMING_CONFERENCE_BUTTON=Ver &pr\u00f3ximas reuniones
-service.gui.conf.STANDALONE_RECORDED_CONFERENCE_BUTTON=Ver &reuniones grabadas
-service.gui.conf.STANDALONE_JOIN_CONFERENCE_HINT_TEXT=Si recibi\u00f3 un enlace de invitaci\u00f3n, t\u00f3quelo nuevamente para unirse a la reuni\u00f3n.
 service.gui.conf.JOIN_CONFERENCE_LABEL=Ingrese ID de reuni\u00f3n o Nombre de Enlace Personal
 service.gui.conf.JOIN_CONFERENCE_LINK_HINT=Si recibi\u00f3 un enlace de invitaci\u00f3n, presione el enlace para unirse a la reuni\u00f3n
 service.gui.conf.JOIN_CONFERENCE_INVALID_HINT=Los Nombres de Enlace Personal e ID de Reuni\u00f3n solo deben contener letras, n\u00fameros y puntos (.)
@@ -245,7 +240,6 @@ service.gui.conf.ADD_TO_CONFERENCE_DISABLED=A\u00f1adir
 service.gui.conf.ADD_CONFERENCE_PARTICIPANTS=Invitar a otros a la reuni\u00f3n actual\u2026
 service.gui.conf.ADD_CONFERENCE_PARTICIPANTS_TITLE=Invitar a otros a una reuni\u00f3n
 service.gui.conf.CONFERENCE_INVITE=Meeting
-service.gui.conf.CONFERENCE_INVITE_TITLE=Invitaci\u00f3n a @@ACCESSION_MEETING_MEETING_NAME@@
 service.gui.conf.CONFERENCE_INVITE_DESCRIPTION=Invitaci\u00f3n a reuni\u00f3n
 service.gui.conf.ACCEPT=Unirse a una reuni\u00f3n
 service.gui.conf.APP_CONFERENCE_INVITE_HEADING=Invitaci\u00f3n de @@ACCESSION_MEETING_MEETING_NAME@@
@@ -258,8 +252,7 @@ service.gui.conf.INVITE_EMAIL_BODY_ROOM_1=\n\nO \u00fanase desde un sistema de s
 service.gui.conf.INVITE_EMAIL_BODY_ROOM_2=\n\nO \u00fanase desde un sistema de sala H.323/SIP: \n\n\tmarque {0} o {1}\n\tidentificaci\u00f3n de la reuni\u00f3n {2}
 service.gui.conf.START_NOW=Comenzar ahora
 service.gui.conf.CONFERENCE_INVITE_FAILED=Fall\u00f3 la invitaci\u00f3n a reuni\u00f3n
-service.gui.conf.INVITE_TIMEOUT_MESSAGE_START=@@PRODUCT_NAME_SHORT@@ no pudo llegar a los siguientes contactos:\n\n
-service.gui.conf.INVITE_TIMEOUT_MESSAGE_END=\nComparta la invitaci\u00f3n copiando la direcci\u00f3n URL o envi\u00e1ndola por correo electr\u00f3nico.\n\n
+service.gui.conf.INVITE_TIMEOUT_MESSAGE=@@PRODUCT_NAME_SHORT@@ no ha podido localizar los siguientes contactos: \n\n{0}\n Para compartir la invitaci\u00f3n, copie la URL o env\u00edela por correo electr\u00f3nico.\n\n
 service.gui.conf.INVITE_OTHER=Invitar a trav\u00e9s de URL
 service.gui.conf.CONFERENCES=&Reuniones
 service.gui.conf.CREATE_CONFERENCE=Crear reuni\u00f3n
@@ -474,6 +467,7 @@ service.gui.CLEAR=Borrar
 service.gui.CLOSE=Ce&rrar
 service.gui.CLOSE_CHAT_AFTER_NEW_MESSAGE=Recibi\u00f3 un nuevo mensaje hace menos de 2 segundos. \u00bfEst\u00e1 seguro de que desea cerrar este chat?
 service.gui.CLOSE_CHAT_ACTIVE_FILE_TRANSFER=Tiene transferencias de archivos activas. \u00bfEst\u00e1 seguro de que desea cerrar este chat?
+service.gui.MULTIPLE_PEER_DISPLAY_NAMES={0} && {1}
 service.gui.CONFERENCE=Conferencia
 service.gui.CONFIRM=Confirmar
 service.gui.CONNECTED_STATUS=Conectado
@@ -531,7 +525,6 @@ service.gui.EMAIL=E-mail
 service.gui.EMAILS=E-mails
 service.gui.END_CALL=Finalizar llamada
 service.gui.ENTER_KEY=Aceptar
-service.gui.ENTER_PHONE_NUMBER=Introduzca el n\u00famero de tel\u00e9fono
 service.gui.ENTER_NAME_OR_NUMBER=Escribir\u00a0nombre o n\u00famero
 # Hint text used in a search field that allows the user to search for a contact by their name
 service.gui.ENTER_NAME=Ingresar nombre
@@ -563,11 +556,8 @@ service.gui.FILE_RECEIVING_FROM=Recibiendo archivo de {0}
 service.gui.FILE_SEND_COMPLETED=Se complet\u00f3 la transferencia de archivos
 service.gui.FILE_RECEIVE_COMPLETED=Se complet\u00f3 la transferencia de archivos
 service.gui.FILE_TRANSFER_CANCELED=Se cancel\u00f3 la transferencia de archivos
-service.gui.FILE_SEND_FAILED=Error al enviar el archivo
-service.gui.FILE_TOO_BIG=Su archivo no se envi\u00f3. Tama\u00f1o m\u00e1ximo del archivo: {0}
 service.gui.FILE_SEND_REFUSED={0} ha rechazado este archivo.
 service.gui.FILE_TRANSFER_REFUSED=La transferencia de archivos ha sido rechazada.
-service.gui.FILE_TRANSFER_NOT_SUPPORTED=No se admite la transferencia de archivos.
 service.gui.FILE_TRANSFER_PREPARING=Preparando la transferencia de archivos
 service.gui.FILE_TRANSFER_WAITING_FOR_ACCEPT=Esperando que {0} acepte\u2026
 service.gui.FILE_TRANSFER_REQUEST_RECIEVED={0} est\u00e1 compartiendo un archivo contigo.
@@ -674,16 +664,9 @@ service.gui.MINUTES=min.
 service.gui.MORE=Ver m\u00e1s
 service.gui.MORE_ACTIONS=M\u00e1s
 
-service.gui.MSG_DELIVERY_NOT_SUPPORTED=No se admiten mensajes fuera de l\u00ednea.
-service.gui.MSG_DELIVERY_INTERNAL_ERROR=Se produjo un error. Comun\u00edquese con el proveedor de servicios.
 # Error message displayed in the chat window when sending an IM or SMS fails.
 service.gui.MSG_DELIVERY_ERROR=El mensaje no se entreg\u00f3
-service.gui.MSG_DELIVERY_UNKNOWN_ERROR=Se produjo un error. Comun\u00edquese con el proveedor de servicios.
-service.gui.MSG_NOT_DELIVERED=No se pudo entregar su mensaje. Verifique su conexi\u00f3n de red e int\u00e9ntelo nuevamente.
-service.gui.MSG_NOT_POSSIBLE=No es posible enviarle mensajes a este contacto.
 service.gui.MSG_RECEIVED={0}
-service.gui.MSG_SEND_CONNECTION_PROBLEM=No se pudo entregar su mensaje. Verifique su conexi\u00f3n de red e int\u00e9ntelo nuevamente.
-service.gui.MSG_REMOTE_DOES_NOT_SUPPORT=Este contacto no puede aceptar transferencias de archivos en este momento.
 service.gui.MSG_OFFLINE=Actualmente este contacto est\u00e1 desconectado, y es posible que no reciba su mensaje.
 service.gui.MSG_OFFLINE_FULL=Este contacto ya no recibir\u00e1 mensajes enviados mientras est\u00e9n desconectados.
 service.gui.MSG_OFFLINE_UNSUPPORTED=No se puede enviar mensajes a contactos que no est\u00e9n en l\u00ednea.
@@ -743,7 +726,6 @@ service.gui.OPEN_FOLDER=Abrir carpeta
 service.gui.OPEN_IN_BROWSER=Abrir en &navegador
 service.gui.OPTIONS=&Opciones
 service.gui.OR=o
-service.gui.OR_ENTER_PHONE_NUMBER=O escribir el n\u00famero de tel\u00e9fono aqu\u00ed\u2026
 service.gui.ORGANIZATION=Organizaci\u00f3n
 service.gui.OTHER=Otro
 service.gui.PASSWORD=Contrase\u00f1a
@@ -854,6 +836,7 @@ service.gui.SAVE_AS_DEFAULT=Guardar como predeterminado
 service.gui.SEARCH=&Buscar
 
 service.gui.SECONDS=segundos
+service.gui.SEPARATOR=, 
 
 service.gui.DURATION_ZERO=
 service.gui.DURATION_SECONDS= - {2} s
@@ -1004,8 +987,6 @@ service.gui.LOCAL_VIDEO_BUTTON_TOOL_TIP=Iniciar/terminar video
 service.gui.TRANSFER_BUTTON_TOOL_TIP=Transferir llamada
 service.gui.TRANSFER_TO=Otro n\u00famero\u2026
 
-service.gui.XMPP_MESSAGE_TOO_LONG=No se pudo entregar su mensaje. La longitud m\u00e1xima del mensaje es de {0} caracteres.
-
 service.gui.UPDATE=Actualizar
 service.gui.MOBILE_PHONE=M\u00f3vil
 service.gui.OTHER_PHONE=Otro
@@ -1077,12 +1058,6 @@ service.gui.OCTOBER=Oct
 service.gui.NOVEMBER=nov
 service.gui.DECEMBER=Dic
 
-# Title of a dialog which shows when a users IM presence information has been updated to show that they are in a meeting (according to Outlook)
-service.gui.presence.IN_MEETING_DIALOG_TITLE=En una reuni\u00f3n
-# Message on a dialog which informs the user that their IM presence information has been updated automatically because their Outlook Calendar indicates that they are in a meeting.
-service.gui.presence.IN_MEETING_DIALOG_MSG=Su estado ha cambiado porque @@PRODUCT_NAME_SHORT@@ not\u00f3 que usted tiene una reuni\u00f3n programada en su Calendario de Outlook y est\u00e1 ocupado. Puede escoger si @@PRODUCT_NAME_SHORT@@ usa las actividades del calendario desde Opciones.\n\nHerramientas > Opciones > Chat
-# Title button in a dialog which shows when a users IM presence information has been updated to show that they are in a meeting (according to Outlook).  Pressing it will override the information provided by Outlook
-service.gui.presence.IN_MEETING_DIALOG_LEAVE=Conservar estado "En una reuni\u00f3n"
 # String which appears next to a checkbox on a settings page.  The checkbox controls whether or not the user appears as in a meeting based on Outlook calendar events.
 service.gui.presence.IN_MEETING_SETTING=Cambiar mi estado en funci\u00f3n de los eventos del calendario de Outlook
 
@@ -1097,40 +1072,7 @@ service.gui.contactavailable.TITLE=Notificaci\u00f3n de estado de contacto
 # is shown.  This pop-up has text "<contact name> is available"
 service.gui.contactavailable.IS_AVAILABLE={0} est\u00e1 "en l\u00ednea" ahora
 
-service.gui.ALWAYS_TRUST=Confiar siempre en este certificado
-service.gui.CERT_DIALOG_TITLE=Verificar certificado
-service.gui.CERT_DIALOG_DESCRIPTION_TXT=<html>{0} no puede verificar la identidad del servidor cuando se conecta a<br><b>{1}</b>.<br><br> No se conf\u00eda en el certificado, lo que significa que la identidad del servidor no se puede verificar autom\u00e1ticamente.<br><br> \u00bfDesea continuar conect\u00e1ndose?<br> Si desea obtener m\u00e1s informaci\u00f3n, haga clic en "Mostrar certificado".</html>
-service.gui.CERT_DIALOG_DESCRIPTION_TXT_NOHOST=<html>{0} no puede verificar la identidad del certificado del servidor.<br><br> No se conf\u00eda en el certificado, lo que significa que la identidad del servidor no se puede<br> verificar autom\u00e1ticamente. \u00bfDesea continuar conect\u00e1ndose?<br><br> Si desea obtener m\u00e1s informaci\u00f3n, haga clic en "Mostrar certificado".</html>
-service.gui.CERT_DIALOG_CLIENT_DESCRIPTION_TXT=<html>{0} no puede verificar la identidad del cliente que se conecta.<br><br> No se conf\u00eda en el certificado, lo que significa que la identidad del cliente no se puede<br> verificar autom\u00e1ticamente. \u00bfDesea aceptar la conexi\u00f3n?<br><br> Si desea obtener m\u00e1s informaci\u00f3n, haga clic en "Mostrar certificado".</html>
-service.gui.CERT_DIALOG_PEER_DESCRIPTION_TXT=<html>{0} no puede verificar la identidad del par {1}.<br><br> No se conf\u00eda en el certificado, lo que significa que la identidad del par no se puede<br> verificar autom\u00e1ticamente. \u00bfDesea continuar conect\u00e1ndose?<br><br> Si desea obtener m\u00e1s informaci\u00f3n, haga clic en "Mostrar certificado".</html>
 service.gui.CONTINUE_ANYWAY=Continuar de todos modos
-service.gui.CERT_INFO_ISSUED_TO=<html><b>Emitido para</b></html>
-service.gui.CERT_INFO_CN=Nombre com\u00fan:
-service.gui.CERT_INFO_O=Organizaci\u00f3n:
-service.gui.CERT_INFO_C=Nombre del pa\u00eds:
-service.gui.CERT_INFO_ST=Nombre del estado o la provincia:
-service.gui.CERT_INFO_L=Nombre de la localidad:
-service.gui.CERT_INFO_ISSUED_BY=<html><b>Emitido por</b></html>
-service.gui.CERT_INFO_OU=Unidad organizativa:
-service.gui.CERT_INFO_VALIDITY=<html><b>Validez</b></html>
-service.gui.CERT_INFO_ISSUED_ON=Emitido el:
-service.gui.CERT_INFO_EXPIRES_ON=Vence el:
-service.gui.CERT_INFO_FINGERPRINTS=<html><b>Impresiones digitales</b></html>
-service.gui.CERT_INFO_CERT_DETAILS=<html><b>Informaci\u00f3n del certificado</b></html>
-service.gui.CERT_INFO_SER_NUM=N\u00famero de serie:
-service.gui.CERT_INFO_VER=Versi\u00f3n:
-service.gui.CERT_INFO_SIGN_ALG=Algoritmo de la firma:
-service.gui.CERT_INFO_PUB_KEY_INFO=<html><b>Informaci\u00f3n de clave p\u00fablica</b></html>
-service.gui.CERT_INFO_ALG=Algoritmo:
-service.gui.CERT_INFO_PUB_KEY=Clave p\u00fablica:
-service.gui.CERT_INFO_KEY_BYTES_PRINT={0} bytes: {1}
-service.gui.CERT_INFO_KEY_BITS_PRINT={0} bits
-service.gui.CERT_INFO_EXP=Exponente:
-service.gui.CERT_INFO_KEY_SIZE=Tama\u00f1o de la clave:
-service.gui.CERT_INFO_SIGN=Firma:
-service.gui.CONTINUE=Continuar
-service.gui.SHOW_CERT=Mostrar certificado
-service.gui.HIDE_CERT=Ocultar certificado
 
 service.gui.avatar.AVATAR_MENU_NAME=Seleccionar avatar
 service.gui.avatar.CHOOSE_ICON=Cambiar avatar
@@ -1143,20 +1085,16 @@ service.gui.avatar.AVATAR_CHANGE_ERROR_MSG_REJECTED=Su avatar no se pudo cambiar
 service.gui.avatar.AVATAR_TOO_BIG_ERROR_TITLE=La imagen es demasiado grande
 # The message body for an error popup that we show when the user selects an image that is too large
 service.gui.avatar.AVATAR_TOO_BIG_ERROR_MSG=La imagen que seleccion\u00f3 es demasiado grande, elija otra.
-service.gui.avatar.NOT_SIGNED_IN_TITLE=No se pudo cambiar el avatar
-service.gui.avatar.NOT_SIGNED_IN_MSG=No puede cambiar su avatar porque no est\u00e1 conectado al chat en este momento.<br />Inicie sesi\u00f3n en el chat e int\u00e9ntelo nuevamente.
 # service.gui.avatar.imagepicker
-service.gui.avatar.imagepicker.CANCEL=Cancelar
-service.gui.avatar.imagepicker.CHOOSE_FILE=Elegir\u2026
 service.gui.avatar.imagepicker.CLICK=Hacer clic y sonre\u00edr
 service.gui.avatar.imagepicker.IMAGE_FILES=Archivos de im\u00e1genes
-service.gui.avatar.imagepicker.IMAGE_PICKER=Imagen
 service.gui.avatar.imagepicker.IMAGE_SIZE=Tama\u00f1o de imagen
 service.gui.avatar.imagepicker.INITIALIZING=Iniciando
 service.gui.avatar.imagepicker.RESET=Restablecer
-service.gui.avatar.imagepicker.SET=Guardar
 service.gui.avatar.imagepicker.TAKE_PHOTO=Tomar una foto
 service.gui.avatar.imagepicker.WEBCAM_ERROR=Error de c\u00e1mara web
+service.gui.avatar.imagepicker.IMAGE_FILE_ERROR_TITLE=Error de imagen de avatar
+service.gui.avatar.imagepicker.IMAGE_FILE_ERROR_TEXT=Hubo un problema con el archivo de imagen que proporcion\u00f3. Vuelva a intentarlo o seleccione otra imagen.
 
 # Strings for chat account changes
 service.gui.CHAT_DISABLED=Su proveedor de servicios deshabilit\u00f3 su cuenta de chat.
@@ -1173,8 +1111,6 @@ service.gui.VOIP_DISABLED=Su proveedor de servicios deshabilit\u00f3 VoIP en su 
 service.gui.VOIP_ACTIVATED=Su proveedor de servicios activ\u00f3 VoIP en su cuenta. Rein\u00edcielo para comenzar a hacer llamadas desde @@PRODUCT_NAME_SHORT@@ directamente.
 service.gui.FORCE_QUIT=Salir de @@PRODUCT_NAME_SHORT@@
 
-# String displayed in the edit custom status text box. Shouldn't be too long.
-service.protocol.status.CUSTOM_STATUS_PLACEHOLDER=a\u00f1adir un mensaje personalizado
 # Strings for presence statuses
 # An IM presence status which indicates that the user is online - is a widely used term in IM
 service.protocol.status.AVAILABLE=En l\u00ednea
@@ -1196,20 +1132,10 @@ service.protocol.status.ON_THE_PHONE=En una llamada
 service.protocol.status.ON_THE_PHONE_LSM=Tel\u00e9fono de escritorio: En una llamada
 service.gui.OFFLINE_LSM=Tel\u00e9fono de escritorio: Desconectado
 service.protocol.status.UNKNOWN=Desconocido
-# Title of a menu which allows the user to control their IM presence - this is a widely used term in IM
-service.protocol.status.gui.PRESENCE_MENU=Presencia
 # An option in a menu which allows the user to control their IM presence.  This option means that the user will appear as Online but in a meeting
 service.protocol.status.gui.MEETING=En l\u00ednea (en una reuni\u00f3n)
 service.protocol.status.gui.PHONE=En L\u00ednea (En una Llamada)
 service.protocol.status.gui.CONFERENCE=En L\u00ednea (En una Llamada)
-# This text indicates that the user can't update their presence information because they have "Do not Disturb" turned on.  "Do not disturb" is a term that is used elsewhere in the app.
-service.protocol.status.gui.NO_PRESENCE_DND=La configuraci\u00f3n de presencia manual se deshabilita en el modo "No molestar".
-# This text indicates that the user can't update their presence information because they are offline
-service.protocol.status.gui.NO_PRESENCE_OFFLINE=La configuraci\u00f3n de presencia manual se deshabilita cuando la cuenta de chat est\u00e1 fuera de l\u00ednea
-# This text indicates that the user can't update their presence information because they have signed out of their chat account
-service.protocol.status.gui.NO_PRESENCE_SIGNED_OUT=La configuraci\u00f3n de presencia manual se deshabilita cuando no se inici\u00f3 sesi\u00f3n en el chat
-# This text appears on a button when the user is in a meeting.  Clicking this button shows a dialog which allows the user to exit the meeting state if they want
-service.protocol.status.gui.NOT_IN_MEETING=\u00bfNo est\u00e1 en una reuni\u00f3n?
 
 # impl.protocol.ssh
 #Contact Details Seperator(must not be part of contact data stored as persistent
@@ -1328,11 +1254,11 @@ plugin.branding.ABOUT_MENU_ENTRY=&Acerca de
 plugin.branding.LOGO_MESSAGE=@@TAGLINE@@
 # DO NOT TRANSLATE
 # Welcome message displayed on the splash screen that is displayed as the client starts up. HTML tags and new line markers must be left unchanged in the translation. Do not put any other company's name in this string - for advice on copyright statements, see [indeterminate link]
-plugin.branding.WELCOME_MESSAGE=<DIV color={0}>Copyright 2012-2022 <a href="https://www.metaswitch.com">Metaswitch Networks</a>. All rights reserved.</DIV>
+plugin.branding.WELCOME_MESSAGE=<DIV color={0}>Copyright 2012-2023 <a href="https://www.metaswitch.com">Metaswitch Networks</a>. All rights reserved.</DIV>
 plugin.branding.LICENSE=<DIV color={0}>Con tecnolog\u00eda de <a href="https://jitsi.org">jitsi.org</a>. <br /> Atribuci\u00f3n de licencia <a href="licenses">de c\u00f3digo abierto</a></DIV>
 # DO NOT TRANSLATE
 # Copyright notification displayed on the splash screen that is displayed as the client starts up.  HTML tags and new line markers must be left unchanged in the translation. Do not put any other company's name in this string - for advice on copyright statements, see [indeterminate link]
-plugin.branding.COPYRIGHT=<DIV color={0}>Copyright 2012-2022 <a href="https://www.metaswitch.com">Metaswitch Networks</a>. All rights reserved.</DIV>
+plugin.branding.COPYRIGHT=<DIV color={0}>Copyright 2012-2023 <a href="https://www.metaswitch.com">Metaswitch Networks</a>. All rights reserved.</DIV>
 plugin.branding.OPEN_SOURCE_ATTRIBUTION_TITLE=Atribuciones de c\u00f3digo abierto
 # DO NOT TRANSLATE
 # The instruction for when emergency location is missing for the current network. This defaults to an empty string, but can be branded to be non-empty.
@@ -1382,9 +1308,6 @@ plugin.generalconfig.SIP_SSL_PROTOCOLS=Protocolos SSL/TLS habilitados
 plugin.generalconfig.ERROR_PORT_NUMBER=N\u00famero de puerto incorrecto
 plugin.generalconfig.STARTUP_CONFIG=Inicio
 plugin.generalconfig.LEAVE_CHATROOM_ON_WINDOW_CLOSE=Abandonar las salas de chat cuando se cierra la ventana
-plugin.generalconfig.REMOVE_SPECIAL_PHONE_SYMBOLS=Eliminar los s\u00edmbolos especiales antes de llamar a n\u00fameros telef\u00f3nicos
-plugin.generalconfig.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS=Convertir las letras en n\u00fameros de tel\u00e9fono
-plugin.generalconfig.ACCEPT_PHONE_NUMBER_WITH_ALPHA_CHARS_EXAMPLE=p. ej. +1-800-MYPHONE -> +1-800-694663
 plugin.generalconfig.SIP_CALL_CONFIG=SIP
 plugin.generalconfig.RESTORE=Restaurar valores predeterminados
 plugin.generalconfig.DEVICE_TYPE_LAPTOP=Ordenador port\u00e1til
@@ -1523,7 +1446,7 @@ plugin.notificationconfig.POPUP_NOTIF_HANDLER=Tipo de notificaciones
 # Title that displays on a dialog that appears when the collaboration client failed to upgrade
 # Message that displays on a dialog that appears when the collaboration feature failed to upgrade
 
-# Profiler4J
+# Media
 impl.media.configform.AUDIO=&Tipo de dispositivo
 impl.media.configform.AUDIO_IN=Micr\u00f3fono
 impl.media.configform.AUDIO_NOTIFY=Tono de Llamada
@@ -1700,15 +1623,16 @@ plugin.sipregistrationnotifier.TITLE.Jabber=No est\u00e1 recibiendo chats
 plugin.sipregistrationnotifier.TITLE.MANY=No est\u00e1 recibiendo llamadas ni chats
 # Title of a pop-up shown when the user has lost connection to the network
 plugin.sipregistrationnotifier.TITLE.GENERAL=Sin conexi\u00f3n
+plugin.sipregistrationnotifier.TITLE.CONNECTION_ISSUE=Problema de conexi\u00f3n detectado
 plugin.sipregistrationnotifier.MESSAGE.SIP=@@PRODUCT_NAME_TITLECASE@@ no puede establecer una conexi\u00f3n con su servicio telef\u00f3nico. \n\nAseg\u00farese de que est\u00e1 conectado a Internet. Si lo est\u00e1, es probable que este sea un problema temporal. Sin embargo, si el problema persiste, comun\u00edquese con su proveedor de servicio.
 plugin.sipregistrationnotifier.MESSAGE.Jabber=@@PRODUCT_NAME_TITLECASE@@ no puede establecer una conexi\u00f3n a su servicio de chat. \n\nAseg\u00farese de que est\u00e1 conectado a Internet. Si lo est\u00e1, es probable que este sea un problema temporal. Sin embargo, si el problema persiste, comun\u00edquese con su proveedor de servicio.
 plugin.sipregistrationnotifier.MESSAGE.MANY=@@PRODUCT_NAME_TITLECASE@@ no puede establecer una conexi\u00f3n a su servicio telef\u00f3nico y de chat. \n\nAseg\u00farese de que est\u00e1 conectado a Internet. Si lo est\u00e1, es probable que este sea un problema temporal. Sin embargo, si el problema persiste, comun\u00edquese con su proveedor de servicio.
 # Message displayed in a pop-up shown when the user has lost connection to the network
 plugin.sipregistrationnotifier.MESSAGE.GENERAL=@@PRODUCT_NAME_TITLECASE@@ no puede establecer una conexi\u00f3n.\n\nFavor de asegurarse de tener conexi\u00f3n a internet y si persiste el problema, contacte a su proveedor de servicio.
+plugin.sipregistrationnotifier.MESSAGE.CONNECTION_ISSUE=Es posible que no est\u00e9 recibiendo todas sus comunicaciones en este momento.\n\nCompruebe la conexi\u00f3n a Internet y, si el problema persiste, p\u00f3ngase en contacto con su proveedor de servicios.
 plugin.sipregistrationnotifier.MAIN_WINDOW.SIP=Sin conexi\u00f3n telef\u00f3nica
 plugin.sipregistrationnotifier.MAIN_WINDOW.Jabber=Sin conexi\u00f3n de chat
 plugin.sipregistrationnotifier.MAIN_WINDOW.MANY=Sin conexi\u00f3n telef\u00f3nica o de chat
-plugin.sipregistrationnotifier.MAIN_WINDOW.GENERAL=Sin conexi\u00f3n
 plugin.sipregistrationnotifier.MAIN_WINDOW.LOCATION=No se ha configurado la localizaci\u00f3n para las llamadas de emergencia
 plugin.sipregistrationnotifier.LOCATION_TITLE=Llamada de emergencia
 plugin.sipregistrationnotifier.LOCATION_TEXT=No se ha configurado la informaci\u00f3n de localizaci\u00f3n para esta red.
@@ -1721,7 +1645,7 @@ plugin.sipregistrationnotifier.GO_TO_PRIVACY_SETTINGS=Ir a Ajustes de Privacidad
 #Text for the 'more information' button which appears when the user is restricted by a captive wifi portal
 plugin.sipregistrationnotifier.MORE_INFORMATION=M\u00e1s informaci\u00f3n
 #Text for the pop-up that appears when the user is restricted by a captive wifi portal
-plugin.sipregistrationnotifier.CAPTIVE_PORTAL_TEXT=@@PRODUCT_NAME_TITLECASE@@ no puede establecer una conexi\u00f3n a su servicio de chat y tel\u00e9fono.\n\nEst\u00e1 usando Wi-Fi p\u00fablico sin conexi\u00f3n a internet. Use otra red o presione abajo para mayor informaci\u00f3n.
+plugin.sipregistrationnotifier.CAPTIVE_PORTAL_TEXT=@@PRODUCT_NAME_TITLECASE@@ no puede establecer una conexi\u00f3n a su servicio de chat y tel\u00e9fono.\n\nEst\u00e1 usando Wi-Fi p\u00fablico sin conexi\u00f3n a internet.
 #Title for the pop-up that appears when the user is restricted by a captive wifi portal
 plugin.sipregistrationnotifier.CAPTIVE_PORTAL_TITLE=Sin conexi\u00f3n
 
@@ -2106,8 +2030,6 @@ service.gui.accessibility.MICROPHONE_VOLUME={0}% de volumen del micr\u00f3fono
 
 service.gui.accessibility.OUTPUT_VOLUME={0}% de volumen de salida
 
-service.gui.accessibility.STATUS_BUTTON={0}, {1}
-
 service.gui.accessibility.CHAT_MESSAGE={0}, {1}, {2}
 
 # DO NOT TRANSLATE
@@ -2121,74 +2043,6 @@ service.gui.accessibility.CHAT_MESSAGE={0}, {1}, {2}
 # DO NOT TRANSLATE
 # DO NOT TRANSLATE
 
-# DO NOT TRANSLATE
-plugin.securityconfig.TITLE=Security
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.TITLE=Passwords
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.CHANGE_MASTER_PASSWORD=Change Master Password\u2026
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.USE_MASTER_PASSWORD=Use a master password
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.SAVED_PASSWORDS=Saved Passwords\u2026
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.INFO_TEXT=A Master Password is used to protect saved account passwords. Please make sure you remember it.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.CURRENT_PASSWORD=Current password:
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.ENTER_PASSWORD=Enter new password:
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.REENTER_PASSWORD=Re-enter password:
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_TITLE=Master Password
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_NOT_SET=(not set)
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_CURRENT_EMPTY=You did not enter the correct current Master Password. Please try again.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_VERIFICATION_FAILURE_MSG=The Master Password is not correct!
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_CHANGE_FAILURE=Password Change Failed
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_CHANGE_SUCCESS=Password Change Succeeded
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_CHANGE_SUCCESS_MSG=Master Password successfully changed.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_CHANGE_FAILURE_MSG=The encrypted passwords cannot be decrypted with the provided Master Password.\nThe password storage file may be corrupted - please contact your service provider for more assistance.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_REMOVE_FAILURE=Failed to remove password.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_REMOVE_SUCCESS=Password successfully removed.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_REMOVE_SUCCESS_MSG=Master Password successfully removed.
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.COL_TYPE=Type
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.COL_NAME=Name
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.COL_PASSWORD=Password
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.PROTOCOL_UNKNOWN=(unknown)
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.CANNOT_DECRYPT=(cannot decrypt)
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.STORED_ACCOUNT_PASSWORDS=Stored passwords
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.REMOVE_PASSWORD_BUTTON=Remove
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.REMOVE_ALL_PASSWORDS_BUTTON=Remove All
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.REMOVE_ALL_CONFIRMATION=Are you sure you wish to remove all passwords?
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.REMOVE_ALL_TITLE=Remove all passwords
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.SHOW_PASSWORDS_BUTTON=Show Passwords
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.HIDE_PASSWORDS_BUTTON=Hide Passwords
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.PASSWORD_QUALITY_METER=Password quality meter
-# DO NOT TRANSLATE
-plugin.securityconfig.masterpassword.MP_INPUT=Please enter your master password:\n\n
 # DO NOT TRANSLATE
 service.gui.SECURITY=Security
 # DO NOT TRANSLATE

@@ -4,8 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.lang.ref.*;
@@ -79,6 +81,11 @@ public class OperationSetBasicTelephonySipImpl
      * Config key for whether the user's password has expired.
      */
     private static final String PASSWORD_EXPIRED = "net.java.sip.communicator.plugin.pw.PASSWORD_EXPIRED";
+
+    /**
+     * Config key for whether the user's CoS allows them to use MaX UC.
+     */
+    private static final String COS_ALLOWS_MAX_UC = "net.java.sip.communicator.impl.commportal.COS_ALLOWS_MAX_UC";
 
     /**
      * A reference to the <tt>ProtocolProviderServiceSipImpl</tt> instance that
@@ -199,7 +206,7 @@ public class OperationSetBasicTelephonySipImpl
         toAddress.setDisplayName(displayName);
         // Don't need to hash callee address for explicit call.
         logger.info("Name '" + logHasher(displayName) +
-                    "' obtained for callee " + callee + " from the UI.");
+                    "' obtained for callee " + logHasher(callee) + " from the UI.");
 
         return createOutgoingCall(toAddress, null, conference, emergency);
     }
@@ -254,7 +261,8 @@ public class OperationSetBasicTelephonySipImpl
         throws OperationFailedException
     {
         CallSipImpl call = createOutgoingCall();
-        logger.info("Creating outgoing call to " + calleeAddress);
+        logger.info("Creating outgoing call to " +
+                    sanitiseChatAddress(calleeAddress.toString()));
 
         if (conference != null)
         {
@@ -622,13 +630,13 @@ public class OperationSetBasicTelephonySipImpl
                 if( callPeer.getPeerAddress().getURI().equals
                     (redirectAddress.getURI()) )
                 {
-                    // No need to hash peer address in explicit call.
+                    String loggablePeer = sanitiseChatAddress(callPeer.getPeerAddress().getURI().toString());
                     logger.error("Redirect loop detected for: "
-                                + callPeer.getPeerAddress().getURI());
+                                + loggablePeer);
 
                     callPeer.setState(CallPeerState.FAILED,
                                 "Redirect loop detected for: "
-                                + callPeer.getPeerAddress().getURI());
+                                + loggablePeer);
 
                     processed = true;
                     break;
@@ -645,10 +653,9 @@ public class OperationSetBasicTelephonySipImpl
                 }
                 catch (OperationFailedException exc)
                 {
-                    logger.error("Call forward failed for address " +
-                            contactHeader.getAddress(), exc);
+                    logger.error("Call forwarding failed.", exc);
                     callPeer.setState(CallPeerState.DISCONNECTED,
-                            "Call forwarded failed. " + exc.getMessage());
+                            "Call forwarding failed. " + exc.getMessage());
                 }
 
                 callPeer.setState(CallPeerState.DISCONNECTED,
@@ -732,9 +739,12 @@ public class OperationSetBasicTelephonySipImpl
                     .getDialog());
 
             // Ignore 503 responses to reINVITES while in a call to avoid
-            // tearing the call down unnecessarily
+            // tearing the call down unnecessarily. Initial INVITEs have no "tag"
+            // so check for a tag in the request to identify reINVITEs. The call
+            // peer exists even for the first INVITE.
             if(responseStatusCode == Response.SERVICE_UNAVAILABLE &&
                method.equals(Request.INVITE) &&
+               ((ToHeader) request.getHeader(ToHeader.NAME)).getTag() != null &&
                callPeer != null)
             {
                 processed = true;
@@ -1322,7 +1332,7 @@ public class OperationSetBasicTelephonySipImpl
         CallPeerSipImpl existingPeer
                                 = activeCallsRepository.findCallPeer(dialog);
 
-        logger.debug("Processing invite " + invite + ", for peer " + existingPeer);
+        logger.debug("Processing invite for peer " + existingPeer);
 
         if(existingPeer != null)
         {
@@ -1364,7 +1374,8 @@ public class OperationSetBasicTelephonySipImpl
         ScopedConfigurationService userConfig = configService.user();
         boolean userInteractionAllowed = userConfig.getBoolean(LATEST_EULA_ACCEPTED, false)
             && !userConfig.getBoolean(PASSWORD_EXPIRED, false)
-            && !userConfig.getBoolean(FORCE_UPDATE, false);
+            && !userConfig.getBoolean(FORCE_UPDATE, false)
+            && userConfig.getBoolean(COS_ALLOWS_MAX_UC, true);
         if (!userInteractionAllowed)
         {
             logger.info("User interaction is not allowed yet so reject INVITE");
@@ -1387,18 +1398,18 @@ public class OperationSetBasicTelephonySipImpl
         {
             if(autoAnswerOpSet.forwardCall(invite, serverTransaction))
             {
-                logger.info("Auto-forwarding invite " + invite);
+                logger.info("Auto-forwarding invite " + sanitiseInvite(invite.toString()));
                 return;
             }
             else if(autoAnswerOpSet.autoReject(call, invite, serverTransaction))
             {
-                logger.info("Auto-rejecting call " + call + " with invite " + invite);
+                logger.info("Auto-rejecting call " + call + " with invite " + sanitiseInvite(invite.toString()));
                 return;
             }
             else if (autoAnswerOpSet.autoAnswer(
                                call, invite, serverTransaction, sourceProvider))
             {
-                logger.info("Auto-answering call " + call + " with invite " + invite);
+                logger.info("Auto-answering call " + call + " with invite " + sanitiseInvite(invite.toString()));
                 return;
             }
             else

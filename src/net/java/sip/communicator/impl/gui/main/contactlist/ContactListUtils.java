@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -45,14 +46,12 @@ public class ContactListUtils
                                 .CODE_CONTACT_ALREADY_EXISTS_ERROR)
                     {
                         new ErrorDialog(
-                            GuiActivator.getUIService().getMainFrame(),
                             GuiActivator.getResources().getI18NString(
-                            "service.gui.ADD_CONTACT_ERROR_TITLE"),
+                                "service.gui.ADD_CONTACT_ERROR_TITLE"),
                             GuiActivator.getResources().getI18NString(
-                                    "service.gui.ADD_CONTACT_EXIST_ERROR",
-                                    new String[]{contactAddress}),
-                            ex)
-                        .showDialog();
+                                "service.gui.ADD_CONTACT_EXIST_ERROR",
+                                new String[]
+                        { contactAddress })).showDialog();
                     }
                     else if (errorCode
                             == MetaContactListException
@@ -61,14 +60,12 @@ public class ContactListUtils
                         sLog.error("Could not add contact: server did not " +
                             "respond.", ex);
                         new ErrorDialog(
-                            GuiActivator.getUIService().getMainFrame(),
                             GuiActivator.getResources().getI18NString(
-                            "service.gui.ADD_CONTACT_ERROR_TITLE"),
+                                "service.gui.ADD_CONTACT_ERROR_TITLE"),
                             GuiActivator.getResources().getI18NString(
                                 "service.gui.ADD_CONTACT_NETWORK_ERROR",
-                                new String[]{contactAddress}),
-                            ex)
-                        .showDialog();
+                                new String[]
+                        { contactAddress })).showDialog();
                     }
                     else if (errorCode
                             == MetaContactListException
@@ -78,27 +75,22 @@ public class ContactListUtils
                             "protocol which did not support the " +
                             "operation.", ex);
                         new ErrorDialog(
-                            GuiActivator.getUIService().getMainFrame(),
                             GuiActivator.getResources().getI18NString(
-                            "service.gui.ADD_CONTACT_ERROR_TITLE"),
+                                "service.gui.ADD_CONTACT_ERROR_TITLE"),
                             GuiActivator.getResources().getI18NString(
                                 "service.gui.ADD_CONTACT_NOT_SUPPORTED",
-                                new String[]{contactAddress}),
-                            ex)
-                        .showDialog();
+                                new String[]
+                        { contactAddress })).showDialog();
                     }
                     else
                     {
                         sLog.error("Failed to add a contact.", ex);
                         new ErrorDialog(
-                            GuiActivator.getUIService().getMainFrame(),
                             GuiActivator.getResources().getI18NString(
-                            "service.gui.ADD_CONTACT_ERROR_TITLE"),
+                                "service.gui.ADD_CONTACT_ERROR_TITLE"),
                             GuiActivator.getResources().getI18NString(
-                                    "service.gui.ADD_CONTACT_ERROR",
-                                    new String[]{contactAddress}),
-                            ex)
-                        .showDialog();
+                                "service.gui.ADD_CONTACT_ERROR", new String[]
+                        { contactAddress })).showDialog();
                     }
                 }
             }

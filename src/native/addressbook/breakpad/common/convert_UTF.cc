@@ -1,7 +1,7 @@
 /*
  * Copyright © 1991-2015 Unicode, Inc. All rights reserved.
  * Distributed under the Terms of Use in 
- * https://www.unicode.org/copyright.html.
+ * http://www.unicode.org/copyright.html.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of the Unicode data files and any associated documentation

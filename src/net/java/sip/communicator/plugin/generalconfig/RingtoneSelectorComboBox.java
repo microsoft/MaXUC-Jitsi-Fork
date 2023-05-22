@@ -18,7 +18,6 @@ import org.jitsi.util.SoundFileUtils;
 import org.jitsi.util.StringUtils;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.plugin.notificationconfiguration.*;
 import net.java.sip.communicator.plugin.notificationwiring.*;
 import net.java.sip.communicator.service.notification.*;
 import net.java.sip.communicator.util.*;
@@ -627,12 +626,7 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
             });
             return;
         }
-        ErrorDialog dialog = new ErrorDialog(null,
-                                             LOAD_FAILED_TITLE,
-                                             msg);
-        dialog.setAlwaysOnTop(true);
-        dialog.setResizable(false);
-        dialog.setVisible(true);
+        new ErrorDialog(LOAD_FAILED_TITLE, msg).showDialog();
     }
 
     /**

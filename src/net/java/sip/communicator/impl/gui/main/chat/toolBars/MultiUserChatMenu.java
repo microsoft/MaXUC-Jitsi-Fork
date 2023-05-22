@@ -398,13 +398,10 @@ public class MultiUserChatMenu
                         sLog.debug(
                             "User supplied invalid subject, displaying error: " +
                                                                    errorMessage);
-                        ErrorDialog errorDialog = new ErrorDialog(
+                        new ErrorDialog(
                             sResources.getI18NString(
                                 "service.gui.chat.ERROR_INVALID_CHAT_NAME"),
-                            errorMessage,
-                            ChangeGroupNameDialog.this);
-                        errorDialog.setVisible(true);
-                        errorDialog.requestFocus();
+                            errorMessage).showDialog();
                     }
                     else
                     {
@@ -419,8 +416,7 @@ public class MultiUserChatMenu
                             sLog.error("Failed to set the chat room subject", ex);
                             String errorTitle = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_CHANGE_SUBJECT_TITLE");
                             String errorMessageChangeSubject = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_CHANGE_SUBJECT_CHAT");
-                            ErrorDialog errorDialog = new ErrorDialog(null, errorTitle, errorMessageChangeSubject);
-                            errorDialog.showDialog();
+                            new ErrorDialog(errorTitle, errorMessageChangeSubject).showDialog();
                         }
                         dispose();
                     }

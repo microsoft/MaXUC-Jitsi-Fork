@@ -356,7 +356,7 @@ public class GroupContactMenuUtils
      * uplift to a group contact will not be added, as they are not in the
      * user's contact list.
      */
-    private static class NonContactsDialog extends ErrorDialog
+    private static class NonContactsDialog extends LegacyErrorDialog
     {
         private static final long serialVersionUID = 1L;
 
@@ -433,7 +433,7 @@ public class GroupContactMenuUtils
             super(null,
                   title,
                   createMessage(nonContacts),
-                  ErrorDialog.ErrorType.WARNING,
+                  LegacyErrorDialog.ErrorType.WARNING,
                   cancelText);
 
             sLog.debug("Creating 'no contacts' dialog.");

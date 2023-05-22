@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
 import static org.jitsi.util.Hasher.logHasher;
@@ -27,6 +28,8 @@ import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.account.*;
+
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatRoom;
 
 /**
  * Manages chat windows and panels.
@@ -500,22 +503,20 @@ public class ChatWindowManager
      * @param create <tt>true</tt> to create a new <tt>ChatPanel</tt> for the
      * specified <tt>ChatRoomWrapper</tt> if no such <tt>ChatPanel</tt> exists
      * already; otherwise, <tt>false</tt>
-     * @param requestHistory If true, then load the history for the chat
      * @return the <tt>ChatPanel</tt> corresponding to the specified
      * <tt>ChatRoomWrapper</tt> or <tt>null</tt> if no such <tt>ChatPanel</tt>
      * exists and <tt>create</tt> is <tt>false</tt>
      */
-    private ChatPanel getMultiChatInternal(
-            ChatRoomWrapper chatRoomWrapper,
-            boolean create,
-            boolean requestHistory)
+    private ChatPanel getMultiChatInternal(ChatRoomWrapper chatRoomWrapper, boolean create)
     {
         synchronized (mChatSyncRoot)
         {
             ChatPanel chatPanel = findChatPanelForDescriptor(chatRoomWrapper);
 
             if ((chatPanel == null) && create)
-                chatPanel = createChat(chatRoomWrapper, requestHistory);
+            {
+                chatPanel = createChat(chatRoomWrapper);
+            }
             return chatPanel;
         }
     }
@@ -531,24 +532,19 @@ public class ChatWindowManager
      * @param create <tt>true</tt> to create a new <tt>ChatPanel</tt> for the
      * specified <tt>ChatRoomWrapper</tt> if no such <tt>ChatPanel</tt> exists
      * already; otherwise, <tt>false</tt>
-     * @param requestHistory If true, then load the history from the chat room
      * @return the <tt>ChatPanel</tt> corresponding to the specified
      * <tt>ChatRoomWrapper</tt> or <tt>null</tt> if no such <tt>ChatPanel</tt>
      * exists and <tt>create</tt> is <tt>false</tt>
      */
-    public ChatPanel getMultiChat(
-            ChatRoomWrapper chatRoomWrapper,
-            boolean create,
-            boolean requestHistory)
+    public ChatPanel getMultiChat(ChatRoomWrapper chatRoomWrapper, boolean create)
     {
         if (!create)
-            return getMultiChatInternal(chatRoomWrapper, create, requestHistory);
+            return getMultiChatInternal(chatRoomWrapper, create);
         else
         {
             // tries to execute creating of the ui on the
             // event dispatch thread
-            return new CreateChatRoomWrapperRunner(chatRoomWrapper, requestHistory)
-                .getChatPanel();
+            return new CreateChatRoomWrapperRunner(chatRoomWrapper).getChatPanel();
         }
     }
 
@@ -561,14 +557,12 @@ public class ChatWindowManager
      * @param create <tt>true</tt> to create a <tt>ChatPanel</tt> corresponding
      * to the specified <tt>ChatRoom</tt> if such <tt>ChatPanel</tt> does not
      * exist yet
-     * @param requestHistory If true, then load the history for the chat
      * @return the <tt>ChatPanel</tt> corresponding to the specified
      * <tt>ChatRoom</tt>; <tt>null</tt> if there is no such <tt>ChatPanel</tt>
      * and <tt>create</tt> is <tt>false</tt>
      */
     private ChatPanel getMultiChatInternal(ChatRoom chatRoom,
-                                           boolean create,
-                                           boolean requestHistory)
+                                           boolean create)
     {
         synchronized (mChatSyncRoot)
         {
@@ -603,18 +597,17 @@ public class ChatWindowManager
                     if (chatPanel != null)
                     {
                         sLog.warn("Closing disconnected chat panel for " +
-                                                      chatRoom.getIdentifier());
+                                  sanitiseChatRoom(chatRoom.getIdentifier()));
                         closeChatPanel(chatPanel);
                     }
 
-                    chatPanel = createChat(chatRoomWrapper,
-                                           requestHistory);
+                    chatPanel = createChat(chatRoomWrapper);
                 }
             }
             else
             {
                 sLog.error("Unable to get ChatRoomWrapper for " +
-                                                      chatRoom.getIdentifier());
+                           sanitiseChatRoom(chatRoom.getIdentifier()));
             }
 
             return chatPanel;
@@ -631,23 +624,19 @@ public class ChatWindowManager
      * @param create <tt>true</tt> to create a <tt>ChatPanel</tt> corresponding
      * to the specified <tt>ChatRoom</tt> if such <tt>ChatPanel</tt> does not
      * exist yet
-     * @param requestHistory If true, then load the history for the chat
      * @return the <tt>ChatPanel</tt> corresponding to the specified
      * <tt>ChatRoom</tt>; <tt>null</tt> if there is no such <tt>ChatPanel</tt>
      * and <tt>create</tt> is <tt>false</tt>
      */
-    public ChatPanel getMultiChat(ChatRoom chatRoom,
-                                  boolean create,
-                                  boolean requestHistory)
+    public ChatPanel getMultiChat(ChatRoom chatRoom, boolean create)
     {
         if (!create)
-            return getMultiChatInternal(chatRoom,
-                                        create,
-                                        requestHistory);
+        {
+            return getMultiChatInternal(chatRoom, create);
+        }
         else
         {
-            return new CreateChatRoomRunner(chatRoom,
-                                            requestHistory).getChatPanel();
+            return new CreateChatRoomRunner(chatRoom).getChatPanel();
         }
     }
 
@@ -946,8 +935,7 @@ public class ChatWindowManager
     private ChatPanel createChat(String smsNumber)
     {
         ChatContainer chatContainer = getChatContainer();
-        ChatPanel chatPanel = new ChatPanel(
-            chatContainer, ConfigurationUtils.isHistoryShown());
+        ChatPanel chatPanel = new ChatPanel(chatContainer);
 
         SMSChatSession chatSession = new SMSChatSession(chatPanel, smsNumber);
         chatPanel.setChatSession(chatSession);
@@ -984,8 +972,7 @@ public class ChatWindowManager
             protocolContact = getDefaultContact(metaContact);
 
         ChatContainer chatContainer = getChatContainer();
-        ChatPanel chatPanel = new ChatPanel(
-            chatContainer, ConfigurationUtils.isHistoryShown());
+        ChatPanel chatPanel = new ChatPanel(chatContainer);
 
         MetaContactChatSession chatSession
             = new MetaContactChatSession(chatPanel,
@@ -1021,7 +1008,7 @@ public class ChatWindowManager
     {
         ChatContainer chatContainer;
 
-        chatContainer = new ChatWindow(this);
+        chatContainer = new ChatWindow();
         GuiActivator.getUIService().registerExportedWindow(
             (ExportedWindow) chatContainer);
 
@@ -1034,16 +1021,12 @@ public class ChatWindowManager
      *
      * @param chatRoomWrapper the <tt>ChatRoom</tt>, for which the chat will be
      * created
-     * @param requestHistory If true, then load the history for the chat
      * @return The <code>ChatPanel</code> newly created.
      */
-    private ChatPanel createChat(ChatRoomWrapper chatRoomWrapper,
-                                 boolean requestHistory)
+    private ChatPanel createChat(ChatRoomWrapper chatRoomWrapper)
     {
         ChatContainer chatContainer = getChatContainer();
-        boolean loadHistory = ConfigurationUtils.isHistoryShown() && requestHistory;
-        ChatPanel chatPanel =
-            new ChatPanel(chatContainer, loadHistory);
+        ChatPanel chatPanel = new ChatPanel(chatContainer);
 
         ConferenceChatSession chatSession
             = new ConferenceChatSession(chatPanel,
@@ -1326,7 +1309,7 @@ public class ChatWindowManager
             if (mChatRoom != null)
             {
                 sLog.debug("Looking for chat panel for existing chat room");
-                chatPanel = getMultiChat(mChatRoom, true, true);
+                chatPanel = getMultiChat(mChatRoom, true);
                 // Sometimes the server returns null, even when a subject has
                 // been set, so don't update the subject if null is returned.
                 String title = mChatRoom.getSubject();
@@ -1352,7 +1335,7 @@ public class ChatWindowManager
 
                 chatRoomWrapper.setPersistent(false);
                 chatRoomList.addChatRoom(chatRoomWrapper);
-                chatPanel = getMultiChat(chatRoomWrapper, true, true);
+                chatPanel = getMultiChat(chatRoomWrapper, true);
             }
             else
             {
@@ -1462,16 +1445,6 @@ public class ChatWindowManager
         private ChatPanel mChatPanel;
 
         /**
-         * If true, then the chat panel will request the history for the room
-         */
-        protected final boolean mRequestHistory;
-
-        public AbstractChatPanelCreateRunnable(boolean requestHistory)
-        {
-            mRequestHistory = requestHistory;
-        }
-
-        /**
          * Returns the result chat panel.
          * @return the result chat panel.
          */
@@ -1542,7 +1515,7 @@ public class ChatWindowManager
                                               Contact protocolContact,
                                               ContactResource contactResource)
         {
-            super(true);
+            super();
             mMetaContact = metaContact;
             mProtocolContact = protocolContact;
             mContactResource = contactResource;
@@ -1579,10 +1552,9 @@ public class ChatWindowManager
          * Constructs.
          * @param chatRoomWrapper
          */
-        private CreateChatRoomWrapperRunner(ChatRoomWrapper chatRoomWrapper,
-                                            boolean requestHistory)
+        private CreateChatRoomWrapperRunner(ChatRoomWrapper chatRoomWrapper)
         {
-            super(requestHistory);
+            super();
             mChatRoomWrapper = chatRoomWrapper;
         }
 
@@ -1591,7 +1563,7 @@ public class ChatWindowManager
          */
         protected ChatPanel createChatPanel()
         {
-            return getMultiChatInternal(mChatRoomWrapper, true, mRequestHistory);
+            return getMultiChatInternal(mChatRoomWrapper, true);
         }
     }
 
@@ -1610,10 +1582,9 @@ public class ChatWindowManager
          * Constructs.
          * @param chatRoom
          */
-        private CreateChatRoomRunner(ChatRoom chatRoom,
-                                     boolean requestHistory)
+        private CreateChatRoomRunner(ChatRoom chatRoom)
         {
-            super(requestHistory);
+            super();
             mChatRoom = chatRoom;
         }
 
@@ -1623,7 +1594,7 @@ public class ChatWindowManager
         protected ChatPanel createChatPanel()
         {
             return getMultiChatInternal(mChatRoom,
-                true, mRequestHistory);
+                true);
         }
     }
 }

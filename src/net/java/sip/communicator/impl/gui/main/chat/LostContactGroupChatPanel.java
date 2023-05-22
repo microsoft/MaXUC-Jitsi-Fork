@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatRoom;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.*;
@@ -258,7 +259,7 @@ public class LostContactGroupChatPanel
             {
                 logger.debug(
                     "Received joined presence change event for chatRoom: " +
-                                                               evtChatRoomName);
+                    sanitiseChatRoom(evtChatRoomName));
                 handleChatRoomJoined();
             }
         }

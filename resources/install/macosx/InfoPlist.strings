@@ -1,9 +1,0 @@
-NSMicrophoneUsageDescription = "_MICROPHONE_USAGE_STRING_";
-NSCameraUsageDescription = "_CAMERA_USAGE_STRING_";
-NSContactsUsageDescription = "_CONTACTS_USAGE_STRING_";
-NSDownloadsFolderUsageDescription = "_DOWNLOADS_USAGE_STRING_";
-NSDesktopFolderUsageDescription = "_DESKTOP_USAGE_STRING_";
-NSDocumentsFolderUsageDescription = "_DOCUMENTS_USAGE_STRING_";
-NSNetworkVolumesUsageDescription = "_NETWORK_DRIVES_USAGE_STRING_";
-NSRemovableVolumesUsageDescription = "_REMOVABLE_DRIVES_USAGE_STRING_";
-NSLocationUsageDescription = "_LOCATION_USAGE_STRING_";

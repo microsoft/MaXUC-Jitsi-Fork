@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import net.java.sip.communicator.service.protocol.ContactGroup;
@@ -24,4 +25,5 @@ import net.java.sip.communicator.service.protocol.ContactGroup;
 public abstract class AbstractContactGroupJabberImpl
     implements ContactGroup
 {
+    abstract void addContact(ContactJabberImpl contact);
 }

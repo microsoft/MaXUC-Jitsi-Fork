@@ -14,6 +14,7 @@
  * You must now invoke start() on the SwingWorker after
  * creating it.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
 import java.util.concurrent.*;

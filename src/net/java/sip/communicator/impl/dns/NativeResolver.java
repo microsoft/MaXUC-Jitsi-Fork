@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.dns;
 
+import static org.jitsi.util.Hasher.*;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.xbill.DNS.DClass;
@@ -198,8 +199,7 @@ public class NativeResolver
 
             if (dnsServers.length > 0)
             {
-                logger.info("Have DNS servers " +
-                             Arrays.toString(dnsServers));
+                logger.info("Have DNS servers " + logCollectionHasher(List.of(dnsServers)));
                 temp = new ExtendedResolver(dnsServers);
             }
             else
@@ -283,7 +283,7 @@ public class NativeResolver
         // If we add IPv6 support, this will need to change.
         servers = extractIpv4Addresses(servers);
 
-        logger.debug("Returning DNS servers from Java: " + Arrays.toString(servers));
+        logger.debug("Returning DNS servers from Java: " + logCollectionHasher(List.of(servers)));
 
         // Return the list of servers, or an empty array if we failed to
         // retrieve any.
@@ -315,11 +315,11 @@ public class NativeResolver
             }
             else
             {
-                logger.debug("Ignoring non-IPv4 address " + ipAddress);
+                logger.debug("Ignoring non-IPv4 address " + logHasher(ipAddress));
             }
         }
 
-        logger.debug("Returning IPv4 addresses: " + ipv4Addresses);
+        logger.debug("Returning IPv4 addresses: " + logCollectionHasher(ipv4Addresses));
         return ipv4Addresses.toArray(new String[0]);
     }
 

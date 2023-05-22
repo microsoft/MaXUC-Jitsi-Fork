@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.addressbook;
 
 import java.util.*;
@@ -104,7 +105,7 @@ public class ProtocolProviderFactoryAddressBookImpl
         // Ensure we haven't seen this account id before.
         if (isAccountRegistered(accountID))
         {
-            throw new IllegalStateException("An account for id " + userIDStr + " was already installed!");
+            throw new IllegalStateException("An account for id " + accountID.getLoggableAccountID() + " was already installed!");
         }
 
         // First store the account and only then load it as the load generates

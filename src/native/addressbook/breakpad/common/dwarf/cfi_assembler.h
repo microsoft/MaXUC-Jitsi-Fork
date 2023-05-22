@@ -63,8 +63,8 @@ class CFISection: public Section {
   // write-protected pages. These variants are specified at the
   // following two URLs:
   //
-  // https://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
-  // https://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
+  // http://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
+  // http://refspecs.linux-foundation.org/LSB_4.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
   //
   // CFISection leaves the production of well-formed 'z'-augmented CIEs and
   // FDEs to the user, but does provide EncodedPointer, to emit

@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
+import static net.java.sip.communicator.util.PrivacyUtils.getLoggableCPURL;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -8,8 +10,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-
-import net.java.sip.communicator.service.commportal.CommPortalService;
 
 /**
  * Utility function for sanitising log files.
@@ -61,7 +61,7 @@ public class LogFileSanitiser
             for (String line; (line = inputBufferedReader.readLine()) != null; )
             {
                 // Sanitise any CommPortal URLs in each log line
-                outputBufferedWriter.write(CommPortalService.getLoggableURL(line));
+                outputBufferedWriter.write(getLoggableCPURL(line));
                 outputBufferedWriter.newLine();
             }
         }

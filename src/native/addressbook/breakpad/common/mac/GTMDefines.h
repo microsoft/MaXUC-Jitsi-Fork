@@ -7,7 +7,7 @@
 //  use this file except in compliance with the License.  You may obtain a copy
 //  of the License at
 //
-//  https://www.apache.org/licenses/LICENSE-2.0
+//  http://www.apache.org/licenses/LICENSE-2.0
 //
 //  Unless required by applicable law or agreed to in writing, software
 //  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -173,7 +173,7 @@
 // compile time assert scheme.
 #ifndef _GTMCompileAssert
   // We got this technique from here:
-  // https://unixjunkie.blogspot.com/2007/10/better-compile-time-asserts_29.html
+  // http://unixjunkie.blogspot.com/2007/10/better-compile-time-asserts_29.html
 
   #define _GTMCompileAssertSymbolInner(line, msg) _GTMCOMPILEASSERT ## line ## __ ## msg
   #define _GTMCompileAssertSymbol(line, msg) _GTMCompileAssertSymbolInner(line, msg)
@@ -266,7 +266,7 @@
 #endif  // MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
 
 // Some support for advanced clang static analysis functionality
-// See https://clang-analyzer.llvm.org/annotations.html
+// See http://clang-analyzer.llvm.org/annotations.html
 #ifndef __has_feature      // Optional.
   #define __has_feature(x) 0 // Compatibility with non-clang compilers.
 #endif

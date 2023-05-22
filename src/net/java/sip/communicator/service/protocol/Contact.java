@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
 import java.awt.*;
@@ -106,6 +107,15 @@ public interface Contact
      * @return true if the contact is persistent and false otherwise.
      */
     boolean isPersistent();
+
+    /**
+     * Determines whether this contact may be merged with others.
+     * This is generally determined by its state of persistence.
+     */
+    default boolean canBeMerged()
+    {
+        return isPersistent();
+    }
 
     /**
      * Determines whether or not this contact has been resolved against the

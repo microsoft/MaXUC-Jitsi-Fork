@@ -4,11 +4,10 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.updatewindows;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,30 +19,29 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import javax.swing.*;
 
-import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
-import net.java.sip.communicator.plugin.desktoputil.SIPCommBasicTextButton;
-import net.java.sip.communicator.plugin.desktoputil.SIPCommDialog;
-import net.java.sip.communicator.plugin.desktoputil.SIPCommFrame;
-import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
-import net.java.sip.communicator.plugin.desktoputil.SuccessDialog;
-import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
-import net.java.sip.communicator.plugin.desktoputil.WindowUtils;
+import com.google.common.annotations.VisibleForTesting;
+
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
-import net.java.sip.communicator.service.gui.PopupDialog;
 import net.java.sip.communicator.service.httputil.HTTPResponseResult;
 import net.java.sip.communicator.service.httputil.HttpUtils;
+import net.java.sip.communicator.service.update.UpdateDownloadState;
+import net.java.sip.communicator.service.update.UpdateInfo;
+import net.java.sip.communicator.service.update.UpdateProgressInformation;
 import net.java.sip.communicator.service.update.UpdateService;
+import net.java.sip.communicator.service.update.UpdateState;
+import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPAMotion;
+import net.java.sip.communicator.service.wispaservice.WISPAMotionType;
+import net.java.sip.communicator.service.wispaservice.WISPANamespace;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
+import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
 import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.service.version.Version;
-import org.jitsi.util.OSUtils;
 import org.jitsi.util.StringUtils;
-
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Implements checking for software updates, downloading and applying them (on Windows)
@@ -81,34 +79,14 @@ public class UpdateServiceWindowsImpl
         = "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
 
     /**
-     * Name of property to force update.
-     */
-    private static final String FORCE_UPDATE = "net.java.sip.communicator.plugin.update.FORCE_UPDATE";
-
-    /**
      * The link pointing to the ChangeLog of the update.
      */
     private static String changesLink;
 
     /**
-     * The <tt>JDialog</tt>, if any, which is associated with the currently
-     * executing "Check for Updates". While the "Check for Updates"
-     * functionality cannot be entered, clicking the "Check for Updates" menu
-     * item will bring it to the front.
-     */
-    private static JDialog checkForUpdatesDialog;
-
-    /**
      * The link pointing at the download of the update.
      */
     private static String sDownloadLink;
-
-    /**
-     * The indicator/counter which determines how many methods are currently
-     * executing the "Check for Updates" functionality so that it is known
-     * whether it can be entered.
-     */
-    private static int inCheckForUpdates = 0;
 
     /**
      * The latest version of the software found at the configured update
@@ -117,17 +95,32 @@ public class UpdateServiceWindowsImpl
     private static String latestVersion;
 
     /**
-     * Invokes "Check for Updates".
-     *
-     * @param isUserTriggered <tt>true</tt> if the user is explicitly asking to
-     * check for notifications, in which case they are to be notified if they
-     * have the newest version already; and also if we should notify them when
-     * they perform this action while disconnected; otherwise, <tt>false</tt>
+     * The flag which indicates whether an update is a forced update
      */
+    private static boolean forceUpdate;
+
+    /**
+     * The flag which indicates whether an update has been canceled.
+     * Volatile due to potential caching via threads when an update download job
+     * is run
+     */
+    private static volatile boolean updateDownloadCanceled;
+
+    @Override
     public synchronized void checkForUpdates(
             final boolean isUserTriggered)
     {
-        Runnable runnable = () -> doUpdate(isUserTriggered, false);
+        if (!isUserTriggered &&
+            (ConfigurationUtils.isAutoUpdateCheckingDisabledForUser() ||
+             ConfigurationUtils.isAutoUpdateCheckingDisabledGlobally()))
+        {
+            logger.info("Automatic update checking is disabled.");
+            return;
+        }
+
+        logger.info("Checking for updates");
+        forceUpdate = UpdateWindowsActivator.checkForceUpdate();
+        Runnable runnable = () -> doUpdate(isUserTriggered, forceUpdate);
         if (EventQueue.isDispatchThread())
         {
             runnable.run();
@@ -138,11 +131,7 @@ public class UpdateServiceWindowsImpl
         }
     }
 
-    /**
-     * Forces the client to update to the most recent version by showing the
-     * "new version available" pop-up. If this is cancelled then the application
-     * will exit
-     */
+    @Override
     public void forceUpdate()
     {
         doUpdate(false, true);
@@ -151,19 +140,7 @@ public class UpdateServiceWindowsImpl
     private synchronized void doUpdate(final boolean isUserTriggered,
                                        final boolean forceUpdate)
     {
-        if (inCheckForUpdates > 0)
-        {
-            logger.info("Already in check for updates - " + inCheckForUpdates);
-
-            if (checkForUpdatesDialog != null)
-            {
-                checkForUpdatesDialog.setVisible(true);
-                checkForUpdatesDialog.toFront();
-                WindowUtils.makeWindowVisible(checkForUpdatesDialog, true);
-            }
-            return;
-        }
-
+        logger.info("Doing update. User triggered? " + isUserTriggered + ".  Force Update? " + forceUpdate);
         Runnable checkForUpdates = () -> checkServerForUpdate(isUserTriggered, forceUpdate);
         UpdateWindowsActivator.getThreadingService().submit("Check for updates", checkForUpdates);
     }
@@ -171,9 +148,16 @@ public class UpdateServiceWindowsImpl
     @VisibleForTesting
     void checkServerForUpdate(final boolean isUserTriggered, final boolean forceUpdate)
     {
-        enterCheckForUpdates(null);
+        // We've got an installer, so next we need to shut down the
+        // client to install the new version.  Before we do that, we
+        // display a dialog to warn the user of this and ask them to
+        // confirm they are happy to proceed.  That is unless we have
+        // been asked to force upgrade, in which case we simply shut
+        // down, as the user has no choice.
+        UpdateServiceWindowsImpl.forceUpdate = forceUpdate;
+        String currentVersion = getCurrentVersion().toString();
 
-                try
+        try
                 {
                     if (isLatestVersion())
                     {
@@ -192,26 +176,18 @@ public class UpdateServiceWindowsImpl
                         {
                             logger.info("Notifying user that there aren't any" +
                                         " new updates");
-
-                            ResourceManagementService res
-                                                     = Resources.getResources();
-
-                            String[] msgArgs =
-                                   new String[]{getCurrentVersion().toString()};
-                            String message = res.getI18NString(
-                               "plugin.updatechecker.DIALOG_NOUPDATE", msgArgs);
-                            String title = res.getI18NString(
-                                  "plugin.updatechecker.DIALOG_NOUPDATE_TITLE");
-                            SuccessDialog dialog = new SuccessDialog(null, title, message);
-                            WindowUtils.makeWindowVisible(dialog, true);
+                            notifyUpdateInfo(latestVersion,
+                                             currentVersion,
+                                             UpdateState.UP_TO_DATE);
                         }
                     }
                     else
                     {
                         logger.info("Notifying user about new update: " +
                                     " Forced: " + forceUpdate);
-
-                        showNewVersionAvailableDialog(forceUpdate);
+                        notifyUpdateInfo(latestVersion,
+                                         currentVersion,
+                                         forceUpdate ? UpdateState.UPDATE_FORCED : UpdateState.UPDATE_OPTIONAL);
                     }
                 }
                 catch (IOException e)
@@ -225,22 +201,39 @@ public class UpdateServiceWindowsImpl
                     if (isUserTriggered)
                     {
                         logger.warn("Notifying that the connection is down");
-
-                        ResourceManagementService res = Resources.getResources();
-
-                        String message = res.getI18NString(
-                            "plugin.updatechecker.DIALOG_NOCONN");
-                        String title = res.getI18NString(
-                           "plugin.updatechecker.DIALOG_NOCONN_TITLE");
-
-                        new ErrorDialog(null, title, message).setVisible(true);
+                        notifyUpdateInfo(latestVersion,
+                                         currentVersion,
+                                         forceUpdate ? UpdateState.ERROR_FORCED : UpdateState.ERROR_OPTIONAL);
                     }
-                    }
-                finally
-                {
-                    exitCheckForUpdates(null);
                 }
             }
+
+    /**
+     * Sends update information to be rendered on the Electron side
+     * @param latestVersion string of the latest version of the client
+     * @param currentVersion string of the current version of the client
+     */
+    private static void notifyUpdateInfo(String latestVersion, String currentVersion, UpdateState updateState)
+    {
+        UpdateInfo updateInfo = new UpdateInfo(latestVersion, currentVersion, updateState);
+        WISPAMotion wispaMotion = new WISPAMotion(WISPAMotionType.UPDATE_INFO, updateInfo);
+        WISPAService wispaService = UpdateWindowsActivator.getWISPAService();
+        wispaService.notify(WISPANamespace.EVENTS, WISPAAction.MOTION, wispaMotion);
+    }
+
+    /**
+     * Sends update progress bar information to be rendered on the Electron side
+     * @param size size of the update
+     * @param transferredSize size of the update transferred so far
+     * @param updateDownloadState indicates if updates is in-progress, failed or cancelled by user action
+     */
+    private static void notifyUpdateInstallationProgress(long size, long transferredSize, UpdateDownloadState updateDownloadState)
+    {
+        UpdateProgressInformation updateProgressInformation = new UpdateProgressInformation(size, transferredSize, updateDownloadState);
+        WISPAMotion wispaMotion = new WISPAMotion(WISPAMotionType.UPDATE_PROGRESS_INFO, updateProgressInformation);
+        WISPAService wispaService = UpdateWindowsActivator.getWISPAService();
+        wispaService.notify(WISPANamespace.EVENTS, WISPAAction.MOTION, wispaMotion);
+    }
 
     /**
      * Tries to create a new <tt>FileOutputStream</tt> for a temporary file into
@@ -362,6 +355,7 @@ public class UpdateServiceWindowsImpl
         final File[] tempFile = new File[1];
         FileOutputStream tempFileOutputStream = null;
         boolean deleteTempFile = true;
+        updateDownloadCanceled = false;
 
         tempFileOutputStream
             = createTempFileOutputStream(
@@ -382,8 +376,6 @@ public class UpdateServiceWindowsImpl
             if (res != null)
             {
                 InputStream content = res.getContent();
-                // Track the progress of the download.
-                final ProgressMonitorInputStream input = new ProgressMonitorInputStream(null, url, content);
 
                 /*
                  * Set the maximum value of the ProgressMonitor to the size of
@@ -412,88 +404,77 @@ public class UpdateServiceWindowsImpl
                     }
                 }
 
-                input.getProgressMonitor().setMaximum((int) totalSize);
-
                 logger.info("Downloading " + url + " of size: " + totalSize);
 
-                try
+                long bytesRead = 0;
+                long totalAttempts = 0;
+
+                try (BufferedOutputStream output = new BufferedOutputStream(
+                        tempFileOutputStream))
                 {
-                    long bytesRead = 0;
-                    long totalAttempts = 0;
+                    int attempts = 0;
+                    int read = -1;
+                    byte[] buff = new byte[1024];
+                    long lastProgressTime = System.currentTimeMillis();
 
-                    try (BufferedOutputStream output = new BufferedOutputStream(
-                            tempFileOutputStream))
+                    while (!updateDownloadCanceled && (read = content.read(buff)) != -1)
                     {
-                        int attempts = 0;
-                        int read = -1;
-                        byte[] buff = new byte[1024];
+                        bytesRead += read;
+                        attempts++;
+                        totalAttempts++;
 
-                        while ((read = input.read(buff)) != -1)
+                        // We only want to log every 1000 attempts or so, or we
+                        // will fill the logs with irrelevant detail
+                        if (attempts > 1000)
                         {
-                            bytesRead += read;
-                            attempts++;
-                            totalAttempts++;
-
-                            // We only want to log every 1000 attempts or so, or we
-                            // will fill the logs with irrelevant detail
-                            if (attempts > 1000)
-                            {
-                                attempts = 0;
-                                logger.debug("Read " +
-                                                     bytesRead + " / " +
-                                                     totalSize +
-                                                     " in " + totalAttempts +
-                                                     " reads");
-                            }
-
-                            output.write(buff, 0, read);
+                            attempts = 0;
+                            logger.debug("Read " +
+                                                 bytesRead + " / " +
+                                                 totalSize +
+                                                 " in " + totalAttempts +
+                                                 " reads");
                         }
-                    }
-                    catch (IOException e)
-                    {
-                        logger.error(e);
-                        throw e;
-                    }
-                    finally
-                    {
-                        logger.debug("Finished reading " +
-                                             bytesRead + " / " + totalSize +
-                                             " in " + totalAttempts + " reads");
 
-                        tempFileOutputStream = null;
+                        // Send progress bar updates every 250 ms
+                        if (System.currentTimeMillis() - lastProgressTime >= 250) {
+                            lastProgressTime = System.currentTimeMillis();
+                            notifyUpdateInstallationProgress(totalSize, bytesRead, UpdateDownloadState.UPDATE_DOWNLOAD_IN_PROGRESS);
+                        }
+
+                        output.write(buff, 0, read);
                     }
-                    deleteTempFile = false;
+                }
+                catch (IOException e)
+                {
+                    notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
+                    logger.error(e);
+                    throw e;
                 }
                 finally
                 {
-                    // Close the input on the EDT, as otherwise the call to close
-                    // can block and never return
-                    SwingUtilities.invokeLater(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                logger.debug("Close input");
-                                input.close();
-                                logger.debug("Input closed");
-                            }
-                            catch (IOException e)
-                            {
-                                // Just log it because we've already downloaded
-                                // the setup and that's what matters most.
-                                logger.info("Failed to close download stream", e);
-                            }
-                        }
-                    });
+                    logger.debug("Finished reading " +
+                                         bytesRead + " / " + totalSize +
+                                         " in " + totalAttempts + " reads");
+
+                    tempFileOutputStream = null;
                 }
-                            }
+
+                // notify Electron client that the update was canceled with whether it's mandatory or optional
+                if (!updateDownloadCanceled) {
+                    deleteTempFile = false;
+                }
+            }
             else
-                            {
+            {
                 throw new Exception("No HTTP result found for url " + url);
-                            }
-                        }
+            }
+        }
+        catch (Exception e)
+        {
+            notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
+            logger.error(e);
+            throw e;
+        }
         finally
         {
             try
@@ -514,52 +495,6 @@ public class UpdateServiceWindowsImpl
     }
 
     /**
-     * Notifies this <tt>UpdateCheckActivator</tt> that a method is entering the
-     * "Check for Updates" functionality and it is thus not allowed to enter it
-     * again.
-     *
-     * @param checkForUpdatesDialog the <tt>JDialog</tt> associated with the
-     * entry in the "Check for Updates" functionality if any. While "Check for
-     * Updates" cannot be entered again, clicking the "Check for Updates" menu
-     * item will bring the <tt>checkForUpdatesDialog</tt> to the front.
-     */
-    private static synchronized void enterCheckForUpdates(
-            JDialog checkForUpdatesDialog)
-    {
-        logger.debug("Enter check for updates, is: " + inCheckForUpdates);
-
-        inCheckForUpdates++;
-        if (checkForUpdatesDialog != null)
-        {
-            UpdateServiceWindowsImpl.checkForUpdatesDialog = checkForUpdatesDialog;
-        }
-    }
-
-    /**
-     * Notifies this <tt>UpdateCheckActivator</tt> that a method is exiting the
-     * "Check for Updates" functionality and it may thus be allowed to enter it
-     * again.
-     *
-     * @param checkForUpdatesDialog the <tt>JDialog</tt> which was associated
-     * with the matching call to {@link #enterCheckForUpdates(JDialog)} if any
-     */
-    private static synchronized void exitCheckForUpdates(
-            JDialog checkForUpdatesDialog)
-    {
-        logger.debug("Exit check for updates, is: " + inCheckForUpdates);
-
-        if (inCheckForUpdates <= 0)
-            throw new IllegalStateException("inCheckForUpdates");
-        else
-        {
-            inCheckForUpdates--;
-            if ((checkForUpdatesDialog != null)
-                    && (UpdateServiceWindowsImpl.checkForUpdatesDialog == checkForUpdatesDialog))
-                UpdateServiceWindowsImpl.checkForUpdatesDialog = null;
-        }
-    }
-
-    /**
      * Gets the current (software) version.
      *
      * @return the current (software) version
@@ -569,13 +504,7 @@ public class UpdateServiceWindowsImpl
         return UpdateWindowsActivator.getVersionService().getCurrentVersion();
     }
 
-    /**
-     * Determines whether we are currently running the latest version.
-     *
-     * @return <tt>true</tt> if we are currently running the latest version;
-     * otherwise, <tt>false</tt>
-     * @throws IOException in case we could not connect to the update server
-     */
+    @Override
     public boolean isLatestVersion() throws IOException
     {
         String updateLink
@@ -618,6 +547,7 @@ public class UpdateServiceWindowsImpl
                 if (StringUtils.isNullOrEmpty(latestVersion))
                 {
                     logger.warn("Latest version not supplied");
+                    latestVersion = getCurrentVersion().toString(true);
                     return true;
                 }
 
@@ -706,213 +636,21 @@ public class UpdateServiceWindowsImpl
         return updateLink;
     }
 
-    /**
-     * Shows dialog informing about new version with button Install
-     * which triggers the update process.
-     *
-     * @param forceUpdate If true then the application will quit if
-     *        the update is cancelled
-     */
-    private static void showNewVersionAvailableDialog(final boolean forceUpdate)
-    {
-        if (!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    showNewVersionAvailableDialog(forceUpdate);
-                }
-            });
-
-            return;
-        }
-
-        /*
-         * Before showing the dialog, we'll enterCheckForUpdates() in order to
-         * notify that it is not safe to enter "Check for Updates" again. If we
-         * don't manage to show the dialog, we'll have to exitCheckForUpdates().
-         * If we manage though, we'll have to exitCheckForUpdates() but only
-         * once depending on its modality.
-         */
-        final boolean[] exitCheckForUpdates = new boolean[] { false };
-        final JDialog dialog = new SIPCommDialog()
-        {
-            private static final long serialVersionUID = 0L;
-
-            protected void close(boolean escaped)
-            {
-                synchronized (exitCheckForUpdates)
-                {
-                    if (exitCheckForUpdates[0])
-                    {
-                        exitCheckForUpdates(this);
-                    }
-
-                    dispose();
-
-                    if (forceUpdate)
-                    {
-                        forceQuitApplication();
-                    }
-                }
-            }
-        };
-        ResourceManagementService resources = Resources.getResources();
-
-        String titleRes = forceUpdate ? "plugin.updatechecker.DIALOG_TITLE_FORCE" :
-                                        "plugin.updatechecker.DIALOG_TITLE";
-        dialog.setTitle(resources.getI18NString(titleRes));
-        dialog.setResizable(false);
-
-        JTextArea contentMessage = new JTextArea(0, 30);
-        contentMessage.setLineWrap(true);
-        contentMessage.setWrapStyleWord(true);
-        ScaleUtils.scaleFontAsDefault(contentMessage);
-        contentMessage.setOpaque(false);
-        contentMessage.setEditable(false);
-
-        String msgRes = forceUpdate ?
-                                  "plugin.updatechecker.DIALOG_MESSAGE_FORCE" :
-                                  "plugin.updatechecker.DIALOG_MESSAGE";
-        String appName =
-            resources.getSettingsString("service.gui.APPLICATION_NAME");
-        String dialogMsg = resources.getI18NString(msgRes,
-                                                   new String[]{appName});
-
-        UpdateWindowsActivator.getConfiguration().user().setProperty(FORCE_UPDATE, forceUpdate);
-
-        if (latestVersion != null)
-        {
-            dialogMsg += "\n\n" +
-                resources.getI18NString("plugin.updatechecker.DIALOG_MESSAGE_2",
-                                        new String[] {appName, latestVersion});
-        }
-
-        contentMessage.setText(dialogMsg);
-
-        JPanel contentPane = new SIPCommFrame.MainContentPane();
-        contentMessage.setBorder(BorderFactory.createEmptyBorder(10, 10, 20, 10));
-        contentPane.add(contentMessage, BorderLayout.NORTH);
-
-        JPanel buttonPanel = new TransparentPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        String closeButtonRes = forceUpdate ? "service.gui.FORCE_QUIT" :
-                                              "plugin.updatechecker.BUTTON_CLOSE";
-        final JButton closeButton = new SIPCommBasicTextButton(resources.getI18NString(closeButtonRes));
-
-        closeButton.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                logger.user("User closed update dialog");
-                dialog.dispose();
-                if (exitCheckForUpdates[0])
-                {
-                    exitCheckForUpdates(dialog);
-                }
-
-                if (forceUpdate)
-                {
-                    forceQuitApplication();
-                }
-            }
-        });
-
-        if(sDownloadLink != null)
-        {
-            JButton installButton
-                = new SIPCommBasicTextButton(
-                        resources.getI18NString(
-                                "plugin.updatechecker.BUTTON_INSTALL"));
-
-            installButton.addActionListener(new ActionListener()
-            {
-                public void actionPerformed(ActionEvent e)
-                {
-                    logger.user("User clicked install button");
-                    if(OSUtils.IS_WINDOWS64)
-                    {
-                        logger.info("Using x64 download link");
-                        sDownloadLink = sDownloadLink.replace("x86", "x64");
-                    }
-
-                    dialog.dispose();
-
-                    // Exit check for updates.  Make sure that we don't do so again
-                    synchronized (exitCheckForUpdates)
-                    {
-                        if (exitCheckForUpdates[0])
-                            exitCheckForUpdates(dialog);
-
-                        exitCheckForUpdates[0] = false;
-                    }
-
-                    windowsUpdateInNewThread(forceUpdate);
-                            }
-            });
-
-            buttonPanel.add(installButton);
-        }
-        else
-        {
-            logger.error("Download link was null when constructing Install " +
-                         " button for update");
-        }
-
-        buttonPanel.add(closeButton);
-
-        contentPane.add(buttonPanel, BorderLayout.SOUTH);
-
-        dialog.setModal(forceUpdate);
-        dialog.setContentPane(contentPane);
-        dialog.pack();
-
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        dialog.setLocation(
-                screenSize.width/2 - dialog.getWidth()/2,
-                screenSize.height/2 - dialog.getHeight()/2);
-
-        synchronized (exitCheckForUpdates)
-        {
-            enterCheckForUpdates(dialog);
-            exitCheckForUpdates[0] = true;
-        }
-        try
-        {
-            logger.info("Showing update dialog; forceUpdate=" + forceUpdate);
-            WindowUtils.makeWindowVisible(dialog, true);
-        }
-        finally
-        {
-            synchronized (exitCheckForUpdates)
-            {
-                if (exitCheckForUpdates[0] && dialog.isModal())
-                    exitCheckForUpdates(dialog);
-            }
-        }
-    }
-
-    /**
-     * Quit the application using the shutdown service to ensure a clean and
-     * consistent shutdown behaviour.
-     */
-    private static void forceQuitApplication()
+    @Override
+    public void forceQuitApplication()
     {
         logger.error("Forcing quit of application");
         ServiceUtils.shutdownAll(UpdateWindowsActivator.bundleContext);
     }
 
-    /**
-     * Update to a later version if one's available, without showing the user a pop-up asking them.
-     * @throws IOException
-     */
+    @Override
     public void updateIfAvailable()
     {
         try
         {
             if (!isLatestVersion() && (sDownloadLink != null))
             {
-                windowsUpdateInNewThread(false);
+                windowsUpdateInNewThread();
             }
             else
             {
@@ -921,22 +659,15 @@ public class UpdateServiceWindowsImpl
         }
         catch (IOException e)
         {
+            notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
             logger.warn("Error updating", e);
         }
     }
 
-    private static void windowsUpdateInNewThread(boolean forceUpdate)
+    private static void windowsUpdateInNewThread()
     {
         Runnable update = () -> {
-            enterCheckForUpdates(null);
-            try
-            {
-                windowsUpdate(forceUpdate);
-            }
-            finally
-            {
-                exitCheckForUpdates(null);
-            }
+                windowsUpdate();
         };
 
         UpdateWindowsActivator.getThreadingService().submit("Client update - Windows", update);
@@ -952,9 +683,8 @@ public class UpdateServiceWindowsImpl
      * application.</li>
      * </ol>
      *
-     * @param forceUpdate - whether this update is enforced
      */
-    private static void windowsUpdate(boolean forceUpdate)
+    private static void windowsUpdate()
     {
         logger.info("Update client");
 
@@ -971,119 +701,52 @@ public class UpdateServiceWindowsImpl
             {
                 ResourceManagementService resources = Resources.getResources();
 
-                // We've got an installer, so next we need to shut down the
-                // client to install the new version.  Before we do that, we
-                // display a dialog to warn the user of this and ask them to
-                // confirm they are happy to proceed.  That is unless we have
-                // been asked to force upgrade, in which case we simply shut
-                // down, as the user has no choice.
-                boolean[] startUpgradeConfirmed = new boolean[]{forceUpdate};
-                if (!startUpgradeConfirmed[0])
-                {
-                    SwingUtilities.invokeAndWait(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            startUpgradeConfirmed[0] =
-                                UpdateWindowsActivator.getUIService().getPopupDialog().showConfirmPopupDialog(
-                                        resources.getI18NString("plugin.updatechecker.DIALOG_WARN"),
-                                        resources.getI18NString("plugin.updatechecker.DIALOG_TITLE"),
-                                        PopupDialog.YES_NO_OPTION,
-                                        PopupDialog.QUESTION_MESSAGE)
-                                == PopupDialog.YES_OPTION;
-                        }
-                    });
-                }
+                // Now build a command to execute the installer in a new process
+                // The command is built-up for the exe wrapping the msi installer,
+                // this allows the --wait-parent option (assumed to wait
+                // for the old AD the have shutdown before updating files).
+                logger.debug("Shutting down to start upgrade");
+                List<String> command = new ArrayList<>();
 
-                if (startUpgradeConfirmed[0])
-                {
-                    // Now build a command to execute the installer in a new process
-                    // The command is built-up for the exe wrapping the msi installer,
-                    // this allows the --wait-parent option (assumed to wait
-                    // for the old AD the have shutdown before updating files).
-                    logger.debug("Shutting down to start upgrade");
-                    List<String> command = new ArrayList<>();
+                command.add(msi.getCanonicalPath());
+                command.add("--wait-parent");
 
-                    command.add(msi.getCanonicalPath());
-                    command.add("--wait-parent");
+                // Log to a file in the logging directory
+                File loggingFile = new File(Logger.getLogDirectory(), "install.log");
+                command.add("/L*v");
+                command.add(loggingFile.getAbsolutePath());
 
-                    // Log to a file in the logging directory
-                    File loggingFile = new File(Logger.getLogDirectory(), "install.log");
-                    command.add("/L*v");
-                    command.add(loggingFile.getAbsolutePath());
+                // Set some installer options so this just overwrites the existing
+                // AD without asking the user anything.
+                command.add(
+                        "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR=\""
+                            + System.getProperty("user.dir")
+                            + "\"");
 
-                    // Set some installer options so this just overwrites the existing
-                    // AD without asking the user anything.
-                    command.add(
-                            "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR=\""
-                                + System.getProperty("user.dir")
-                                + "\"");
+                String asciiAppName = resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") != null ?
+                                      resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") : "";
+                command.add("SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME=\""
+                                                     + asciiAppName + "\"");
 
-                    String asciiAppName = resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") != null ?
-                                          resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") : "";
-                    command.add("SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME=\""
-                                                         + asciiAppName + "\"");
+                deleteMsi = false;
 
-                    deleteMsi = false;
+                /*
+                 * The setup has been downloaded. Now start it and shut
+                 * down.
+                 */
+                logger.info("Running command: " + command);
+                new ProcessBuilder(command).start();
 
-                    /*
-                     * The setup has been downloaded. Now start it and shut
-                     * down.
-                     */
-                    logger.info("Running command: " + command);
-                    new ProcessBuilder(command).start();
-
-                    logger.info("Closing app to install update. Installer properties:"
-                        + "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR=" + System.getProperty("user.dir")
-                        + ", SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME=" + asciiAppName);
-                    ServiceUtils.shutdownAll(UpdateWindowsActivator.bundleContext);
-                }
-                else
-                {
-                    logger.debug("User cancelled upgrade so not shutting down.");
-                }
+                logger.info("Closing app to install update. Installer properties:"
+                    + "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR=" + System.getProperty("user.dir")
+                    + ", SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME=" + asciiAppName);
+                ServiceUtils.shutdownAll(UpdateWindowsActivator.bundleContext);
             }
         }
         catch (Exception exception)
         {
-            String title;
-            String msg;
-            String buttonText;
+            notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
             logger.error("Error downloading update", exception);
-            ResourceManagementService res = Resources.getResources();
-
-            if (exception instanceof IOException)
-            {
-                title = res.getI18NString("plugin.updatechecker.DIALOG_UPDATE_FAILED_TITLE");
-                msg = res.getI18NString("plugin.updatechecker.DIALOG_UPDATE_FAILED_BODY");
-                buttonText = res.getI18NString("service.gui.OK");
-            }
-            else
-            {
-                title = res.getI18NString("plugin.updatechecker.DIALOG_NOUPDATE_TITLE");
-                msg = res.getI18NString("plugin.updatechecker.DIALOG_MISSING_UPDATE");
-                buttonText = null;
-            }
-
-            ErrorDialog errorDialog = new ErrorDialog(null,
-                                                      title,
-                                                      msg,
-                                                      (String)null,
-                                                      buttonText);
-            if (forceUpdate)
-            {
-                // If this is a forced update we must close the program when the
-                // error dialog is dismissed
-                errorDialog.setModal(true);
-                errorDialog.setVisible(true);
-                forceQuitApplication();
-            }
-            else
-            {
-                // Otherwise just show the error dialog
-                errorDialog.setVisible(true);
-            }
         }
         finally
         {
@@ -1097,5 +760,16 @@ public class UpdateServiceWindowsImpl
                 msi = null;
             }
         }
+    }
+
+    @Override
+    public void cancelUpdateDownload()
+    {
+        notifyUpdateInstallationProgress(0, 0, UpdateDownloadState.UPDATE_DOWNLOAD_CANCELLED);
+        if (forceUpdate)
+        {
+            checkForUpdates(true);
+        }
+        updateDownloadCanceled = true;
     }
 }

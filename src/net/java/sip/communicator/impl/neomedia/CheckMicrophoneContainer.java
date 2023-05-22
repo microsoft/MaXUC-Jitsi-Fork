@@ -158,7 +158,7 @@ public class CheckMicrophoneContainer
         mRecordingTimer = new RecordingTimer();
 
         mStopRecordingButton = NeomediaActivator.getResources().getBufferedImage(
-                "plugin.notificationconfig.STOP_ICON")
+                "plugin.mediaconfig.STOP_ICON")
             .getImageIcon()
             .addToButton(new JButton());
         mStopRecordingButton.setMinimumSize(PLAY_BUTTON_DIMENSION);
@@ -520,7 +520,7 @@ public class CheckMicrophoneContainer
                 sLogger.error("Cannot play recorded sample.");
                 mRecording = false;
                 NeomediaActivator.getResources().getBufferedImage(
-                    "plugin.notificationconfig.PLAY_ICON").getImageIcon().
+                    "plugin.mediaconfig.PLAY_ICON").getImageIcon().
                     addToButton(mPlayRecordedSampleButton);
                 paintAndValidate();
             }

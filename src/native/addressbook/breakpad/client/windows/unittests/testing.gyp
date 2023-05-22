@@ -52,7 +52,7 @@
         ],
         # Visual C++ implements variadic templates strangely, and
         # VC++2012 broke Google Test by lowering this value. See
-        # https://stackoverflow.com/questions/12558327/google-test-in-visual-studio-2012
+        # http://stackoverflow.com/questions/12558327/google-test-in-visual-studio-2012
         'defines': ['_VARIADIC_MAX=10', '_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING'],
       },
       'defines': ['_VARIADIC_MAX=10', '_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING'],

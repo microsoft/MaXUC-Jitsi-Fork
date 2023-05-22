@@ -3,35 +3,88 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.msghistory;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static java.util.stream.Collectors.*;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
+import static org.jitsi.util.Hasher.*;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.EventObject;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 
 import org.jitsi.service.configuration.ConfigurationService;
-import org.jitsi.service.resources.*;
-import org.osgi.framework.*;
+import org.jitsi.service.resources.BufferedImageFuture;
+import org.jitsi.service.resources.ResourceManagementService;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceListener;
+import org.osgi.framework.ServiceReference;
 
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
-import net.java.sip.communicator.service.contactlist.*;
-import net.java.sip.communicator.service.contactsource.*;
-import net.java.sip.communicator.service.database.*;
-import net.java.sip.communicator.service.database.schema.*;
-import net.java.sip.communicator.service.database.util.*;
+import net.java.sip.communicator.service.contactlist.MetaContact;
+import net.java.sip.communicator.service.contactsource.SourceContact;
+import net.java.sip.communicator.service.contactsource.SourceContactChangeListener;
+import net.java.sip.communicator.service.database.DatabaseConnection;
+import net.java.sip.communicator.service.database.DatabaseService;
+import net.java.sip.communicator.service.database.schema.GroupMessageHistoryTable;
+import net.java.sip.communicator.service.database.schema.MessageHistoryTable;
+import net.java.sip.communicator.service.database.util.DatabaseUtils;
 import net.java.sip.communicator.service.gui.ChatRoomWrapper;
-import net.java.sip.communicator.service.msghistory.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.service.msghistory.MessageHistoryService;
+import net.java.sip.communicator.service.protocol.AbstractMessage;
+import net.java.sip.communicator.service.protocol.ChatRoom;
+import net.java.sip.communicator.service.protocol.ChatRoomMember;
+import net.java.sip.communicator.service.protocol.ChatRoomMemberRole;
+import net.java.sip.communicator.service.protocol.Contact;
+import net.java.sip.communicator.service.protocol.ImMessage;
+import net.java.sip.communicator.service.protocol.OperationSetBasicInstantMessaging;
+import net.java.sip.communicator.service.protocol.OperationSetMultiUserChat;
+import net.java.sip.communicator.service.protocol.OperationSetPersistentPresence;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
+import net.java.sip.communicator.service.protocol.event.ChatRoomCreatedEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomCreatedListener;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMemberPresenceChangeEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMemberPresenceListener;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMessageDeliveredEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMessageDeliveryFailedEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMessageEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMessageListener;
+import net.java.sip.communicator.service.protocol.event.ChatRoomMessageReceivedEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomPropertyChangeEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomPropertyChangeFailedEvent;
+import net.java.sip.communicator.service.protocol.event.ChatRoomPropertyChangeListener;
+import net.java.sip.communicator.service.protocol.event.LocalUserChatRoomPresenceChangeEvent;
+import net.java.sip.communicator.service.protocol.event.LocalUserChatRoomPresenceListener;
+import net.java.sip.communicator.service.protocol.event.MessageDeliveredEvent;
+import net.java.sip.communicator.service.protocol.event.MessageDeliveryFailedEvent;
+import net.java.sip.communicator.service.protocol.event.MessageEvent;
+import net.java.sip.communicator.service.protocol.event.MessageListener;
+import net.java.sip.communicator.service.protocol.event.MessageReceivedEvent;
+import net.java.sip.communicator.service.protocol.event.OneToOneMessageEvent;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
-import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.ServiceUtils.ServiceCallback;
-import net.java.sip.communicator.util.account.*;
+import net.java.sip.communicator.util.ConfigurationUtils;
+import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.PrivacyUtils;
+import net.java.sip.communicator.util.account.AccountUtils;
 
 /**
  * The Message History Service stores messages exchanged through the various
@@ -221,7 +274,7 @@ public class MessageHistoryServiceImpl
      */
     private BundleContext mBundleContext = null;
 
-    private DatabaseService mDatabaseService = null;
+    private DatabaseService mDatabaseService = MessageHistoryActivator.getDatabaseService();
 
     /**
      * The IM ProtocolProviderService.
@@ -248,19 +301,6 @@ public class MessageHistoryServiceImpl
     {
         sLog.info("Starting the MessageHistoryService.");
         mBundleContext = bundleContext;
-
-        ServiceUtils.getService(MessageHistoryActivator.getBundleContext(),
-                                DatabaseService.class,
-                                new ServiceCallback<>()
-                                {
-                                    @Override
-                                    public void onServiceRegistered(DatabaseService service)
-                                    {
-                                        sLog.info("Database service registered");
-                                        mDatabaseService = service;
-                                    }
-                                });
-
         loadMessageHistoryService();
     }
 
@@ -374,7 +414,7 @@ public class MessageHistoryServiceImpl
         Date startDate)
     {
         sLog.debug("startDate: " + startDate.getTime() +
-            ", jids: " + remoteJids);
+            ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -442,7 +482,7 @@ public class MessageHistoryServiceImpl
         List<String> remoteJids,
         Date endDate)
     {
-        sLog.debug("endDate: " + endDate.getTime() + ", jids: " + remoteJids);
+        sLog.debug("endDate: " + endDate.getTime() + ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -515,7 +555,7 @@ public class MessageHistoryServiceImpl
         Date endDate)
     {
         sLog.debug("startDate: " + startDate.getTime() + ", endDate: "
-            + endDate.getTime() + ", jids: " + remoteJids);
+                   + endDate.getTime() + ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -557,6 +597,41 @@ public class MessageHistoryServiceImpl
     }
 
     @Override
+    public MessageEvent findById(String uid)
+    {
+        MessageEvent result = null;
+        DatabaseConnection connection = null;
+        ResultSet resultSet = null;
+
+        try
+        {
+            connection = mDatabaseService.connect();
+            String [] searchColumnNames = {MessageHistoryTable.COL_MSG_ID};
+            resultSet = connection.findByKeyword(
+                MessageHistoryTable.NAME,
+                MessageHistoryTable.COL_RECEIVED_TIMESTAMP,
+                uid,
+                searchColumnNames,
+                1);
+
+            if (resultSet.next())
+            {
+                result = convertDatabaseRecordToMessageEvent(null, resultSet);
+            }
+        }
+        catch (SQLException e)
+        {
+            sLog.error("Failed in findByID: ", e);
+        }
+        finally
+        {
+            DatabaseUtils.safeClose(connection, resultSet);
+        }
+
+        return result;
+    }
+
+    @Override
     public List<MessageEvent> findLast(MetaContact metaContact, int count)
     {
         return findLast(metaContact,
@@ -567,7 +642,7 @@ public class MessageHistoryServiceImpl
     @Override
     public List<MessageEvent> findLastForThread(String peerId, int count)
     {
-        sLog.debug("Finding last " + count + " messages for thread remote JID: " + peerId);
+        sLog.debug("Finding last " + count + " messages for thread remote JID: " + sanitisePeerId(peerId));
 
         // We don't know what type of chat the peerId relates to - try looking for
         // one-to-one chats first, then try group.
@@ -576,7 +651,7 @@ public class MessageHistoryServiceImpl
         {
             return oneToOne;
         }
-        List<MessageEvent> group = new ArrayList<MessageEvent>(findLast(null, peerId, count));
+        List<MessageEvent> group = new ArrayList<>(findLast(null, peerId, count));
         return group;
     }
 
@@ -600,7 +675,8 @@ public class MessageHistoryServiceImpl
     private List<MessageEvent> findLast(MetaContact metaContact,
         List<String> remoteJids, int count)
     {
-        sLog.debug("count: " + count + ", jids: " + remoteJids);
+        // Check Chat Address format, chat Room format, else hash value
+        sLog.debug("count: " + count + ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -689,7 +765,7 @@ public class MessageHistoryServiceImpl
         int count)
     {
         sLog.debug("count: " + count + ", date: " + date.getTime() +
-            ", jids: " + remoteJids);
+            ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -766,7 +842,7 @@ public class MessageHistoryServiceImpl
         int count)
     {
         sLog.debug("date: " + date.getTime() + ", count: " + count +
-            ", jids: " + remoteJids);
+            ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -839,8 +915,19 @@ public class MessageHistoryServiceImpl
             remoteJids.add("NOREMOTEJIDSFORMETACONTACT");
         }
 
-        sLog.debug("Return: " + remoteJids);
+        sLog.debug("Return: " + sanitiseRemoteJids(remoteJids));
         return remoteJids;
+    }
+
+    /**
+     * Takes a list of all the JIDs for a given metacontact
+     * and hashes any contained Personal Data.
+     */
+    private String sanitiseRemoteJids(List<String> remoteJids)
+    {
+        return remoteJids.stream()
+                .map(PrivacyUtils::sanitisePeerId)
+                .collect(joining(", "));
     }
 
     /**
@@ -875,11 +962,11 @@ public class MessageHistoryServiceImpl
         // value that can't match in the SQL query.
         if (remoteJids.isEmpty())
         {
-            sLog.info("No remote JIDs for: " + metaContact + ", " + smsNumber);
+            sLog.info("No remote JIDs for: " + metaContact + ", " + logHasher(smsNumber));
             remoteJids.add("NOREMOTEJIDSFORSMSNUMBER");
         }
 
-        sLog.debug("Return: " + remoteJids);
+        sLog.debug("Return: " + sanitiseRemoteJids(remoteJids));
         return remoteJids;
     }
 
@@ -1710,7 +1797,7 @@ public class MessageHistoryServiceImpl
     public Collection<MessageEvent> findByStartDate(ChatRoom room, Date startDate)
     {
         sLog.debug("startDate: " + startDate.getTime() +
-            ", room: " + room.getIdentifier());
+            ", room: " + sanitiseChatRoom(room.getIdentifier()));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -1751,7 +1838,7 @@ public class MessageHistoryServiceImpl
     {
         ChatRoom chatRoom = chatRoomWrapper.getChatRoom();
         String chatRoomID = chatRoomWrapper.getChatRoomID();
-        sLog.debug("endDate: " + endDate.getTime() + ", room: " + chatRoomID);
+        sLog.debug("endDate: " + endDate.getTime() + ", room: " + sanitiseChatRoom(chatRoomID));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -1795,7 +1882,7 @@ public class MessageHistoryServiceImpl
     {
         String chatRoomId = chatRoomWrapper.getChatRoomID();
         sLog.debug("startDate: " + startDate.getTime() + ", endDate: " +
-            endDate.getTime() + ", room: " + chatRoomId);
+            endDate.getTime() + ", room: " + sanitiseChatRoom(chatRoomId));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -1835,7 +1922,7 @@ public class MessageHistoryServiceImpl
     @Override
     public ChatRoomMessageEvent findOldestStatus(ChatRoom room)
     {
-        sLog.debug("room: " + room.getIdentifier());
+        sLog.debug("room: " + sanitiseChatRoom(room.getIdentifier()));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         ChatRoomMessageEvent result = null;
@@ -1875,7 +1962,7 @@ public class MessageHistoryServiceImpl
     @Override
     public ChatRoomMessageEvent findLatestChatMessage(ChatRoom room)
     {
-        sLog.debug("room: " + room.getIdentifier());
+        sLog.debug("room: " + sanitiseChatRoom(room.getIdentifier()));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         ChatRoomMessageEvent result = null;
@@ -1931,7 +2018,7 @@ public class MessageHistoryServiceImpl
                                               String chatRoomId,
                                               int count)
     {
-        sLog.debug("count: " + count + ", room: " + chatRoomId);
+        sLog.debug("count: " + count + ", room: " + sanitiseChatRoom(chatRoomId));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -1973,7 +2060,7 @@ public class MessageHistoryServiceImpl
         String chatRoomId = chatRoom.getIdentifier().toString();
 
         String loggableKeyword = mQAMode ? keyword : "<redacted>";
-        sLog.debug("findByKeyword: " + loggableKeyword + ", room: " + chatRoomId);
+        sLog.debug("findByKeyword: " + loggableKeyword + ", room: " + sanitiseChatRoom(chatRoomId));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -2022,7 +2109,7 @@ public class MessageHistoryServiceImpl
         Date date, int count)
     {
         sLog.debug("date: " + date.getTime() + ", count: " + count +
-            ", room: " + room.getIdentifier());
+            ", room: " + sanitiseChatRoom(room.getIdentifier()));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -2063,7 +2150,7 @@ public class MessageHistoryServiceImpl
         Date date, int count)
     {
         sLog.debug("date: " + date.getTime() + ", count: " + count +
-            ", room: " + room.getIdentifier());
+                   ", room: " + sanitiseChatRoom(room.getIdentifier().toString()));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -2097,6 +2184,42 @@ public class MessageHistoryServiceImpl
 
         sLog.debug("found " + result.size() + " records");
         return result;
+    }
+
+    @Override
+    public Collection<String> findMatchingGroupChatMsgUids(String roomJid, List<String> msgUids)
+    {
+        List<String> matches = new ArrayList<>();
+
+        sLog.debug("room: " + roomJid + " msgUids: " + msgUids);
+        DatabaseConnection connection = null;
+        ResultSet rs = null;
+
+        try
+        {
+            connection = mDatabaseService.connect();
+            rs = connection.findMatchingGroupChatMsgUids(GroupMessageHistoryTable.NAME,
+                                                         GroupMessageHistoryTable.COL_ROOM_JID,
+                                                         roomJid,
+                                                         GroupMessageHistoryTable.COL_MSG_ID,
+                                                         msgUids);
+
+            while (rs.next())
+            {
+                matches.add(rs.getString(GroupMessageHistoryTable.COL_MSG_ID));
+            }
+        }
+        catch (SQLException e)
+        {
+            sLog.error("Failed to read Message History: ", e);
+        }
+        finally
+        {
+            DatabaseUtils.safeClose(connection, rs);
+        }
+
+        sLog.debug("found " + matches.size() + " matches");
+        return matches;
     }
 
     @Override
@@ -2180,7 +2303,8 @@ public class MessageHistoryServiceImpl
         String messageId, String idColumn)
     {
         sLog.debug("Finding message with ID " + messageId +
-                     " in column " + idColumn + " for " + remoteJid);
+                     " in column " + idColumn + " for " +
+                   sanitiseChatAddress(remoteJid));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         MessageEvent result = null;
@@ -2233,7 +2357,8 @@ public class MessageHistoryServiceImpl
         String roomJid, String messageId, String idColumn)
     {
         sLog.debug("Finding group message with ID " + messageId +
-                     " in column " + idColumn + " for " + roomJid);
+                     " in column " + idColumn + " for " +
+                   sanitiseChatAddress(roomJid));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         MessageEvent result = null;
@@ -2276,7 +2401,7 @@ public class MessageHistoryServiceImpl
     public boolean updateSmppId(String remoteJid, String xmppId, String smppId)
     {
         sLog.debug("Setting message with XMPP ID " + xmppId +
-                     " to have SMPP ID " + smppId + " for " + remoteJid);
+                     " to have SMPP ID " + smppId + " for " + sanitisePeerId(remoteJid));
 
         boolean updated = false;
 
@@ -2321,7 +2446,7 @@ public class MessageHistoryServiceImpl
      */
     private void markMessageFailed(String remoteJid, String xmppId)
     {
-        sLog.debug("Marking message " + xmppId + " as failed for " + remoteJid);
+        sLog.debug("Marking message " + xmppId + " as failed for " + sanitisePeerId(remoteJid));
 
         DatabaseConnection connection = null;
         PreparedStatement preparedStatement = null;
@@ -3035,7 +3160,7 @@ public class MessageHistoryServiceImpl
         updateLastMessageReadStatus(smsNumber, isRead);
 
         // Update the 'Recent' tab.
-        sLog.debug("Setting messages from " + smsNumber +
+        sLog.debug("Setting messages from " + logHasher(smsNumber) +
                            " as read status " + isRead + " in the recent tab");
         sendMessageHistoryChanged(smsNumber, isRefresh);
     }
@@ -3110,8 +3235,8 @@ public class MessageHistoryServiceImpl
                                        isRead);
 
             // Update the 'Recent' tab.
-            sLog.debug("Setting messages from " + chatRoom.getIdentifier() +
-                               " as read status " + isRead + " in the recent tab");
+            sLog.debug("Setting messages from " + sanitiseChatRoom(chatRoom.getIdentifier()) +
+                       " as read status " + isRead + " in the recent tab");
             sendChatRoomMessageHistoryChanged(chatRoom, isRefresh);
         }
     }
@@ -3127,8 +3252,8 @@ public class MessageHistoryServiceImpl
                                            closed))
             {
                 // If we actually updated something, update the 'Recent' tab
-                sLog.debug("Setting chat room " + chatRoom.getIdentifier() +
-                             " as closed = " + closed + " in the recent tab");
+                sLog.debug("Setting chat room " + sanitiseChatRoom(chatRoom.getIdentifier()) +
+                           " as closed = " + closed + " in the recent tab");
                 sendChatRoomMessageHistoryChanged(chatRoom, true);
             }
         }
@@ -3139,7 +3264,7 @@ public class MessageHistoryServiceImpl
     {
         synchronized (chatRoom)
         {
-            sLog.info("Adding removed status message for: " + chatRoom.getIdentifier());
+            sLog.info("Adding removed status message for: " + sanitiseChatRoom(chatRoom.getIdentifier()));
 
             writeGroupMessage(chatRoom,
                               getImAccountJid(),
@@ -3413,6 +3538,36 @@ public class MessageHistoryServiceImpl
         }
 
         return (rowsUpdated == 1);
+    }
+
+    /**
+     * Removes the message with the provided id from the database
+     *
+     * @param uid id of the message
+     */
+    public void removeByID(String uid)
+    {
+        DatabaseConnection connection = null;
+
+        try
+        {
+            connection = mDatabaseService.connect();
+
+            PreparedStatement preparedStatement = connection.prepare("DELETE FROM " +
+            MessageHistoryTable.NAME + " WHERE " +
+            MessageHistoryTable.COL_MSG_ID + " = ?");
+
+            preparedStatement.setString(1, uid);
+            connection.execute(preparedStatement);
+        }
+        catch (SQLException e)
+        {
+            sLog.error("Failed to remove message ", e);
+        }
+        finally
+        {
+            DatabaseUtils.safeClose(connection);
+        }
     }
 
     /**
@@ -3725,7 +3880,8 @@ public class MessageHistoryServiceImpl
     public void chatRoomCreated(ChatRoomCreatedEvent evt)
     {
         ChatRoom chatRoom = evt.getChatRoom();
-        sLog.info("Adding member presence and property change listeners to chat room " + chatRoom.getIdentifier());
+        sLog.info("Adding member presence and property change listeners to chat room "
+                  + sanitiseChatRoom(chatRoom.getIdentifier()));
 
         chatRoom.addPropertyChangeListener(this);
 
@@ -3886,7 +4042,7 @@ public class MessageHistoryServiceImpl
                     writeChatRoomStatusMessage(evt);
                 }
 
-                sLog.debug("Updating subject of " + roomJid);
+                sLog.debug("Updating subject of " + sanitiseChatRoom(roomJid));
 
                 // Update the subject in history
                 if (updateChatroomHistoryFieldString(roomJid,
@@ -3933,13 +4089,13 @@ public class MessageHistoryServiceImpl
 
         if (latestMessage != null)
         {
-            sLog.debug("Chat room history changed for " + chatRoom.getIdentifier());
+            sLog.debug("Chat room history changed for " + sanitiseChatRoom(chatRoom.getIdentifier()));
             mMsgHistoryContactSource.messageHistoryChanged(
                 latestMessage, isRefresh);
         }
         else
         {
-            sLog.warn("No history found for chatRoom " + chatRoom.getIdentifier());
+            sLog.warn("No history found for chatRoom " + sanitiseChatRoom(chatRoom.getIdentifier()));
         }
     }
 
@@ -4024,7 +4180,7 @@ public class MessageHistoryServiceImpl
      */
     private MetaContact smsNumberToMetaContact(String smsNumber)
     {
-        return  MessageHistoryActivator.getContactListService().
-                                        findMetaContactForSmsNumber(smsNumber);
+        return MessageHistoryActivator.getContactListService()
+                                           .findMetaContactForSmsNumber(smsNumber);
     }
 }

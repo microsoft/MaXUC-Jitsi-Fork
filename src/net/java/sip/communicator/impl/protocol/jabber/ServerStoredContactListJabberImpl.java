@@ -4,9 +4,12 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitiseValuesInList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,6 +55,7 @@ import net.java.sip.communicator.service.protocol.event.SubscriptionEvent;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.ContactLogger;
 import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.PrivacyUtils;
 import org.jitsi.service.resources.BufferedImageFuture;
 
 /**
@@ -216,14 +220,14 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     {
                         logger.debug(
                             "Roster processed - handling entry " +
-                                            logHasher(id) + " , " + this);
+                                            sanitisePeerId(id) + " , " + this);
                         handleEntry(listener, id);
                     }
                     else
                     {
                         logger.debug(
                             "Roster not processed - caching entry " +
-                                            logHasher(id) + " , " + this);
+                                            sanitisePeerId(id) + " , " + this);
                         list.pendingRosterChanges.add(
                             new PendingRosterChange(id, this));
                     }
@@ -290,7 +294,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         if (roster == null)
         {
             // If roster is null, might also be null.
-            String loggableUser = user == null ? null : logHasher(user);
+            String loggableUser = user == null ? null : sanitisePeerId(user);
             contactLogger.debug("Null roster looking for entry " + loggableUser);
 
             return null;
@@ -322,8 +326,8 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     {
         synchronized(serverStoredGroupListeners)
         {
-            if(!serverStoredGroupListeners.contains(listener))
-            serverStoredGroupListeners.add(listener);
+            if (!serverStoredGroupListeners.contains(listener))
+                serverStoredGroupListeners.add(listener);
         }
     }
 
@@ -483,7 +487,8 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             ContactGroupJabberImpl contactGroup
                 = (ContactGroupJabberImpl) contactGroups.next();
 
-            if (contactGroup.getGroupName().trim().equals(name))
+            if (contactGroup.getGroupName() != null &&
+                contactGroup.getGroupName().trim().equals(name))
                 return contactGroup;
         }
 
@@ -508,7 +513,8 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             ContactGroupJabberImpl contactGroup
                 = (ContactGroupJabberImpl) contactGroups.next();
 
-            if (contactGroup.getNameCopy().trim().equals(name))
+            if (contactGroup.getNameCopy() != null &&
+                contactGroup.getNameCopy().trim().equals(name))
                 return contactGroup;
         }
         return null;
@@ -607,10 +613,10 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         throws OperationFailedException
     {
         logger.trace
-             ("Adding contact " + logHasher(id) + " to parent=" + parent);
+             ("Adding contact " + sanitisePeerId(id) + " to parent=" + parent);
 
         EntityBareJid completeID = parseAddressString(id);
-        String loggableCompleteID = logHasher(completeID);
+        String loggableCompleteID = sanitisePeerId(completeID);
         contactLogger.debug("addContact id " + loggableCompleteID);
 
         //if the contact is already in the contact list and is not volatile,
@@ -680,7 +686,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
 
             // use custom reply timeout because some XMPP may send "result" IQ late (> 5 seconds).
             roster.createItemAndRequestSubscription(userID, userName, groups, displayName,
-                ProtocolProviderServiceJabberImpl.CUSTOM_SMACK_PACKET_REPLY_TIMEOUT);
+                ProtocolProviderServiceJabberImpl.CUSTOM_SMACK_PACKET_REPLY_TIMEOUT_FOR_ROSTER);
         }
         else
         {
@@ -696,25 +702,24 @@ public class ServerStoredContactListJabberImpl implements StateDumper
      */
     public void addChatRoomToRoster(String id)
     {
-        // No need to hash chatroom IDs, as these are not PII
-        logger.info("Adding chat room to roster: " + id);
+        logger.info("Adding chat room to roster: " + sanitiseChatRoom(id));
         try
         {
             EntityBareJid completeId = parseAddressString(id);
 
             if (getRosterEntry(completeId) != null)
             {
-                logger.debug("Chat room already in roster: " + id);
+                logger.debug("Chat room already in roster: " + sanitiseChatRoom(id));
                 return;
             }
 
             addEntryToRoster(completeId, id, null);
-            logger.info("Successfully added chat room to roster: " + id);
+            logger.info("Successfully added chat room to roster: " + sanitiseChatRoom(id));
         }
         catch (XMPPException | OperationFailedException | InterruptedException |
             NotConnectedException | NoResponseException | NotLoggedInException ex)
         {
-            logger.error("Failed to add roster entry for chat room: " + id, ex);
+            logger.error("Failed to add roster entry for chat room: " + sanitiseChatRoom(id), ex);
         }
     }
 
@@ -725,8 +730,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
      */
     public void removeChatRoomFromRoster(String id)
     {
-        // No need to hash chatroom IDs, as these are not PII
-        logger.debug("Removing chat room from roster: " + id);
+        logger.debug("Removing chat room from roster: " + sanitiseChatRoom(id));
 
         try
         {
@@ -736,13 +740,13 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             if (entry != null)
             {
                 roster.removeEntry(entry);
-                logger.info("Successfully removed chat room from roster: " + id);
+                logger.info("Successfully removed chat room from roster: " + sanitiseChatRoom(id));
             }
         }
         catch (XMPPException | OperationFailedException | InterruptedException |
             NotConnectedException | NoResponseException | NotLoggedInException ex)
         {
-            logger.error("Failed to remove roster entry for chat room " + id, ex);
+            logger.error("Failed to remove roster entry for chat room " + sanitiseChatRoom(id), ex);
         }
     }
 
@@ -757,7 +761,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
      */
     ContactJabberImpl createVolatileContact(String id, String displayName)
     {
-        contactLogger.debug("Creating volatile contact with id " + logHasher(id) +
+        contactLogger.debug("Creating volatile contact with id " + sanitisePeerId(id) +
                             " and display name " + logHasher(displayName));
         VolatileContactJabberImpl newVolatileContact
             = new VolatileContactJabberImpl(id, this, displayName);
@@ -780,6 +784,8 @@ public class ServerStoredContactListJabberImpl implements StateDumper
 
             fireGroupEvent(theVolatileGroup
                            , ServerStoredGroupEvent.GROUP_CREATED_EVENT);
+            fireContactAdded(theVolatileGroup, newVolatileContact);
+
         }
         else
         {
@@ -805,7 +811,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
      * @return the newly created unresolved <tt>ContactImpl</tt>
      */
     ContactJabberImpl createUnresolvedContact(ContactGroup parentGroup,
-                                              BareJid  id)
+                                              BareJid id)
     {
         ContactJabberImpl newUnresolvedContact
             = new ContactJabberImpl(id, this, false);
@@ -877,7 +883,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
 
         fireGroupEvent(newGroup, ServerStoredGroupEvent.GROUP_CREATED_EVENT);
 
-        logger.trace("Group " +groupName+ " created.");
+        logger.trace("Group " + groupName+ " created.");
     }
 
     /**
@@ -987,7 +993,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
      * @param newParent the group where we'd like the parent placed.
      */
     public void moveContact(ContactJabberImpl contact,
-                            ContactGroupJabberImpl newParent)
+                            AbstractContactGroupJabberImpl newParent)
     {
         if ((contact.getParentContactGroup() != newParent) &&
             !(contact.getParentContactGroup() instanceof VolatileContactGroupJabberImpl) &&
@@ -1177,8 +1183,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                 if (userID != null &&
                     userID.toString().startsWith(OperationSetMultiUserChat.CHATROOM_ID_PREFIX))
                 {
-                    // No need to hash chatroom IDs, as these are not PII
-                    logger.debug("Found roster entry for chat room " + userID);
+                    logger.debug("Found roster entry for chat room " + sanitisePeerId(userID));
                     // We've found a chat room in the roster.  We need to join
                     // the chat room and add its details to our config.
                     chatRoomIdsToRemove.remove(userID);
@@ -1186,9 +1191,8 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                 }
                 else
                 {
-                    String loggableUserID = logHasher(userID);
                     contactLogger.debug(
-                            "Found roster entry for contact " + loggableUserID);
+                            "Found roster entry for contact " + sanitisePeerId(userID));
                     ContactJabberImpl contact = findContactById(userID);
 
                     // some services automatically add contacts from their
@@ -1216,7 +1220,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     if (contact == null)
                     {
                         contactLogger.debug(
-                                "Adding new contact for " + loggableUserID);
+                                "Adding new contact for " + sanitisePeerId(userID));
 
                         // if there is no such contact create it
                         contact = new ContactJabberImpl(item, this, true, true);
@@ -1227,7 +1231,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     else
                     {
                         contactLogger.debug(
-                                "Resolving existing contact for " + loggableUserID);
+                                "Resolving existing contact for " + sanitisePeerId(userID));
 
                         // if contact exist so resolve it
                         contact.setResolved(item);
@@ -1243,8 +1247,11 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     }
                     else
                     {
-                        logger.warn("Roster is null - this is expected if " +
-                                             "jabber has become unregistered");
+                        logger.warn("Returning as roster has become null - this " +
+                                          "is expected if jabber has become unregistered");
+                        // Return as it doesn't make sense to continue trying to
+                        // process roster entries if the roster has become null.
+                        return;
                     }
                 }
             }
@@ -1452,7 +1459,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
          */
         public void entriesAdded(Collection<Jid> ids)
         {
-            logger.trace("entriesAdded " + ids);
+            logger.trace("entriesAdded " + sanitiseValuesInList(ids, PrivacyUtils::sanitisePeerId));
 
             RosterChangeType.ENTRY_ADDED.onRosterEntryChange(
                 this, ids, ServerStoredContactListJabberImpl.this);
@@ -1468,8 +1475,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             String idString = id.toString();
             if (idString.startsWith(OperationSetMultiUserChat.CHATROOM_ID_PREFIX))
             {
-                // No need to hash chatroom IDs, as these are not PII
-                logger.info("Handling added chatroom roster entry " + id);
+                logger.info("Handling added chatroom roster entry " + sanitisePeerId(idString));
                 if (ConfigurationUtils.isMultiUserChatEnabled())
                 {
                     chatRoomManager.chatRoomReceivedFromRoster(id);
@@ -1477,12 +1483,12 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                 else
                 {
                     logger.warn(
-                        "Not adding chat room as multi-user chat is disabled: " + id);
+                        "Not adding chat room as multi-user chat is disabled: " + sanitisePeerId(idString));
                 }
             }
             else
             {
-                logger.info("Handling added roster entry " + logHasher(id));
+                logger.info("Handling added roster entry " + sanitisePeerId(idString));
                 addEntryToContactList(id);
             }
         }
@@ -1501,7 +1507,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         private ContactJabberImpl addEntryToContactList(Jid rosterEntryID)
         {
             logger.info("Adding entry to contact list " +
-                logHasher(rosterEntryID));
+                sanitisePeerId(rosterEntryID));
 
             if (roster == null)
             {
@@ -1574,7 +1580,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                 int numGroups = groups.size();
                 if (numGroups != 0)
                 {
-                    logger.warn("Roster entry " + logHasher(entry.getJid()) +
+                    logger.warn("Roster entry " + sanitisePeerId(entry.getJid()) +
                                 " is in " + numGroups + " contact groups");
                 }
             }
@@ -1660,8 +1666,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         private void handleEntryUpdated(Jid id)
         {
             String idString = id.toString();
-            String loggableId = logHasher(idString);
-            logger.info("Handling updated roster entry " + loggableId);
+            logger.info("Handling updated roster entry " + sanitisePeerId(idString));
 
             if (idString.startsWith(OperationSetMultiUserChat.CHATROOM_ID_PREFIX))
             {
@@ -1778,8 +1783,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             String idString = id.toString();
             if (idString.startsWith(OperationSetMultiUserChat.CHATROOM_ID_PREFIX))
             {
-                // No need to hash chatroom IDs, as these are not PII
-                logger.info("Handling deleted chatroom roster entry " + id);
+                logger.info("Handling deleted chatroom roster entry " + sanitisePeerId(id));
                 if (ConfigurationUtils.isMultiUserChatEnabled())
                 {
                     chatRoomManager.chatRoomLeftFromRoster(id);
@@ -1787,19 +1791,18 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                 else
                 {
                     logger.warn(
-                        "Not deleting chat room as multi-user chat is disabled: " + id);
+                        "Not deleting chat room as multi-user chat is disabled: " + sanitisePeerId(id));
                 }
             }
             else
             {
-                String loggableId = logHasher(id);
-                logger.info("Handling deleted roster entry " + loggableId);
+                logger.info("Handling deleted roster entry " + sanitisePeerId(id));
                 ContactJabberImpl contact = findContactById(id);
 
                 if(contact == null)
                 {
                     logger.trace("Could not find contact for deleted entry:"
-                                    + loggableId);
+                                    + sanitisePeerId(id));
                     return;
                 }
 
@@ -1808,7 +1811,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                 if(group == null)
                 {
                     logger.trace("Could not find ParentGroup for deleted entry:"
-                                    + loggableId);
+                                    + sanitisePeerId(id));
                     return;
                 }
 
@@ -1932,7 +1935,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     {
         private ImageRetriever(AccountID account)
         {
-            super("Jabber ImageRetriever for: " + account);
+            super("Jabber ImageRetriever for: " + account.getLoggableAccountID());
         }
 
         /**
@@ -2120,11 +2123,19 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         StringBuilder state = new StringBuilder();
 
         XMPPConnection connection = jabberProvider.getConnection();
-        state.append("Jabber connection: ")
-             .append(connection);
-
+        state.append("Jabber connection: ");
         if (connection != null)
-            state.append("\nConnected? " + connection.isConnected());
+        {
+            state.append(connection.getClass().getSimpleName())
+                    .append("[")
+                    .append(connection.getUser() == null ? "not-authenticated" : sanitisePeerId(connection.getUser()))
+                    .append("]");
+            state.append("\nConnected? ").append(connection.isConnected());
+        }
+        else
+        {
+            state.append("null");
+        }
 
         state.append("\n\nContact name, Contact JID, Subscription pending?, Subscription type\n");
 
@@ -2134,7 +2145,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             {
                 state.append(logHasher(entry.getName()))
                      .append(", ")
-                     .append(logHasher(entry.getJid()))
+                     .append(sanitiseChatAddress(entry.getJid()))
                      .append(", ")
                      .append(entry.isSubscriptionPending())
                      .append(", ")
@@ -2183,7 +2194,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             builder.append("\n")
                    .append(logHasher(contact.getDisplayName()))
                    .append(", ")
-                   .append(logHasher(contact.getAddress()))
+                   .append(sanitiseChatAddress(contact.getAddress()))
                    .append(", ")
                    .append(contact.isPersistent())
                    .append(", ")

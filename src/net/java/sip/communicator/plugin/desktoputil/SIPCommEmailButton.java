@@ -50,8 +50,6 @@ public class SIPCommEmailButton extends SIPCommButton
      */
     public void setEmailContents(String subjectText, String bodyText)
     {
-        sLog.debug("Setting subject to: '" + subjectText +
-                   "' and body to: '" + bodyText + "'");
         mEmailSubject = subjectText;
         mEmailBody = bodyText;
         setEnabled(mEmailSubject != null);
@@ -60,8 +58,6 @@ public class SIPCommEmailButton extends SIPCommButton
     @Override
     public void actionPerformed(ActionEvent evt)
     {
-        sLog.debug("Email button pressed for subject: '" + mEmailSubject + "'" +
-            "' and body: '" + mEmailBody + "'");
         EmailUtils.createEmail(null, mEmailSubject, mEmailBody);
     }
 }

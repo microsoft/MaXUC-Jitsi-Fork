@@ -22,14 +22,24 @@ public class OutlookRpcClient
     private final boolean mQAMode;
 
     private RandomAccessFile clientNamedPipe;
-    private boolean started = false;
-    private boolean stopped = false;
+    /**
+     * This is set to true once the Outlook server reports
+     * a successful communication with an installed Outlook app.
+     */
+    private boolean clientStarted = false;
+    private boolean serverConnectionStopped = false;
     private final OutlookDataHandler mHandler;
     private Date mGettingStateSince;
     private final Object mGetStateDumpLock = new Object();
 
     // The maximum number of times we should retry a request to Outlook
     private static final int MAX_RETRY_ATTEMPTS = 3;
+
+    /**
+     * The maximum timeout, in milliseconds, that we will give to a
+     * user-triggered Outlook request.
+     */
+    private final long REQUEST_TIMEOUT_IN_MS = 30_000L;
 
     /**
      * Buffer size when reading AOS response from the named pipe.
@@ -49,7 +59,7 @@ public class OutlookRpcClient
         try
         {
             clientNamedPipe = new RandomAccessFile(pipeName, "rwd");
-            started = true;
+            clientStarted = true;
         }
         catch (FileNotFoundException e)
         {
@@ -65,7 +75,7 @@ public class OutlookRpcClient
      */
     public synchronized void restart()
     {
-        started = false;
+        clientStarted = false;
 
         notifyAll();
     }
@@ -75,9 +85,9 @@ public class OutlookRpcClient
      */
     public synchronized void stop()
     {
-        if (started)
+        if (clientStarted)
         {
-            stopped = quit();
+            serverConnectionStopped = quit();
 
             try
             {
@@ -200,7 +210,7 @@ public class OutlookRpcClient
                                                           new JSONObject());
                         long took = (System.currentTimeMillis() -
                                             dateRequestedDump.getTime()) / 1000;
-                        logger.info("Got dump reponse " + response + ", took " +
+                        logger.info("Got dump response " + response + ", took " +
                                                              took + " seconds");
                         succeeded = "success".equals(response.get("result"));
                     }
@@ -244,7 +254,7 @@ public class OutlookRpcClient
             }
             catch (InterruptedException | ExecutionException e)
             {
-                // Failed, thus aren't getting the dump any more
+                // Failed, thus aren't getting the dump anymore
                 logger.error("Exception getting dump", e);
                 synchronized (mGetStateDumpLock)
                 {
@@ -346,7 +356,9 @@ public class OutlookRpcClient
     }
 
     /**
-     * Gets the default contact folder from the address book
+     * Gets the default contact folder from the address book. Called
+     * after the Outlook server first communicates with an installed
+     * Outlook app.
      *
      * @return the id of the contact folder from Outlook
      */
@@ -498,7 +510,9 @@ public class OutlookRpcClient
     }
 
     /**
-     * Make a request over the API
+     * Make a request over the API.
+     * Requests will fail if the thread waits longer than the defined timeout,
+     * {@link OutlookRpcClient#REQUEST_TIMEOUT_IN_MS}, before starting.
      *
      * @param command - the API method to call
      * @param data - the arguments to pass to the API, as a JSON Object
@@ -508,12 +522,12 @@ public class OutlookRpcClient
     private JSONObject makeRequest(String command, JSONObject data)
         throws IOException
     {
+        logger.info("Preparing to make request: " + command);
         JSONObject result;
-        long now = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         // Redact the PII if necessary
         String dataToLog = mQAMode ? data.toString() : "<redacted>";
         String resultToLog = "null";
-
         try
         {
             String response = null;
@@ -526,23 +540,32 @@ public class OutlookRpcClient
                 // Wait for the client to be started by the server.
                 synchronized(this)
                 {
-                    while (! started && ! stopped)
+                    while (hasActiveServerButClientNotStarted())
                     {
                         try
                         {
-                            this.wait();
+                            this.wait(REQUEST_TIMEOUT_IN_MS);
                         }
                         catch (InterruptedException e)
                         {
                             // Not a lot to do...
                             logger.error("Interrupt exception", e);
                         }
-                    }
-                }
 
-                if (stopped)
-                {
-                    throw new IOException("Outlook connection was stopped.");
+                        if (hasActiveServerButClientNotStarted())
+                        {
+                            throw new IOException("Request " + command + " timed out " +
+                                                  "after waiting " + REQUEST_TIMEOUT_IN_MS +
+                                                  "ms for a response from Outlook. Check " +
+                                                  "there is an Outlook installation on " +
+                                                  "this machine.");
+                        }
+                    }
+
+                    if (serverConnectionStopped)
+                    {
+                        throw new IOException("Outlook connection was stopped.");
+                    }
                 }
 
                 long lastFailure = mHandler.getLastFailure();
@@ -617,8 +640,19 @@ public class OutlookRpcClient
         }
         finally
         {
-            logger.debug("Request " + command + " took " + (System.currentTimeMillis() - now));
+            long elapsedTime = System.nanoTime() - startTime;
+            logger.debug("Request " + command + " took " +
+                         TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS) + "ms.");
         }
+    }
+
+    /**
+     * Returns true if the Outlook client has not yet been started while
+     * there is an active connection to the Outlook server.
+     */
+    private synchronized boolean hasActiveServerButClientNotStarted()
+    {
+        return !clientStarted && !serverConnectionStopped;
     }
 
     /**

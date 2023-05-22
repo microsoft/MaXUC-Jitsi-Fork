@@ -26,6 +26,7 @@ public enum WISPAAction
     DATA_LIST("datalist"),
     DELETED("deleted"),
     MOTION("motion"),
+    NOTION("notion"),
 
     /**
      * Dummy event for testing and ending the list.

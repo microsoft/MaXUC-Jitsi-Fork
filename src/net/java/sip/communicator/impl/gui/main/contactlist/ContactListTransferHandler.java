@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
 import java.awt.datatransfer.*;
@@ -139,15 +140,7 @@ public class ContactListTransferHandler
 
                 if (chatPanel != null)
                 {
-                    Collection<File> files = (Collection<File>) o;
-
-                    for (File file : files)
-                    {
-                        chatPanel.sendFile(file);
-
-                        GuiActivator.getUIService().getChatWindowManager()
-                            .openChatAndAlertWindow(chatPanel, false);
-                    }
+                    GuiActivator.getUIService().getChatWindowManager().openChatAndAlertWindow(chatPanel, false);
                     return true;
                 }
             }

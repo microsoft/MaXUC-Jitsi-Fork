@@ -4,6 +4,7 @@
  * Distributable under LGPL license.
  * See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
 import java.awt.*;
@@ -19,7 +20,6 @@ import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
 
 import net.java.sip.communicator.service.keybindings.*;
-import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 
 /**
@@ -48,6 +48,11 @@ public class SIPCommFrame
      */
     static final String PNAME_CALCULATED_POSITIONING
         = "net.sip.communicator.util.swing.USE_CALCULATED_POSITIONING";
+
+    /**
+     * Key identifier for closing the frame
+     */
+    private static final String CLOSE_KEY = "close";
 
     /**
      * The <tt>Logger</tt> used by the <tt>SIPCommFrame</tt> class and its
@@ -114,9 +119,7 @@ public class SIPCommFrame
         this.isSaveSize = isSaveSizeAndLocation;
         this.isSaveLocation = isSaveSizeAndLocation;
 
-        // If we aren't using the native theme, then make a pane with the
-        // configured bg colours
-        if (!ConfigurationUtils.useNativeTheme() && useBgOverrideColor)
+        if (useBgOverrideColor)
         {
             setContentPane(
                 new MainContentPane(bgStartOverrideColor, bgEndOverrideColor));
@@ -128,20 +131,18 @@ public class SIPCommFrame
 
         JRootPane rootPane = getRootPane();
         amap = rootPane.getActionMap();
-        amap.put("close", new CloseAction());
+        amap.put(CLOSE_KEY, new CloseAction());
 
         imap = rootPane.getInputMap(
             JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
         // put the defaults for macosx
-        if(OSUtils.IS_MAC)
+        if (OSUtils.IS_MAC)
         {
-            imap.put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.META_DOWN_MASK),
-                "close");
-            imap.put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK),
-                "close");
+            imap.put(KeyStroke.getKeyStroke(KeyEvent.VK_W,
+                InputEvent.META_DOWN_MASK), CLOSE_KEY);
+            imap.put(KeyStroke.getKeyStroke(KeyEvent.VK_W,
+                InputEvent.CTRL_DOWN_MASK), CLOSE_KEY);
         }
 
         WindowUtils.addWindow(this);

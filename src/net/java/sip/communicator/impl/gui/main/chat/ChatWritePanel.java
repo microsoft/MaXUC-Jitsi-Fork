@@ -3,39 +3,82 @@
  *
  * Distributable under LGPL license. See terms of license at gnu.org.
  */
+// Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
-import static java.lang.Character.toUpperCase;
+import static org.jitsi.util.Hasher.logHasher;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.beans.*;
-import java.util.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.List;
 
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.InputMap;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.event.*;
-import javax.swing.text.*;
-import javax.swing.text.html.*;
-import javax.swing.undo.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Element;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.undo.UndoManager;
 
-import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
+import org.jitsi.service.resources.ImageIconFuture;
+import org.jitsi.service.resources.ResourceManagementService;
+import org.jitsi.util.OSUtils;
+import org.jitsi.util.StringUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.impl.gui.main.chat.conference.*;
-import net.java.sip.communicator.impl.gui.main.chat.menus.*;
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.impl.gui.GuiActivator;
+import net.java.sip.communicator.impl.gui.main.chat.conference.ConferenceChatTransport;
+import net.java.sip.communicator.impl.gui.main.chat.menus.WritePanelRightButtonMenu;
+import net.java.sip.communicator.plugin.desktoputil.AntialiasingManager;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommHTMLEditorKit;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommMenu;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommMenuBar;
+import net.java.sip.communicator.plugin.desktoputil.SIPCommScrollPane;
+import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
+import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
 import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications.TypingState;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
-import net.java.sip.communicator.util.account.*;
-import net.java.sip.communicator.util.skin.*;
+import net.java.sip.communicator.util.account.AccountUtils;
+import net.java.sip.communicator.util.skin.Skinnable;
 
 /**
  * The <tt>ChatWritePanel</tt> is the panel, where user writes her messages.
@@ -49,8 +92,6 @@ import net.java.sip.communicator.util.skin.*;
 public class ChatWritePanel
     extends TransparentPanel
     implements  ActionListener,
-                KeyListener,
-                MouseListener,
                 UndoableEditListener,
                 DocumentListener,
                 Skinnable
@@ -122,8 +163,6 @@ public class ChatWritePanel
 
     private int mSmsCharCount = 160;
 
-    private boolean mSmsMode = false;
-
     private int mEmojiCount = 0;
 
     ResourceManagementService resources = GuiActivator.getResources();
@@ -132,8 +171,6 @@ public class ChatWritePanel
      * The resource string used for the chat tooltip
      */
     private String mToolTipResource;
-
-    private AccessibleChatBuffer mAccessibleChatBuffer;
 
     /**
      * Creates an instance of <tt>ChatWritePanel</tt>.
@@ -301,8 +338,6 @@ public class ChatWritePanel
 
     /**
      * Creates the icon selector box
-     *
-     * @return the created icon selector box
      */
     private void initIconSelectorBox(final JPanel centerPanel)
     {
@@ -352,9 +387,6 @@ public class ChatWritePanel
         final ImageIconFuture smsIcon = resources
         .getImage("service.gui.icons.SEND_SMS");
 
-        final ImageIconFuture selectedIcon = resources
-            .getImage("service.gui.icons.SEND_SMS_SELECTED");
-
         mSmsLabel = smsIcon.addToLabel(new JLabel());
 
         // We hide the sms label until we know if the chat supports sms.
@@ -363,49 +395,7 @@ public class ChatWritePanel
         mSmsMenuItem = new JCheckBoxMenuItem(resources
             .getI18NString("service.gui.VIA_SMS"));
 
-        mSmsMenuItem.addChangeListener(new ChangeListener()
-        {
-            public void stateChanged(ChangeEvent e)
-            {
-                mSmsMode = mSmsMenuItem.isSelected();
-
-                Color bgColor;
-                if (mSmsMode)
-                {
-                    selectedIcon.addToLabel(mSmsLabel);
-                    bgColor = new Color(resources
-                        .getColor("service.gui.LIGHT_HIGHLIGHT"));
-                }
-                else
-                {
-                    smsIcon.addToLabel(mSmsLabel);
-                    bgColor = Color.WHITE;
-                }
-
-                centerPanel.setBackground(bgColor);
-                mEditorPane.setBackground(bgColor);
-
-                mSmsLabel.repaint();
-            }
-        });
-
-        mSmsLabel.addMouseListener(new MouseAdapter()
-        {
-            public void mousePressed(MouseEvent mouseevent)
-            {
-                Point location = new Point(mSmsLabel.getX(),
-                    mSmsLabel.getY() + mSmsLabel.getHeight());
-
-                SwingUtilities.convertPointToScreen(location, mSmsLabel);
-
-                JPopupMenu smsPopupMenu = new JPopupMenu();
-                smsPopupMenu.setFocusable(true);
-                smsPopupMenu.setInvoker(ChatWritePanel.this);
-                smsPopupMenu.add(mSmsMenuItem);
-                smsPopupMenu.setLocation(location.x, location.y);
-                smsPopupMenu.setVisible(true);
-            }
-        });
+        mSmsMenuItem.addChangeListener(e -> updateSmsLabelIcon(centerPanel));
 
         centerPanel.add(mSmsLabel, constraints);
     }
@@ -441,8 +431,6 @@ public class ChatWritePanel
 
         mEditorPane.getDocument().addUndoableEditListener(this);
         mEditorPane.getDocument().addDocumentListener(this);
-        mEditorPane.addKeyListener(this);
-        mEditorPane.addMouseListener(this);
         mEditorPane.setTransferHandler(new ChatTransferHandler(mChatPanel));
         mEditorPane.setToolTipText(resources.getI18NString(mToolTipResource));
         ScaleUtils.scaleFontAsDefault(mEditorPane);
@@ -521,17 +509,6 @@ public class ChatWritePanel
     }
 
     /**
-     * Returns <tt>true</tt> if the sms mode is enabled, otherwise returns
-     * <tt>false</tt>.
-     * @return <tt>true</tt> if the sms mode is enabled, otherwise returns
-     * <tt>false</tt>
-     */
-    public boolean isSmsSelected()
-    {
-        return mSmsMode;
-    }
-
-    /**
      * The <tt>SendMessageAction</tt> is an <tt>AbstractAction</tt> that
      * sends the text that is currently in the write message area.
      */
@@ -593,210 +570,6 @@ public class ChatWritePanel
         {
             mUndo.addEdit(e.getEdit());
         }
-    }
-
-    /**
-     * Implements the undo operation.
-     */
-    private void undo()
-    {
-        try
-        {
-            mUndo.undo();
-        }
-        catch (CannotUndoException e)
-        {
-            sLog.error("Unable to undo.", e);
-        }
-    }
-
-    /**
-     * Implements the redo operation.
-     */
-    private void redo()
-    {
-        try
-        {
-            mUndo.redo();
-        }
-        catch (CannotRedoException e)
-        {
-            sLog.error("Unable to redo.", e);
-        }
-    }
-
-    /**
-     * Sends typing notifications when user types.
-     *
-     * @param e the event.
-     */
-    public void keyTyped(KeyEvent e)
-    {
-        if (!StringUtils.isNullOrEmpty(getText()))
-        {
-            updateTypingState(TypingState.TYPING);
-        }
-        else
-        {
-            // If there's no text, the user isn't typing.
-            updateTypingState(TypingState.NOT_TYPING);
-        }
-    }
-
-    /**
-     * When CTRL+Z is pressed invokes the <code>ChatWritePanel.undo()</code>
-     * method, when CTRL+R is pressed invokes the
-     * <code>ChatWritePanel.redo()</code> method.
-     *
-     * @param e the <tt>KeyEvent</tt> that notified us
-     */
-    public void keyPressed(KeyEvent e)
-    {
-        final int KEY_FOR_PREVIOUS = toUpperCase(resources.getI18NString("service.gui.chat.CHAT_WRITE_PANEL_PREV_KEY").charAt(0));
-        final int KEY_FOR_NEXT = toUpperCase(resources.getI18NString("service.gui.chat.CHAT_WRITE_PANEL_NEXT_KEY").charAt(0));
-
-        if (e.isControlDown() && (e.getKeyCode() == KeyEvent.VK_Z))
-        {
-            if (mUndo.canUndo())
-                undo();
-        }
-        else if (e.isControlDown() && (e.getKeyCode() == KeyEvent.VK_R))
-        {
-            if (mUndo.canRedo())
-                redo();
-        }
-        else if (e.getKeyCode() == KeyEvent.VK_UP)
-        {
-            // Only enters editing mode if the write panel is empty in
-            // order not to lose the current message contents, if any.
-            if (mChatPanel.getLastSentMessageUID() != null
-                    && mChatPanel.isWriteAreaEmpty())
-            {
-                mChatPanel.startLastMessageCorrection();
-                e.consume();
-            }
-        }
-        else if (e.getKeyCode() == KeyEvent.VK_DOWN)
-        {
-            if (mChatPanel.isMessageCorrectionActive())
-            {
-                Document doc = mEditorPane.getDocument();
-                if (mEditorPane.getCaretPosition() == doc.getLength())
-                {
-                    mChatPanel.stopMessageCorrection();
-                }
-            }
-        }
-        else if (e.isControlDown() && (e.getKeyCode() == KEY_FOR_PREVIOUS))
-        {
-            if (mAccessibleChatBuffer == null)
-            {
-                mAccessibleChatBuffer = mChatPanel.getAccessibleChatBuffer();
-            }
-
-            if (mAccessibleChatBuffer != null)
-            {
-                mAccessibleChatBuffer.getPreviousMessage();
-            }
-        }
-        else if (e.isControlDown() && (e.getKeyCode() == KEY_FOR_NEXT))
-        {
-            if (mAccessibleChatBuffer == null)
-            {
-                mAccessibleChatBuffer = mChatPanel.getAccessibleChatBuffer();
-            }
-
-            if (mAccessibleChatBuffer != null)
-            {
-                mAccessibleChatBuffer.getNextMessage();
-            }
-        }
-        else
-        {
-            refreshInputAttributes(); //Refresh the input attributes whenever text is typed
-        }
-    }
-
-    public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_LEFT)
-        {
-            moveCaretPastEmoji(true);
-        }
-        else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
-        {
-            moveCaretPastEmoji(false);
-        }
-    }
-
-    /**
-     * This method deals with the fact that the underlying text representation
-     * of emojis is at least 2 chars wide. It stops the caret being placed in
-     * the centre of an emoji by checking if the current character has icon
-     * attributes (i.e. is an emoji character) and if the previous character is
-     * part of a different element (text or another emoji). If the caret is in
-     * the middle of an emoji, it is moved accordingly.
-     *
-     * @param movingLeft: true if caret has just moved left, false if right
-     */
-    private synchronized void moveCaretPastEmoji(boolean movingLeft)
-    {
-        if (ConfigurationUtils.isAccessibilityMode())
-        {
-            // Sending Emojis is not supported in Accessibility Mode
-            return;
-        }
-
-        HTMLDocument doc = (HTMLDocument) mEditorPane.getDocument();
-        Element currentCaretElement =
-            doc.getCharacterElement(mEditorPane.getCaretPosition());
-        AttributeSet currentAttributes = currentCaretElement.getAttributes();
-
-        if (isIcon(currentAttributes))
-        {
-            Element previousCaretElement =
-                doc.getCharacterElement(mEditorPane.getCaretPosition()-1);
-            AttributeSet previousAttributes = previousCaretElement.getAttributes();
-
-            if (!isAcrossElementBoundary(currentAttributes,previousAttributes))
-            {
-                //Caret is in the middle of an emoji
-                if (movingLeft) //Caret has just moved left, so need to skip to start of this emoji
-                {
-                    mEditorPane.setCaretPosition(currentCaretElement.getStartOffset());
-                }
-                else //Caret has just moved right, so need to skip to end of this emoji
-                {
-                    mEditorPane.setCaretPosition(currentCaretElement.getEndOffset());
-                }
-            }
-        }
-    }
-
-    private boolean isIcon(AttributeSet attrs)
-    {
-        return attrs.containsAttribute("$ename", "icon");
-    }
-
-    private boolean isAcrossElementBoundary(AttributeSet currentAttrs, AttributeSet prevAttrs)
-    {
-        return !(currentAttrs.equals(prevAttrs));
-    }
-
-    /**
-     * Resets the Editor Kit's input attributes to the default to ensure text
-     * is input correctly (for a StyledEditorKit)
-     */
-    public synchronized void refreshInputAttributes() {
-        if (ConfigurationUtils.isAccessibilityMode())
-        {
-            // Attributes not supported in Accessibility Mode
-            return;
-        }
-
-        StyledEditorKit editorKit = (StyledEditorKit) mEditorPane.getEditorKit();
-        AttributeSet currentAttributes = editorKit.getInputAttributes();
-        editorKit.getInputAttributes().removeAttributes(currentAttributes);
-        editorKit.getInputAttributes().addAttributes(mDefaultAttributes);
     }
 
     /**
@@ -970,49 +743,6 @@ public class ChatWritePanel
     }
 
     /**
-     * Opens the <tt>WritePanelRightButtonMenu</tt> when user clicks with the
-     * right mouse button on the editor area.
-     *
-     * @param e the <tt>MouseEvent</tt> that notified us
-     */
-    @Override
-    public void mouseClicked(MouseEvent e)
-    {
-        if ((e.getModifiers() & InputEvent.BUTTON3_MASK) != 0
-            || (e.isControlDown() && !e.isMetaDown()))
-        {
-            Point p = e.getPoint();
-            SwingUtilities.convertPointToScreen(p, e.getComponent());
-
-            //SPELLCHECK
-            List <JMenuItem> contributedMenuEntries = new ArrayList<>();
-
-            for (JMenuItem item : contributedMenuEntries)
-            {
-                mRightButtonMenu.add(item);
-            }
-
-            JPopupMenu rightMenu
-                = mRightButtonMenu.makeMenu(contributedMenuEntries);
-            rightMenu.setInvoker(mEditorPane);
-            rightMenu.setLocation(p.x, p.y);
-            rightMenu.setVisible(true);
-        }
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {}
-
-    @Override
-    public void mouseReleased(MouseEvent e) {}
-
-    @Override
-    public void mouseEntered(MouseEvent e) {}
-
-    @Override
-    public void mouseExited(MouseEvent e) {}
-
-    /**
      * Returns the <tt>WritePanelRightButtonMenu</tt> opened in this panel.
      * Used by the <tt>ChatWindow</tt>, when the ESC button is pressed, to
      * check if there is an open menu, which should be closed.
@@ -1022,32 +752,6 @@ public class ChatWritePanel
     public WritePanelRightButtonMenu getRightButtonMenu()
     {
         return mRightButtonMenu;
-    }
-
-    /**
-     * Returns the write area text as an html text.
-     *
-     * @return the write area text as an html text.
-     */
-    public String getTextAsHtml()
-    {
-        String msgText = mEditorPane.getText();
-        String formattedString = msgText.replaceAll(
-            "<html>|<head>|<body>|</html>|</head>|</body>", "");
-
-        formattedString = extractFormattedText(formattedString);
-        // Returned string is formatted with newlines, etc. so we need to get
-        // rid of them before checking for the ending <br/>.
-        formattedString = formattedString.trim();
-
-        if (formattedString.endsWith("<BR/>"))
-            formattedString = formattedString
-            .substring(0, formattedString.lastIndexOf("<BR/>"));
-
-        // Finally, get rid of any doubly defined newline characters
-        formattedString = formattedString.replaceAll("<br>\n", "\n");
-
-        return formattedString;
     }
 
     /**
@@ -1068,25 +772,6 @@ public class ChatWritePanel
         }
 
         return null;
-    }
-
-    /**
-     * Clears write message area.
-     */
-    public void clearWriteArea()
-    {
-        try
-        {
-            Document doc = mEditorPane.getDocument();
-            if (doc != null)
-            {
-                doc.remove(0, doc.getLength());
-            }
-        }
-        catch (BadLocationException e)
-        {
-            sLog.error("Failed to obtain write panel document content.", e);
-        }
     }
 
     /**
@@ -1132,19 +817,6 @@ public class ChatWritePanel
         {
             sLog.error("Insert in the HTMLDocument failed.", e);
         }
-    }
-
-    /**
-     * Return all html paragraph content separated by <BR/> tags.
-     *
-     * @param msgText the html text.
-     * @return the string containing only paragraph content.
-     */
-    private String extractFormattedText(String msgText)
-    {
-        String resultString = msgText.replaceAll("<p\\b[^>]*>", "");
-
-        return resultString.replaceAll("<\\/p>", "<BR/>");
     }
 
     /**
@@ -1221,13 +893,7 @@ public class ChatWritePanel
         // dispatch thread.
         if (!SwingUtilities.isEventDispatchThread())
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    setSelectedChatTransport(chatTransport);
-                }
-            });
+            SwingUtilities.invokeLater(() -> setSelectedChatTransport(chatTransport));
             return;
         }
 
@@ -1247,6 +913,7 @@ public class ChatWritePanel
     public void updateHintTextForTransport(ChatTransport chatTransport)
     {
         String hintText = "";
+        String loggableHintText = "";
         ProtocolProviderService imProvider = AccountUtils.getImProvider();
         boolean imRegistered = (imProvider != null) && imProvider.isRegistered();
 
@@ -1267,15 +934,21 @@ public class ChatWritePanel
             String smsNumber = (String) chatTransport.getDescriptor();
             // TODO: DUIR-5256 This is not correctly localized - the sms number should be a
             // replaceable parameter in the resource string, not concatenated to it
+            // Code currently not used, ignoring this bug until this code is reinstated
             hintText =
                 resources.getI18NString("service.gui.SEND_SMS_TO") + " " + smsNumber;
+            loggableHintText = resources.getI18NString("service.gui.SEND_SMS_TO") + " " + logHasher(smsNumber);
         }
         else if (chatTransport instanceof ConferenceChatTransport)
         {
             hintText = resources.getI18NString("service.gui.SEND_GROUP_CHAT_TO");
         }
 
-        sLog.debug("Setting hint text to '" + hintText + "' for " +
+        if (StringUtils.isNullOrEmpty(loggableHintText)) {
+            loggableHintText = hintText;
+        }
+
+        sLog.debug("Setting hint text to '" + loggableHintText + "' for " +
                     chatTransport + ", imProvider registered? " + imRegistered);
         mEditorPane.setHintText(hintText);
 
@@ -1295,13 +968,7 @@ public class ChatWritePanel
         // dispatch thread.
         if (!SwingUtilities.isEventDispatchThread())
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    addChatTransport(chatTransport);
-                }
-            });
+            SwingUtilities.invokeLater(() -> addChatTransport(chatTransport));
             return;
         }
 
@@ -1326,13 +993,7 @@ public class ChatWritePanel
         // dispatch thread.
         if (!SwingUtilities.isEventDispatchThread())
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    updateChatTransportStatus(chatTransport);
-                }
-            });
+            SwingUtilities.invokeLater(() -> updateChatTransportStatus(chatTransport));
             return;
         }
 
@@ -1363,13 +1024,7 @@ public class ChatWritePanel
         // dispatch thread.
         if (!SwingUtilities.isEventDispatchThread())
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                public void run()
-                {
-                    removeChatTransport(chatTransport);
-                }
-            });
+            SwingUtilities.invokeLater(() -> removeChatTransport(chatTransport));
             return;
         }
 
@@ -1509,17 +1164,6 @@ public class ChatWritePanel
     }
 
     /**
-     * Sets the background of the write area to the specified color.
-     *
-     * @param color The color to set the background to.
-     */
-    public void setEditorPaneBackground(Color color)
-    {
-        mCenterPanel.setBackground(color);
-        mEditorPane.setBackground(color);
-    }
-
-    /**
      * Update the <tt>transportImage</tt> to have the current status image.
      */
     private void updateTransportImage()
@@ -1529,6 +1173,32 @@ public class ChatWritePanel
         {
             chatWindow.updateContainer(mChatPanel);
         }
+    }
+
+    private void updateSmsLabelIcon(JPanel centerPanel)
+    {
+        boolean smsMode = mSmsMenuItem.isSelected();
+
+        Color bgColor;
+        if (smsMode)
+        {
+            final ImageIconFuture selectedIcon = resources.getImage("service.gui.icons.SEND_SMS_SELECTED");
+            selectedIcon.addToLabel(mSmsLabel);
+
+            bgColor = new Color(resources.getColor("service.gui.LIGHT_HIGHLIGHT"));
+        }
+        else
+        {
+            final ImageIconFuture smsIcon = resources.getImage("service.gui.icons.SEND_SMS");
+
+            smsIcon.addToLabel(mSmsLabel);
+            bgColor = Color.WHITE;
+        }
+
+        centerPanel.setBackground(bgColor);
+        mEditorPane.setBackground(bgColor);
+
+        mSmsLabel.repaint();
     }
 
     /**

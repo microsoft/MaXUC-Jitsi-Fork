@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main;
 
+import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitiseNullable;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -656,8 +659,9 @@ public class UcServicesConfigPanel
             UrlService urlService = (UrlService)comboBox.getSelectedItem();
             if (isCreated)
             {
-                logger.user("Combo-box selection set to: " + urlService +
-                                    " (Note: May also log on creation of panel)");
+                logger.user("Combo-box selection set to: " +
+                            sanitiseNullable(urlService, srv -> logHasher(srv.name)) +
+                            " (Note: May also log on creation of panel)");
             }
             isCreated = true;
             if (urlService != null)

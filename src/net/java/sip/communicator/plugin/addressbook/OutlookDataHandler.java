@@ -1332,7 +1332,7 @@ public class OutlookDataHandler
                               String displayName,
                               String fileUnder)
     {
-        contactLogger.note("setDetails for contact " + displayName + ", " + accessionID);
+        contactLogger.note("setDetails for contact " + logHasher(displayName) + ", " + accessionID);
 
         // Synchronize on the notificationThreadLock so we do not respond to
         // updated events for this contact until we have finished writing it.

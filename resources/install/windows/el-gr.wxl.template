@@ -1,31 +1,31 @@
-<?xml version="1.0" encoding="windows-1253" ?>
+<?xml version="1.0" encoding="WINDOWS-1252" ?>
 <WixLocalization
     xmlns="http://schemas.microsoft.com/wix/2006/localization"
-    Culture="el-gr"
-    Language="1032">
+    Culture="en-us"
+    Language="1033">
 
-  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Εγκατάσταση</String>
+  <String Id="CleanSweepDlg_Title" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ Setup</String>
   <String Id="CleanSweepDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="CleanSweepDlgDescription" Overridable="yes">Ποιά πρόσθετα καθήκοντα θα έπρεπε να ολοκληρωθούν;</String>
-  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title} Πρόσθετα Καθήκοντα</String>
+  <String Id="CleanSweepDlgDescription" Overridable="yes">Which additional tasks should be done?</String>
+  <String Id="CleanSweepDlgTitle" Overridable="yes">{\WixUI_Font_Title}Additional Tasks</String>
 
-  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Ρύθμιση</String>
+  <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes">[ProductName] Setup</String>
   <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes">WixUI_Bmp_Banner</String>
-  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Ποιά πρόσθετα καθήκοντα θα έπρεπε να ολοκληρωθούν;</String>
-  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title} Πρόσθετα Καθήκοντα</String>
+  <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes">Which additional tasks should be done?</String>
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes">{\WixUI_Font_Title}Additional Tasks</String>
 
-  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Δημιουργία Συντομεύσεων</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">Α&amp;ρχικό Μενού</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Δημιουργία Συντόμευσης στην Επιφάνεια Εργασίας</String>
-  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Άλλες Επιλογές</String>
-  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Εκκινήστε το @@PRODUCT_NAME_TITLECASE@@ κατά την εκκίνηση των Windows</String>
-  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Σχετικά Πρωτόκολλα</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes">Create Shortcuts</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes">S&amp;tart Menu</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes">&amp;Create Desktop Shortcut</String>
+  <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes">Other Actions</String>
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes">&amp;Launch @@PRODUCT_NAME_TITLECASE@@ on startup</String>
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes">&amp;Associate Protocols</String>
 
-  <String Id="WelcomeText1" Overridable="yes">Αυτό το λογισμικό αναπτύχθηκε απο: @@COMPANY_NAME_LEGAL@@</String>
-  <String Id="WelcomeText2" Overridable="yes">Η αρχική σελίδα βρίσκεται στο: @@WEB_PAGE@@</String>
-  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Υποστηρίζεται από jitsi.org</String>
+  <String Id="WelcomeText1" Overridable="yes">This software is developed by: @@COMPANY_NAME_LEGAL@@</String>
+  <String Id="WelcomeText2" Overridable="yes">The homepage is at: @@WEB_PAGE@@</String>
+  <String Id="WelcomeText3" Overridable="yes">{\GreyText}Powered by jitsi.org</String>
 
-  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ δεν υποστηρίζεται σε αυτήν την έκδοση των Windows. Απαιτεί τουλάχιστον Windows 7.</String>
+  <String Id="SysReqError" Overridable="yes">@@PRODUCT_NAME_TITLECASE@@ is not supported on this version of Windows.  It requires at least Windows 7.</String>
 
-  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Εκκίνηση @@PRODUCT_NAME_TITLECASE@@</String>
+  <String Id="ExitDialogOptionaCheckBoxText" Overridable="yes">Launch @@PRODUCT_NAME_TITLECASE@@</String>
 </WixLocalization>
