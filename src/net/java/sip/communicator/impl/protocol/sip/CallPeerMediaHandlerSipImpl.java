@@ -777,11 +777,11 @@ public class CallPeerMediaHandlerSipImpl
             if (isLocallyOnHold())
                 direction = direction.and(MediaDirection.SENDONLY);
 
-            List<MediaFormat> mutuallySupportedFormats;
+            List<MediaFormat> responseFormats;
             if (mediaType.equals(MediaType.VIDEO) &&
                     qualityControls != null)
             {
-                mutuallySupportedFormats = intersectFormats(
+                responseFormats = getFormatsForSdpResponse(
                         remoteFormats,
                         getLocallySupportedFormats(
                                 dev,
@@ -790,7 +790,7 @@ public class CallPeerMediaHandlerSipImpl
             }
             else
             {
-                mutuallySupportedFormats = intersectFormats(
+                responseFormats = getFormatsForSdpResponse(
                         remoteFormats,
                         getLocallySupportedFormats(dev));
             }
@@ -808,11 +808,11 @@ public class CallPeerMediaHandlerSipImpl
                 targetDataPort = 0;
             }
 
-            if ((mutuallySupportedFormats == null)
-                || mutuallySupportedFormats.isEmpty()
-                || (targetDataPort == 0))
+            if ((responseFormats == null) ||
+                responseFormats.isEmpty() ||
+                (targetDataPort == 0))
             {
-                logger.warn(" Formats: " + mutuallySupportedFormats +
+                logger.warn(" Formats: " + responseFormats +
                             " Target data port: " + targetDataPort);
 
                 // mark stream as dead and go on bravely
@@ -844,15 +844,15 @@ public class CallPeerMediaHandlerSipImpl
                 // update stream
                 MediaStream stream = getStream(MediaType.VIDEO);
 
-                if(stream != null && dev != null)
+                if (stream != null && dev != null)
                 {
-                    List<MediaFormat> fmts = intersectFormats(
-                        getLocallySupportedFormats(dev),
-                        remoteFormats);
+                    List<MediaFormat> videoResponseFormats = getFormatsForSdpResponse(
+                        remoteFormats,
+                        getLocallySupportedFormats(dev));
 
-                    if(fmts.size() > 0)
+                    if (videoResponseFormats.size() > 0)
                     {
-                        MediaFormat fmt = fmts.get(0);
+                        MediaFormat fmt = videoResponseFormats.get(0);
 
                         ((VideoMediaStream)stream).updateQualityControl(
                             fmt.getAdvancedAttributes());
@@ -886,7 +886,7 @@ public class CallPeerMediaHandlerSipImpl
             // format we want to advertise is our preferred video format so the
             // remote end knows what we support receiving.  Get our preferred
             // format here.
-            List<MediaFormat> formatsForMD = mutuallySupportedFormats;
+            List<MediaFormat> formatsForMD = responseFormats;
             if (mediaType.equals(MediaType.VIDEO))
             {
                 formatsForMD = getLocallySupportedFormats(dev);
@@ -902,7 +902,7 @@ public class CallPeerMediaHandlerSipImpl
             MediaDescription md
                 = createMediaDescription(
                         transportProtocol,
-                        mutuallySupportedFormats,
+                        responseFormats,
                         connector,
                         direction,
                         rtpExtensions);
@@ -932,7 +932,7 @@ public class CallPeerMediaHandlerSipImpl
 
             // create the corresponding stream...
             MediaFormat fmt = findMediaFormat(remoteFormats,
-                    mutuallySupportedFormats.get(0));
+                    responseFormats.get(0));
 
             boolean masterStream = false;
             // if we have more than one stream, lets the audio be the master

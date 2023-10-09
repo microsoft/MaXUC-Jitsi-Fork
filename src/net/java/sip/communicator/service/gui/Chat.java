@@ -101,15 +101,4 @@ public interface Chat
      */
     void setMessage(String message);
 
-    /**
-     * Gets the caret position in the chat editor.
-     * @return index of caret in message being composed
-     */
-    int getCaretPosition();
-
-    /**
-     * Causes the chat to validate its appearance (suggests a repaint operation
-     * may be necessary).
-     */
-    void promptRepaint();
 }

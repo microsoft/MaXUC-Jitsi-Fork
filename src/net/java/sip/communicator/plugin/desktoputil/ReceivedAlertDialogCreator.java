@@ -8,9 +8,6 @@ import java.awt.event.InputEvent;
 
 import javax.swing.*;
 
-import net.java.sip.communicator.service.websocketserver.WebSocketApiCrmService;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiMessageMap;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiRequestListener;
 import org.jitsi.service.resources.BufferedImageFuture;
 import org.jitsi.service.resources.ImageIconFuture;
 import org.jitsi.util.swing.TransparentPanel;
@@ -73,18 +70,6 @@ public abstract class ReceivedAlertDialogCreator
             Font.PLAIN, ScaleUtils.getScaledFontSize(11f));
 
     /**
-     * Whether a CRM lookup has been completed for the remote call/meeting
-     * party.
-     */
-    protected boolean mCrmLookupCompleted;
-
-    /**
-     * Whether the CRM lookup for the remote call/meeting party was successful
-     * (used whenever mCrmLookupCompleted is true).
-     */
-    protected boolean mCrmLookupSuccessful;
-
-    /**
      * Creates a new ReceivedConference Dialog.
      *
      * @param resourceId The id used to find resources specific to this dialog.
@@ -96,22 +81,12 @@ public abstract class ReceivedAlertDialogCreator
         super(resourceId);
         sLog.info("Creating received alert dialog");
         mMetaContact = metaContact;
-
-        // This checks that if we have a custom ringtone set that it hasn't been
-        // deleted. If the file can't be found, it sets the ringtone to the
-        // default. Due to race conditions, this may sometimes not take effect
-        // for the first call after the ringtone file has been deleted, but it
-        // will set it then for the future.
-        DesktopUtilActivator.getNotificationService().checkAndSetCustomRingtone();
     }
 
     /**
      * Initiates the dialog.
-     *
-     * @param crmLookupInitiated Whether a CRM lookup has already been
-     *                           initiated.
      */
-    protected void initComponents(boolean crmLookupInitiated)
+    protected void initComponents()
     {
         super.initComponents();
 
@@ -121,7 +96,7 @@ public abstract class ReceivedAlertDialogCreator
 
         getCenterPanel().add(mCrmButtonPanel);
 
-        createCrmButton(crmLookupInitiated);
+        createCrmButton();
     }
 
     @Override
@@ -156,23 +131,21 @@ public abstract class ReceivedAlertDialogCreator
     @Override
     public void okButtonPressed(String answeredWithAnalyticParam)
     {
-        JButton accessionCrmButton =
-                mCrmButtonSetter.getAccessionCrmButtonIfVisible();
+        JButton crmButton = mCrmButtonSetter.getCrmButtonIfVisible();
 
-        sLog.user("Alert accepted from " + mMetaContact +
-                          " Accession CRM button? " +
-                          (accessionCrmButton != null));
+        sLog.user("Alert accepted from " + mMetaContact + " CRM button? " +
+                          (crmButton != null));
 
-        // If we're set to auto-launch Accession CRM integration, and the
-        // Accession CRM button is visible, launch the integration.
-        if (accessionCrmButton != null)
+        // If we're set to auto-launch CRM integration,
+        // and the CRM button is visible, launch the integration.
+        if (crmButton != null)
         {
             if (sUiService.isCrmAutoLaunchAlways() ||
                 (sUiService.isCrmAutoLaunchExternal() &&
                  ((mMetaContact == null) || (mMetaContact.getBGContact() == null))))
             {
                 sLog.debug("Opening CRM");
-                accessionCrmButton.doClick();
+                crmButton.doClick();
             }
         }
     }
@@ -209,14 +182,9 @@ public abstract class ReceivedAlertDialogCreator
     }
 
     /**
-     * Creates the CRM button and inserts it into the mCrmButtonPanel, if
-     * applicable. Will initiate a CRM lookup if one hasn't been started
-     * already.
-     *
-     * @param crmLookupInitiated Whether a CRM lookup has already been
-     *                           initiated.
+     * Creates the CRM button and inserts it into the mCrmButtonPanel, if applicable.
      */
-    private void createCrmButton(boolean crmLookupInitiated)
+    private void createCrmButton()
     {
         sLog.debug("Creating CRM lookup button");
 
@@ -233,71 +201,13 @@ public abstract class ReceivedAlertDialogCreator
                                                phoneNumber,
                                                mCrmButtonPanel);
 
-        mCrmButtonSetter.createButton(mCrmLookupCompleted,
-                                      mCrmLookupSuccessful);
-
-        // If a CRM lookup is not already in progress, start it here.
-        if (!crmLookupInitiated)
-        {
-            // Only attempt to do a CRM lookup if the remote party's DN is
-            // known.
-            if (phoneNumber != null)
-            {
-                crmLookup(phoneNumber);
-            }
-            else
-            {
-                sLog.debug("No number known for remote party, not " +
-                                   "initiating CRM lookup");
-
-                // Update the button with the lookup failure.
-                mCrmLookupCompleted = true;
-                mCrmLookupSuccessful = false;
-                updateCrmButton();
-            }
-        }
+        mCrmButtonSetter.createButton();
 
         // If a button was created, set its font.
         setCrmButtonFont();
 
         getCenterPanel().revalidate();
         getCenterPanel().repaint();
-    }
-
-    /**
-     * Updates the CRM button.
-     */
-    protected void updateCrmButton()
-    {
-        sLog.debug("Updating CRM lookup button");
-
-        mCrmButtonSetter.updateButton(mCrmLookupCompleted, mCrmLookupSuccessful);
-        getCenterPanel().revalidate();
-        getCenterPanel().repaint();
-    }
-
-    /**
-     * Do a CRM lookup over the WebSocket API for the DN of the
-     * remote call/meeting party.
-     *
-     * @param number The number of the remote call/meeting party to look-up.
-     */
-    private void crmLookup(String number)
-    {
-        // Try to do a CRM DN lookup via any applications connected over
-        // the WebSocket API to look for CRM contact names.
-        WebSocketApiCrmService crmService =
-                DesktopUtilActivator.getWebSocketApiCrmService();
-
-        // Try to send the request - note that no request will be sent
-        // if there is no appropriate WebSocket connection.
-        if (crmService != null)
-        {
-            // Pass the number to lookup and a listener object to the
-            // service query method, let it handle the rest.
-            crmService.crmDnLookup(number,
-                                   new CrmLookupListener());
-        }
     }
 
     /**
@@ -414,41 +324,4 @@ public abstract class ReceivedAlertDialogCreator
      * @return the image of the contact who caused us to receive this alert.
      */
     protected abstract BufferedImageFuture getContactImage();
-
-    /**
-     * Listens for updates about WebSocket CRM DN lookups and updates the CRM
-     * button when the lookups complete. Does not make use of the information
-     * inside the API response (other than the success state) because:
-     *
-     *     a) For calls, the display name of the peer is updated in the CRM
-     *     lookup request initiated by the CallPeer object.
-     *     b) For conferences, the other party is always a local contact and
-     *     hence their local contact name will be displayed regardless of CRM
-     *     lookup results.
-     */
-    private class CrmLookupListener implements WebSocketApiRequestListener
-    {
-        /**
-         * CRM requests sent by this class
-         *
-         * @param success Whether the request was successful.
-         * @param responseMessage The WebSocket API message map.
-         */
-        @Override
-        public void responseReceived(boolean success,
-                                     WebSocketApiMessageMap responseMessage)
-        {
-            sLog.debug("CRM response received - update CRM button");
-            mCrmLookupCompleted = true;
-            mCrmLookupSuccessful = success;
-
-            updateCrmButton();
-        }
-
-        @Override
-        public void requestTerminated()
-        {
-            responseReceived(false, null);
-        }
-    }
 }

@@ -38,7 +38,6 @@ import javax.sip.TransactionState;
 import javax.sip.TransactionTerminatedEvent;
 import javax.sip.TransactionUnavailableException;
 import javax.sip.address.Address;
-import javax.sip.address.Hop;
 import javax.sip.address.SipURI;
 import javax.sip.header.AlertInfoHeader;
 import javax.sip.header.CSeqHeader;
@@ -106,7 +105,6 @@ import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.service.protocol.RegistrationState;
 import net.java.sip.communicator.service.protocol.SecurityAuthority;
-import net.java.sip.communicator.service.protocol.TransportProtocol;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeListener;
 import net.java.sip.communicator.service.threading.ThreadingService;
@@ -1562,20 +1560,6 @@ public class ProtocolProviderServiceSipImpl
     }
 
     /**
-     * Returns a Contact header containing a sip URI based on a localhost
-     * address.
-     *
-     * @param intendedDestination the destination that we plan to be sending
-     * this contact header to.
-     *
-     * @return a Contact header based upon a local inet address.
-     */
-    public ContactHeader getContactHeader(Address intendedDestination)
-    {
-        return getContactHeader((SipURI)intendedDestination.getURI());
-    }
-
-    /**
      * Returns a SIP URI for the Contact header based on our IP address.
      *
      * @param intendedDestination the destination that we plan to be sending
@@ -2192,27 +2176,6 @@ public class ProtocolProviderServiceSipImpl
     }
 
     /**
-     * Returns the "transport" protocol of this instance used to carry the
-     * control channel for the current protocol service.
-     *
-     * @return The "transport" protocol of this instance: UDP, TCP, TLS or
-     * UNKNOWN.
-     */
-    public TransportProtocol getTransportProtocol()
-    {
-        // The transport protocol is not set properly when dealing with a
-        // RegistrarLess account. This is why we return "UNKNOWN" in this case.
-        if(this.sipRegistrarConnection == null
-                || this.sipRegistrarConnection instanceof
-                SipRegistrarlessConnection)
-        {
-            return TransportProtocol.UNKNOWN;
-        }
-        return TransportProtocol.parse(
-                sipRegistrarConnection.getTransport());
-    }
-
-    /**
      * Registers <tt>methodProcessor</tt> in the <tt>methodProcessors</tt> table
      * so that it would receive all messages in a transaction initiated by a
      * <tt>method</tt> request. If any previous processors exist for the same
@@ -2275,30 +2238,6 @@ public class ProtocolProviderServiceSipImpl
                 }
             }
             processors.add(methodProcessor);
-        }
-    }
-
-    /**
-     * Unregisters <tt>methodProcessor</tt> from the <tt>methodProcessors</tt>
-     * table so that it won't receive further messages in a transaction
-     * initiated by a <tt>method</tt> request.
-     *
-     * @param method the name of the method whose processor we'd like to
-     * unregister.
-     * @param methodProcessor the <tt>MethodProcessor</tt> that we'd like to
-     * unregister.
-     */
-    public void unregisterMethodProcessor(String method,
-        MethodProcessor methodProcessor)
-    {
-        synchronized (methodProcessors)
-        {
-            List<MethodProcessor> processors = methodProcessors.get(method);
-            if ((processors != null) && processors.remove(methodProcessor)
-                && (processors.size() <= 0))
-            {
-                methodProcessors.remove(method);
-            }
         }
     }
 
@@ -2975,33 +2914,6 @@ public class ProtocolProviderServiceSipImpl
     }
 
     /**
-     * Registers early message processor.
-     * @param processor early message processor.
-     */
-    void addEarlyMessageProcessor(SipMessageProcessor processor)
-    {
-        synchronized (earlyProcessors)
-        {
-            if (!earlyProcessors.contains(processor))
-            {
-                this.earlyProcessors.add(processor);
-            }
-        }
-    }
-
-    /**
-     * Removes the early message processor.
-     * @param processor early message processor.
-     */
-    void removeEarlyMessageProcessor(SipMessageProcessor processor)
-    {
-        synchronized (earlyProcessors)
-        {
-            this.earlyProcessors.remove(processor);
-        }
-    }
-
-    /**
      * Early process an incoming message from interested listeners.
      * @param message the message to process.
      */
@@ -3116,16 +3028,6 @@ public class ProtocolProviderServiceSipImpl
         // enabled
         return accountID.getAccountPropertyBoolean(
                              ProtocolProviderFactory.IS_PRESENCE_ENABLED, true);
-    }
-
-    @Override
-    public boolean useRegistrationForStatus()
-    {
-        // The account's registration state can be used to set the global
-        // status as a back-up if no accounts that support presence are
-        // configured.
-        return accountID.getAccountPropertyBoolean(
-                  ProtocolProviderFactory.IS_REGISTRATION_STATUS_ENABLED, true);
     }
 
     public boolean hasIpChanged()
@@ -3315,12 +3217,4 @@ public class ProtocolProviderServiceSipImpl
         }
     }
 
-    /**
-     * @param hop - hop to do an SRV lookup on
-     * @return SRV resolved lookup
-     */
-    public Hop resolveAddress(Hop hop)
-    {
-        return mAddressResolver.resolveAddress(hop);
-    }
 }

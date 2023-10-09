@@ -211,35 +211,12 @@ public interface ProtocolProviderService
     boolean isSignalingTransportSecure();
 
     /**
-     * Returns the "transport" protocol of this instance used to carry the
-     * control channel for the current protocol service.
-     *
-     * @return The "transport" protocol of this instance: UDP, TCP, TLS or
-     * UNKNOWN.
-     */
-    TransportProtocol getTransportProtocol();
-
-    /**
      * Returns true if accounts represented by this instance of the Protocol
      * provider service support status
      *
      * @return true if the protocol provider supports status
      */
     boolean supportsStatus();
-
-    /**
-     * Returns true if accounts represented by this instance of the Protocol
-     * provider service allow the account status to be set based on the
-     * account's registration state. If this is true and no accounts that
-     * support presence status are available,  the client's global status will
-     * be set to online/offline based on the account's registered/unregistered
-     * state.  If presence status is available, that will be used in
-     * preference to registration state to set the global status.
-     *
-     * @return true if the protocol provider allows the account status to be
-     * set based on the account's registration state
-     */
-    boolean useRegistrationForStatus();
 
     /**
      * Returns true if accounts represented by this instance of the Protocol

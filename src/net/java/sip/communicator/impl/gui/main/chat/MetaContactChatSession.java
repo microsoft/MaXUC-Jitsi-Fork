@@ -16,7 +16,6 @@ import org.jitsi.service.resources.*;
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactlist.event.*;
-import net.java.sip.communicator.service.filehistory.*;
 import net.java.sip.communicator.service.metahistory.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -203,140 +202,6 @@ public class MetaContactChatSession extends ChatSession
             return null;
 
         return metaHistory.findLast(chatHistoryFilter, mMetaContact, count);
-    }
-
-    /**
-     * Returns the start date of the history of this chat session.
-     *
-     * @return the start date of the history of this chat session.
-     */
-    public Date getHistoryStartDate()
-    {
-        Date startHistoryDate = new Date(0);
-
-        MetaHistoryService metaHistory
-            = GuiActivator.getMetaHistoryService();
-
-        // If the MetaHistoryService is not registered we have nothing to do
-        // here. The history could be "disabled" from the user
-        // through one of the configuration forms.
-        if (metaHistory == null)
-            return startHistoryDate;
-
-        Collection<Object> firstMessage = metaHistory
-            .findFirstMessagesAfter(
-                chatHistoryFilter, mMetaContact, new Date(0), 1);
-
-        if (firstMessage.size() > 0)
-        {
-            Iterator<Object> i = firstMessage.iterator();
-
-            Object o = i.next();
-
-            if (o instanceof MessageDeliveredEvent)
-            {
-                MessageDeliveredEvent evt
-                    = (MessageDeliveredEvent) o;
-
-                startHistoryDate = evt.getTimestamp();
-            }
-            else if (o instanceof MessageReceivedEvent)
-            {
-                MessageReceivedEvent evt = (MessageReceivedEvent) o;
-
-                startHistoryDate = evt.getTimestamp();
-            }
-            else if (o instanceof FileRecord)
-            {
-                FileRecord fileRecord = (FileRecord) o;
-
-                startHistoryDate = fileRecord.getDate();
-            }
-        }
-
-        return startHistoryDate;
-    }
-
-    /**
-     * Returns the end date of the history of this chat session.
-     *
-     * @return the end date of the history of this chat session.
-     */
-    public Date getHistoryEndDate()
-    {
-        Date endHistoryDate = new Date(0);
-
-        MetaHistoryService metaHistory
-            = GuiActivator.getMetaHistoryService();
-
-        // If the MetaHistoryService is not registered we have nothing to do
-        // here. The history could be "disabled" from the user
-        // through one of the configuration forms.
-        if (metaHistory == null)
-            return endHistoryDate;
-
-        Collection<Object> lastMessage = metaHistory
-            .findLastMessagesBefore(
-                chatHistoryFilter, mMetaContact, new Date(Long.MAX_VALUE), 1);
-
-        if (lastMessage.size() > 0)
-        {
-            Iterator<Object> i1 = lastMessage.iterator();
-
-            Object o1 = i1.next();
-
-            if (o1 instanceof MessageDeliveredEvent)
-            {
-                MessageDeliveredEvent evt
-                    = (MessageDeliveredEvent) o1;
-
-                endHistoryDate = evt.getTimestamp();
-            }
-            else if (o1 instanceof MessageReceivedEvent)
-            {
-                MessageReceivedEvent evt = (MessageReceivedEvent) o1;
-
-                endHistoryDate = evt.getTimestamp();
-            }
-            else if (o1 instanceof FileRecord)
-            {
-                FileRecord fileRecord = (FileRecord) o1;
-
-                endHistoryDate = fileRecord.getDate();
-            }
-        }
-
-        return endHistoryDate;
-    }
-
-    /**
-     * Returns the default mobile number used to send sms-es in this session.
-     *
-     * @return the default mobile number used to send sms-es in this session.
-     */
-    public String getDefaultSmsNumber()
-    {
-        String smsNumber = null;
-
-        List<String> detailsList = mMetaContact.getDetails("mobile");
-
-        if (detailsList != null && detailsList.size() > 0)
-        {
-            smsNumber = detailsList.iterator().next();
-        }
-
-        return smsNumber;
-    }
-
-    /**
-     * Sets the default mobile number used to send sms-es in this session.
-     *
-     * @param smsPhoneNumber The default mobile number used to send sms-es in
-     * this session.
-     */
-    public void setDefaultSmsNumber(String smsPhoneNumber)
-    {
-        mMetaContact.addDetail("mobile", smsPhoneNumber);
     }
 
     /**
@@ -871,14 +736,6 @@ public class MetaContactChatSession extends ChatSession
         // Nothing needs to be done for this, as the other listeners in this
         // class will get called for events of this type that we care about.
         // We can't even put a log here as it would be too spammy.
-    }
-
-    /**
-     *  Implements ChatSession#isContactListSupported().
-     */
-    public boolean isContactListSupported()
-    {
-        return false;
     }
 
     public void addChatTransportChangeListener(ChatSessionChangeListener l)

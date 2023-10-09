@@ -209,32 +209,6 @@ public class SIPCommTextArea
 
     public void keyReleased(KeyEvent e){}
 
-    /**
-     * Adds the given <tt>TextFieldChangeListener</tt> to the list of listeners
-     * notified on changes of the text contained in this field.
-     * @param l the <tt>TextFieldChangeListener</tt> to add
-     */
-    public void addTextChangeListener(TextFieldChangeListener l)
-    {
-        synchronized (changeListeners)
-        {
-            changeListeners.add(l);
-        }
-    }
-
-    /**
-     * Removes the given <tt>TextFieldChangeListener</tt> from the list of
-     * listeners notified on changes of the text contained in this field.
-     * @param l the <tt>TextFieldChangeListener</tt> to add
-     */
-    public void removeTextChangeListener(TextFieldChangeListener l)
-    {
-        synchronized (changeListeners)
-        {
-            changeListeners.remove(l);
-        }
-    }
-
     public void changedUpdate(DocumentEvent e) {}
 
     /**

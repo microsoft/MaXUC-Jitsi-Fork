@@ -83,28 +83,31 @@ public class ConfigFileSanitiser
      * @param dirtyStrings config key suffixes that when present in the file mean it is dirty
      * @return whether the input file was dirty
      */
-    public static boolean isDirty(File inputFile, String[] dirtyStrings)
+    public static boolean isConfigFileDirty(File inputFile, String[] dirtyStrings)
     {
         sLog.debug("Check if file is dirty");
-        return sanitiseOrCheckFile(inputFile, null, dirtyStrings);
+        return sanitiseOrCheckConfigFile(inputFile, null, dirtyStrings, false);
     }
 
     /**
      * Writes a sanitised version of the input file removing any line in the input file
      * that appears to contain security info.
+     * When hashPII is true, also hashes any items of PII.
      *
      * @param inputFile the config file to sanitise
      * @param outputFile where to write the sanitised file
      * @param dirtyStrings strings to be removed
+     * @param hashPII when true, also hash PII in the config file
      */
-    public static void sanitiseFile(File inputFile, File outputFile, String[] dirtyStrings)
+    public static void sanitiseConfigFile(File inputFile, File outputFile, String[] dirtyStrings, boolean hashPII)
     {
         sLog.debug("Sanitise config file");
-        sanitiseOrCheckFile(inputFile, outputFile, dirtyStrings);
+        sanitiseOrCheckConfigFile(inputFile, outputFile, dirtyStrings, hashPII);
     }
 
     /**
      * Removes any line in the passed file that appears to contain security info.
+     * When hashPII is true, also hashes any items of PII.
      *
      * Will perform a dry run (no writing) if no output file is provided.
      *
@@ -112,11 +115,13 @@ public class ConfigFileSanitiser
      * @param outputFile where to write the sanitised file, or null to prevent writing
      *        (i.e. just perform a check).
      * @param dirtyStrings an array of config key suffixes considered dangerous
+     * @param hashPII when true, also hash PII in the config file
      * @return whether the input file was dirty (only valid for config files)
      */
-    private static boolean sanitiseOrCheckFile(File inputFile,
-                                               File outputFile,
-                                               String[] dirtyStrings)
+    private static boolean sanitiseOrCheckConfigFile(File inputFile,
+                                                     File outputFile,
+                                                     String[] dirtyStrings,
+                                                     boolean hashPII)
     {
         boolean writeOutput = outputFile != null;
         boolean wasDirty = false;
@@ -173,9 +178,9 @@ public class ConfigFileSanitiser
                 }
                 else if (writeOutput)
                 {
-                    if (isPrivacyProperty(key))
+                    if (hashPII && (isPrivacyProperty(key)))
                     {
-                        // Sanitise the key and value, then rebuild the line for logging.
+                        // Sanitise the key and value separately.
                         line = sanitiseConfigPropertyForLogging(key) + "=" +
                                sanitiseConfigValueForLogging(key, value);
                     }
@@ -318,7 +323,7 @@ public class ConfigFileSanitiser
      */
     public static String sanitiseConfigPropertyForLogging(String propertyName)
     {
-        return sanitise(propertyName, PRIVACY_PATTERNS, str -> "_" + logHasher(str));
+        return sanitiseFirstPatternMatch(propertyName, PRIVACY_PATTERNS, str -> "_" + logHasher(str));
     }
 
     /**

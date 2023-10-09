@@ -31,13 +31,6 @@ public interface ProvisioningService
     void setProvisioningMethod(String provisioningMethod);
 
     /**
-     * Returns provisioning username if any.
-     *
-     * @return provisioning username
-     */
-    String getProvisioningUsername();
-
-    /**
      * Returns the provisioning DN if any.
      *
      * @return provisioning DN or null if the DN is not set

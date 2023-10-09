@@ -13,6 +13,8 @@ import net.java.sip.communicator.service.globalshortcut.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.keybindings.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
+import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -55,6 +57,9 @@ public class GlobalShortcutActivator
      */
     private static UIService uiService = null;
 
+    private static WISPAService sWISPAService;
+    private static AnalyticsService sAnalyticsService;
+
     /**
      * Returns the <tt>KeybindingsService</tt> obtained from the bundle context.
      *
@@ -87,6 +92,28 @@ public class GlobalShortcutActivator
                         UIService.class);
         }
         return uiService;
+    }
+
+    public static WISPAService getWISPAService()
+    {
+        if (sWISPAService == null)
+        {
+            sWISPAService = ServiceUtils.getService(bundleContext,
+                                                    WISPAService.class);
+        }
+
+        return sWISPAService;
+    }
+
+    public static AnalyticsService getAnalyticsService()
+    {
+        if (sAnalyticsService == null)
+        {
+            sAnalyticsService = ServiceUtils.getService(bundleContext,
+                                                        AnalyticsService.class);
+        }
+
+        return sAnalyticsService;
     }
 
     /**

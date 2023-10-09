@@ -155,16 +155,6 @@ public class SipCommFileChooserImpl
     }
 
     /**
-     * Removes a file filter to this dialog.
-     *
-     * @param filter the filter to remove
-     */
-    public void removeFilter(SipCommFileFilter filter)
-    {
-        this.removeChoosableFileFilter(filter);
-    }
-
-    /**
      * Sets whether the AcceptAll file filter should be used.
      *
      * @param used whether the filter should be used
@@ -182,16 +172,6 @@ public class SipCommFileChooserImpl
     public void setFileFilter(SipCommFileFilter filter)
     {
         super.setFileFilter(filter);
-    }
-
-    /**
-     * Returns the filter the user has chosen for saving a file.
-     *
-     * @return SipCommFileFilter the used filter when saving a file
-     */
-    public SipCommFileFilter getUsedFilter()
-    {
-        return (SipCommFileFilter)this.getFileFilter();
     }
 
     /**

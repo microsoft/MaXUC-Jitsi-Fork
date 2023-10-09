@@ -7,7 +7,7 @@
 package net.java.sip.communicator.impl.protocol.sip.xcap.model.xcaperror;
 
 /**
- * The XCAP error inteface.
+ * The XCAP error interface.
  *
  * @author Grigorii Balutsel
  */

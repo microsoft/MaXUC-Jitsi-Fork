@@ -34,30 +34,6 @@ public class AvatarStackManager
         + "userimages" + File.separator;
 
     /**
-     * Deletes the stored image.
-     * @param index of the image to delete.
-     */
-    public static void deleteImage(int index)
-    {
-        String fileName = STORE_DIR + index + ".png";
-
-        try
-        {
-            File imageFile
-                = GuiActivator.getFileAccessService().getPrivatePersistentActiveUserFile(
-                        fileName);
-
-            if (imageFile.exists() && !imageFile.delete())
-                logger.error("Failed to delete stored image at index " + index);
-        }
-        catch (Exception e)
-        {
-            // Can't access file
-            logger.info("Failed to access file: " + fileName, e);
-        }
-    }
-
-    /**
      * Load the image at the defined index from user directory
      * @param index the image index
      * @return the image

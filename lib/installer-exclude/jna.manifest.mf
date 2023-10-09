@@ -7,6 +7,7 @@ Export-Package: com.sun.jna.win32,
  com.sun.jna,
  com.sun.jna.ptr,
  com.sun.jna.platform,
- com.sun.jna.platform.win32
+ com.sun.jna.platform.win32,
+ com.sun.jna.platform.mac
 
 

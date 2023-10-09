@@ -46,7 +46,7 @@ public class InviteContactListFilter
 
         Iterator<UIContactSource> filterSourceIter = filterSources.iterator();
 
-        // If we have stopped filtering in the mean time we return here.
+        // If we have stopped filtering in the meantime we return here.
         if (filterQuery.isCanceled())
             return;
 
@@ -62,7 +62,7 @@ public class InviteContactListFilter
                 continue;
             }
 
-            // If we have stopped filtering in the mean time we return here.
+            // If we have stopped filtering in the meantime we return here.
             if (filterQuery.isCanceled())
                 return;
 

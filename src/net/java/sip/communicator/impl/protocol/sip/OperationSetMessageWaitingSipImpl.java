@@ -17,7 +17,11 @@ import javax.sip.address.*;
 import javax.sip.header.*;
 import javax.sip.message.*;
 
+import com.metaswitch.maxanalytics.event.MessageType;
+import com.metaswitch.maxanalytics.event.MessagesKt;
+
 import net.java.sip.communicator.service.commportal.ClassOfServiceService;
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.Logger;
@@ -306,6 +310,14 @@ public class OperationSetMessageWaitingSipImpl
 
         // Save this notification as the lastNotification.
         mLastNotification = event;
+
+        SipActivator.getInsightService().logEvent(
+                new InsightEvent(
+                        MessagesKt.EVENT_MESSAGE_RECEIVED,
+                        MessagesKt.PARAM_MESSAGE_TYPE,
+                        MessageType.VOICEMAIL.getValue$maxanalytics()
+                )
+        );
 
         ArrayList<MessageWaitingListener> listeners;
 

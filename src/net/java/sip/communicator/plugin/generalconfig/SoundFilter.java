@@ -29,15 +29,6 @@ public class SoundFilter
     private String[] soundFormats = null;
 
     /**
-     * Creates a new sound filter which accepts all sound format available in
-     * SoundFileUtils.
-     */
-    public SoundFilter()
-    {
-        super();
-    }
-
-    /**
      * Creates a new sound filter which accepts only sound format corresponding
      * to the list given in parameter.
      *

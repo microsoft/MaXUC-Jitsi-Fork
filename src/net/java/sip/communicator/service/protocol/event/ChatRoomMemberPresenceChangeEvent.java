@@ -55,13 +55,6 @@ public class ChatRoomMemberPresenceChangeEvent
     public static final String MEMBER_QUIT = "MemberQuit";
 
     /**
-     * The well-known reason for a
-     * <code>ChatRoomMemberPresenceChangeEvent</code> to occur as part of an
-     * operation which lists all users in a <code>ChatRoom</code>.
-     */
-    public static final String REASON_USER_LIST = "ReasonUserList";
-
-    /**
      * The chat room member that the event relates to.
      */
     private final ChatRoomMember sourceMember;
@@ -201,20 +194,6 @@ public class ChatRoomMemberPresenceChangeEvent
     public String getReason()
     {
         return reason;
-    }
-
-    /**
-     * Gets the indicator which determines whether this event has occurred with
-     * the well-known reason of listing all users in a <code>ChatRoom</code>.
-     *
-     * @return <tt>true</tt> if this event has occurred with the well-known
-     * reason of listing all users in a <code>ChatRoom</code> i.e.
-     * {@link #getReason()} returns a value of {@link #REASON_USER_LIST};
-     * otherwise, <tt>false</tt>
-     */
-    public boolean isReasonUserList()
-    {
-        return REASON_USER_LIST.equals(getReason());
     }
 
     /**

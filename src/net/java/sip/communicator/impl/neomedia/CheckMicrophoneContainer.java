@@ -4,6 +4,8 @@ package net.java.sip.communicator.impl.neomedia;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -306,7 +308,8 @@ public class CheckMicrophoneContainer
         // succession, we make a copy of the recorded sample to be used for playback.
 
         File playbackFile = new File(mPlaybackSamplePath);
-        FileUtils.copyFile(new File(mRecordedSamplePath), playbackFile);
+        File recordedSample = new File(mRecordedSamplePath);
+        Files.copy(recordedSample.toPath(), playbackFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         String playbackPath = playbackFile.toURI().toString();
         SCAudioClip audio = NeomediaActivator.getAudioNotifierService()
             .createAudio(playbackPath, true);

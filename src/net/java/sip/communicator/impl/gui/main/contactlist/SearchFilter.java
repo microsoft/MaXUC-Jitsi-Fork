@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist;
 
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
+
 import java.text.*;
 import java.text.Normalizer.*;
 import java.util.*;
@@ -131,7 +133,7 @@ public class SearchFilter
     {
         // Only log what the user has typed into the search box if we're
         // running in QA mode, as it might contain PII.
-        String filterStringToLog = mQAMode ? mFilterString : "<redacted>";
+        String filterStringToLog = mQAMode ? mFilterString : REDACTED;
         sLog.debug("Applying search filter " + filterStringToLog);
 
         Iterator<UIContactSource> filterSources =
@@ -145,7 +147,7 @@ public class SearchFilter
         // First add the MetaContactListSource
         filterQuery.addContactQuery(defaultQuery);
 
-        // If we have stopped filtering in the mean time we return here.
+        // If we have stopped filtering in the meantime we return here.
         if (filterQuery.isCanceled())
             return;
 
@@ -166,7 +168,7 @@ public class SearchFilter
                 continue;
             }
 
-            // If we have stopped filtering in the mean time we return here.
+            // If we have stopped filtering in the meantime we return here.
             if (filterQuery.isCanceled())
                 return;
 
@@ -208,7 +210,7 @@ public class SearchFilter
         {
           // Only log what the user has typed into the search box if we're
           // running in QA mode, as it might contain PII.
-          String filterPatternToLog = mQAMode ? mFilterPattern.toString() : "<redacted>";
+          String filterPatternToLog = mQAMode ? mFilterPattern.toString() : REDACTED;
             sLog.debug("use extended contact service filter: " + filterPatternToLog);
             contactQuery
                 = ((ExtendedContactSourceService) sourceService)
@@ -218,7 +220,7 @@ public class SearchFilter
         {
           // Only log what the user has typed into the search box if we're
           // running in QA mode, as it might contain PII.
-          String filterStringToLog = mQAMode ? mFilterString : "<redacted>";
+          String filterStringToLog = mQAMode ? mFilterString : REDACTED;
             sLog.debug("use basic contact service filter: " + filterStringToLog);
             contactQuery = sourceService.queryContactSource(mFilterString);
         }
@@ -341,7 +343,7 @@ public class SearchFilter
      */
     private boolean isMatching(String text)
     {
-        String filterStringToLog = mQAMode ? text : "<redacted>";
+        String filterStringToLog = mQAMode ? text : REDACTED;
         sLog.debug("isMatching String: " + filterStringToLog);
 
         if (mFilterPattern != null)

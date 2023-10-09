@@ -241,13 +241,6 @@ public interface CommPortalService
     void addMissingLocationUpdateListener(PropertyChangeListener listener);
 
     /**
-     * Removes a previously registered listener, so it will no longer be notified
-     * if the return value of isMissingEmergencyLocationInformation() changes.
-     * If listener was not previously registered or is null, does nothing.
-     */
-    void removeMissingLocationUpdateListener(PropertyChangeListener listener);
-
-    /**
      * Method run to notify listeners when the return value of
      * isMissingEmergencyLocationInformation() changes.
      *

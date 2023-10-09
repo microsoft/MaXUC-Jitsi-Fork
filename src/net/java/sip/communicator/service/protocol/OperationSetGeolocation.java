@@ -7,10 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
-import java.util.*;
-
-import net.java.sip.communicator.service.protocol.event.*;
-
 /**
  * This interface is an extension of the operation set, meant to be
  * implemented by protocols that support exchange of geolocation details (like
@@ -138,40 +134,4 @@ public interface OperationSetGeolocation
      */
     String TIMESTAMP = "timestamp";
 
-    /**
-     * Publish the location contained in the <tt>geolocation</tt> map to all
-     * contacts in our contact list.
-     *
-     * @param geolocation a <tt>java.uil.Map</tt> containing the geolocation
-     * details of the position we'd like to publish.
-     */
-    void publishGeolocation(Map<String, String> geolocation);
-
-    /**
-     * Retrieve the geolocation of the contact corresponding to
-     * <tt>contactIdentifier</tt>.
-     *
-     * @param contactIdentifier the address of the <tt>Contact</tt> whose
-     * geolocation details we'd like to retrieve.
-     *
-     * @return a <tt>java.util.Map</tt> containing the geolocation details of
-     * the contact with address <tt>contactIdentifier</tt>.
-     */
-    Map<String, String> queryContactGeolocation(String contactIdentifier);
-
-    /**
-     * Registers a listener that would get notifications any time a contact
-     * publishes a new geolocation.
-     *
-     * @param listener the <tt>GeolocationListener</tt> to register
-     */
-    void addGeolocationListener(GeolocationListener listener);
-
-    /**
-     * Removes a listener previously registered for notifications of changes in
-     * the contact geolocation details.
-     *
-     * @param listener the <tt>GeolocationListener</tt> to unregister
-     */
-    void removeGeolocationListener(GeolocationListener listener);
 }

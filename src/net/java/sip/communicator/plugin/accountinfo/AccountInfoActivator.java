@@ -81,25 +81,4 @@ public class AccountInfoActivator
 
         return providerFactoriesMap;
     }
-
-    /**
-     * Returns the <tt>BrowserLauncherService</tt> currently registered.
-     *
-     * @return the <tt>BrowserLauncherService</tt>
-     */
-    public static BrowserLauncherService getBrowserLauncher()
-    {
-        if (browserLauncherService == null)
-        {
-            ServiceReference<?> serviceReference =
-                bundleContext.getServiceReference(BrowserLauncherService.class
-                    .getName());
-
-            browserLauncherService =
-                (BrowserLauncherService) bundleContext
-                    .getService(serviceReference);
-        }
-
-        return browserLauncherService;
-    }
 }

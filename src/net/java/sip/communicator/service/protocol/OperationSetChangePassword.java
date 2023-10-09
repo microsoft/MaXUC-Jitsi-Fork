@@ -14,19 +14,4 @@ package net.java.sip.communicator.service.protocol;
 public interface OperationSetChangePassword
     extends OperationSet
 {
-    /**
-     * Changes the account password to newPass
-     *
-     * @param newPass the new password.
-     * @throws IllegalStateException if the account is not registered.
-     * @throws OperationFailedException if the change failed for another reason.
-     */
-    void changePassword(String newPass)
-            throws IllegalStateException, OperationFailedException;
-
-    /**
-     * Whether password changes are supported.
-     * @return True if the server supports password change, false otherwise.
-     */
-    boolean supportsPasswordChange();
 }

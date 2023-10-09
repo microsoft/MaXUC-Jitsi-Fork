@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.netaddr.WifiInformation;
-import java.util.*;
 
 import com.sun.jna.*;
+import com.sun.jna.Structure.FieldOrder;
 import com.sun.jna.platform.win32.*;
 
 /**
@@ -10,6 +10,8 @@ import com.sun.jna.platform.win32.*;
  *
  * https://docs.microsoft.com/en-us/windows/win32/api/wlanapi/ns-wlanapi-wlan_interface_info
  */
+
+@FieldOrder({"GUID", "strInterfaceDescription", "isState"})
 public class WlanInterfaceInfo extends Structure
 {
     // Size of WlanInterfaceInfo structure in bytes.
@@ -22,15 +24,6 @@ public class WlanInterfaceInfo extends Structure
     public Guid.GUID GUID;
     public char[] strInterfaceDescription = new char[MAXIMUM_DESCRIPTION_LENGTH];
     public int isState;
-
-    @Override
-    protected List<String> getFieldOrder()
-    {
-        return Arrays.asList(new String[] {
-                "GUID",
-                "strInterfaceDescription",
-                "isState"});
-    }
 
     /**
      * @return Interface description formatted as a String, with any trailing

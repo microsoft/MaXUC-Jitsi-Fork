@@ -7,7 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
-//import java.awt.image.*;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -19,9 +19,9 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
-import net.java.sip.communicator.service.browserlauncher.BrowserLauncherService;
 import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
+import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.gui.AlertUIService;
@@ -33,7 +33,6 @@ import net.java.sip.communicator.service.shutdown.ShutdownService;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.service.fileaccess.FileAccessService;
-import org.jitsi.service.neomedia.MediaConfigurationService;
 import org.jitsi.service.neomedia.MediaService;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.OSUtils;
@@ -58,7 +57,7 @@ public class UtilActivator
         = Logger.getLogger(UtilActivator.class);
 
     private static ConfigurationService configurationService;
-
+    private static CredentialsStorageService credentialsStorageService;
     private static ResourceManagementService resourceService;
 
     private static UIService uiService;
@@ -76,8 +75,6 @@ public class UtilActivator
     private static DiagnosticsService diagnosticsService;
 
     private static ConferenceService conferenceService;
-
-    private static BrowserLauncherService browserService;
 
     private static MetaContactListService metaCListService;
 
@@ -142,9 +139,9 @@ public class UtilActivator
         {
             originalStdOut.println(s);
             if (mIsError)
-                logger.error("System error: " + s);
+                logger.error("System error: " + sanitiseFilePath(s));
             else
-                logger.info("System out: " + s);
+                logger.info("System out: " + sanitiseFilePath(s));
         }
     }
 
@@ -175,6 +172,20 @@ public class UtilActivator
      */
     public void stop(BundleContext context)
     {
+    }
+
+    /**
+     * @return the <tt>CredentialsService</tt> obtained from the bundle
+     * context
+     */
+    static CredentialsStorageService getCredentialsService()
+    {
+        if (credentialsStorageService == null)
+        {
+            credentialsStorageService = ServiceUtils.getService(bundleContext, CredentialsStorageService.class);
+        }
+
+        return credentialsStorageService;
     }
 
     /**
@@ -243,16 +254,6 @@ public class UtilActivator
                 = ServiceUtils.getService(bundleContext, MediaService.class);
         }
         return mediaService;
-    }
-
-    /**
-     * @return the <tt>UIService</tt> instance registered in the
-     * <tt>BundleContext</tt> of the <tt>UtilActivator</tt>
-     */
-    public static MediaConfigurationService getMediaConfiguration()
-    {
-        return ServiceUtils.getService(bundleContext,
-                MediaConfigurationService.class);
     }
 
     /**
@@ -354,20 +355,6 @@ public class UtilActivator
                         ConferenceService.class);
         }
         return conferenceService;
-    }
-
-    /**
-     * @return a reference to the BrowserLauncherService
-     */
-    public static BrowserLauncherService getBrowserService()
-    {
-        if (browserService == null)
-        {
-            browserService = ServiceUtils.getService(bundleContext,
-                                                  BrowserLauncherService.class);
-        }
-
-        return browserService;
     }
 
     /**

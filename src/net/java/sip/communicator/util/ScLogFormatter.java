@@ -7,6 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
 import static org.jitsi.util.SanitiseUtils.sanitise;
 
 import java.io.*;
@@ -26,8 +27,6 @@ import java.util.regex.*;
 public class ScLogFormatter
     extends java.util.logging.Formatter
 {
-    static long startTime = System.currentTimeMillis();
-
     /**
      * Contains all classes which hold methods specific to logging. Allows a
      * method to easily assess whether any given frame is a 'logger class'.
@@ -52,8 +51,14 @@ public class ScLogFormatter
      */
     private static final int MAX_MESSAGE_LENGTH = 1_000_000;
 
+    /**
+     * Matches sensitive details that needs to be replaced.
+     * Does not match "password=*" for replacement because it indicates that the
+     * password is not being provided as a part of the request to the
+     * CommPortal API login. Any other password must be matched for replacement.
+     */
     private static final Pattern STRIP_SENSITIVE_DETAILS =
-        Pattern.compile("(password=|encrypted=|passkey=|/session)([^&\n/?]+)",
+        Pattern.compile("(encrypted=|passkey=|/session|password=((?!\\*)(?=.)|(?=\\*([^&\n/?]+))))([^&\n/?]+)",
                         Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private static final Pattern SENSITIVE_STACK_TRACE =
@@ -168,7 +173,7 @@ public class ScLogFormatter
         if (message != null)
         {
             // Don't log sensitive details:
-            message = STRIP_SENSITIVE_DETAILS.matcher(message).replaceAll("$1<REMOVED>");
+            message = STRIP_SENSITIVE_DETAILS.matcher(message).replaceAll("$1" + REDACTED);
         }
 
         sb.append(message);

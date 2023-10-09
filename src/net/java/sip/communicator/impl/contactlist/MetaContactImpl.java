@@ -1435,39 +1435,6 @@ public class MetaContactImpl
     }
 
     /**
-     * Remove the given detail.
-     * @param name of the detail to be removed.
-     * @param value value of the detail to be removed.
-     */
-    public void removeDetail(String name, String value)
-    {
-        if (details == null)
-            return;
-
-        List<String> values = details.get(name);
-        if (values == null)
-            return;
-
-        values.remove(value);
-
-        fireMetaContactModified(name, value, null);
-    }
-
-    /**
-     * Remove all details with given name.
-     * @param name of the details to be removed.
-     */
-    public void removeDetails(String name)
-    {
-        if (details == null)
-            return;
-
-        Object removed = details.remove(name);
-
-        fireMetaContactModified(name, removed, null);
-    }
-
-    /**
      * Change the detail.
      * @param name of the detail to be changed.
      * @param oldValue the old value of the detail.

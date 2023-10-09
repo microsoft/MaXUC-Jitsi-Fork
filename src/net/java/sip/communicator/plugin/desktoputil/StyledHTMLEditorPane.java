@@ -6,10 +6,7 @@
  */
 package net.java.sip.communicator.plugin.desktoputil;
 
-import java.io.*;
-
 import javax.swing.*;
-import javax.swing.text.*;
 import javax.swing.text.html.*;
 
 import net.java.sip.communicator.util.*;
@@ -57,44 +54,5 @@ public class StyledHTMLEditorPane
         this.setDocument(document);
 
         putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-    }
-
-    /**
-     * Appends text to end of the editor pane.
-     *
-     * @param text the text to append
-     */
-    public void appendToEnd(String text)
-    {
-        Element root = document.getDefaultRootElement();
-        try
-        {
-            document.insertAfterEnd(root
-                .getElement(root.getElementCount() - 1), text);
-        }
-        catch (BadLocationException | IOException e)
-        {
-            logger.error("Insert in the HTMLDocument failed.", e);
-        }
-    }
-
-    /**
-     * Inserts the given text in the beginning of the editor pane.
-     *
-     * @param text the text to insert
-     */
-    public void insertAfterStart(String text)
-    {
-        Element root = this.document.getDefaultRootElement();
-
-        try
-        {
-            this.document.insertBeforeStart(root
-                    .getElement(0), text);
-        }
-        catch (BadLocationException | IOException e)
-        {
-            logger.error("Insert in the HTMLDocument failed.", e);
-        }
     }
 }

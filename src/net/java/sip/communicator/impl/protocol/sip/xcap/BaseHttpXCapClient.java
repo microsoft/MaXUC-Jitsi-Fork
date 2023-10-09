@@ -25,7 +25,6 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.*;
 import org.apache.http.impl.client.*;
 import org.apache.http.params.*;
-import org.osgi.framework.*;
 
 import net.java.sip.communicator.impl.protocol.sip.*;
 import net.java.sip.communicator.impl.protocol.sip.xcap.model.*;
@@ -59,11 +58,6 @@ public abstract class BaseHttpXCapClient implements HttpXCapClient
      * HTTP ETag header.
      */
     public static final String HEADER_ETAG = "ETag";
-
-    /**
-     * HTTP If-None-Match header.
-     */
-    public static final String HEADER_IF_NONE_MATCH = "If-None-Match";
 
     /**
      * XCap-error content type.

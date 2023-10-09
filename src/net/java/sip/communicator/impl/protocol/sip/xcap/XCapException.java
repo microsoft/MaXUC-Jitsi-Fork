@@ -20,15 +20,6 @@ public class XCapException extends Exception
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates a new <code>XCapException</code> instance
-     * which does not give a human-readable explanation why the operation is
-     * not supported.
-     */
-    public XCapException()
-    {
-    }
-
-    /**
      * Creates a new <code>XCapException</code> instance whith human-readable
      * explanation.
      *
@@ -53,16 +44,5 @@ public class XCapException extends Exception
     public XCapException(String message, Throwable cause)
     {
         super(message, cause);
-    }
-
-    /**
-     * Creates a new <code>XCapException</code> instance with the original cause
-     * of the problem.
-     *
-     * @param cause the original cause of the problem.
-     */
-    public XCapException(Throwable cause)
-    {
-        super(cause);
     }
 }

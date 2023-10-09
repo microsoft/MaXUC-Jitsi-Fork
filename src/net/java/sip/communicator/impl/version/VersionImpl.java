@@ -33,10 +33,10 @@ public class VersionImpl
     private int versionMajor = VERSION_MAJOR;
 
     /**
-     * The version major of the current Jitsi version. In an
+     * The version major of the current code version. In an
      * example 2.3.1 version string 2 is the version major. The version major
      * number changes when a relatively extensive set of new features and
-     * possibly rearchitecturing have been applied to the Jitsi.
+     * possibly re-architecting have been applied to code.
      *
      * N.B. We always want a 2-digit minor version format! However, to avoid
      * making changes to the structure of the code (i.e. changing this variable
@@ -45,10 +45,10 @@ public class VersionImpl
      * logs say and what analytics are sent. Otherwise, for comparison purposes,
      * X.0 and X.00 are treated as the same version - see compareTo() method.
      *
-     * See DUIR-6751 for more details, and consider reworking this code in the
+     * See 31003 for more details, and consider reworking this code in the
      * future!
      */
-    public static final int VERSION_MINOR = 11;
+    public static final int VERSION_MINOR = 20;
 
     /**
      * The version minor field. Default value is VERSION_MINOR.

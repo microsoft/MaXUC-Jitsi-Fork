@@ -27,20 +27,6 @@ public class ConferenceMembersSoundLevelEvent
     private static final long serialVersionUID = 0L;
 
     /**
-     * The maximum level that can be reported for a participant in a conference.
-     * Level values should be distributed among MAX_LEVEL and MIN_LEVEL in a
-     * way that would appear uniform to users.
-     */
-    public static final int MAX_LEVEL = 255;
-
-    /**
-     * The maximum (zero) level that can be reported for a participant in a
-     * conference. Level values should be distributed among MAX_LEVEL and
-     * MIN_LEVEL in a way that would appear uniform to users.
-     */
-    public static final int MIN_LEVEL = 0;
-
-    /**
      * The mapping of <tt>ConferenceMember</tt>s to sound levels. It is
      * presumed that all <tt>ConferenceMember</tt>s not contained in the map has
      * a 0 sound level.
@@ -62,15 +48,6 @@ public class ConferenceMembersSoundLevelEvent
         super(callPeer);
 
         this.levels = levels;
-    }
-
-    /**
-     * Returns the source <tt>CallPeer</tt> for which the event occurred.
-     * @return the source <tt>CallPeer</tt> for which the event occurred
-     */
-    public CallPeer getSourcePeer()
-    {
-        return (CallPeer) getSource();
     }
 
     /**

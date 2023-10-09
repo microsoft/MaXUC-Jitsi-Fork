@@ -81,28 +81,6 @@ public class NotificationActionTypeEvent
     }
 
     /**
-     * Returns the event type, to which the given action belongs.
-     *
-     * @return the event type, to which the given action belongs
-     */
-    public String getSourceEventType()
-    {
-        return sourceEventType;
-    }
-
-    /**
-     * Returns the <tt>NotificationActionHandler</tt> that handles the action,
-     * for which this event is about.
-     *
-     * @return the <tt>NotificationActionHandler</tt> that handles the action,
-     * for which this event is about.
-     */
-    public NotificationAction getActionHandler()
-    {
-        return actionHandler;
-    }
-
-    /**
      * The type of this event. One of ACTION_XXX constants declared in this
      * class.
      *

@@ -139,18 +139,6 @@ public abstract class ChatConversationComponent
         }
 
         /**
-         * Create a new RolloverButton.
-         *
-         * @param text the button text.
-         * @param icon the button icon.
-         */
-        public ChatConversationButton(String text, Icon icon)
-        {
-            super(text, icon);
-            init();
-        }
-
-        /**
          * Decorates the button with the appropriate UI configurations.
          */
         private void init()

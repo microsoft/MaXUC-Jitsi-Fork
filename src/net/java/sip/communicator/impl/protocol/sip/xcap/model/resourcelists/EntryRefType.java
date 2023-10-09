@@ -49,22 +49,6 @@ public class EntryRefType
     }
 
     /**
-     * Creates the entry-ref element with the ref attribute.
-     *
-     * @param ref the ref attribute.
-     * @throws IllegalArgumentException if ref attribute is null or empty.
-     */
-    public EntryRefType(String ref)
-    {
-        if (ref == null || ref.trim().length() == 0)
-        {
-            throw new IllegalArgumentException("The ref attribute cannot be " +
-                    "null or empry");
-        }
-        this.ref = ref;
-    }
-
-    /**
      * Gets the value of the ref property.
      *
      * @return the ref property.

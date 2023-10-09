@@ -29,19 +29,6 @@ public class ResolveAddressToDisplayNameContactQueryListener
     private String resolvedName;
 
     /**
-     * Creates a new ResolvedContactQueryListener.
-     */
-    public ResolveAddressToDisplayNameContactQueryListener(ContactQuery query)
-    {
-        this.resolvedName = null;
-        this.query = query;
-        if(this.query != null)
-        {
-            this.query.addContactQueryListener(this);
-        }
-    }
-
-    /**
      * Indicates that a contact has been updated after a  search.
      */
     public void contactChanged(ContactChangedEvent event)
@@ -115,14 +102,4 @@ public class ResolveAddressToDisplayNameContactQueryListener
         return !StringUtils.isNullOrEmpty(resolvedName);
     }
 
-    /**
-     * Returns the display name corresponding to the contact address.
-     *
-     * @return The display name corresponding to the contact address. Null
-     * or empty string if not found.
-     */
-    public String getResolvedName()
-    {
-        return this.resolvedName;
-    }
 }

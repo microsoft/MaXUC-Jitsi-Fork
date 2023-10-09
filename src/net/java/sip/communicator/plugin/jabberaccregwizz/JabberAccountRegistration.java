@@ -235,16 +235,6 @@ public class JabberAccountRegistration
     }
 
     /**
-     * Sets the default value of the user sufix.
-     *
-     * @param userSufix the user name sufix (the domain name after the @ sign)
-     */
-    public void setDefaultUserSufix(String userSufix)
-    {
-        this.defaultUserSuffix = userSufix;
-    }
-
-    /**
      * Sets the server
      *
      * @param serverAddress the IP address or FQDN of the server.
@@ -362,16 +352,6 @@ public class JabberAccountRegistration
     }
 
     /**
-     * Sets the account display name.
-     *
-     * @param accountDisplayName the account display name
-     */
-    public void setAccountDisplayName(String accountDisplayName)
-    {
-        this.accountDisplayName = accountDisplayName;
-    }
-
-    /**
      * Returns the default sms server.
      *
      * @return the account default sms server
@@ -379,16 +359,6 @@ public class JabberAccountRegistration
     public String getSmsServerAddress()
     {
         return smsServerAddress;
-    }
-
-    /**
-     * Sets the default sms server.
-     *
-     * @param serverAddress the sms server to set as default
-     */
-    public void setSmsServerAddress(String serverAddress)
-    {
-        this.smsServerAddress = serverAddress;
     }
 
     /**
@@ -417,14 +387,6 @@ public class JabberAccountRegistration
     public String getDefaultDTMFMethod()
     {
         return defaultDTMFMethod;
-    }
-
-    /**
-     * @param defaultDTMFMethod the defaultDTMFMethod to set
-     */
-    public void setDefaultDTMFMethod(String defaultDTMFMethod)
-    {
-        this.defaultDTMFMethod = defaultDTMFMethod;
     }
 
     /**

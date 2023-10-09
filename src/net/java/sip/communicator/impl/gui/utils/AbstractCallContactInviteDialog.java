@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.utils;
 
-import net.java.sip.communicator.util.*;
-
 import java.awt.*;
 
 /**
@@ -28,9 +26,6 @@ public abstract class AbstractCallContactInviteDialog extends AbstractContactInv
     {
         super(parent, title, okButtonText, true);
 
-        if (ConfigurationUtils.isCallAlwaysOnTop())
-        {
-            setAlwaysOnTop(true);
-        }
+        setAlwaysOnTop(true);
     }
 }

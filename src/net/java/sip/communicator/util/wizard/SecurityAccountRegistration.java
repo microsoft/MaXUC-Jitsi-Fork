@@ -29,11 +29,6 @@ public abstract class SecurityAccountRegistration
     private boolean sipZrtpAttribute = true;
 
     /**
-     * Tells if SDES is enabled for this account.
-     */
-    private boolean sdesEnabled = false;
-
-    /**
      * The list of cipher suites enabled for SDES.
      */
     private String sdesCipherSuites = null;
@@ -105,26 +100,6 @@ public abstract class SecurityAccountRegistration
     public void setSipZrtpAttribute(boolean sipZrtpAttribute)
     {
         this.sipZrtpAttribute = sipZrtpAttribute;
-    }
-
-    /**
-     * Tells if SDES is enabled for this account.
-     *
-     * @return True if SDES is enabled. False, otherwise.
-     */
-    public boolean isSDesEnabled()
-    {
-        return sdesEnabled;
-    }
-
-    /**
-     * Enables or disables SDES for this account.
-     *
-     * @param sdesEnabled True to enable SDES. False, otherwise.
-     */
-    public void setSDesEnabled(boolean sdesEnabled)
-    {
-        this.sdesEnabled = sdesEnabled;
     }
 
     /**

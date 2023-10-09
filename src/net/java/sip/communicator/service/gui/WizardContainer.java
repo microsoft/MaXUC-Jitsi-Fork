@@ -19,12 +19,6 @@ package net.java.sip.communicator.service.gui;
 public interface WizardContainer {
 
     /**
-     * Returns TRUE if "Back" wizard button is enabled, FALSE otherwise.
-     * @return TRUE if "Back" wizard button is enabled, FALSE otherwise.
-     */
-    boolean isBackButtonEnabled();
-
-    /**
      * Sets the "Back" wizard button enabled or disabled.
      * @param newValue TRUE to enable the "Back" wizard button, FALSE to
      * disable it.
@@ -32,25 +26,11 @@ public interface WizardContainer {
     void setBackButtonEnabled(boolean newValue);
 
     /**
-     * Returns TRUE if "Next" or "Finish" wizard button is enabled, FALSE
-     * otherwise.
-     * @return TRUE if "Next" or "Finish" wizard button is enabled, FALSE
-     * otherwise.
-     */
-    boolean isNextFinishButtonEnabled();
-
-    /**
      * Sets the "Next" or "Finish" wizard button enabled or disabled.
      * @param newValue TRUE to enable the "Next" or "Finish" wizard button,
      * FALSE to disable it.
      */
     void setNextFinishButtonEnabled(boolean newValue);
-
-    /**
-     * Returns TRUE if "Cancel" wizard button is enabled, FALSE otherwise.
-     * @return TRUE if "Cancel" wizard button is enabled, FALSE otherwise.
-     */
-    boolean isCancelButtonEnabled();
 
     /**
      * Sets the "Cancel" wizard button enabled or disabled.

@@ -193,21 +193,5 @@ public class SystemActivityNotifications
          * @param type
          */
         void notify(int type);
-
-        /**
-         * Callback method when receiving special network notifications.
-         *
-         * @param family family of network change (ipv6, ipv4)
-         * @param luidIndex unique index of interface
-         * @param name name of the interface
-         * @param type of the interface
-         * @param connected whether interface is connected or not.
-         */
-        void notifyNetworkChange(
-                int family,
-                long luidIndex,
-                String name,
-                long type,
-                boolean connected);
     }
 }

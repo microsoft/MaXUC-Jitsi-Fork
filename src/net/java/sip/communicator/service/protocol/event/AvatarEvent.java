@@ -71,18 +71,6 @@ public class AvatarEvent
     }
 
     /**
-     * Returns the <tt>OperationSetAvatar</tt> instance that is the source
-     * of this event.
-     *
-     * @return the <tt>OperationSetAvatar</tt> instance that is the source
-     * of this event.
-     */
-    public OperationSetAvatar getSourceAvatarOperationSet()
-    {
-        return (OperationSetAvatar) getSource();
-    }
-
-    /**
      * Returns a String representation of this AvatarEvent
      *
      * @return a <tt>String</tt> representation of this <tt>AvatarEvent</tt>.

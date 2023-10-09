@@ -43,16 +43,6 @@ public class AddressBookProtocolIcon
     }
 
     /**
-     * Implements the <tt>ProtocolIcon.getSupportedSizes()</tt> method. Returns
-     * an iterator to a set containing the supported icon sizes.
-     * @return an iterator to a set containing the supported icon sizes
-     */
-    public Iterator<String> getSupportedSizes()
-    {
-        return iconsTable.keySet().iterator();
-    }
-
-    /**
      * Returns TRUE if a icon with the given size is supported, FALSE-otherwise.
      *
      * @return TRUE if a icon with the given size is supported, FALSE-otherwise.
@@ -69,15 +59,6 @@ public class AddressBookProtocolIcon
     public BufferedImageFuture getIcon(String iconSize)
     {
         return iconsTable.get(iconSize);
-    }
-
-    /**
-     * Returns the icon image used to represent the protocol connecting state.
-     * @return the icon image used to represent the protocol connecting state
-     */
-    public BufferedImageFuture getConnectingIcon()
-    {
-        return null;
     }
 
     /**

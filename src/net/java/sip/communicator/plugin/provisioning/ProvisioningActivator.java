@@ -15,6 +15,7 @@ import org.osgi.framework.*;
 import net.java.sip.communicator.service.analytics.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.netaddr.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.provisioning.*;
@@ -86,6 +87,8 @@ public class ProvisioningActivator
      */
     private static AnalyticsService analyticsService;
 
+    private static InsightService insightService;
+
     /**
      * The update service
      */
@@ -112,7 +115,7 @@ public class ProvisioningActivator
         logger.debug("Provisioning discovery [STARTED]");
 
         ProvisioningActivator.bundleContext = bundleContext;
-        provisioningService = ProvisioningServiceImpl.getProvisioningServiceImpl();
+        provisioningService = new ProvisioningServiceImpl();
 
         String method = provisioningService.getProvisioningMethod();
 
@@ -272,16 +275,6 @@ public class ProvisioningActivator
     }
 
     /**
-     * Returns a reference to a <tt>ProvisioningService</tt> implementation.
-     *
-     * @return a currently valid implementation of <tt>ProvisioningService</tt>
-     */
-    public static ProvisioningServiceImpl getProvisioningService()
-    {
-        return provisioningService;
-    }
-
-    /**
      * Returns a reference to a <tt>AnalyticsService</tt> implementation.
      *
      * @return a currently valid implementation of <tt>AnalyticsService</tt>
@@ -295,6 +288,17 @@ public class ProvisioningActivator
         }
 
         return analyticsService;
+    }
+
+    public static InsightService getInsightService()
+    {
+        if (insightService == null)
+        {
+            insightService = ServiceUtils.getService(bundleContext,
+                                                       InsightService.class);
+        }
+
+        return insightService;
     }
 
     /**

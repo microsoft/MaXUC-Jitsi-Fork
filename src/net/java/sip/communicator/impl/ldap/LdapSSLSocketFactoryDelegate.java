@@ -13,8 +13,9 @@ import java.security.*;
 import java.util.List;
 
 import javax.net.*;
+import javax.net.ssl.SSLSocket;
 
-import net.java.sip.communicator.service.certificate.*;
+import net.java.sip.communicator.service.certificate.CertificateService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -74,34 +75,46 @@ public class LdapSSLSocketFactoryDelegate extends SocketFactory
     public Socket createSocket() throws IOException
     {
         logger.debug("LDAP createSocket() called");
-        return socketFactory.createSocket();
+        return setHandshakeListener(socketFactory.createSocket());
     }
 
     @Override
     public Socket createSocket(String host, int port) throws IOException
     {
         logger.debug("LDAP createSocket(host, port) called");
-        return socketFactory.createSocket(host, port);
+        return setHandshakeListener(socketFactory.createSocket(host, port));
     }
 
     @Override
     public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException
     {
         logger.debug("LDAP createSocket(host, port, localHost, localPort) called");
-        return socketFactory.createSocket(host, port, localHost, localPort);
+        return setHandshakeListener(socketFactory.createSocket(host, port, localHost, localPort));
     }
 
     @Override
     public Socket createSocket(InetAddress host, int port) throws IOException
     {
         logger.debug("LDAP createSocket(iNetHost, port) called");
-        return socketFactory.createSocket(host, port);
+        return setHandshakeListener(socketFactory.createSocket(host, port));
     }
 
     @Override
     public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException
     {
         logger.debug("LDAP createSocket(address, port, localAddress, localPort) called");
-        return socketFactory.createSocket(address, port, localAddress, localPort);
+        return setHandshakeListener(socketFactory.createSocket(address, port, localAddress, localPort));
+    }
+
+    private Socket setHandshakeListener(Socket socket)
+    {
+        if (socket instanceof SSLSocket)
+        {
+            SSLSocket sslSocket = (SSLSocket) socket;
+            sslSocket.addHandshakeCompletedListener(
+                    event -> LdapActivator.getCertificateService()
+                            .notifySecureConnectionEstablished("LDAPS", event.getSession()));
+        }
+        return socket;
     }
 }

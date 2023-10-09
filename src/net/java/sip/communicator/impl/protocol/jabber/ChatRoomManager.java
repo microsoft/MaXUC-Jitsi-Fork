@@ -130,11 +130,8 @@ public class ChatRoomManager
             rosterProcessed.set(false);
             waitingForArchive.set(true);
 
-            if (joinAndLeaveChatRoomTimer != null)
-            {
-                logger.debug("Cancel join chat room timer ready to make new one");
-                joinAndLeaveChatRoomTimer.cancel();
-            }
+            logger.debug("Cancel join chat room timer ready to make new one");
+            cancelJoinAndLeaveChatRoomTimer();
 
             joinAndLeaveChatRoomTimer = new Timer("Join chat room timer");
         }
@@ -489,12 +486,16 @@ public class ChatRoomManager
                 }
                 catch (Throwable th)
                 {
-                    logger.error("addAndJoinChatRoom ended unexpectedly!: ", th);
+                    // Setting this as debug log as this pollutes the error logs to the
+                    // point where it makes them obsolete. Will fix in follow-up work.
+                    logger.debug("addAndJoinChatRoom ended unexpectedly!: ", th);
                 }
 
                 if (!success)
                 {
-                    logger.error("Failed to join chat room. Try again in " + JOIN_CHAT_ROOM_RETRY_DELAY_MS + "ms");
+                    // Setting this as debug log as this pollutes the error logs to the
+                    // point where it makes them obsolete. Will fix in follow-up work.
+                    logger.debug("Failed to join chat room. Try again in " + JOIN_CHAT_ROOM_RETRY_DELAY_MS + "ms");
                     addAndJoinChatRoomOnTimer(chatRoomId, joinDate, JOIN_CHAT_ROOM_RETRY_DELAY_MS);
                 }
             }
@@ -514,7 +515,9 @@ public class ChatRoomManager
     {
         String chatRoomIdString = chatRoomId.toString();
         String sanitisedChatRoomIdString = sanitiseChatRoom(chatRoomIdString);
-        logger.info(
+        // Setting this as debug log as this pollutes the info logs to the
+        // point where it makes them obsolete. Will fix in follow-up work.
+        logger.debug(
             "Joining chat room with id " + sanitisedChatRoomIdString + " and date " + joinDate);
 
         ConfigurationUtils.saveChatRoom(
@@ -543,13 +546,17 @@ public class ChatRoomManager
             }
             else
             {
-                logger.error("Failed to find or create chat room with id: " + sanitisedChatRoomIdString);
+                // Setting this as debug log as this pollutes the error logs to the
+                // point where it makes them obsolete. Will fix in follow-up work.
+                logger.debug("Failed to find or create chat room with id: " + sanitisedChatRoomIdString);
                 return false;
             }
         }
         catch (OperationFailedException | OperationNotSupportedException e)
         {
-            logger.error("Failed to find or create chat room with id: "
+            // Setting this as debug log as this pollutes the error logs to the
+            // point where it makes them obsolete. Will fix in follow-up work.
+            logger.debug("Failed to find or create chat room with id: "
                 + sanitisedChatRoomIdString, e);
             return false;
         }
@@ -563,11 +570,27 @@ public class ChatRoomManager
     public void cleanUp()
     {
         logger.info("Cleanup");
+        cancelJoinAndLeaveChatRoomTimer();
+    }
 
-        if (joinAndLeaveChatRoomTimer != null)
+    private void cancelJoinAndLeaveChatRoomTimer()
+    {
+        synchronized (joinLeaveLock)
         {
-            logger.debug("Cancel join chat room timer");
-            joinAndLeaveChatRoomTimer.cancel();
+            if (joinAndLeaveChatRoomTimer != null)
+            {
+                try
+                {
+                    logger.debug("Try to cancel join chat room timer");
+                    joinAndLeaveChatRoomTimer.cancel();
+                }
+                catch (IllegalStateException e)
+                {
+                    logger.warn("Join chat room timer already cancelled.", e);
+                }
+
+                joinAndLeaveChatRoomTimer = null;
+            }
         }
     }
 }

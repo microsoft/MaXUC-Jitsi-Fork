@@ -410,108 +410,12 @@ public class UriHandlerSipImpl
             registerHandlerService();
             break;
         case ServiceEvent.UNREGISTERING:
-            // our factory just died - seppuku.
+            // our factory just died
             unregisterHandlerService();
             break;
         default:
             // we don't care.
             break;
-        }
-    }
-
-    /**
-     * Returns the default provider that we are supposed to handle URIs through
-     * or null if there aren't any. Depending on the implementation this method
-     * may require user intervention so make sure you don't rely on a quick
-     * outcome when calling it.
-     *
-     * @param uri the uri that we'd like to handle with the provider that we are
-     *            about to select.
-     *
-     * @return the provider that we should handle URIs through.
-     *
-     * @throws OperationFailedException with code <tt>OPERATION_CANCELED</tt> if
-     *             the users.
-     */
-    public ProtocolProviderService selectHandlingProvider(String uri)
-        throws OperationFailedException
-    {
-        ArrayList<AccountID> registeredAccounts =
-            protoFactory.getRegisteredAccounts();
-
-        // if we don't have any providers - return null.
-        if (registeredAccounts.size() == 0)
-        {
-            return null;
-        }
-
-        // if we only have one provider - select it
-        if (registeredAccounts.size() == 1)
-        {
-            ServiceReference<?> providerReference =
-                protoFactory.getProviderForAccount(registeredAccounts.get(0));
-
-            ProtocolProviderService provider =
-                (ProtocolProviderService) SipActivator.getBundleContext()
-                    .getService(providerReference);
-
-            return provider;
-        }
-
-        // otherwise - ask the user.
-        ArrayList<ProviderComboBoxEntry> providers =
-                new ArrayList<>();
-        for (AccountID accountID : registeredAccounts)
-        {
-            ServiceReference<?> providerReference =
-                protoFactory.getProviderForAccount(accountID);
-
-            ProtocolProviderService provider =
-                (ProtocolProviderService) SipActivator.getBundleContext()
-                    .getService(providerReference);
-
-            providers.add(new ProviderComboBoxEntry(provider));
-        }
-
-        Object result =
-            SipActivator.getUIService().getPopupDialog().showInputPopupDialog(
-                "Please select the account that you would like \n"
-                    + "to use to call " + uri, "Account Selection",
-                PopupDialog.OK_CANCEL_OPTION, providers.toArray(),
-                providers.get(0));
-
-        if (result == null)
-        {
-            throw new OperationFailedException("Operation cancelled",
-                OperationFailedException.OPERATION_CANCELED);
-        }
-
-        return ((ProviderComboBoxEntry) result).provider;
-    }
-
-    /**
-     * A class that we use to wrap providers before showing them to the user
-     * through a selection popup dialog from the UIService.
-     */
-    private static class ProviderComboBoxEntry
-    {
-        public final ProtocolProviderService provider;
-
-        public ProviderComboBoxEntry(ProtocolProviderService provider)
-        {
-            this.provider = provider;
-        }
-
-        /**
-         * Returns a human readable <tt>String</tt> representing the provider
-         * encapsulated by this class.
-         *
-         * @return a human readable string representing the provider.
-         */
-        @Override
-        public String toString()
-        {
-            return provider.getAccountID().getAccountAddress();
         }
     }
 }

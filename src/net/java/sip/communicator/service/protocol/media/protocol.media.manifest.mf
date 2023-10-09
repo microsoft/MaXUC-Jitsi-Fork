@@ -7,6 +7,7 @@ System-Bundle: yes
 Import-Package: javax.xml.parsers,
  javax.media.control,
  net.java.sip.communicator.service.analytics,
+ net.java.sip.communicator.service.insights,
  net.java.sip.communicator.service.netaddr,
  net.java.sip.communicator.service.protocol,
  net.java.sip.communicator.service.protocol.event,
@@ -25,5 +26,6 @@ Import-Package: javax.xml.parsers,
  net.sf.fmj.media.rtp,
  org.osgi.framework,
  org.w3c.dom,
- org.xml.sax
+ org.xml.sax,
+ com.metaswitch.maxanalytics.event
 Export-Package: net.java.sip.communicator.service.protocol.media

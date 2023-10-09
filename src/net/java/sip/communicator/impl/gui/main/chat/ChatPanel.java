@@ -80,7 +80,6 @@ import net.java.sip.communicator.service.protocol.event.LocalUserChatRoomPresenc
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeListener;
 import net.java.sip.communicator.util.ConfigurationUtils;
-import net.java.sip.communicator.util.GuiUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.account.AccountUtils;
 
@@ -722,18 +721,6 @@ public class ChatPanel
     }
 
     /**
-     * Returns the ID of the last message sent in this chat, or <tt>null</tt>
-     * if no messages have been sent yet.
-     *
-     * @return the ID of the last message sent in this chat, or <tt>null</tt>
-     * if no messages have been sent yet.
-     */
-    public String getLastSentMessageUID()
-    {
-        return mLastSentMessageUID;
-    }
-
-    /**
      * Every time the chat panel is shown we set it as a current chat panel.
      * This is done here and not in the Tab selection listener, because the tab
      * change event is not fired when the user clicks on the close tab button
@@ -790,17 +777,6 @@ public class ChatPanel
         }
 
         return false;
-    }
-
-    /**
-     * Adds text to the write area editor.
-     *
-     * @param text The text to add.
-     */
-    public void addTextInWriteArea(String text)
-    {
-        JEditorPane editorPane = mWriteMessagePanel.getEditorPane();
-        editorPane.setText(editorPane.getText() + text);
     }
 
     /**
@@ -983,55 +959,6 @@ public class ChatPanel
             sLog.error("Failed to refresh editor text.", e);
         }
     }
-
-    /**
-     * Shows the last sent message in the write area, either in order to
-     * correct it or to send it again.
-     *
-     * @return <tt>true</tt> on success, <tt>false</tt> on failure.
-     */
-    public boolean showLastMessageInWriteArea()
-    {
-        return showMessageInWriteArea(mLastSentMessageUID);
-    }
-
-    /**
-     * Shows the message with the specified ID in the write area, either
-     * in order to correct it or to send it again.
-     *
-     * @param messageUID The ID of the message to show.
-     * @return <tt>true</tt> on success, <tt>false</tt> on failure.
-     */
-     public boolean showMessageInWriteArea(String messageUID)
-     {
-         String messageContents = mConversationPanel.getMessageContents(
-             messageUID);
-
-         if (messageContents == null)
-         {
-             return false;
-         }
-
-         messageContents = processMessageTextForWriteAreaDisplay(messageContents);
-         setMessage(messageContents);
-
-         return true;
-     }
-
-     /*
-      * Removes and replaces HTML to allow a message being edited to display correctly in
-      * the write area (as the refreshText method needs plaintext input)
-      *
-      * @param message The text of the message to be edited
-      *
-      */
-     private String processMessageTextForWriteAreaDisplay(String message)
-     {
-         return GuiUtils.removeLinkTags(
-             GuiUtils.replaceHTMLCharCodes(
-             GuiUtils.replaceBreakTags(
-             GuiUtils.removePlaintextTags(message))));
-     }
 
     /**
      * Changes the "Send as SMS" check box state.
@@ -1665,41 +1592,6 @@ public class ChatPanel
     }
 
     /**
-     * Sets the location of the split pane divider.
-     *
-     * @param location the location of the divider given by the pixel count
-     * between the left bottom corner and the left bottom divider location
-     */
-    public void setDividerLocation(int location)
-    {
-        int dividerLocation = mMessagePane.getHeight() - location;
-
-        mMessagePane.setDividerLocation(dividerLocation);
-        mMessagePane.revalidate();
-        mMessagePane.repaint();
-    }
-
-    /**
-     * Returns the contained divider location.
-     *
-     * @return the contained divider location
-     */
-    public int getDividerLocation()
-    {
-        return mMessagePane.getHeight() - mMessagePane.getDividerLocation();
-    }
-
-    /**
-     * Returns the contained divider size.
-     *
-     * @return the contained divider size
-     */
-    public int getDividerSize()
-    {
-        return mMessagePane.getDividerSize();
-    }
-
-    /**
      * Returns the accessible chat buffer associated with this chat session
      *
      * @return the accessible chat buffer associated with this chat session
@@ -1736,26 +1628,6 @@ public class ChatPanel
         {
             mActiveFileTransfers.remove(id);
         }
-    }
-
-    /**
-     * Gets the caret position in the chat editor.
-     * @return index of caret in message being composed
-     */
-    @Override
-    public int getCaretPosition()
-    {
-        return getChatWritePanel().getEditorPane().getCaretPosition();
-    }
-
-    /**
-     * Causes the chat to validate its appearance (suggests a repaint operation
-     * may be necessary).
-     */
-    @Override
-    public void promptRepaint()
-    {
-        getChatWritePanel().getEditorPane().repaint();
     }
 
     @Override

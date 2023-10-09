@@ -404,30 +404,6 @@ public class ServerStoredContactListXivoImpl
     }
 
     /**
-     * The user accepted authorization request for <tt>contact</tt>
-     * @param contact the user has accepted.
-     */
-    public void authorizationAccepted(ContactSipImpl contact)
-    {
-    }
-
-    /**
-     * The user rejected authorization request for <tt>contact</tt>
-     * @param contact the user has rejected.
-     */
-    public void authorizationRejected(ContactSipImpl contact)
-    {
-    }
-
-    /**
-     * The user ignored authorization request for <tt>contact</tt>
-     * @param contact the user has ignored.
-     */
-    public void authorizationIgnored(ContactSipImpl contact)
-    {
-    }
-
-    /**
      * Get current account image from server if any.
      * @return the account image.
      */

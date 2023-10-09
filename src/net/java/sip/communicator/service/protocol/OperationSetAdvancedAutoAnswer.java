@@ -44,32 +44,6 @@ public interface OperationSetAdvancedAutoAnswer
     void setAutoAnswerCondition(String headerName, String value);
 
     /**
-     * Is the auto answer option set to conditionally
-     * answer all incoming calls.
-     * @return is auto answer set to conditional.
-     */
-    boolean isAutoAnswerConditionSet();
-
-    /**
-     * Returns the name of the header if conditional auto answer is set.
-     * @return the name of the header if conditional auto answer is set.
-     */
-    String getAutoAnswerHeaderName();
-
-    /**
-     * Returns the value of the header for the conditional auto answer.
-     * @return the value of the header for the conditional auto answer.
-     */
-    String getAutoAnswerHeaderValue();
-
-    /**
-     * Set to automatically forward all calls to the specified
-     * number using the same provider.
-     * @param numberTo number to use for forwarding
-     */
-    void setCallForward(String numberTo);
-
-    /**
      * Get the value for automatically forward all calls to the specified
      * number using the same provider..
      * @return numberTo number to use for forwarding

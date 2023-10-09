@@ -195,21 +195,6 @@ public abstract class UIContactDetail
     }
 
     /**
-     * Returns the name of the protocol preferred for contacting this detail for
-     * the given <tt>OperationSet</tt> class if no preferred protocol provider
-     * is set.
-     * @param opSetClass the <tt>OperationSet</tt> class for which we're looking
-     * for protocol
-     * @return the name of the protocol preferred for contacting this detail
-     */
-    public String getPreferredProtocol(Class<? extends OperationSet> opSetClass)
-    {
-        if (preferredProtocols != null)
-            return preferredProtocols.get(opSetClass);
-        return null;
-    }
-
-    /**
      * Adds a preferred protocol for a given OperationSet class.
      *
      * @param opSetClass the <tt>OperationSet</tt> class for which we're looking

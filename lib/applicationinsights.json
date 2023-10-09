@@ -1,0 +1,26 @@
+{
+  "connectionStringConfiguredAtRuntime": true,
+  "instrumentation": {
+    "logging": {
+      "level": "OFF"
+    }
+  },
+  "role": {
+    "instance": "AccessionDesktop"
+  },
+  "preview": {
+    "sampling": {
+      "overrides": [
+        {
+          "telemetryType": "dependency",
+          "percentage": 0
+        },
+        {
+          "telemetryType": "request",
+          "percentage": 0
+        }
+
+      ]
+    }
+  }
+}

@@ -38,20 +38,6 @@ public class SIPCommMenu
     }
 
     /**
-     * Creates an instance of <tt>SIPCommMenu</tt> by specifying
-     * the text and the icon.
-     * @param text the text of the menu
-     * @param defaultIcon the menu icon
-     */
-    public SIPCommMenu(String text, Icon defaultIcon)
-    {
-        super(text);
-
-        this.setIcon(defaultIcon);
-        init();
-    }
-
-    /**
      * Creates an instance of <tt>SIPCommMenu</tt> by specifying the
      * initialy selected item.
      *
@@ -105,23 +91,6 @@ public class SIPCommMenu
                 });
             }
         });
-    }
-
-    /**
-     * Adds an item to the "choice list" of this selector box.
-     *
-     * @param text The text of the item.
-     * @param icon The icon of the item.
-     * @param actionListener The <tt>ActionListener</tt>, which handles the
-     * case, when the item is selected.
-     */
-    public void addItem(String text, Icon icon, ActionListener actionListener)
-    {
-        JMenuItem item = new JMenuItem(text, icon);
-
-        item.addActionListener(actionListener);
-
-        this.add(item);
     }
 
     /**

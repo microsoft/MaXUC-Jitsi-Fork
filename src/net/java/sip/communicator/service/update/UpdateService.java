@@ -39,7 +39,7 @@ public interface UpdateService
     /**
      * Update to a later version if one's available, without showing the user a pop-up asking them.
      */
-    public void updateIfAvailable();
+    void updateIfAvailable();
 
     /**
      * Determines whether we are currently running the latest version.
@@ -55,10 +55,10 @@ public interface UpdateService
      * clean and consistent shutdown behaviour.  Called when a user cancels a
      * mandatory update on Windows.
      */
-    public void forceQuitApplication();
+    void forceQuitApplication();
 
     /**
      * Cancels the current update download.
      */
-    public void cancelUpdateDownload();
+    void cancelUpdateDownload();
 }

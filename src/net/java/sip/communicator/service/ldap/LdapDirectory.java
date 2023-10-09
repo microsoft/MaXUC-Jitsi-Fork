@@ -7,8 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.ldap;
 
-import java.util.*;
-
 import net.java.sip.communicator.service.ldap.event.*;
 
 /**
@@ -69,13 +67,4 @@ public interface LdapDirectory extends LdapConstants
      */
     void searchNumber(final LdapQuery query, final LdapListener caller,
                       LdapSearchSettings searchSettings);
-
-    /**
-     * Overrides attributes name for searching for a specific type (i.e mail,
-     * homePhone, ...).
-     *
-     * @param attribute name
-     * @param names list of attributes name
-     */
-    void overrideAttributesSearch(String attribute, List<String> names);
 }

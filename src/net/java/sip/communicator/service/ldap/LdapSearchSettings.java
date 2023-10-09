@@ -16,11 +16,6 @@ package net.java.sip.communicator.service.ldap;
 public interface LdapSearchSettings
     extends LdapConstants
 {
-    /**
-     * If results set has reach maximum number.
-     * @return true if results set has reach maximum number, false otherwise
-     */
-    boolean isMaxResultsSet();
 
     /**
      * Sets the maximum number of results to fetch from the

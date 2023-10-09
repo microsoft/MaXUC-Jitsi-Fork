@@ -9,27 +9,27 @@ package net.java.sip.communicator.impl.gui.main.call;
 
 import static org.jitsi.util.Hasher.logHasher;
 
-import java.awt.event.*;
-import java.util.*;
-
+import java.awt.event.ActionListener;
+import java.util.Iterator;
 import javax.swing.*;
 
-import com.google.common.annotations.VisibleForTesting;
-
-import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
-
-import org.jitsi.util.CustomAnnotations.*;
-
-import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.analytics.*;
-import net.java.sip.communicator.service.contactlist.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.impl.gui.GuiActivator;
+import net.java.sip.communicator.plugin.desktoputil.ReceivedAlertDialogCreator;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
+import net.java.sip.communicator.service.contactlist.MetaContact;
+import net.java.sip.communicator.service.protocol.Call;
+import net.java.sip.communicator.service.protocol.CallPeer;
+import net.java.sip.communicator.service.protocol.OperationSetBasicTelephony;
+import net.java.sip.communicator.service.protocol.event.CallEvent;
+import net.java.sip.communicator.service.protocol.event.CallListener;
+import net.java.sip.communicator.service.protocol.event.CallPeerChangeEvent;
+import net.java.sip.communicator.service.protocol.event.CallPeerListener;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.Logger;
-import net.java.sip.communicator.util.ServiceUtils;
+import org.jitsi.service.resources.BufferedImageFuture;
+import org.jitsi.util.CustomAnnotations.Nullable;
+import org.jitsi.util.StringUtils;
 
 /**
  * Creates dialogs displayed to the user when they receive an incoming call.
@@ -146,64 +146,18 @@ public class ReceivedCallDialogCreator extends ReceivedAlertDialogCreator
             }
 
             // Listen for the display name changing - usually indicates that
-            // we've found a name from LDAP or a CRM lookup.
+            // we've found a name from LDAP.
             mCallPeer.addCallPeerListener(this);
 
-            String extraDisplayValue = null;
-            String analyticsValue = null;
-
-            // Get any associated diversion information
-            final NameAndNumber diversionValue = extractDiversionValue(mCallPeer.getDiversionInfo());
-
-            if (diversionValue.name != null)
-            {
-                extraDisplayValue = diversionValue.name;
-                analyticsValue = AnalyticsParameter.VALUE_SIGNALLED;
-            }
-            else if (diversionValue.number != null)
-            {
-                // First we see if we can get a contact name for this number
-                MetaContactListService metaContactListService = ServiceUtils.getService(
-                        GuiActivator.bundleContext,
-                        MetaContactListService.class);
-
-                if (metaContactListService != null)
-                {
-                    List<MetaContact> metaContactList = metaContactListService
-                            .findMetaContactByNumber(diversionValue.number);
-
-                    if (metaContactList.size() > 0)
-                    {
-                        // If there are multiple contacts, then we simply use the first.
-                        // Other parts of the code try and do better, but that is
-                        // false accuracy here.
-                        extraDisplayValue = metaContactList.get(0).getDisplayName();
-                        analyticsValue = AnalyticsParameter.VALUE_CONTACT_MATCH;
-                    }
-                }
-
-                if (extraDisplayValue == null)
-                {
-                    // We didn't find a matching contact, so just format the existing number
-                    extraDisplayValue = DesktopUtilActivator.getPhoneNumberUtils().formatNumberForDisplay(diversionValue.number);
-                    analyticsValue = AnalyticsParameter.VALUE_NO_MATCH;
-                }
-            }
-
-            if (analyticsValue != null)
-            {
-                GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.INCOMING_DIVERTED_CALL,
-                                                           AnalyticsParameter.PARAM_DIVERSION_NAME,
-                                                           analyticsValue);
-            }
+            String diversionDisplayValue = mCallPeer.getDiversionDisplayValue(false);
 
             // If we have a value to display, then use it to set the extra text field
-            mExtraText = extraDisplayValue == null ? null :
-                resources.getI18NString("service.gui.call.CALL_VIA", new String[]{extraDisplayValue});
+            mExtraText = diversionDisplayValue == null ? null :
+                resources.getI18NString("service.gui.call.CALL_VIA", new String[]{diversionDisplayValue});
 
             // We have already set the accessibility name in the superclass.
             // Fortunately if we have extra information we can set that as the description.
-            if (extraDisplayValue != null)
+            if (diversionDisplayValue != null)
             {
                 AccessibilityUtils.setDescription(alertWindow, mExtraText);
             }
@@ -232,96 +186,12 @@ public class ReceivedCallDialogCreator extends ReceivedAlertDialogCreator
             sLog.warn("Multiple call peers found: " + callPeerCount);
         }
 
-        // Set the status of the CRM lookup for the calling party so the CRM
-        // button can be created appropriately.
-        mCrmLookupCompleted = mCallPeer.isCrmLookupCompleted();
-        mCrmLookupSuccessful = mCallPeer.isCrmLookupSuccessful();
-
-        initComponents(true);
+        initComponents();
 
         // The super will have set an accessibility name, but actually at the time it
         // did we had not determined the correct description string, so we
         // set it again now that information is available
         AccessibilityUtils.setName(alertWindow, getDescriptionText());
-    }
-
-    @VisibleForTesting
-    public static class NameAndNumber
-    {
-        public final String name;
-        public final String number;
-
-        public NameAndNumber(String name, String number)
-        {
-            this.name = name;
-            this.number = number;
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            NameAndNumber that = (NameAndNumber) o;
-            return Objects.equals(name, that.name) && Objects.equals(number, that.number);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(name, number);
-        }
-    }
-
-    // Parse the value from the diversion header, to get the text that we should
-    // use in the UI.
-    // Effectively a port of the Android code SIPURIParser, without fixing any
-    // of the bugs there!
-    // Specifically, I believe this is a valid diversion header
-    //   Diversion: <sip:userA>;count=23
-    // Note the sip address is an alphabetic name which does not contain an @.
-    // This code specifically handles the absence of the @ by keeping
-    // numeric digits from the remainder of the string, and thus ends up
-    // using the digits from the count at the end of the header.
-    @VisibleForTesting
-    public static NameAndNumber extractDiversionValue(String diversion)
-    {
-        String name = null;
-        String number = null;
-        if (diversion != null)
-        {
-            // We expect various parts in the diversion info
-            // - an optional friendly name
-            // - an address
-            // - optional parameters (not specifically accounted for in the Android code we have ported)
-            String uri = diversion;
-            if (diversion.startsWith("\""))
-            {
-                // A friendly name is present.
-                // Get the display name from the URI and replace escaped characters.
-                name = diversion.substring(1, diversion.lastIndexOf('"'))
-                        .replaceAll("\\\\([\\\\|\"])", "$1");
-
-                // I'm not sure if there is another bug here - the parameters
-                // may include string values, and if so it's possible that the
-                // < or > characters could appear in those strings.
-                uri = diversion.substring(diversion.lastIndexOf('<'), diversion.lastIndexOf('>'));
-            }
-
-            // I believe the absence of an @ handling is bugged;
-            // - a sip address without an @ may be alphabetic, not numeric
-            // - even if numeric, we should not include digits that appear after the end of the sip url
-            int numberEndIndex = uri.indexOf('@');
-            // Note unlike the Android code, we don't do % decoding here,
-            // that uses an Android only method, and I see no evidence that
-            // the data will be encoded using that method anyway.
-            number = uri.substring(uri.indexOf(':') + 1, numberEndIndex < 0 ? uri.length() : numberEndIndex);
-
-            // Strip out invalid chars.
-            number = number.replaceAll("[^0-9#*+]+", "");
-        }
-
-        return new NameAndNumber(name, number);
     }
 
     /**
@@ -494,10 +364,6 @@ public class ReceivedCallDialogCreator extends ReceivedAlertDialogCreator
             {
                 updateDescriptionLabel(mDescriptionText);
                 updateHeadingLabel(mDisplayName);
-
-                mCrmLookupCompleted = mCallPeer.isCrmLookupCompleted();
-                mCrmLookupSuccessful = mCallPeer.isCrmLookupSuccessful();
-                updateCrmButton();
             });
         }
     }

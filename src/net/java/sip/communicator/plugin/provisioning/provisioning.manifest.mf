@@ -5,11 +5,13 @@ Bundle-Vendor: jitsi.org
 Bundle-Version: 0.0.1
 System-Bundle: yes
 Import-Package: org.apache.commons.text,
+ org.apache.http.auth,
  org.osgi.framework,
  org.jitsi.service.configuration,
  org.jitsi.service.resources,
  org.jitsi.util,
  net.java.sip.communicator.service.analytics,
+ net.java.sip.communicator.service.insights,
  net.java.sip.communicator.service.gui,
  net.java.sip.communicator.service.gui.event,
  net.java.sip.communicator.service.httputil,
@@ -39,6 +41,7 @@ Import-Package: org.apache.commons.text,
  javax.swing.filechooser,
  javax.swing.tree,
  javax.swing.undo,
- javax.swing.border
+ javax.swing.border,
+ com.metaswitch.maxanalytics.event
 Export-Package: net.java.sip.communicator.service.provisioning,
  net.java.sip.communicator.plugin.provisioning

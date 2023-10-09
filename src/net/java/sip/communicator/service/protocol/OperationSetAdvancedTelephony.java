@@ -52,12 +52,4 @@ public interface OperationSetAdvancedTelephony<T extends ProtocolProviderService
      */
     void transfer(CallPeer peer, String target)
         throws OperationFailedException;
-
-    /**
-     * Transfer authority used for interacting with user for unknown
-     * call transfer requests.
-     * @param authority transfer authority asks user for accepting a particular
-     * transfer request.
-     */
-    void setTransferAuthority(TransferAuthority authority);
 }

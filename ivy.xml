@@ -38,9 +38,6 @@
             <!-- Xerces implementation is included in JDK. -->
             <exclude org="xerces" module="xercesImpl"/>
         </dependency>
-        <dependency org="commons-codec" name="commons-codec" rev="1.15" conf="runtime,instexcl->default" >
-            <!-- Provides commons-codec.jar in jitsi/lib/installer-exclude -->
-        </dependency>
         <dependency org="ch.imvs" name="sdes4j" rev="1.1.5" conf="runtime,instexcl->default" >
             <!-- Provides sdes4j.jar in jitsi/lib/installer-exclude -->
         </dependency>
@@ -50,10 +47,10 @@
         <dependency org="com.drewnoakes" name="metadata-extractor" rev="2.18.0" conf="runtime,instexcl->default" >
             <!-- Provides metadata-extractor.jar and transitive dependency xmpcore.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="com.google.code.gson" name="gson" rev="2.10" conf="runtime,instexcl->default" >
+        <dependency org="com.google.code.gson" name="gson" rev="2.10.1" conf="runtime,instexcl->default" >
             <!-- Provides gson.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="com.google.guava" name="guava" rev="31.1-jre" conf="runtime,instexcl->default" >
+        <dependency org="com.google.guava" name="guava" rev="32.0.1-jre" conf="runtime,instexcl->default" >
             <!-- Provides guava.jar and transitive dependencies checker-qual.jar, error_prone_annotations.jar, failureaccess.jar, j2objc-annotations.jar and jsr305.jar in jitsi/lib/installer-exclude.
             com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava is a dummy library, so we don't want it - more info at https://repo1.maven.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom -->
             <exclude org="com.google.guava" module="listenablefuture" />
@@ -70,19 +67,19 @@
         <dependency org="com.microsoft" name="credential-secure-storage" rev="1.0.0" conf="runtime,instexcl->default" >
             <!-- Provides credential-secure-storage.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="commons-codec" name="commons-codec" rev="1.15" conf="runtime,instexcl->default" >
+        <dependency org="commons-codec" name="commons-codec" rev="1.16.0" conf="runtime,instexcl->default" >
             <!-- Provides commons-codec.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="commons-io" name="commons-io" rev="2.11.0" conf="runtime,instexcl->default" >
+        <dependency org="commons-io" name="commons-io" rev="2.13.0" conf="runtime,instexcl->default" >
             <!-- Provides commons-io.jar in jitsi/lib/installer-exclude -->
         </dependency>
         <dependency org="org.apache.commons" name="commons-text" rev="1.10.0" conf="runtime,instexcl->default" >
             <!-- Provides commons-text.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="dnsjava" name="dnsjava" rev="3.5.1" conf="runtime,instexcl->default" >
+        <dependency org="dnsjava" name="dnsjava" rev="3.5.2" conf="runtime,instexcl->default" >
             <!-- Provides dnsjava.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="net.java.dev.jna" name="jna-platform" rev="5.12.1" conf="runtime,instexcl->default" >
+        <dependency org="net.java.dev.jna" name="jna-platform" rev="5.13.0" conf="runtime,instexcl->default" >
             <!-- Provides jna-platform.jar and transitive dependency jna.jar in jitsi/lib/installer-exclude -->
         </dependency>
         <dependency org="org.apache.commons" name="commons-collections4" rev="4.4" conf="runtime,instexcl->default" >
@@ -104,21 +101,21 @@
             Exclude transitive dependency org.apache.felix.framework.jar because all its classes are already bundled in org.apache.felix.main.jar. -->
             <exclude org="org.apache.felix" module="org.apache.felix.framework" />
         </dependency>
-        <dependency org="org.apache.httpcomponents" name="httpcore-osgi" rev="4.4.15" conf="runtime,instexcl->default" >
+        <dependency org="org.apache.httpcomponents" name="httpcore-osgi" rev="4.4.16" conf="runtime,instexcl->default" >
             <!-- Provides httpcore-osgi.jar in jitsi/lib/installer-exclude
             Also provides transitive dependencies httpcore.jar and httpcore-nio with same groupId
-            org.apache.httpcomponents and same version number.  Thesse JAR files are not used because their contents are already bundled into
+            org.apache.httpcomponents and same version number.  These JAR files are not used because their contents are already bundled into
             httpclient-osgi.jar, but they are scanned. -->
         </dependency>
-        <dependency org="org.apache.httpcomponents" name="httpmime" rev="4.5.13" conf="runtime,instexcl->default">
+        <dependency org="org.apache.httpcomponents" name="httpmime" rev="4.5.14" conf="runtime,instexcl->default">
             <!-- Provides httpmime.jar and httpclient.jar in jitsi/lib/installer-exclude.
             This jar is bundled along with commons-codec@1.15 & httpclient@4.5.13 to make up httpclient-osgi jar. -->
         </dependency>
-        <dependency org="org.bouncycastle" name="bcpkix-jdk15on" rev="1.70" conf="runtime,instexcl->default" >
-            <!-- Provides bcpkix-jdk15on.jar and transitive dependency bcprov-jdk15on.jar in jitsi/lib/installer-exclude -->
+        <dependency org="org.bouncycastle" name="bcpkix-jdk18on" rev="1.75" conf="runtime,instexcl->default" >
+            <!-- Provides bcpkix-jdk18on.jar and transitive dependency bcprov-jdk18on.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="org.bouncycastle" name="bcutil-jdk15on" rev="1.70" conf="runtime,instexcl->default" >
-            <!-- Provides bcutil-jdk15on.jar in jitsi/lib/installer-exclude -->
+        <dependency org="org.bouncycastle" name="bcutil-jdk18on" rev="1.75" conf="runtime,instexcl->default" >
+            <!-- Provides bcutil-jdk18on.jar in jitsi/lib/installer-exclude -->
         </dependency>
 
         <dependency org="org.bytedeco" name="ffmpeg" rev="4.4-1.5.6" transitive="false" conf="runtime,osspecific->default" >
@@ -133,11 +130,8 @@
             <artifact name="javacpp" type="jar" ext="jar" e:classifier="macosx-x86_64" />
             <artifact name="javacpp" type="jar" ext="jar" e:classifier="windows-x86" />
         </dependency>
-        <dependency org="org.hsqldb" name="hsqldb" rev="2.7.1" conf="runtime,instexcl->default" >
+        <dependency org="org.hsqldb" name="hsqldb" rev="2.7.2" conf="runtime,instexcl->default" >
             <!-- Provides hsqldb.jar in jitsi/lib/installer-exclude -->
-        </dependency>
-        <dependency org="org.java-websocket" name="Java-WebSocket" rev="1.5.3" conf="runtime,instexcl->default" >
-            <!-- Provides Java-WebSocket.jar and transitive dependency slf4j-api.jar in jitsi/lib/installer-exclude -->
         </dependency>
         <dependency org="org.simpleframework" name="simple" rev="5.1.6" conf="runtime,instexcl->default" >
             <!-- Provides simple.jar in jitsi/lib/installer-exclude -->

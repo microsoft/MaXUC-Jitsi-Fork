@@ -7,8 +7,9 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
-import net.java.sip.communicator.service.notification.NotificationService;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiCrmService;
+import net.java.sip.communicator.service.cdap.CDAPService;
+import net.java.sip.communicator.service.commportal.CommPortalService;
+import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.resources.*;
 import org.osgi.framework.*;
@@ -20,6 +21,7 @@ import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.imageloader.*;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.keybindings.*;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.resources.*;
@@ -52,11 +54,6 @@ public class DesktopUtilActivator
 
     private static ConferenceService conferenceService;
 
-    /**
-     * The notification service.
-     */
-    private static NotificationService sNotificationService;
-
     private static UIService uiService;
 
     private static ThreadingService threadingService;
@@ -65,11 +62,13 @@ public class DesktopUtilActivator
 
     private static DiagnosticsService diagnosticsService;
 
-    private static WebSocketApiCrmService webSocketApiCrmService;
-
     static BundleContext bundleContext;
 
     private static WISPAService sWISPAService;
+    private static CDAPService sCDAPService;
+    private static CommPortalService sCommPortalService;
+    private static CredentialsStorageService sCredService;
+    private static InsightService sInsightService;
 
     /**
      * Calls <tt>Thread.setUncaughtExceptionHandler()</tt>
@@ -205,6 +204,17 @@ public class DesktopUtilActivator
         return sWISPAService;
     }
 
+    public static InsightService getInsightService()
+    {
+        if (sInsightService == null)
+        {
+            sInsightService = ServiceUtils.getService(bundleContext,
+                                                      InsightService.class);
+        }
+
+        return sInsightService;
+    }
+
     /**
      * Gets the <tt>UIService</tt> instance registered in the
      * <tt>BundleContext</tt> of the <tt>UtilActivator</tt>.
@@ -261,22 +271,6 @@ public class DesktopUtilActivator
     }
 
     /**
-     * Returns the <tt>NotificationService</tt> obtained from the bundle context.
-     *
-     * @return the <tt>NotificationService</tt> obtained from the bundle context
-     */
-    public static NotificationService getNotificationService()
-    {
-        if(sNotificationService == null)
-        {
-             sNotificationService = ServiceUtils.getService(
-                    bundleContext, NotificationService.class);
-        }
-
-        return sNotificationService;
-    }
-
-    /**
      * @return a reference to the registered threading service
      */
     public static ThreadingService getThreadingService()
@@ -315,16 +309,43 @@ public class DesktopUtilActivator
     }
 
     /**
-     * @return a reference to the registered WebSocket API CRM service
+     * @return a reference to the registered CDAP service
      */
-    public static WebSocketApiCrmService getWebSocketApiCrmService()
+    public static CDAPService getCdapService()
     {
-        if (webSocketApiCrmService == null)
+        if (sCDAPService == null)
         {
-            webSocketApiCrmService = ServiceUtils.getService(
-                    bundleContext,
-                    WebSocketApiCrmService.class);
+            sCDAPService =
+                ServiceUtils.getService(bundleContext, CDAPService.class);
         }
-        return webSocketApiCrmService;
+
+        return sCDAPService;
+    }
+
+    /**
+     * @return the <tt>CommPortalService</tt> obtained from the bundle
+     * context
+     */
+    public static CommPortalService getCommPortalService()
+    {
+        if (sCommPortalService == null)
+        {
+            sCommPortalService
+                    = ServiceUtils.getService(
+                    bundleContext,
+                    CommPortalService.class);
+        }
+        return sCommPortalService;
+    }
+
+    public static CredentialsStorageService getCredentialsService()
+    {
+        if (sCredService == null)
+        {
+            sCredService = ServiceUtils.getService(bundleContext,
+                                                   CredentialsStorageService.class);
+        }
+
+        return sCredService;
     }
 }

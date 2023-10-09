@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.branding;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -121,6 +123,7 @@ public class AboutWindow
                 new String[]{applicationName}));
 
         setModal(false);
+        setType(Type.POPUP);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         JPanel mainPanel = new WindowBackground();
@@ -418,10 +421,17 @@ public class AboutWindow
                 // We have to try 2 places for the file, due to different
                 // positioning for a local build, vs where the installer may
                 // place the file.
-                File htmlFile = new File("resources/licences", "licences.html");
+                File htmlFile = new File("resources/bundle/licences", "licences.html");
                 if (!htmlFile.exists())
                 {
-                    htmlFile = new File("licences.html");
+                    if (OSUtils.isWindows())
+                    {
+                        // File path for Windows build
+                        htmlFile = new File("resources/licences", "licences.html");
+                    } else {
+                        // File path for Mac build
+                        htmlFile = new File("licences.html");
+                    }
                 }
                 // Surprisingly Java does not have a standard method to encode
                 // URL paths, and although you might think that the
@@ -434,7 +444,7 @@ public class AboutWindow
                 // object to an extra / being included!
                 href = "file://" + (path.charAt(0) == '/' ? "" : "/") + path;
 
-                sLog.info("Substituting " + href + " for licences");
+                sLog.info("Substituting " + sanitiseFilePath(href) + " for licences");
             }
 
             ServiceReference<?> serviceReference = BrandingActivator
@@ -552,9 +562,4 @@ public class AboutWindow
         return true;
     }
 
-    @Override
-    public void repaintWindow()
-    {
-        repaint();
-    }
 }

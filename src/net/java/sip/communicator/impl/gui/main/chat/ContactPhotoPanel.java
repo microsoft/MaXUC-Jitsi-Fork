@@ -18,7 +18,6 @@ import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.service.managecontact.*;
-import net.java.sip.communicator.util.*;
 
 import org.jitsi.service.resources.*;
 

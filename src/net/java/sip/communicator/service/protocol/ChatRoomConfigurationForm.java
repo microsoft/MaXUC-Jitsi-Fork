@@ -6,8 +6,6 @@
  */
 package net.java.sip.communicator.service.protocol;
 
-import java.util.*;
-
 /**
  * The <tt>ChatRoomConfigurationForm</tt> contains the chat room configuration.
  * It's meant to be implemented by protocol providers in order to provide an
@@ -23,17 +21,6 @@ import java.util.*;
  */
 public interface ChatRoomConfigurationForm
 {
-    /**
-     * Returns an Iterator over a set of <tt>ChatRoomConfigurationFormField</tt>s,
-     * containing the current configuration of the chat room. This method is
-     * meant to be used by bundles interested showing and changing the current
-     * chat room configuration.
-     *
-     * @return a list of <tt>ChatRoomConfigurationFormField</tt>s, containing
-     * the current configuration of the chat room
-     */
-    Iterator<ChatRoomConfigurationFormField> getConfigurationSet();
-
     /**
      * Submits the information in this configuration form to the server.
      *

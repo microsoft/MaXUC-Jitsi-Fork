@@ -256,65 +256,6 @@ public class ContactGroupSipImpl
     }
 
     /**
-     * Returns the group that is parent of the specified sipGroup or null
-     * if no parent was found.
-     * @param sipGroup the group whose parent we're looking for.
-     * @return the ContactGroupSipImpl instance that sipGroup
-     * belongs to or null if no parent was found.
-     */
-    public ContactGroupSipImpl findGroupParent(
-                                    ContactGroupSipImpl sipGroup)
-    {
-        if ( subGroups.contains(sipGroup) )
-            return this;
-
-        Iterator<ContactGroup> subGroupsIter = subgroups();
-        while (subGroupsIter.hasNext())
-        {
-            ContactGroupSipImpl subgroup
-                = (ContactGroupSipImpl) subGroupsIter.next();
-
-            ContactGroupSipImpl parent
-                = subgroup.findGroupParent(sipGroup);
-
-            if(parent != null)
-                return parent;
-        }
-        return null;
-    }
-
-    /**
-     * Returns the group that is parent of the specified sipContact or
-     * null if no parent was found.
-     *
-     * @param sipContact the contact whose parent we're looking for.
-     * @return the ContactGroupSipImpl instance that sipContact
-     * belongs to or <tt>null</tt> if no parent was found.
-     */
-    public ContactGroupSipImpl findContactParent(
-                                        ContactSipImpl sipContact)
-    {
-        if ( contacts.contains(sipContact) )
-        {
-            return this;
-        }
-
-        Iterator<ContactGroup> subGroupsIter = subgroups();
-        while (subGroupsIter.hasNext())
-        {
-            ContactGroupSipImpl subgroup
-                = (ContactGroupSipImpl) subGroupsIter.next();
-
-            ContactGroupSipImpl parent
-                = subgroup.findContactParent(sipContact);
-
-            if(parent != null)
-                return parent;
-        }
-        return null;
-    }
-
-    /**
      * Returns the <tt>Contact</tt> with the specified address or identifier.
      *
      * @param id the addres or identifier of the <tt>Contact</tt> we are

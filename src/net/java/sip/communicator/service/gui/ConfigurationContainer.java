@@ -34,13 +34,6 @@ public interface ConfigurationContainer
     void setSelected(String title);
 
     /**
-     * Validates the currently selected configuration form. This method is meant
-     * to be used by configuration forms the re-validate when a new component
-     * has been added or size has changed.
-     */
-    void validateCurrentForm();
-
-    /**
      * Makes <tt>ConfigurationForm</tt> visible and brings the it to front,
      * setting the selected settings panel to <tt>tab</tt>.
      */

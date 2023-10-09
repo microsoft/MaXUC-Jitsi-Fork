@@ -7,8 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol;
 
-import java.util.*;
-
 import org.jitsi.service.resources.*;
 
 /**
@@ -43,19 +41,6 @@ public interface ProtocolIcon
     String ICON_SIZE_64x64 = "IconSize64x64";
 
     /**
-     * Returns an iterator over a set, containing different predefined icon sizes.
-     * Each icon size in the set is one of the ICON_SIZE_XXX constants. The
-     * method is meant to be implemented by a protocol implementation in order
-     * to allow other bundles to obtain information about the number of sizes
-     * in which this icon is exported.
-     *
-     * @return Iterator an iterator over a set containing different predefined
-     * icon sizes. Each icon size in the set is one of the ICON_SIZE_XXX
-     * constants.
-     */
-    Iterator<String> getSupportedSizes();
-
-    /**
      * Checks if the given icon size is supported by the current protocol
      * implementation. If the given <tt>iconSize</tt> is contained in the list of
      * supported sizes - returns TRUE, otherwise - FALSE.
@@ -81,13 +66,4 @@ public interface ProtocolIcon
      * @return the path to the icon with the given size
      */
     String getIconPath(String iconSize);
-
-    /**
-     * Returns the icon that should be used when the protocol provider is in
-     * a connecting state.
-     *
-     * @return the icon that should be used when the protocol provider is in
-     * a connecting state
-     */
-    BufferedImageFuture getConnectingIcon();
 }

@@ -10,6 +10,7 @@ package net.java.sip.communicator.service.protocol;
 import java.util.*;
 
 import org.jitsi.service.configuration.*;
+import org.jitsi.service.packetlogging.PacketLoggingService;
 import org.jitsi.service.resources.*;
 import org.osgi.framework.*;
 
@@ -20,6 +21,7 @@ import net.java.sip.communicator.service.globaldisplaydetails.*;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.service.threading.*;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -102,6 +104,16 @@ public class ProtocolProviderActivator
      * The conference service, used to manage conferences
      */
     private static ConferenceService conferenceService;
+
+    /**
+     * The packet logging service, used to manage packet logging
+     */
+    private static PacketLoggingService packetLoggingService;
+
+    /**
+     * The WISPA service, used to manage UI
+     */
+    private static WISPAService wispaService;
 
     /**
      * The <code>SingleCallInProgressPolicy</code> making sure that the
@@ -400,5 +412,33 @@ public class ProtocolProviderActivator
                 ServiceUtils.getService(bundleContext, ConferenceService.class);
 
         return conferenceService;
+    }
+
+    /**
+     * Returns the <tt>PacketLoggingService</tt> obtained from the bundle context.
+     *
+     * @return the <tt>PacketLoggingService</tt> obtained from the bundle context
+     */
+    public static PacketLoggingService getPacketLoggingService()
+    {
+        if (packetLoggingService == null)
+            packetLoggingService =
+                ServiceUtils.getService(bundleContext, PacketLoggingService.class);
+
+        return packetLoggingService;
+    }
+
+    /**
+     * Returns the <tt>WISPAService</tt> obtained from the bundle context.
+     *
+     * @return the <tt>WISPAService</tt> obtained from the bundle context
+     */
+    public static WISPAService getWispaService()
+    {
+        if (wispaService == null)
+                wispaService =
+                ServiceUtils.getService(bundleContext, WISPAService.class);
+
+        return wispaService;
     }
 }

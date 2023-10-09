@@ -20,7 +20,7 @@ public class SmackXmppLogger implements XmppDebugger.Logger
     // XMPP messages are logged using the specific named logger defined in logging.properties
     private static final Logger sWrappedLogger = Logger.getLogger("jitsi.XmppLogger");
     private static final List<String> ELEMENTS_TO_FILTER = List.of("<iq", "<item", "<presence", "<message");
-    private static final Pattern ATTR_PATTERN = Pattern.compile("(?:from|to|jid|name|nick)='([^']+)'");
+    private static final Pattern ATTR_PATTERN = Pattern.compile("(?:from|to|jid|name|nick)='([^']+)('|$)");
     private static final Pattern JID_PATTERN = Pattern.compile("<jid>(.+)</jid>");
     private static final Pattern ACTIVATE_PATTERN = Pattern.compile("<activate>(.+)</activate>");
     private static final Pattern SUBJECT_PATTERN = Pattern.compile("<subject>(.+)</subject>");

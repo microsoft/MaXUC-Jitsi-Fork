@@ -443,16 +443,25 @@ public class DTMFHandler
      */
     public void startSendingDtmfTone(String toneValue)
     {
+        DTMFToneInfo info = getDTMFToneInfo(toneValue);
+        if (info != null)
+        {
+            startSendingDtmfTone(info);
+        }
+    }
+
+    public DTMFToneInfo getDTMFToneInfo(String toneValue)
+    {
         for (int i = 0; i < AVAILABLE_TONES.length; i++)
         {
             DTMFToneInfo info = AVAILABLE_TONES[i];
 
             if (info.tone.getValue().equals(toneValue))
             {
-                startSendingDtmfTone(info);
-                return;
+                return info;
             }
         }
+        return null;
     }
 
     /**
@@ -462,23 +471,6 @@ public class DTMFHandler
      */
     private synchronized void startSendingDtmfTone(DTMFToneInfo info)
     {
-        if(info.sound != null)
-        {
-            synchronized(dmtfToneNotifications)
-            {
-                boolean startThread = (dmtfToneNotifications.size() == 0);
-                dmtfToneNotifications.add(info);
-                if(startThread)
-                {
-                    dtmfToneNotificationThread
-                        = new Thread(
-                                this,
-                                "DTMFHandler: DTMF tone notification player");
-                    dtmfToneNotificationThread.start();
-                }
-            }
-        }
-
         if (callFrame != null)
         {
             callFrame.dtmfToneSent(info);
@@ -507,10 +499,26 @@ public class DTMFHandler
      * @param call The call to which we send DTMF-s.
      * @param info The DTMF tone to send.
      */
-    private void startSendingDtmfTone(Call call, DTMFToneInfo info)
+    public void startSendingDtmfTone(Call call, DTMFToneInfo info)
     {
         Iterator<? extends CallPeer> callPeers = call.getCallPeers();
 
+        if (info.sound != null)
+        {
+            synchronized(dmtfToneNotifications)
+            {
+                boolean startThread = (dmtfToneNotifications.size() == 0);
+                dmtfToneNotifications.add(info);
+                if(startThread)
+                {
+                    dtmfToneNotificationThread
+                        = new Thread(
+                                this,
+                                "DTMFHandler: DTMF tone notification player");
+                    dtmfToneNotificationThread.start();
+                }
+            }
+        }
         try
         {
             while (callPeers.hasNext())
@@ -561,7 +569,7 @@ public class DTMFHandler
      *
      * @param call The call to which we send DTMF-s.
      */
-    private void stopSendingDtmfTone(Call call)
+    public void stopSendingDtmfTone(Call call)
     {
         Iterator<? extends CallPeer> callPeers = call.getCallPeers();
 

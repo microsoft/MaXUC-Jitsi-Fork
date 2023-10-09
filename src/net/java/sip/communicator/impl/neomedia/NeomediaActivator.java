@@ -24,8 +24,8 @@ import net.java.sip.communicator.service.commportal.*;
 import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService;
-import net.java.sip.communicator.service.notification.*;
 import net.java.sip.communicator.service.resources.*;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -76,12 +76,7 @@ public class NeomediaActivator
      */
     private static ConfigurationService configurationService;
 
-    /**
-     * The name of the notification pop-up event displayed when the device
-     * configration has changed.
-     */
-    public static final String DEVICE_CONFIGURATION_HAS_CHANGED
-        = "DeviceConfigurationChanged";
+    private static WISPAService wispaService;
 
     /**
      * The <tt>FileAccessService</tt> registered in {@link #bundleContext} and
@@ -99,18 +94,6 @@ public class NeomediaActivator
      * {@link #bundleContext} by the <tt>NeomediaActivator</tt> instance.
      */
     private static MediaServiceImpl mediaServiceImpl;
-
-    /**
-     * The name of the notification pop-up event displayed when a new device
-     * is selected (for audio in, audio out or notifications).
-     */
-    public static final String NEW_SELECTED_DEVICE
-        = "NewSelectedDevice";
-
-    /**
-     * The notifcation service to pop-up messages.
-     */
-    private static NotificationService notificationService;
 
     /**
      * The OSGi <tt>PacketLoggingService</tt> of {@link #mediaServiceImpl} in
@@ -147,11 +130,11 @@ public class NeomediaActivator
     private static HeadsetManagerService headsetManagerService;
 
     /**
-     * Indicates if the video configuration form should be disabled, i.e.
-     * not visible to the user.
+     * A listener to the click on the popup message concerning audio device
+     * configuration changes.
      */
-    protected static final String VIDEO_CONFIG_DISABLED_PROP
-        = "net.java.sip.communicator.impl.neomedia.VIDEO_CONFIG_DISABLED";
+    private AudioDeviceConfigurationListener
+        audioDeviceConfigurationPropertyChangeListener;
 
     /**
      *  A listener to the click on the popup message concerning video device
@@ -159,6 +142,13 @@ public class NeomediaActivator
      */
     private VideoDeviceConfigurationListener
         videoDeviceConfigurationPropertyChangeListener;
+
+    /**
+     * Indicates if the video configuration form should be disabled, i.e.
+     * not visible to the user.
+     */
+    protected static final String VIDEO_CONFIG_DISABLED_PROP
+        = "net.java.sip.communicator.impl.neomedia.VIDEO_CONFIG_DISABLED";
 
     /**
      *  The video configuration form.
@@ -238,6 +228,16 @@ public class NeomediaActivator
         return configurationService;
     }
 
+    public static WISPAService getWispaService()
+    {
+        if (wispaService == null)
+        {
+            wispaService =
+                ServiceUtils.getService(bundleContext, WISPAService.class);
+        }
+        return wispaService;
+    }
+
     /**
      * Returns a reference to a FileAccessService implementation
      * currently registered in the bundle context or null if no such
@@ -273,47 +273,6 @@ public class NeomediaActivator
     public static MediaServiceImpl getMediaServiceImpl()
     {
         return mediaServiceImpl;
-    }
-
-    /**
-     * Returns the <tt>NotificationService</tt> obtained from the bundle
-     * context.
-     *
-     * @return The <tt>NotificationService</tt> obtained from the bundle
-     * context.
-     */
-    public static NotificationService getNotificationService()
-    {
-        if(notificationService == null)
-        {
-            // Get the notification service implementation
-            ServiceReference<?> notifReference = bundleContext
-                .getServiceReference(NotificationService.class.getName());
-
-            notificationService = (NotificationService) bundleContext
-                .getService(notifReference);
-
-            if(notificationService != null)
-            {
-                // Register a popup message for a device configuration changed
-                // notification.
-                notificationService.registerDefaultNotificationForEvent(
-                        DEVICE_CONFIGURATION_HAS_CHANGED,
-                        net.java.sip.communicator.service.notification.NotificationAction.ACTION_POPUP_MESSAGE,
-                        "Device configuration has changed",
-                        null);
-
-                // Register a popup message for a new device selected for audio
-                // in, audio out or notifications.
-                notificationService.registerDefaultNotificationForEvent(
-                        NEW_SELECTED_DEVICE,
-                        net.java.sip.communicator.service.notification.NotificationAction.ACTION_POPUP_MESSAGE,
-                        "New selected device",
-                        null);
-            }
-        }
-
-        return notificationService;
     }
 
     /**
@@ -430,13 +389,6 @@ public class NeomediaActivator
     }
 
     /**
-     * A listener to the click on the popup message concerning audio device
-     * configuration changes.
-     */
-    private AudioDeviceConfigurationListener
-        audioDeviceConfigurationPropertyChangeListener;
-
-    /**
      * The <tt>Logger</tt> used by the <tt>NeomediaActivator</tt> class and its
      * instances for logging output.
      */
@@ -470,7 +422,6 @@ public class NeomediaActivator
                 null);
         logger.debug("Media Configuration ... [REGISTERED]");
 
-        final ConfigurationService cfg = NeomediaActivator.getConfigurationService();
         Dictionary<String, String> mediaProps = new Hashtable<>();
 
         mediaProps.put( ConfigurationForm.FORM_TYPE,
@@ -493,8 +444,6 @@ public class NeomediaActivator
         // event at the notification service.
         if (audioDeviceConfigurationPropertyChangeListener == null)
         {
-            getNotificationService();
-
             audioDeviceConfigurationPropertyChangeListener
                 = new AudioDeviceConfigurationListener(
                         audioConfigurationForm);
@@ -522,8 +471,6 @@ public class NeomediaActivator
         // event at the notification service.
         if (videoDeviceConfigurationPropertyChangeListener == null)
         {
-            getNotificationService();
-
             videoDeviceConfigurationPropertyChangeListener
                 = new VideoDeviceConfigurationListener(
                         videoConfigurationForm);
@@ -566,7 +513,6 @@ public class NeomediaActivator
                     .getDeviceConfiguration()
                         .removePropertyChangeListener(
                                 audioDeviceConfigurationPropertyChangeListener);
-                audioDeviceConfigurationPropertyChangeListener.dispose();
                 audioDeviceConfigurationPropertyChangeListener = null;
             }
 
@@ -576,7 +522,6 @@ public class NeomediaActivator
                     .getDeviceConfiguration()
                         .removePropertyChangeListener(
                                 videoDeviceConfigurationPropertyChangeListener);
-                videoDeviceConfigurationPropertyChangeListener.dispose();
                 videoDeviceConfigurationPropertyChangeListener = null;
             }
         }

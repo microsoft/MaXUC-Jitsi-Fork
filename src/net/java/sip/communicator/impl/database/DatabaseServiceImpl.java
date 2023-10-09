@@ -3,6 +3,9 @@ package net.java.sip.communicator.impl.database;
 
 import java.io.*;
 import java.sql.*;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hsqldb.jdbc.*;
 import org.jitsi.service.fileaccess.*;
@@ -39,9 +42,10 @@ public class DatabaseServiceImpl implements DatabaseService
     private static final String DATABASE_DIRECTORY = "database";
 
     /**
-     * A pool to allocate JDBC connections from.
+     * A pool to allocate JDBC connections from. Must only be accessed whilst holding connectionPoolLock.
      */
-    private final JDBCPool mConnectionPool;
+    private JDBCPool mConnectionPool;
+    private final Object connectionPoolLock = new Object();
 
     public DatabaseServiceImpl(FileAccessService fileAccessService)
             throws Exception
@@ -53,6 +57,8 @@ public class DatabaseServiceImpl implements DatabaseService
         File databaseDir = fileAccessService
             .getPrivatePersistentActiveUserDirectory(DATABASE_DIRECTORY);
         sLog.info("Database location: subscriber home directory under 'database'");
+
+        printDatabaseLogs(databaseDir);
 
         String databaseUrl = "jdbc:hsqldb:file:" + databaseDir +
             File.separator +
@@ -66,15 +72,63 @@ public class DatabaseServiceImpl implements DatabaseService
         Class.forName("org.hsqldb.jdbc.JDBCDriver");
 
         // Create a connection pool, this allows multiple connections.
-        mConnectionPool = new JDBCPool(MAX_CONNECTIONS);
-        mConnectionPool.setUrl(databaseUrl);
-        mConnectionPool.setUser("SA");
-        mConnectionPool.setPassword("");
-        mConnectionPool.setDatabase(databaseUrl);
+        synchronized (connectionPoolLock)
+        {
+            mConnectionPool = new JDBCPool(MAX_CONNECTIONS);
+            mConnectionPool.setUrl(databaseUrl);
+            mConnectionPool.setUser("SA");
+            mConnectionPool.setPassword("");
+            mConnectionPool.setDatabase(databaseUrl);
+        }
 
         upgradeDatabaseToLatestVersion(fileAccessService);
 
+        // We should have the DB shutdown as part of the Felix bundle shutdown processing. However,
+        // sometimes that doesn't fire, and as closing the DB safely is very important we go for the
+        // belt and braces approach of adding our own shutdown hook here.
+        Runtime.getRuntime().addShutdownHook(
+            new Thread("DatabaseServiceImpl-ShutdownHook")
+            {
+                public void run()
+                {
+                    sLog.info("Running shutdown hook for DatabaseServiceImpl");
+                    shutdown();
+                }
+            });
+
         sLog.info("DatabaseService: initialization complete");
+    }
+
+    /**
+     * Print some useful logs about the state of the database before we attempt to open it.
+     * This should prove useful if it turns out the database is in a bad state from last time.
+     * @param databaseDirectory
+     */
+    private void printDatabaseLogs(File databaseDirectory)
+    {
+        // First just log a list of files in the directory.
+        if (databaseDirectory != null)
+        {
+            sLog.info("Database files at startup: " +
+                Stream.of(databaseDirectory.listFiles()).map(File::getName).collect(Collectors.joining (",")));
+        }
+
+        // Log out the contents of database.properties if it exists - it contains info on the state of the DB
+        File propertiesFile = new File(databaseDirectory, "database.properties");
+        try (FileInputStream inputStream = new FileInputStream(propertiesFile))
+        {
+            Properties databaseProperties = new Properties();
+            databaseProperties.load(inputStream);
+            sLog.info("database.properties file: " + databaseProperties.toString());
+        }
+        catch (FileNotFoundException e)
+        {
+            sLog.warn("No database.properties file found");
+        }
+        catch (IOException e)
+        {
+            sLog.warn("IOException reading database.properties file: " + e);
+        }
     }
 
     /**
@@ -86,32 +140,47 @@ public class DatabaseServiceImpl implements DatabaseService
     public DatabaseConnection connect()
         throws SQLException
     {
-        return new DatabaseConnectionImpl(mConnectionPool.getConnection());
+        synchronized (connectionPoolLock)
+        {
+            return new DatabaseConnectionImpl(mConnectionPool.getConnection());
+        }
     }
 
     /**
      * Shutdown the database.  Only safe to call after all connections have
      * been closed.
-     *
-     * @throws SQLException on SQL error.
      */
     public void shutdown()
-        throws SQLException
     {
         sLog.info("DatabaseService: shutdown start");
 
-        if (mConnectionPool != null)
+        synchronized (connectionPoolLock)
         {
-            // There are several options to the SHUTDOWN command documented at
-            // http://hsqldb.org/doc/guide/management-chapt.html
-            // It is recommended to use just "SHUTDOWN" and we have seen
-            // database corruption previously with "SHUTDOWN COMPACT".  Our
-            // suspicion (never proved) was that shutting down with compaction
-            // took too long and Accession got killed with the database files
-            // open part way through compacting them.
-            DatabaseConnection connection = connect();
-            connection.execute("SHUTDOWN");
-            connection.close();
+            if (mConnectionPool != null)
+            {
+                DatabaseConnection connection = null;
+                try
+                {
+                    // There are several options to the SHUTDOWN command documented at
+                    // http://hsqldb.org/doc/guide/management-chapt.html
+                    // It is recommended to use just "SHUTDOWN" and we have seen
+                    // database corruption previously with "SHUTDOWN COMPACT".  Our
+                    // suspicion (never proved) was that shutting down with compaction
+                    // took too long and Accession got killed with the database files
+                    // open part way through compacting them.
+                    connection = connect();
+                    connection.execute("SHUTDOWN");
+                }
+                catch (SQLException e)
+                {
+                    sLog.error("Failed to shutdown database: ", e);
+                }
+                finally
+                {
+                    mConnectionPool = null;
+                    DatabaseUtils.safeClose(connection);
+                }
+            }
         }
 
         sLog.info("DatabaseService: shutdown complete");

@@ -54,16 +54,6 @@ public class ContactResourceJabberImpl
     /**
      * Returns the full jid corresponding to this contact resource.
      *
-     * @return the full jid corresponding to this contact resource as a string
-     */
-    public String getFullJidAsString()
-    {
-        return fullJid.toString();
-    }
-
-    /**
-     * Returns the full jid corresponding to this contact resource.
-     *
      * @return the full jid corresponding to this contact resource
      */
     public FullJid getFullJid()

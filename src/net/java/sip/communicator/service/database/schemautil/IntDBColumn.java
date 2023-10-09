@@ -15,13 +15,6 @@ public class IntDBColumn extends DBColumn
         mDefault = -1;
     }
 
-    public IntDBColumn(String name, int defaultVal)
-    {
-        super(name);
-        mHasDefault = true;
-        mDefault = defaultVal;
-    }
-
     public IntDBColumn setDefault(String stringDefault)
     {
         mHasDefault = true;

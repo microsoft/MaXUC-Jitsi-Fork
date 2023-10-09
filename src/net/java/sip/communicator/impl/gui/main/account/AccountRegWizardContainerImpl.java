@@ -32,8 +32,6 @@ public class AccountRegWizardContainerImpl
     private static final Logger logger =
         Logger.getLogger(AccountRegWizardContainerImpl.class);
 
-    private AccountRegistrationWizard currentWizard;
-
     private final ConfigurationService configService
         = GuiActivator.getConfigurationService();
 
@@ -191,31 +189,6 @@ public class AccountRegWizardContainerImpl
                 .getAccountID().getAccountUniqueID());
 
             configService.user().setProperty(accountPackage + ".wizard", wizard);
-        }
-    }
-
-    /**
-     * Returns the currently used <tt>AccountRegistrationWizard</tt>.
-     *
-     * @return the currently used <tt>AccountRegistrationWizard</tt>
-     */
-    public AccountRegistrationWizard getCurrentWizard()
-    {
-        return currentWizard;
-    }
-
-    /**
-     * Unregisters all pages added by the current wizard.
-     */
-    public void unregisterWizardPages()
-    {
-        Iterator<WizardPage> i = this.getCurrentWizard().getPages();
-
-        while (i.hasNext())
-        {
-            WizardPage page = i.next();
-
-            this.unregisterWizardPage(page.getIdentifier());
         }
     }
 

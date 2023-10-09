@@ -30,11 +30,6 @@ public class ChatRoomPropertyChangeEvent
     public static final String CHAT_ROOM_SUBJECT = "ChatRoomSubject";
 
     /**
-     * The name of the <tt>ChatRoom</tt> subject property.
-     */
-    public static final String CHAT_ROOM_USER_NICKNAME = "ChatRoomUserNickname";
-
-    /**
      * The address of the chat contact who changed the property.
      */
     private final String fromAddress;

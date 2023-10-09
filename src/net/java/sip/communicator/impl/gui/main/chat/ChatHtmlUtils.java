@@ -345,38 +345,6 @@ public class ChatHtmlUtils
     }
 
     /**
-     * Creates a tag that shows the last edit time of a message, in the format
-     *  (Edited at ...).
-     * If <tt>date < 0</tt>, returns an empty tag that serves as a placeholder
-     * for future corrections of this message.
-     *
-     * @param messageUID The ID of the edited message.
-     * @param date The date when the message was last edited, or -1 to generate
-     * an empty tag.
-     * @return The string representation of the tag.
-     */
-    public static String createEditedAtTag(String messageUID, long date)
-    {
-        StringBuilder res = new StringBuilder();
-        // Use a <cite /> tag here as most of the other inline tags (e.g. h1-7,
-        // b, i) cause different problems when used in setOuterHTML.
-        res.append("<cite id='");
-        res.append(messageUID);
-        res.append("-editedAt'> ");
-        if (date > 0)
-        {
-            res.append("&nbsp;");
-            String contents = GuiActivator.getResources().getI18NString(
-                    "service.gui.EDITED_AT",
-                    new String[] { GuiUtils.formatTime(date) }
-            );
-            res.append(contents);
-        }
-        res.append("</cite>");
-        return res.toString();
-    }
-
-    /**
      * Creates the message tag.
      *
      * @param messageID the identifier of the message

@@ -200,7 +200,17 @@ public class RecurringPattern
     private int endTimeOffset;
 
     /**
-     * List of exception info structures included in the pattern.
+     * List of exception info structures included in the pattern. Exceptions are specific instances
+     * of a recurring pattern of meetings that are different from the recurring pattern as a whole.
+     * Most manners in which a meeting can differ aren't relevant to us (e.g. different subject),
+     * but there are some we care about - like a different start or end time.
+     *
+     * Any meeting that does differ in anyway will appear in the list deleteInstances, so we skip
+     * past it in the nextX functions when trying to find the next meeting. It also appears in the
+     * list modifiedInstances (but without any information other than what date it is).  It appears
+     * in this exceptions list, with start and end time, in case they differ from the norm. Once we
+     * have found the next 'normal' meeting of a RecurringPattern, we have to then check to see if
+     * any of the 'exceptions' are going to happen before.
      */
     private List<ExceptionInfo> exceptions;
 
@@ -438,6 +448,15 @@ public class RecurringPattern
             ", startTimeOffset: " + startTimeOffset +
             ", endDate: " +  new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endDate) +
             ", endTimeOffset: " + endTimeOffset + "\n";
+        Pair<Date, Date> nextMeeting = getNextMeeting();
+        if (nextMeeting == null)
+        {
+            result += "recurring pattern has no more meetings\n";
+        }
+        else
+        {
+            result += "next meeting in pattern: " + nextMeeting.getLeft().toString() + " to " + nextMeeting.getRight().toString() + "\n";
+        }
 
         // Add the modified instance dates in a comma separated list to save space.
         if (modifiedInstanceCount > 0)
@@ -603,7 +622,7 @@ public class RecurringPattern
         startCalendar.add(Calendar.DATE, periodInDays * increments);
         endCalendar.add(Calendar.DATE, periodInDays * increments);
 
-        return handleExceptions(startCalendar.getTime(),
+        return checkForEarlierModifiedMeeting(startCalendar.getTime(),
                                 endCalendar.getTime());
     }
 
@@ -697,7 +716,7 @@ public class RecurringPattern
             index++;
         }
 
-        return handleExceptions(cal2.getTime(),
+        return checkForEarlierModifiedMeeting(cal2.getTime(),
                          new Date(cal2.getTime().getTime() + duration));
     }
 
@@ -777,7 +796,7 @@ public class RecurringPattern
         startDate = cal2.getTime();
         Date endDate = new Date(startDate.getTime() + duration);
 
-        return handleExceptions(startDate, endDate);
+        return checkForEarlierModifiedMeeting(startDate, endDate);
     }
 
     /**
@@ -889,21 +908,22 @@ public class RecurringPattern
         startDate = cal2.getTime();
         Date endDate = new Date(startDate.getTime() + duration);
 
-        return handleExceptions(startDate, endDate);
+        return checkForEarlierModifiedMeeting(startDate, endDate);
     }
 
     /**
-     * Given the new dates for a meeting, check to see if there is an exception
+     * Given the new dates for a meeting, check to see if there is an exception/modified meeting
      * which happens before that should take priority
      *
      * @param startDate The new start date for the meeting
      * @param endDate The new end date for the meeting
-     * @return the scheduler that will handle the meeting.
+     * @return the start-end dates of any earliest of the 'modified' meetings, if that's earlier
+     * than the provided start/end date, else these provided start/end dates.
      */
-    private Pair<Date, Date> handleExceptions(Date startDate, Date endDate)
+    private Pair<Date, Date> checkForEarlierModifiedMeeting(Date startDate, Date endDate)
     {
         Date currentDate = new Date();
-        ExceptionInfo latestException = null;
+        ExceptionInfo nextModifiedMeeting = null;
         Date nextStartDate;
         Date nextEndDate;
 
@@ -911,38 +931,44 @@ public class RecurringPattern
         {
             // Ignore not busy meetings
             if (exception.getBusyStatus() != BusyStatusEnum.BUSY)
-                continue;
-
-            // Ignore exceptions without dates
-            if (exception.getStartDate() == null || exception.getEndDate() == null)
-                continue;
-
-            // Ignore exceptions that have already finished
-            if (exception.getEndDate().before(currentDate))
-                continue;
-
-            if (latestException == null)
             {
-                // No previous exception - this one is more relevant.
-                latestException = exception;
+                continue;
             }
-            else if (exception.getEndDate().before(latestException.getEndDate()))
+
+            // Ignore modified meetings without dates
+            if (exception.getStartDate() == null || exception.getEndDate() == null)
             {
-                // This exception happens before the latest one.  So the latest
-                // one needs to be updated
-                latestException = exception;
+                continue;
+            }
+
+            // Ignore modified meetings that have already finished
+            if (exception.getEndDate().before(currentDate))
+            {
+                continue;
+            }
+
+            // Ignore modified meetings that start after the one we're checking against.
+            if (exception.getStartDate().after(startDate))
+            {
+                continue;
+            }
+
+            if ((nextModifiedMeeting == null) || (exception.getStartDate().before(nextModifiedMeeting.getStartDate())))
+            {
+                // This is the next (relevant) modified meeting we've seen so far.
+                nextModifiedMeeting = exception;
             }
         }
 
-        if (latestException == null)
+        if (nextModifiedMeeting == null)
         {
             nextStartDate = startDate;
             nextEndDate = endDate;
         }
         else
         {
-            nextStartDate = latestException.getStartDate();
-            nextEndDate = latestException.getEndDate();
+            nextStartDate = nextModifiedMeeting.getStartDate();
+            nextEndDate = nextModifiedMeeting.getEndDate();
         }
 
         // Final check that we haven't passed the end date of the series

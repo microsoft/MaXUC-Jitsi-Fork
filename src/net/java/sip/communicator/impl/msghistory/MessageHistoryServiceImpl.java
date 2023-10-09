@@ -384,77 +384,6 @@ public class MessageHistoryServiceImpl
     }
 
     @Override
-    public Collection<MessageEvent> findByStartDate(MetaContact metaContact,
-        Date startDate)
-    {
-        return findByStartDate(metaContact,
-            remoteJidsFromMetaContact(metaContact),
-            startDate);
-    }
-
-    @Override
-    public Collection<MessageEvent> findByStartDate(String smsNumber,
-        Date startDate)
-    {
-        MetaContact metaContact = smsNumberToMetaContact(smsNumber);
-        return findByStartDate(metaContact,
-            remoteJidsFromSmsNumber(metaContact, smsNumber), startDate);
-    }
-
-    /**
-     * Return all the messages exchanged with the given remote JIDs after the
-     * given date.
-     * @param metaContact The MetaContact.
-     * @param remoteJids JIDs to check
-     * @param startDate date to check
-     * @return the event objects for the messages
-     */
-    private Collection<MessageEvent> findByStartDate(MetaContact metaContact,
-        List<String> remoteJids,
-        Date startDate)
-    {
-        sLog.debug("startDate: " + startDate.getTime() +
-            ", jids: " + sanitiseRemoteJids(remoteJids));
-        DatabaseConnection connection = null;
-        ResultSet rs = null;
-        List<MessageEvent> result = new ArrayList<>();
-
-        try
-        {
-            connection = mDatabaseService.connect();
-            rs = connection.findAfterDate(MessageHistoryTable.NAME,
-                MessageHistoryTable.COL_LOCAL_JID,
-                getImAccountJid(),
-                MessageHistoryTable.COL_REMOTE_JID,
-                remoteJids,
-                MessageHistoryTable.COL_RECEIVED_TIMESTAMP,
-                MessageHistoryTable.COL_MSG_ID,
-                startDate);
-
-            while (rs.next())
-            {
-                MessageEvent evt =
-                    convertDatabaseRecordToMessageEvent(metaContact, rs);
-                if (evt != null)
-                {
-                    result.add(evt);
-                }
-            }
-        }
-        catch (SQLException e)
-        {
-            sLog.error("Failed to read Message History: ", e);
-        }
-        finally
-        {
-            DatabaseUtils.safeClose(connection, rs);
-        }
-
-        sLog.debug("found " + result.size() + " records");
-        return result;
-    }
-
-    @Override
     public Collection<MessageEvent> findByEndDate(MetaContact metaContact,
         Date endDate)
     {
@@ -1751,7 +1680,7 @@ public class MessageHistoryServiceImpl
         List<String> remoteJids,
         String keyword)
     {
-        String loggableKeyword = mQAMode ? keyword : "<redacted>";
+        String loggableKeyword = mQAMode ? keyword : REDACTED;
         sLog.debug("keyword: " + loggableKeyword + ", jids: " + remoteJids);
         DatabaseConnection connection = null;
         ResultSet rs = null;
@@ -1778,45 +1707,6 @@ public class MessageHistoryServiceImpl
                 {
                     result.add(evt);
                 }
-            }
-        }
-        catch (SQLException e)
-        {
-            sLog.error("Failed to read Message History: ", e);
-        }
-        finally
-        {
-            DatabaseUtils.safeClose(connection, rs);
-        }
-
-        sLog.debug("found " + result.size() + " records");
-        return result;
-    }
-
-    @Override
-    public Collection<MessageEvent> findByStartDate(ChatRoom room, Date startDate)
-    {
-        sLog.debug("startDate: " + startDate.getTime() +
-            ", room: " + sanitiseChatRoom(room.getIdentifier()));
-        DatabaseConnection connection = null;
-        ResultSet rs = null;
-        List<MessageEvent> result = new ArrayList<>();
-
-        try
-        {
-            connection = mDatabaseService.connect();
-            rs = connection.findAfterDate(GroupMessageHistoryTable.NAME,
-                                GroupMessageHistoryTable.COL_LOCAL_JID,
-                                getImAccountJid(),
-                                GroupMessageHistoryTable.COL_ROOM_JID,
-                                room.getIdentifier().toString(),
-                                GroupMessageHistoryTable.COL_RECEIVED_TIMESTAMP,
-                                GroupMessageHistoryTable.COL_MSG_ID,
-                                startDate);
-
-            while (rs.next())
-            {
-                result.add(convertDatabaseRecordToGroupMessageEvent(rs, room));
             }
         }
         catch (SQLException e)
@@ -2018,7 +1908,14 @@ public class MessageHistoryServiceImpl
                                               String chatRoomId,
                                               int count)
     {
-        sLog.debug("count: " + count + ", room: " + sanitiseChatRoom(chatRoomId));
+        if (CHATROOM_PATTERN.matcher(chatRoomId).find())
+        {
+            sLog.debug("count: " + count + ", room: " + sanitiseChatRoom(chatRoomId));
+        }
+        else
+        {
+            sLog.debug("count: " + count + ", room: <redacted as doesn't match chat room pattern>");
+        }
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -2059,7 +1956,7 @@ public class MessageHistoryServiceImpl
     {
         String chatRoomId = chatRoom.getIdentifier().toString();
 
-        String loggableKeyword = mQAMode ? keyword : "<redacted>";
+        String loggableKeyword = mQAMode ? keyword : REDACTED;
         sLog.debug("findByKeyword: " + loggableKeyword + ", room: " + sanitiseChatRoom(chatRoomId));
         DatabaseConnection connection = null;
         ResultSet rs = null;
@@ -2564,7 +2461,7 @@ public class MessageHistoryServiceImpl
     @Override
     public Collection<MessageEvent> findLastForAll(String queryString, int count)
     {
-        String loggableQueryString = mQAMode ? queryString : "<redacted>";
+        String loggableQueryString = mQAMode ? queryString : REDACTED;
         sLog.debug("Max " + count + ", query: " + loggableQueryString);
         String accountJid = getImAccountJid();
         DatabaseConnection conn = null;

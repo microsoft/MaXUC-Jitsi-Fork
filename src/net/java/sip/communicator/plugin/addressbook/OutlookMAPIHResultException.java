@@ -19,11 +19,6 @@ public class OutlookMAPIHResultException
     private static final long serialVersionUID = 1L;
 
     /**
-     * The <tt>HRESULT</tt> which is represented by this <tt>Exception</tt>.
-     */
-    private final long hResult;
-
-    /**
      * Initializes a new <tt>OutlookMAPIHResultException</tt> instance which
      * is to represent a specific <tt>HRESULT</tt>.
      *
@@ -46,8 +41,6 @@ public class OutlookMAPIHResultException
     public OutlookMAPIHResultException(long hResult, String message)
     {
         super(message);
-
-        this.hResult = hResult;
     }
 
     /**

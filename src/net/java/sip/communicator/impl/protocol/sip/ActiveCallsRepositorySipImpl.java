@@ -45,39 +45,6 @@ public class ActiveCallsRepositorySipImpl
     }
 
     /**
-     * Returns the call that contains the specified dialog (i.e. it is
-     * established  between us and one of the other call peers).
-     * <p>
-     * @param dialog the jain sip <tt>Dialog</tt> whose containing call we're
-     * looking for.
-     * @return the <tt>CallSipImpl</tt> containing <tt>dialog</tt> or null
-     * if no call contains the specified dialog.
-     */
-    public CallSipImpl findCall(Dialog dialog)
-    {
-        Iterator<CallSipImpl> activeCalls = getActiveCalls();
-
-        if(dialog == null)
-        {
-            logger.debug("Cannot find a peer with a null dialog. "
-                        + "Returning null");
-            return null;
-        }
-
-        logger.trace("Looking for peer with dialog: " + dialog
-                     + " among " + getActiveCallCount() + " calls");
-
-        while(activeCalls.hasNext())
-        {
-            CallSipImpl call = activeCalls.next();
-            if(call.contains(dialog))
-                return call;
-        }
-
-        return null;
-    }
-
-    /**
      * Returns the call peer whose associated jain sip dialog matches
      * <tt>dialog</tt>.
      *
@@ -237,27 +204,6 @@ public class ActiveCallsRepositorySipImpl
             return null;
 
         return findCallPeer(branchID, (((CallIdHeader)cidHeader).getCallId()));
-    }
-
-    /**
-     * Returns the <tt>CallSipImpl</tt> instance with a <tt>Dialog</tt>
-     * matching the specified <tt>Call-ID</tt>, local and remote tags.
-     *
-     * @param callID the <tt>Call-ID</tt> of the dialog we are looking for.
-     * @param localTag the local tag of the dialog we are looking for.
-     * @param remoteTag the remote tag of the dialog we are looking for.
-     *
-     * @return the <tt>CallSipImpl</tt> responsible for handling the
-     * <tt>Dialog</tt> with the matching ID or <tt>null</tt> if no such call was
-     * found.
-     */
-    public CallSipImpl findCall(String callID,
-                                String localTag,
-                                String remoteTag)
-    {
-        CallPeerSipImpl peer = findCallPeer(callID, localTag, remoteTag);
-
-        return (peer == null)? null : peer.getCall();
     }
 
     /**

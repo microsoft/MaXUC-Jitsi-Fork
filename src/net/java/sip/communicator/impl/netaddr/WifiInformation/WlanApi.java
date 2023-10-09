@@ -9,11 +9,6 @@ public interface WlanApi
 {
     WlanApi INSTANCE = Native.loadLibrary("wlanapi", WlanApi.class);
 
-    int WlanReasonCodeToString(int dwReasonCode,
-                               int dwBufferSize,
-                               char[] pStringBuffer,
-                               PointerByReference pReserved);
-
     int WlanOpenHandle(int dwClientVersion,
                        PointerByReference pReserved,
                        PointerByReference pdwNegotiatedVersion,

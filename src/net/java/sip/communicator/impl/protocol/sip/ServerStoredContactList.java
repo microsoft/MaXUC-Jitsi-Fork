@@ -548,24 +548,6 @@ public abstract class ServerStoredContactList
             String newName);
 
     /**
-     * The user accepted authorization request for <tt>contact</tt>
-     * @param contact the user has accepted.
-     */
-    public abstract void authorizationAccepted(ContactSipImpl contact);
-
-    /**
-     * The user rejected authorization request for <tt>contact</tt>
-     * @param contact the user has rejected.
-     */
-    public abstract void authorizationRejected(ContactSipImpl contact);
-
-    /**
-     * The user ignored authorization request for <tt>contact</tt>
-     * @param contact the user has ignored.
-     */
-    public abstract void authorizationIgnored(ContactSipImpl contact);
-
-    /**
      * Whether current contact list supports account image.
      * @return does current contact list supports account image.
      */

@@ -37,17 +37,6 @@ public class ByteFormat
         = UtilActivator.getResources();
 
     /**
-     * Formats a long which represent a number of kilobytes.
-     *
-     * @param kilobytes Long kbytes to format as a string.
-     * @return String representation of kbytes.
-     */
-    public String formatKB(long kilobytes)
-    {
-        return super.format(kilobytes * 1024);
-    }
-
-    /**
      * Format the given object (must be a Long).
      *
      * @param obj assumed to be the number of bytes as a Long.

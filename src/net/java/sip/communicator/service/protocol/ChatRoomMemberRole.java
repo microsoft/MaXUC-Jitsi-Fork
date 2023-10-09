@@ -45,12 +45,7 @@ public enum ChatRoomMemberRole
      * A role implying standard participant permissions without the right to
      * send messages/speak.
      */
-    SILENT_MEMBER("SilentMember", 20),
-
-    /**
-     * A role implying an explicit ban for the user to join the room.
-     */
-    OUTCAST("Outcast", 10);
+    SILENT_MEMBER("SilentMember", 20);
 
     /**
      * the name of this role.
@@ -87,37 +82,4 @@ public enum ChatRoomMemberRole
         this.roleIndex = roleIndex;
     }
 
-    /**
-     * Returns the name of this role.
-     *
-     * @return the name of this role.
-     */
-    public String getRoleName()
-    {
-        return this.roleName;
-    }
-
-    /**
-     * Returns a localized (i18n) name role name.
-     *
-     * @return a i18n version of this role name.
-     */
-    public String getLocalizedRoleName()
-    {
-        return this.roleName;
-    }
-
-    /**
-     * Returns a role index that can be used to allow ordering of roles by
-     * other modules (like the UI) that would not necessarily "know" all
-     * possible roles.  Higher values of the role index indicate roles with
-     * more permissions and lower values pertain to more restrictive roles.
-     *
-     * @return an <tt>int</tt> that when compared to role indexes of other
-     * roles can provide an ordering for the different role instances.
-     */
-    public int getRoleIndex()
-    {
-        return roleIndex;
-    }
 }

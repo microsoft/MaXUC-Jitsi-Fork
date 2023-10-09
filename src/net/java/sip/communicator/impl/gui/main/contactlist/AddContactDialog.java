@@ -713,12 +713,6 @@ public class AddContactDialog
     }
 
     @Override
-    public void repaintWindow()
-    {
-        repaint();
-    }
-
-    @Override
     public void saveAndDismiss()
     {
         dispose();

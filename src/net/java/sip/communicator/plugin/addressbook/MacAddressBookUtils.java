@@ -924,7 +924,7 @@ public class MacAddressBookUtils
      * @param value The value of the Mac Address Book property
      * @param label the label for the property type (home, work etc)
      * @param additionalDetail the additional detail for the property type
-     * (street, city, country etc)
+     * (street, city, country/region etc)
      * @param contactDetails the list of contact details for this contact
      * @param serverDetails a list of contact details that Accession does not
      * expose but must include when writing back to Mac Address Book

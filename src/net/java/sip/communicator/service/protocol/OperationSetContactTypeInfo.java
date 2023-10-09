@@ -15,19 +15,6 @@ package net.java.sip.communicator.service.protocol;
 public interface OperationSetContactTypeInfo
     extends OperationSet
 {
-    /**
-     * Access the contact type. If none specified null is returned.
-     * @param contact the contact to be queried for type.
-     * @return the contact type or null if missing.
-     */
-    String getContactType(Contact contact);
-
-    /**
-     * Sets the contact type of the contact.
-     * @param contact the contact to be changed.
-     * @param contactType the type set to the contact.
-     */
-    void setContactType(Contact contact, String contactType);
 
     /**
      * Persistently adds a subscription for the presence status of the contact

@@ -6,8 +6,6 @@
  */
 package net.java.sip.communicator.impl.protocol.sip.xcap;
 
-import net.java.sip.communicator.impl.protocol.sip.xcap.model.xcapcaps.*;
-
 /**
  * XCAP xcap-caps client interface.
  * <p/>
@@ -26,13 +24,4 @@ public interface XCapCapsClient
      * Xcap-caps content type
      */
     String CONTENT_TYPE = "application/xcap-caps+xml";
-
-    /**
-     * Gets the xcap-caps from the server.
-     *
-     * @return the xcap-caps.
-     * @throws IllegalStateException if the user has not been connected.
-     */
-    XCapCapsType getXCapCaps()
-    ;
 }

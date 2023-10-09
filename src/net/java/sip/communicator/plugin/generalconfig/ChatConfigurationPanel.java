@@ -53,6 +53,13 @@ public class ChatConfigurationPanel
         "net.java.sip.communicator.plugin.generalconfig.messageconfig.DISABLED";
 
     /**
+     * If true, we will block all chat requests from external contacts,
+     * otherwise reject.
+     */
+    private static final String BLOCK_AUTH_EXT_CHAT_PROP =
+           "net.java.sip.communicator.impl.protocol.contactauth.BLOCK_AUTH_EXT_CHAT";
+
+    /**
      * If true (or not set) we will automatically update the status to be in
      * a meeting when Outlook tells us so.
      */
@@ -103,6 +110,8 @@ public class ChatConfigurationPanel
     {
         ConfigSectionPanel configPanel = new ConfigSectionPanel("service.gui.MESSAGE");
 
+        configPanel.add(createAutoAuthCheckBox());
+
         if (OSUtils.IS_WINDOWS)
         {
             // Only enabled if Outlook is present - i.e. on Windows
@@ -110,6 +119,47 @@ public class ChatConfigurationPanel
         }
 
         return configPanel;
+    }
+
+    /**
+     * Initializes the "Automatically accept chat requests" check box.
+     * @return the created check box.
+     */
+    private Component createAutoAuthCheckBox()
+    {
+        final JCheckBox autoAuthCheckBox = new SIPCommCheckBox();
+        autoAuthCheckBox.setText(Resources.getString("service.gui.BLOCK_AUTH_EXT_CHAT"));
+        autoAuthCheckBox.setForeground(TEXT_COLOR);
+        autoAuthCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        autoAuthCheckBox.setSelected(configService.user().getBoolean(
+                                                   BLOCK_AUTH_EXT_CHAT_PROP, true));
+
+        autoAuthCheckBox.addActionListener(event ->
+            {
+                logger.user("Auto authorization of chat requests checkbox toggled");
+
+                SIPCommCheckBox eventSource = (SIPCommCheckBox) event.getSource();
+                boolean value = eventSource.isSelected();
+
+                logger.info("New value: " + value);
+                configService.user().setProperty(BLOCK_AUTH_EXT_CHAT_PROP, value);
+            }
+        );
+
+        // Listen for changes to the config that controls auto authorization
+        // of chat requests to make sure that the setting of the checkbox
+        // matches the config. This is because the config change may have
+        // been made elsewhere (i.e. by the user ticking the box on the
+        // authorization dialog to automatically accept all future chat
+        // requests), so the value of this checkbox might otherwise get
+        // out-of-date.
+        configService.user().addPropertyChangeListener(BLOCK_AUTH_EXT_CHAT_PROP, event -> {
+            logger.debug("Auto authorization of chat requests config updated");
+            autoAuthCheckBox.setSelected(
+                Boolean.parseBoolean(event.getNewValue().toString()));
+        });
+
+        return autoAuthCheckBox;
     }
 
     /**

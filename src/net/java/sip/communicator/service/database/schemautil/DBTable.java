@@ -65,13 +65,6 @@ public class DBTable
         return this;
     }
 
-    public DBTable addTableConstraint(TableConstraint constraint)
-    {
-        sLog.debug("Adding table constraint: " + constraint);
-        mTableConstraints.add(constraint);
-        return this;
-    }
-
     /**
      * Get a string suitable for submitting to SQL to create the table
      * @return A string containing the create table command.

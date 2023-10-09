@@ -76,18 +76,6 @@ public class AccountStatusUtils
     }
 
     /**
-     * Returns the last contact status saved in the configuration.
-     *
-     * @param protocolProvider the protocol provider to which the status
-     *            corresponds
-     * @return the last contact status saved in the configuration.
-     */
-    public String getLastStatusString(ProtocolProviderService protocolProvider)
-    {
-        return getGlobalStatusService().getLastStatusString(protocolProvider);
-    }
-
-    /**
      * Returns the <tt>GlobalStatusService</tt> obtained from the bundle
      * context.
      * @return the <tt>GlobalStatusService</tt> obtained from the bundle

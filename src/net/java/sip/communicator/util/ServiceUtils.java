@@ -19,6 +19,7 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPAMotion;
@@ -86,12 +87,13 @@ public class ServiceUtils
             public void serviceChanged(ServiceEvent event)
             {
                 ServiceReference<?> refFromEvent = event.getServiceReference();
-                ServiceReference<?> refToWatchedService =
-                    context.getServiceReference(serviceClass.getName());
 
                 if (refFromEvent.getBundle().getState() == Bundle.STOPPING)
                     // Event is caused by a bundle being stopped, ignore.
                     return;
+
+                ServiceReference<?> refToWatchedService =
+                        context.getServiceReference(serviceClass.getName());
 
                 if (refFromEvent != refToWatchedService)
                     // Event is not for the service being watched, ignore.
@@ -297,6 +299,13 @@ public class ServiceUtils
         {
             logger.info("Shutdown service not registered - " +
                          "shutting down bundles via BundleContext");
+
+            // If we are in the pre-login state, the Java might be blocked waiting
+            // for Electron response in a few places/bundles. In order to allow
+            // them to be stopped and the app destroyed, we need to unblock it
+            // first and then proceed to stop the bundles, so once all bundles
+            // are stopped the Java process is killed as well.
+            PreLoginUtils.invokeShutdown();
 
             // Before we start shutting down the Java OSGI bundles, we must first
             // send a WISPA message to ask the Electron UI to shut down.  Note

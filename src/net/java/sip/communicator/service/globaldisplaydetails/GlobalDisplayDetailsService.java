@@ -34,14 +34,6 @@ public interface GlobalDisplayDetailsService
     String getGlobalDisplayName();
 
     /**
-     * Sets the global local user display name.
-     *
-     * @param displayName the string representing the display name to set as
-     * a global display name
-     */
-    void setGlobalDisplayName(String displayName);
-
-    /**
      * Returns the global avatar for the local user.
      *
      * @return a byte array containing the global avatar for the local user

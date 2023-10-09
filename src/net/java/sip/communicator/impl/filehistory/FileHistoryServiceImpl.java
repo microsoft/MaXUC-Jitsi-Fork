@@ -253,60 +253,6 @@ public class FileHistoryServiceImpl
     }
 
     /**
-     * Returns all the file transfers made after the given date, in ascending
-     * date order.
-     *
-     * @param metaContact MetaContact the receiver or sender of the file
-     * @param startDate Date the start date of the transfers
-     * @return Collection of FileRecords
-     */
-    public Collection<FileRecord> findByStartDate(
-            MetaContact metaContact, Date startDate)
-    {
-        List<FileRecord> result = new ArrayList<>();
-
-        Map<Contact, String> jids = getJidsForMetaContact(metaContact);
-        sLog.debug("startDate: " + startDate.getTime() + ", jids: " + sanitiseJids(jids));
-
-        for (Map.Entry<Contact, String> jidEntry : jids.entrySet())
-        {
-            Contact contact = jidEntry.getKey();
-            DatabaseConnection connection = null;
-            ResultSet resultSet = null;
-
-            try
-            {
-                connection = mDatabaseService.connect();
-                resultSet = connection.findAfterDate(
-                    FileHistoryTable.NAME,
-                    FileHistoryTable.COL_LOCAL_JID,
-                    getImAccountJid(),
-                    FileHistoryTable.COL_REMOTE_JID,
-                    jidEntry.getValue(),
-                    FileHistoryTable.COL_DATE,
-                    FileHistoryTable.COL_FT_ID,
-                    startDate);
-
-                while (resultSet.next())
-                {
-                    result.add(new FileRecord(resultSet, contact));
-                }
-            }
-            catch (SQLException e)
-            {
-                sLog.error("Failed in findByStartDate: ", e);
-            }
-            finally
-            {
-                DatabaseUtils.safeClose(connection, resultSet);
-            }
-        }
-
-        sLog.debug("found " + result.size() + " records");
-        return result;
-    }
-
-    /**
      * Returns all the file transfers made before the given date, in ascending
      * date order.
      *

@@ -38,16 +38,6 @@ public class XCapCapsType
     protected List<Element> any;
 
     /**
-     * Gets the value of the auids property.
-     *
-     * @return the auids property.
-     */
-    public AuidsType getAuids()
-    {
-        return auids;
-    }
-
-    /**
      * Sets the value of the auids property.
      *
      * @param auids the auids to set.

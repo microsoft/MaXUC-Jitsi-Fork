@@ -9,6 +9,8 @@ package net.java.sip.communicator.util;
 import static net.java.sip.communicator.util.ConfigFileSanitiser.*;
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.StringUtils.isEmailAddress;
+import static org.jitsi.util.StringUtils.isNumber;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -19,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinNT;
 import org.jxmpp.jid.Jid;
@@ -29,9 +32,9 @@ import net.java.sip.communicator.plugin.provisioning.ProvisioningServiceImpl;
 import net.java.sip.communicator.service.commportal.ClassOfServiceService;
 import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.conference.ConferenceService;
+import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService.HeadsetResponseState;
 import net.java.sip.communicator.service.protocol.AccountID;
-import net.java.sip.communicator.service.protocol.OperationSet;
 import net.java.sip.communicator.service.protocol.OperationSetMultiUserChat;
 import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
@@ -86,18 +89,25 @@ public class ConfigurationUtils
     private static final String JAVA_USER_HOME = "user.home";
     private static final String JAVA_USER_NAME = "user.name";
 
-    private static final Set<String> SYSTEM_PRIVACY_PROPERTIES =
-            Set.of(JAVA_USER_NAME, JAVA_USER_HOME, JAVA_USER_LANGUAGE, JAVA_TEMP_DIR);
+    /** File paths we want to sanitise */
+    private static final String SERVER_CERTIFICATE = "SERVER_CERTIFICATE";
+    private static final String SERVER_KEY_STORE = "SERVER_KEY_STORE";
+    private static final String SERVER_TRUST_STORE = "SERVER_TRUST_STORE";
+    private static final String CLIENT_KEY_STORE = "CLIENT_KEY_STORE";
+    private static final String SC_HOME_DIR_LOCATION = "SC_HOME_DIR_LOCATION";
+    private static final String KEYS_DIR = "KEYS_DIR";
+    private static final String USER_HOME = "UserHome";
+    private static final String DIRECTORY = "Directory";
+    private static final String JNA_LIBRARY_PATH = "jna.library.path";
+    private static final String JAVA_LIBRARY_PATH = "java.library.path";
 
-    /**
-     * Indicates whether the video call button should be added to the chat window.
-     */
-    private static boolean isVideoCallButtonInChatEnabled;
+    private static final Set<String> SYSTEM_PRIVACY_PROPERTIES = Set.of(
+        JAVA_USER_NAME, JAVA_USER_HOME, JAVA_USER_LANGUAGE, JAVA_TEMP_DIR);
 
-    /**
-     * Indicates whether the history navigation buttons should be added to the chat window.
-     */
-    private static boolean isNavigationButtonsEnabled;
+    private static final Set<String> SYSTEM_PATH_PROPERTIES =
+        Set.of(SERVER_CERTIFICATE, SERVER_KEY_STORE, SERVER_TRUST_STORE,
+            CLIENT_KEY_STORE, SC_HOME_DIR_LOCATION, KEYS_DIR, USER_HOME,
+            DIRECTORY, JNA_LIBRARY_PATH, JAVA_LIBRARY_PATH);
 
     /**
      * Indicates if the chat window should show contact photos
@@ -109,7 +119,6 @@ public class ConfigurationUtils
      */
     private static boolean isVideoCallButtonDisabled;
 
-    private static int windowTransparency;
     private static boolean isTransparentWindowEnabled;
     private static boolean isWindowDecorated;
     private static boolean isShowSmileys;
@@ -152,11 +161,9 @@ public class ConfigurationUtils
     private static final String IM_CORRECTION_ENABLED_PROP = "net.java.sip.communicator.im.IM_CORRECTION_ENABLED";
     private static final String OPEN_WINDOW_ON_NEW_CHAT_PROP = "net.java.sip.communicator.im.OPEN_WINDOW_ON_NEW_CHAT";
     private static final String IM_PROVISION_SOURCE_PROP = "net.java.sip.communicator.im.IM_PROVISION_SOURCE";
-    private static final String IM_AUTOPOPULATE_PROP = "net.java.sip.communicator.impl.protocol.jabber.BRAND_IM_AUTOPOPULATE_FROM_BG_CONTACTS";
     private static final String SHOW_SMILEYS_PROPERTY = "net.java.sip.communicator.service.replacement.SMILEY.enable";
     private static final String CHAT_SHOW_CONTACT_PHOTO = "net.java.sip.communicator.service.gui.CHAT_SHOW_CONTACT_PHOTO";
     private static final String SINGLE_WINDOW_INTERFACE_ENABLED = "net.java.sip.communicator.service.gui.SINGLE_WINDOW_INTERFACE_ENABLED";
-    private static final String MAIN_UI_USES_INLINE_DIAL_PAD = "net.java.sip.communicator.service.gui.USE_INLINE_DIAL_PAD";
     private static final String CONTACT_FAVORITES_ENABLED_PROP = "net.java.sip.communicator.service.gui.CONTACT_FAVORITES_ENABLED";
     public static final String SELECTED_TAB = "net.java.sip.communicator.service.gui.SELECTED_TAB";
     public static final String SELECTED_HISTORY_TAB = "net.java.sip.communicator.service.gui.SELECTED_HISTORY_TAB";
@@ -166,7 +173,6 @@ public class ConfigurationUtils
     private static final String PHONE_NUMBER_IGNORE_REGEX_PROP = "net.java.sip.communicator.impl.protocol.sip.PHONE_NUMBER_IGNORE_REGEX";
     private static final String ALT_INCOMING_CALL_POPUP = "net.java.sip.communicator.impl.gui.main.call.ALT_INCOMING_CALL_POPUP";
     private static final String ALLOW_GROUP_CONTACT_PROPERTY = "net.java.sip.communicator.impl.protocol.groupcontacts.SUPPORT_GROUP_CONTACTS";
-    public static final String CALL_ON_TOP_PROP = "net.java.sip.communicator.impl.gui.main.call.CALL_ALWAYS_ON_TOP";
 
     /**
      * The name of the ignore regex for removing odd formatting from login.
@@ -189,7 +195,7 @@ public class ConfigurationUtils
     private static final String CALL_RATING_SEND_ERROR_REPORT = "net.java.sip.communicator.impl.callrating.CALL_RATING_SEND_ERROR_REPORT";
     private static final String HEADSET_RESPONSE_SETTING = "net.java.sip.communicator.impl.neomedia.HEADSET_RESPONSE";
     private static final String HEADSET_LOGGING_ENABLED_SETTING = "plugin.headsetmanager.HEADSET_API_LOGGING_ENABLED";
-    private static final String UUID_PROP = "net.java.sip.communicator.UUID";
+    public static final String UUID_PROP = "net.java.sip.communicator.UUID";
 
     /** The config option containing name of the OS e.g. "Windows 10" */
     public static final String OS_NAME_PROP = "plugin.errorreport.OS_NAME";
@@ -225,19 +231,6 @@ public class ConfigurationUtils
     private static final String DISABLE_AUTO_UPDATE_CHECKING_FOR_USER_PROP =
             "net.java.sip.communicator.plugin.update.DISABLE_AUTO_UPDATE_CHECKING";
 
-    public static final String WEBSOCKET_SERVER_ENABLED = "plugin.websocketserver.WEBSOCKET_SERVER_ENABLED";
-
-    /**
-     * The name of the property indicating the name(s) of any applications
-     * connected to Accession via the WebSocket.
-     */
-    private static final String WEBSOCKET_CONNECTED_APPLICATIONS = "plugin.websocketserver.WEBSOCKET_CONNECTED_APPLICATIONS";
-
-    /**
-     * Indicates whether a notification should be raised for a new WebSocket connection.
-     */
-    private static final String WEBSOCKET_NOTIFICATION_ENABLED = "plugin.websocketserver.WEBSOCKET_NOTIFICATION_ENABLED";
-
     /**
      * The name of the property for controlling whether we are the protocol
      * handler for sip/tel/callto URIs
@@ -250,6 +243,44 @@ public class ConfigurationUtils
      */
     public static final String USE_NATIVE_MAC_THEME_PROP = "net.java.sip.communicator.impl.gui.USE_NATIVE_THEME_ON_MACOS";
     private static final String PROPERTY_QA_MODE = "net.java.sip.communicator.QA_MODE";
+
+    /**
+     * Name of the provisioning username in the configuration service.
+     */
+    private static final String PROPERTY_PROVISIONING_USERNAME
+            = "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
+
+    /**
+     * Name of the provisioning password in the configuration service (HTTP
+     * authentication).
+     */
+    private static final String PROPERTY_PROVISIONING_PASSWORD
+            = "net.java.sip.communicator.plugin.provisioning.auth";
+
+    /**
+     * Name of the active user being used by configuration.
+     */
+    private static final String PROPERTY_ACTIVE_USER
+            = "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER";
+
+    /**
+     * Suffix for the ENCRYPTED_PASSWORD property that shouldn't be left lying around after logout.
+     */
+    public static final String ENCRYPTED_PASSWORD = "ENCRYPTED_PASSWORD";
+
+    /**
+     * Name of the config tracking whether user is logged in with SSO.
+     */
+    private static final String PROPERTY_IS_SSO_ACTIVE =
+            "net.java.sip.communicator.plugin.provisioning.auth.SSO_ACTIVE";
+
+    /**
+     * Name of the encrypted MSAL NodeJS token cache in the configuration service. The cache is generated by
+     * MSAL NodeJS library, serialized and sent back to Java to be stored securely.
+     */
+    private static final String PROPERTY_ENCRYPTED_MSAL_CACHE
+            = "net.java.sip.communicator.plugin.provisioning.token_cache";
+
     private static final boolean isQaMode = configService.global().getBoolean(PROPERTY_QA_MODE, false);
 
     /**
@@ -285,19 +316,6 @@ public class ConfigurationUtils
         if (isTransparentWindowEnabledString != null && isTransparentWindowEnabledString.length() > 0)
         {
             isTransparentWindowEnabled = Boolean.parseBoolean(isTransparentWindowEnabledString);
-        }
-
-        String windowTransparencyProperty = "impl.gui.WINDOW_TRANSPARENCY";
-        String windowTransparencyString = configService.global().getString(windowTransparencyProperty);
-
-        if (windowTransparencyString == null)
-        {
-            windowTransparencyString = resources.getSettingsString(windowTransparencyProperty);
-        }
-
-        if (windowTransparencyString != null && windowTransparencyString.length() > 0)
-        {
-            windowTransparency = Integer.parseInt(windowTransparencyString);
         }
 
         String isWindowDecoratedProperty = "impl.gui.IS_WINDOW_DECORATED";
@@ -429,19 +447,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Return TRUE if "quitWarningShown" property is true, otherwise -
-     * return FALSE. Indicates to the user interface whether the quit warning
-     * dialog should be shown when user clicks on the X button.
-     * @return TRUE if "quitWarningShown" property is true, otherwise -
-     * return FALSE. Indicates to the user interface whether the quit warning
-     * dialog should be shown when user clicks on the X button.
-     */
-    public static boolean isQuitWarningShown()
-    {
-        return configService.user().getBoolean("net.java.sip.communicator.impl.gui.quitWarningShown", true);
-    }
-
-    /**
      * Return TRUE if "sendTypingNotifications" property is true, otherwise -
      * return FALSE. Indicates to the user interface whether typing
      * notifications are enabled or disabled.
@@ -451,18 +456,6 @@ public class ConfigurationUtils
     public static boolean isSendTypingNotifications()
     {
         return configService.user().getBoolean("service.gui.SEND_TYPING_NOTIFICATIONS_ENABLED", true);
-    }
-
-    /**
-     * Updates the "sendTypingNotifications" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param isSendTypingNotif <code>true</code> to indicate that typing
-     * notifications are enabled, <code>false</code> otherwise.
-     */
-    public static void setSendTypingNotifications(boolean isSendTypingNotif)
-    {
-        configService.user().setProperty("service.gui.SEND_TYPING_NOTIFICATIONS_ENABLED", Boolean.toString(isSendTypingNotif));
     }
 
     /**
@@ -642,43 +635,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Returns whether the branding has autopopulation of IM addresses for BGContacts enabled.
-     *
-     * Note that IM autopopulation requires both BG Contacts and CommPortal-provisioned
-     * IM to be enabled.  If they are not, this branding option has no effect.
-     */
-    public static boolean autoPopulateIMEnabled()
-    {
-        return configService.global().getBoolean(IM_AUTOPOPULATE_PROP, true);
-    }
-
-    /**
-    * Returns <code>true</code> if the "isVideoCallButtonInChatEnabled"
-    * property is true, otherwise - returns <code>false</code>. Indicates to
-    * the user interface whether the video call button should be added to the
-    * chat window.
-    * @return <code>true</code> if the "isVideoCallButtonInChatEnabled"
-    * property is true, otherwise - returns <code>false</code>.
-    */
-    public static boolean isVideoCallButtonInChatEnabled()
-    {
-        return isVideoCallButtonInChatEnabled;
-    }
-
-    /**
-    * Returns <code>true</code> if the "isNavigationButtonsEnabled"
-    * property is true, otherwise - returns <code>false</code>. Indicates to
-    * the user interface whether the history navigation buttons should be
-    * added to the chat window.
-    * @return <code>true</code> if the "isNavigationButtonsEnabled"
-    * property is true, otherwise - returns <code>false</code>.
-    */
-    public static boolean isNavigationButtonsEnabled()
-    {
-        return isNavigationButtonsEnabled;
-    }
-
-    /**
      * Returns the value of the configured double-click-on-contact-action.
      * Defaults to CALL.  The value can be one of
      * <li>CALL
@@ -711,18 +667,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Updates the "isOpenWindowOnNewChatEnabled" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param isEnabled indicates whether to open a chat window when a new chat
-     * is received.
-     */
-    public static void setOpenWindowOnNewChatEnabled(boolean isEnabled)
-    {
-        configService.user().setProperty(OPEN_WINDOW_ON_NEW_CHAT_PROP, Boolean.toString(isEnabled));
-    }
-
-    /**
      * Returns <code>true</code> if the "isWindowDecorated" property is
      * true, otherwise - returns <code>false</code>..
      * @return <code>true</code> if the "isWindowDecorated" property is
@@ -731,17 +675,6 @@ public class ConfigurationUtils
     public static boolean isWindowDecorated()
     {
         return isWindowDecorated;
-    }
-
-    /**
-     * Returns <code>true</code> if the "isShowSmileys" property is
-     * true, otherwise - returns <code>false</code>..
-     * @return <code>true</code> if the "isShowSmileys" property is
-     * true, otherwise - returns <code>false</code>.
-     */
-    public static boolean isShowSmileys()
-    {
-        return isShowSmileys;
     }
 
     /**
@@ -808,46 +741,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Updates the "sendMessageCommand" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param newMessageCommand the command used to send a message ( it could be
-     * ENTER_COMMAND or CTRL_ENTER_COMMAND)
-     */
-    public static void setSendMessageCommand(String newMessageCommand)
-    {
-        configService.user().setProperty("service.gui.SEND_MESSAGE_COMMAND", newMessageCommand);
-    }
-
-    /**
-     * Return the "lastContactParent" property that was saved previously
-     * through the <tt>ConfigurationService</tt>. Indicates
-     * the last selected group on adding new contact
-     * @return group name of the last selected group when adding contact.
-     */
-    public static String getLastContactParent()
-    {
-        return configService.user().getString("net.java.sip.communicator.impl.gui.addcontact.lastContactParent");
-    }
-
-    /**
-     * Returns the call conference provider used for the last conference call.
-     * @return the call conference provider used for the last conference call
-     */
-    public static ProtocolProviderService getLastCallConferenceProvider()
-    {
-        if (lastCallConferenceProvider != null)
-        {
-            return lastCallConferenceProvider;
-        }
-
-        // Obtain the "lastCallConferenceAccount" property from the
-        // configuration service
-        return findProviderFromAccountId(configService.user().getString(
-            "net.java.sip.communicator.impl.gui.call.lastCallConferenceProvider"));
-    }
-
-    /**
      * Returns the protocol provider associated with the given
      * <tt>accountId</tt>.
      * @param savedAccountId the identifier of the account
@@ -878,39 +771,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Returns a list of all known providers that support the given
-     * OperationSet.
-     *
-     * @param operationSet    The operation set for which we're looking for
-     * providers
-     * @return a list of all known providers that support the given operation
-     * set
-     */
-    public static List<ProtocolProviderService> getOperationSetProviders(Class<? extends OperationSet> operationSet)
-    {
-        List<ProtocolProviderService> opSetProviders = new ArrayList<>();
-        ProtocolProviderService protocolProvider;
-
-        for (ProtocolProviderFactory factory : UtilActivator.getProtocolProviderFactories().values())
-        {
-            ServiceReference<?> serRef;
-
-            for (AccountID accountID : factory.getRegisteredAccounts())
-            {
-                serRef = factory.getProviderForAccount(accountID);
-                protocolProvider = (ProtocolProviderService) UtilActivator.bundleContext.getService(serRef);
-
-                if (protocolProvider.getOperationSet(operationSet) != null)
-                {
-                    opSetProviders.add(protocolProvider);
-                }
-            }
-        }
-
-        return opSetProviders;
-    }
-
-    /**
      * Returns the number of messages from chat history that would be shown in
      * the chat window.
      * @return the number of messages from chat history that would be shown in
@@ -919,18 +779,6 @@ public class ConfigurationUtils
     public static int getChatHistorySize()
     {
         return configService.user().getInt("service.gui.MESSAGE_HISTORY_SIZE", 10);
-    }
-
-    /**
-     * Updates the "chatHistorySize" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param historySize indicates if the history logging is
-     * enabled.
-     */
-    public static void setChatHistorySize(int historySize)
-    {
-        configService.user().setProperty("service.gui.MESSAGE_HISTORY_SIZE", Integer.toString(historySize));
     }
 
     /**
@@ -956,16 +804,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Returns the transparency value for all transparent windows.
-     *
-     * @return the transparency value for all transparent windows.
-     */
-    public static int getWindowTransparency()
-    {
-        return windowTransparency;
-    }
-
-    /**
      * Returns the last opened directory of the send file file chooser.
      *
      * @return the last opened directory of the send file file chooser
@@ -983,30 +821,6 @@ public class ConfigurationUtils
     public static boolean isSecurityStatusHidden()
     {
         return securityStatusHidden;
-    }
-
-    /**
-     * Whether call windows are configured to appear always on top.
-     *
-     * @return whether call windows are always on top
-     */
-    public static boolean isCallAlwaysOnTop()
-    {
-        // Always on top is not permitted in Accessibility mode
-        boolean isCallAlwaysOnTop = configService.user().getBoolean(
-            "net.java.sip.communicator.impl.gui.main.call.CALL_ALWAYS_ON_TOP", false);
-        return isCallAlwaysOnTop && !isAccessibilityMode();
-    }
-
-    /**
-     * Updates the "CALL_ALWAYS_ON_TOP" property.
-     *
-     * @param isCallOnTop indicates to the user interface whether call
-     * windows should always be on top
-     */
-    public static void setCallAlwaysOnTop(boolean isCallOnTop)
-    {
-        configService.user().setProperty(CALL_ON_TOP_PROP, Boolean.toString(isCallOnTop));
     }
 
     /**
@@ -1053,16 +867,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Sets the transparency value for all transparent windows.
-     *
-     * @param transparency the transparency value for all transparent windows.
-     */
-    public static void setWindowTransparency(int transparency)
-    {
-        windowTransparency = transparency;
-    }
-
-    /**
      * Updates the "showApplication" property through the
      * <tt>ConfigurationService</tt>.
      *
@@ -1073,42 +877,6 @@ public class ConfigurationUtils
     {
         configService.user().setProperty(
             "net.java.sip.communicator.impl.systray.showApplication", Boolean.toString(isVisible));
-    }
-
-    /**
-     * Updates the "showAppQuitWarning" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param isWarningShown indicates if the message warning the user that the
-     * application would not be closed if she clicks the X button would be
-     * shown again.
-     */
-    public static void setQuitWarningShown(boolean isWarningShown)
-    {
-        configService.user().setProperty(
-            "net.java.sip.communicator.impl.gui.quitWarningShown", Boolean.toString(isWarningShown));
-    }
-
-    /**
-     * Saves the popup handler choice made by the user.
-     *
-     * @param handler the handler which will be used
-     */
-    public static void setPopupHandlerConfig(String handler)
-    {
-        configService.user().setProperty("systray.POPUP_HANDLER", handler);
-    }
-
-     /**
-     * Updates the "lastContactParent" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param groupName the group name of the selected group when adding
-     * last contact
-     */
-    public static void setLastContactParent(String groupName)
-    {
-        configService.user().setProperty("net.java.sip.communicator.impl.gui.addcontact.lastContactParent", groupName);
     }
 
     /**
@@ -1139,18 +907,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Updates the "isShowSmileys" property through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param isVisible indicates if the smileys are visible
-     */
-    public static void setShowSmileys(boolean isVisible)
-    {
-        isShowSmileys = isVisible;
-        configService.global().setProperty(SHOW_SMILEYS_PROPERTY, Boolean.toString(isShowSmileys));
-    }
-
-    /**
      * Updates the "net.java.sip.communicator.impl.gui.CHAT_WRITE_AREA_SIZE"
      * property through the <tt>ConfigurationService</tt>.
      *
@@ -1174,20 +930,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Sets the call conference provider used for the last conference call.
-     * @param protocolProvider the call conference provider used for the last
-     * conference call
-     */
-    public static void setLastCallConferenceProvider(
-        ProtocolProviderService protocolProvider)
-    {
-        lastCallConferenceProvider = protocolProvider;
-        configService.user().setProperty(
-            "net.java.sip.communicator.impl.gui.call.lastCallConferenceProvider",
-            protocolProvider.getAccountID().getAccountUniqueID());
-    }
-
-    /**
      * Returns the current language configuration.
      *
      * @return the current locale
@@ -1205,12 +947,16 @@ public class ConfigurationUtils
      */
     public static void setLanguage(Locale locale)
     {
-        String language = locale.getLanguage();
-        String countryOrRegion = locale.getCountry();
+        String defaultLocaleConfig = null;
+        if (locale != null)
+        {
+            String language = locale.getLanguage();
+            String countryOrRegion = locale.getCountry();
 
-        configService.global().setProperty(
-            ResourceManagementService.DEFAULT_LOCALE_CONFIG,
-            (countryOrRegion.length() > 0) ? (language + '_' + countryOrRegion) : language);
+            defaultLocaleConfig = (countryOrRegion.length() > 0) ? (language + '_' + countryOrRegion) : language;
+        }
+
+        configService.global().setProperty(ResourceManagementService.DEFAULT_LOCALE_CONFIG, defaultLocaleConfig);
     }
 
     /**
@@ -1469,49 +1215,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Returns the last chat room status, saved through the
-     * <tt>ConfigurationService</tt>.
-     *
-     * @param protocolProvider the protocol provider, to which the chat room
-     * belongs
-     * @param chatRoomId the identifier of the chat room
-     * @return the last chat room status, saved through the
-     * <tt>ConfigurationService</tt>.
-     */
-    public static String getChatRoomStatus(
-        ProtocolProviderService protocolProvider,
-        String chatRoomId)
-    {
-        String prefix = "net.java.sip.communicator.impl.gui.accounts";
-        List<String> accounts = configService.user().getPropertyNamesByPrefix(prefix, true);
-
-        for (String accountRootPropName : accounts)
-        {
-            String accountUID = configService.user().getString(accountRootPropName);
-
-            if (accountUID.equals(protocolProvider.getAccountID().getAccountUniqueID()))
-            {
-                List<String> chatRooms = configService.user()
-                    .getPropertyNamesByPrefix(accountRootPropName + ".chatRooms", true);
-
-                for (String chatRoomPropName : chatRooms)
-                {
-                    String chatRoomID = configService.user().getString(chatRoomPropName);
-
-                    if (!chatRoomId.equals(chatRoomID))
-                    {
-                        continue;
-                    }
-
-                    return configService.user().getString(chatRoomPropName + ".lastChatRoomStatus");
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Returns a list of all chat room IDs for the given protocol provider,
      * saved through the <tt>ConfigurationService</tt>.
      *
@@ -1650,28 +1353,33 @@ public class ConfigurationUtils
         {
             logConfigurationPropertyChange(evt);
 
-            // All properties we're interested in here are Strings.
-            if (!(evt.getNewValue() instanceof String))
+            // All properties we're interested in here are Strings. However they may be null if the
+            // property is being removed from config.
+            if (!((evt.getNewValue() instanceof String) || (evt.getNewValue() == null)))
             {
                 return;
             }
 
+            String oldValue = (String) evt.getOldValue();
             String newValue = (String) evt.getNewValue();
             String propertyName = evt.getPropertyName();
 
             switch (propertyName)
             {
                 case "impl.gui.IS_TRANSPARENT_WINDOW_ENABLED":
-                    isTransparentWindowEnabled = Boolean.parseBoolean(newValue);
-                    break;
-                case "impl.gui.WINDOW_TRANSPARENCY":
-                    windowTransparency = Integer.parseInt(newValue);
+                    if (newValue != null)
+                    {
+                        isTransparentWindowEnabled = Boolean.parseBoolean(newValue);
+                    }
                     break;
                 case "net.java.sip.communicator.impl.gui.call.lastCallConferenceProvider":
-                    lastCallConferenceProvider = findProviderFromAccountId(newValue);
+                    if (newValue != null)
+                    {
+                        lastCallConferenceProvider = findProviderFromAccountId(newValue);
+                    }
                     break;
                 case "net.java.sip.communicator.plugin.provisioning.auth.USERNAME":
-                    if (configService.user() != null)
+                    if ((newValue != null) && (configService.user() != null))
                     {
                         configService.user().removePropertyChangeListener(LOG_PROPERTY_CHANGE_LISTENER);
                         configService.user().addPropertyChangeListener(LOG_PROPERTY_CHANGE_LISTENER);
@@ -1680,64 +1388,37 @@ public class ConfigurationUtils
                     }
                     break;
                 case "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER":
-                    forgetOtherUsersCredentials(newValue);
+                    if (newValue == null)
+                    {
+                        logger.info("ACTIVE_USER removed from config, remove sensitive info from config files");
+                        removeSensitiveInformationFromConfigFiles();
+                    }
+                    else if (isEmailAddress(oldValue) && isNumber(newValue))
+                    {
+                        activeUserChangedFromEmailAddressToDn(oldValue, newValue);
+                    }
                     break;
             }
         }
     }
 
     /**
-     * Returns the package name under which we would store information for the
-     * given factory.
-     * @param factory the <tt>ProtocolProviderFactory</tt>, which package name
-     * we're looking for
-     * @return the package name under which we would store information for the
-     * given factory
-     */
-    public static String getFactoryImplPackageName(ProtocolProviderFactory factory)
-    {
-        String className = factory.getClass().getName();
-        return className.substring(0, className.lastIndexOf('.'));
-    }
-
-    /**
-     * Returns the configured client port.
+     * Called when we think that the ACTIVE_USER property has been changed from an email address to
+     * the DN of the same subscriber. This happens as part of first-time login with an email address
+     * and causes problems which we need to try to reverse here.
      *
-     * @return the client port
+     * @param oldValue old value of ACTIVE_USER property that we think is their email address
+     * @param newValue new value of ACTIVE_USER property that we think is their DN
      */
-    public static int getClientPort()
+    private static void activeUserChangedFromEmailAddressToDn(String oldValue, String newValue)
     {
-        return configService.user().getInt(ProtocolProviderFactory.PREFERRED_CLEAR_PORT_PROPERTY_NAME, 5060);
-    }
+        logger.info("ACTIVE_USER changed from email address " + logHasher(oldValue) + " to DN " + logHasher(newValue));
 
-    /**
-     * Sets the client port.
-     *
-     * @param port the port to set
-     */
-    public static void setClientPort(int port)
-    {
-        configService.user().setProperty(ProtocolProviderFactory.PREFERRED_CLEAR_PORT_PROPERTY_NAME, port);
-    }
-
-    /**
-     * Returns the client secure port.
-     *
-     * @return the client secure port
-     */
-    public static int getClientSecurePort()
-    {
-        return configService.user().getInt(ProtocolProviderFactory.PREFERRED_SECURE_PORT_PROPERTY_NAME, 5061);
-    }
-
-    /**
-     * Sets the client secure port.
-     *
-     * @param port the port to set
-     */
-    public static void setClientSecurePort(int port)
-    {
-        configService.user().setProperty(ProtocolProviderFactory.PREFERRED_SECURE_PORT_PROPERTY_NAME, port);
+        // We need to make sure that if we have a master password stored under the email address,
+        // then we also have that same master password stored under the DN, as next time the client
+        // is restarted, it will be using the DN to find the saved master password.
+        CredentialsStorageService credService = UtilActivator.getCredentialsService();
+        credService.user().copyMasterPassword(oldValue, newValue);
     }
 
     /**
@@ -1802,16 +1483,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Return true if the main UI should use an inline dial pad
-     *
-     * @return true if the main UI should use an inline dial pad
-     */
-    public static boolean getMainUiUsesInlineDialPad()
-    {
-        return configService.global().getBoolean(MAIN_UI_USES_INLINE_DIAL_PAD, false);
-    }
-
-    /**
      * Return true if contact favorites is supported
      *
      * @return true if contact favorites is supported
@@ -1822,16 +1493,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * Store the currently selected tab in config
-     *
-     * @param tabIdentifier An identifier for the currently selected tab
-     */
-    public static void setSelectedTab(String tabIdentifier)
-    {
-        configService.user().setProperty(SELECTED_TAB, tabIdentifier);
-    }
-
-    /**
      * Returns the identifier of the selected tab
      *
      * @return the identifier of the selected tab
@@ -1839,26 +1500,6 @@ public class ConfigurationUtils
     public static String getSelectedTab()
     {
         return configService.user().getString(SELECTED_TAB);
-    }
-
-    /**
-     * Store the currently selected history tab in config
-     *
-     * @param tabIdentifier An identifier for the currently history selected tab
-     */
-    public static void setSelectedHistoryTab(String tabIdentifier)
-    {
-        configService.user().setProperty(SELECTED_HISTORY_TAB, tabIdentifier);
-    }
-
-    /**
-     * Returns the identifier of the selected history tab
-     *
-     * @return the identifier of the selected history tab
-     */
-    public static String getSelectedHistoryTab()
-    {
-        return configService.user().getString(SELECTED_HISTORY_TAB);
     }
 
     /**
@@ -2299,63 +1940,6 @@ public class ConfigurationUtils
     }
 
     /**
-     * @return whether the WebSocket server is enabled. Always return false as the WebSocket
-     * server has been disabled as part of V3.11.
-     */
-    public static boolean isWebSocketServerEnabled()
-    {
-        return false;
-    }
-
-    /**
-     * Sets the WebSocket server state.
-     * @param webSocketServerEnabled true to enable the WebSocket server, false
-     *                               to disable it.
-     */
-    public static void setWebsocketServerEnabled(boolean webSocketServerEnabled)
-    {
-        configService.user().setProperty(WEBSOCKET_SERVER_ENABLED, webSocketServerEnabled);
-    }
-
-    /**
-     * @return returns the names of any connected applications or null if there
-     * aren't any
-     */
-    public static String getWebSocketConnectedApplications()
-    {
-        return configService.user().getString(WEBSOCKET_CONNECTED_APPLICATIONS, null);
-    }
-
-    /**
-     * Sets the name of applications currently connected via the WebSocket.
-     * @param webSocketConnectedApplications whether there are any available
-     *                                      WebSocket connections.
-     */
-    public static void setWebSocketConnectedApplications(
-            String webSocketConnectedApplications)
-    {
-        configService.user().setProperty(WEBSOCKET_CONNECTED_APPLICATIONS, webSocketConnectedApplications);
-    }
-
-    /**
-     * @return whether notifications for new WebSocket connections are enabled.
-     */
-    public static Boolean getWebSocketNotificationEnabled()
-    {
-        return configService.user().getBoolean(WEBSOCKET_NOTIFICATION_ENABLED, true);
-    }
-
-    /**
-     * Set whether notifications for new WebSocket connections are enabled.
-     * @param notificationEnabled whether notifications should be enabled.
-     */
-    public static void setWebSocketNotificationEnabled(
-            boolean notificationEnabled)
-    {
-        configService.user().setProperty(WEBSOCKET_NOTIFICATION_ENABLED, notificationEnabled);
-    }
-
-    /**
      * @return whether the app is registered as the URL handler for the
      * sip/tel/callto protocols
      */
@@ -2389,14 +1973,6 @@ public class ConfigurationUtils
     {
         // We never use native theme for Windows
         return OSUtils.IS_MAC && ConfigurationUtils.useNativeMacOSTheme();
-    }
-
-    /**
-     * @return whether we should use modern tabs in the main frame
-     */
-    public static boolean useModernTabsInMainFrame()
-    {
-        return configService.global().getBoolean("net.java.sip.communicator.impl.gui.main.USE_MODERN_TABS_IN_MAIN_FRAME", false);
     }
 
     /**
@@ -2477,21 +2053,48 @@ public class ConfigurationUtils
     }
 
     /**
-     * Forget the credentials for other users (this should have happened on their logout,
-     * but historically didn't, so tidy-up here).
+     * Clears config properties tied to the user - do this on logout.
+     * @param removeCustomStatusAndChatSubject true if CUSTOM_STATUS and chatRoomSubject
+     *                                         properties should be cleared as well.
+     */
+    public static void forgetUserCredentials(boolean removeCustomStatusAndChatSubject)
+    {
+        logger.debug("Logging out - remove active user");
+        configService.global().removeProperty(PROPERTY_ACTIVE_USER);
+        configService.global().removeProperty(PROPERTY_PROVISIONING_USERNAME);
+        configService.global().removeProperty(PROPERTY_IS_SSO_ACTIVE);
+
+        if (configService.user() != null)
+        {
+            // Remove the PAT, encrypted passwords and PII.
+            configService.user().removeProperty(PROPERTY_PROVISIONING_PASSWORD);
+            configService.user().removeProperty(PROPERTY_ENCRYPTED_MSAL_CACHE);
+            configService.user().removePropertyBySuffix(ENCRYPTED_PASSWORD);
+
+            if (removeCustomStatusAndChatSubject)
+            {
+                configService.user().removePropertyBySuffix(CUSTOM_STATUS);
+                configService.user().removePropertyBySuffix(CHAT_SUBJECT);
+            }
+
+            // Flush the config so that the .bak file doesn't contain a copy of the now
+            // deleted credentials.
+            configService.user().storePendingConfigurationNow(true);
+        }
+    }
+
+    /**
+     * Remove any sensitive information from config files. We do this on logout so that anyone
+     * else with access to the OS user (where the config files are saved) won't have access to any
+     * sensitive information that one would expect to be hidden once the client is logged out.
      *
      * This method deliberately doesn't use FailSafeTransactionImpl or TransactionBasedFile
      * as they will add complexity and we'd be slightly fighting them to force deletion of
      * the backup.  We do not need their transactions, or ability to recover and we are ok
      * with the rare window condition of the config file being deleted (that user will just
      * have to set their preferences again).
-     *
-     * We also do not want to use the existing ConfigurationService as we do not want any of
-     * the other user config leaking into the active user.
-     *
-     * @param activeUser The currently active user, whose credentials we DON'T want to forget
      */
-    private static void forgetOtherUsersCredentials(final String activeUser)
+    private static void removeSensitiveInformationFromConfigFiles()
     {
         String[] allUsers = configService.listUsers();
 
@@ -2504,52 +2107,45 @@ public class ConfigurationUtils
             return;
         }
 
-        logger.debug("Forget other user's credentials and PII, number of users: " + allUsers.length);
         for (String user : allUsers)
         {
-            if (!user.equals(activeUser)) {
-                logger.debug("Check stored credentials for inactive user");
+            logger.debug("Check stored credentials for user " + logHasher(user));
 
-                File root = new File(configService.global().getScHomeDirLocation(),
-                                     configService.global().getScHomeDirName());
-                File usersRoot = new File(root, USERS_FOLDER_NAME);
-                File specificUserRoot = new File (usersRoot, user);
-                File userConfigFile = new File(specificUserRoot, CONFIG_FILE_NAME);
-                File userBackupConfigFile = new File(specificUserRoot, BAK_CONFIG_FILE_NAME);
+            File root = new File(configService.global().getScHomeDirLocation(),
+                                 configService.global().getScHomeDirName());
+            File usersRoot = new File(root, USERS_FOLDER_NAME);
+            File specificUserRoot = new File (usersRoot, user);
+            File userConfigFile = new File(specificUserRoot, CONFIG_FILE_NAME);
+            File userBackupConfigFile = new File(specificUserRoot, BAK_CONFIG_FILE_NAME);
 
-                // 1st check if there is anything to do: in most cases there are either
-                // no other users, or they are already clean.
-                if (ConfigFileSanitiser.isDirty(userConfigFile, linesToRemove) ||
-                    ConfigFileSanitiser.isDirty(userBackupConfigFile, linesToRemove))
+            // 1st check if there is anything to do: in most cases there are either
+            // no other users, or they are already clean.
+            if (ConfigFileSanitiser.isConfigFileDirty(userConfigFile, linesToRemove) ||
+                ConfigFileSanitiser.isConfigFileDirty(userBackupConfigFile, linesToRemove))
+            {
+                logger.info("Need to sanitise credentials for user " + logHasher(user));
+                File safeUserConfigFile = new File(userConfigFile.getParent(), SAFE_CONFIG_FILE_NAME);
+                ConfigFileSanitiser.sanitiseConfigFile(userConfigFile, safeUserConfigFile, linesToRemove, false);
+
+                // If we got here, then regardless of whether the 2nd call to sanitizeFile
+                // was successful, we need to delete the old file.
+                // If we cannot replace with the sanitised config this will forget some user settings,
+                // but that's less important than deleting the credentials.
+                userConfigFile.delete();
+
+                // Also need to delete the .bak temporary file! We never bother trying to
+                // sanitise it, just not worth it.
+                userBackupConfigFile.delete();
+
+                if (userConfigFile.exists() || userBackupConfigFile.exists())
                 {
-                    logger.info("Need to sanitise credentials for inactive user");
-                    File safeUserConfigFile = new File(userConfigFile.getParent(), SAFE_CONFIG_FILE_NAME);
-                    ConfigFileSanitiser.sanitiseFile(userConfigFile, safeUserConfigFile, linesToRemove);
-
-                    // If we got here, then regardless of whether the 2nd call to sanitizeFile
-                    // was successful, we need to delete the old file.
-                    // If we cannot replace with the sanitised config this will forget some user settings,
-                    // but that's less important than deleting the credentials.
-                    userConfigFile.delete();
-
-                    // Also need to delete the .bak temporary file! We never bother trying to
-                    // sanitise it, just not worth it.
-                    userBackupConfigFile.delete();
-
-                    if (userConfigFile.exists() || userBackupConfigFile.exists())
-                    {
-                        logger.error("Failed to delete old user config containing stored credentials.");
-                    }
-
-                    if (!safeUserConfigFile.renameTo(userConfigFile))
-                    {
-                        logger.warn("Failed to move sanitised config, just tidy-up");
-                        safeUserConfigFile.delete();
-                    }
+                    logger.error("Failed to delete old user config containing stored credentials.");
                 }
-                else
+
+                if (!safeUserConfigFile.renameTo(userConfigFile))
                 {
-                    logger.debug("Stored credentials already clean for inactive user");
+                    logger.warn("Failed to move sanitised config, just tidy-up");
+                    safeUserConfigFile.delete();
                 }
             }
         }
@@ -2678,14 +2274,26 @@ public class ConfigurationUtils
     }
 
     /**
+     * Returns true if a system property contains a file path that should be
+     * sanitised privacy reasons.
+     */
+    private static boolean isSystemPathProperty(final String propertyName)
+    {
+        return SYSTEM_PATH_PROPERTIES.stream().anyMatch(propertyName::contains);
+    }
+
+    /**
      * Returns a hashed value of a system property (i.e. Java properties, such as user.name)
      * if it exposes Personal Data.
      */
-    private static Object getLoggableSystemPropertyValue(final String propertyName, final Object propertyValue)
+    @VisibleForTesting
+    static Object getLoggableSystemPropertyValue(final String propertyName, final Object propertyValue)
     {
         if (propertyValue != null)
         {
-            return isSystemPrivacyProperty(propertyName) ? logHasher(propertyValue) : propertyValue;
+            return isSystemPrivacyProperty(propertyName) ? logHasher(propertyValue)
+                : isSystemPathProperty(propertyName) ? sanitiseFilePath(propertyValue.toString())
+                : propertyValue;
         }
 
         return null;

@@ -27,9 +27,11 @@ import org.jitsi.util.CustomAnnotations.*;
 import net.java.sip.communicator.impl.gui.main.MainFrame;
 import net.java.sip.communicator.impl.gui.main.ServiceType;
 import net.java.sip.communicator.impl.gui.main.UrlServiceTools;
-import net.java.sip.communicator.impl.gui.main.WebSocketApiServicesTools;
 import net.java.sip.communicator.impl.gui.main.account.AccountRegWizardContainerImpl;
+import net.java.sip.communicator.impl.gui.main.call.AddParticipantDialog;
 import net.java.sip.communicator.impl.gui.main.call.CallManager;
+import net.java.sip.communicator.impl.gui.main.call.DTMFHandler;
+import net.java.sip.communicator.impl.gui.main.call.DTMFHandler.DTMFToneInfo;
 import net.java.sip.communicator.impl.gui.main.callpark.CallParkWindow;
 import net.java.sip.communicator.impl.gui.main.chat.AddChatParticipantsDialog;
 import net.java.sip.communicator.impl.gui.main.chat.ChatPanel;
@@ -42,8 +44,8 @@ import net.java.sip.communicator.impl.gui.main.chat.conference.ConferenceChatMan
 import net.java.sip.communicator.impl.gui.main.chat.history.HistoryWindowManager;
 import net.java.sip.communicator.impl.gui.main.chat.toolBars.MultiUserChatMenu;
 import net.java.sip.communicator.impl.gui.main.chat.toolBars.MultiUserChatMenu.ChangeGroupNameDialog;
-import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
 import net.java.sip.communicator.impl.gui.main.contactlist.ReducedMetaContactRightButtonMenu;
+import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
 import net.java.sip.communicator.impl.gui.utils.ContactWithNumberSelectDialog;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommSnakeButton;
 import net.java.sip.communicator.plugin.desktoputil.WindowCacher;
@@ -58,9 +60,9 @@ import net.java.sip.communicator.service.gui.UIContact;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.gui.UrlCreatorEnum;
 import net.java.sip.communicator.service.gui.WizardContainer;
-import net.java.sip.communicator.service.gui.event.ChatListener;
 import net.java.sip.communicator.service.managecontact.ManageContactWindow;
 import net.java.sip.communicator.service.protocol.Call;
+import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.service.protocol.ChatRoom;
 import net.java.sip.communicator.service.protocol.ChatRoomMember;
 import net.java.sip.communicator.service.protocol.Contact;
@@ -318,17 +320,6 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     }
 
     /**
-     * Returns the phone number currently entered in the phone number field.
-     *
-     * @return the phone number currently entered in the phone number field.
-     */
-    @Override
-    public String getCurrentPhoneNumber()
-    {
-        return null;
-    }
-
-    /**
      * Changes the phone number currently entered in the phone number field.
      *
      * @param phoneNumber the phone number to enter in the phone number field.
@@ -444,27 +435,6 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     }
 
     /**
-     * Registers a <tt>NewChatListener</tt> to be informed when new
-     * <tt>Chats</tt> are created.
-     * @param listener listener to be registered
-     */
-    @Override
-    public void addChatListener(ChatListener listener)
-    {
-        getChatWindowManager().addChatListener(listener);
-    }
-
-    /**
-     * Removes the registration of a <tt>NewChatListener</tt>.
-     * @param listener listener to be unregistered
-     */
-    @Override
-    public void removeChatListener(ChatListener listener)
-    {
-        getChatWindowManager().removeChatListener(listener);
-    }
-
-    /**
      * Creates a new <tt>Call</tt> with a specific set of participants.
      * <p>
      * The current implementation provided by <tt>UIServiceImpl</tt> supports a
@@ -504,6 +474,12 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     public void hangupCall(Call call)
     {
         CallManager.hangupCall(call);
+    }
+
+    @Override
+    public void focusCall(Call call)
+    {
+        CallManager.focusCall(call);
     }
 
     /**
@@ -659,7 +635,7 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     }
 
     @Override
-    public SIPCommSnakeButton getAccessionCrmLaunchButton(
+    public SIPCommSnakeButton getCrmLaunchButton(
             @Nullable final String searchName,
             @Nullable final String searchNumber)
     {
@@ -669,40 +645,12 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
         if (ust.isServiceTypeEnabled(ServiceType.CRM))
         {
             logger.debug(
-                "Creating Accession CRM button for " + logHasher(searchName) +
+                "Creating CRM button for " + logHasher(searchName) +
                 ": " + sanitisePeerId(searchNumber));
             crmLaunchButton = ust.createCrmLaunchButton(searchName, searchNumber);
         }
 
         return crmLaunchButton;
-    }
-
-    @Override
-    public SIPCommSnakeButton getWebSocketCrmLaunchButton(
-            @Nullable String searchNumber)
-    {
-        WebSocketApiServicesTools servicesTools =
-                new WebSocketApiServicesTools();
-
-        return servicesTools.createCrmLaunchButton(searchNumber);
-    }
-
-    @Override
-    public JLabel getCrmLookupInProgressIndicator()
-    {
-        WebSocketApiServicesTools apiServicesTools =
-                new WebSocketApiServicesTools();
-
-        return apiServicesTools.createCrmSearchPlaceholderLabel();
-    }
-
-    @Override
-    public JLabel getCrmLookupFailedIndicator()
-    {
-        WebSocketApiServicesTools apiServicesTools =
-                new WebSocketApiServicesTools();
-
-        return apiServicesTools.createNoCrmMatchLabel();
     }
 
     @Override
@@ -842,10 +790,47 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     }
 
     @Override
+    public void showAddCallPeerWindow(Call call) {
+        AddParticipantDialog addParticipantDialog = new AddParticipantDialog(call);
+        addParticipantDialog.setVisible(true);
+    }
+
+    @Override
+    public void showTransferCallWindow(CallPeer peer) {
+        CallManager.openCallTransferDialog(peer);
+    }
+
+    @Override
     public void showBrowserService(UrlCreatorEnum mOption)
     {
         BrowserPanelService browserService = GuiActivator.getBrowserPanelService();
         mDisplayer = browserService.getBrowserPanelDisplayer(mOption, mOption.getNameRes());
         mDisplayer.setVisible(true);
+    }
+
+    @Override
+    public boolean isLocalVideoEnabled(Call call)
+    {
+        return CallManager.isLocalVideoEnabled(call);
+    }
+
+    @Override
+    public void enableLocalVideo(Call call, boolean enable)
+    {
+        CallManager.enableLocalVideo(call, enable);
+    }
+
+    @Override
+    public void playDTMF(Call call, String toneValue) throws InterruptedException
+    {
+        DTMFHandler dtmfHandler = new DTMFHandler();
+        DTMFToneInfo info = dtmfHandler.getDTMFToneInfo(toneValue);
+        dtmfHandler.startSendingDtmfTone(call, info);
+        // TODO REFRESH-CALL-UI: Consider if this is the best option - the Java UI code
+        // listens to mouse down and up events to start and stop the dialtone, but we
+        // probably don't want to do this over WISPA (we could end up with a dialtone that
+        // doesn't stop until WISPA reconnects...)
+        Thread.sleep(100);
+        dtmfHandler.stopSendingDtmfTone(call);
     }
 }

@@ -13,6 +13,7 @@ import org.osgi.framework.*;
 import net.java.sip.communicator.service.certificate.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.service.resources.*;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -43,6 +44,11 @@ public class HttpUtilActivator
      * The resource service.
      */
     private static ResourceManagementService resourceService;
+
+    /**
+     * The WISPA service.
+     */
+    private static WISPAService wispaService;
 
     /**
      * A reference to the ConfigurationService implementation instance that
@@ -145,5 +151,24 @@ public class HttpUtilActivator
                 ConfigurationService.class);
         }
         return configurationService;
+    }
+
+    /**
+     * Returns a reference to a WISPAService implementation currently
+     * registered in the bundle context or null if no such implementation was
+     * found.
+     *
+     * @return a currently valid implementation of the WISPAService.
+     */
+    public static WISPAService getWispaService()
+    {
+        if (wispaService == null)
+        {
+            wispaService
+                = ServiceUtils.getService(
+                bundleContext,
+                WISPAService.class);
+        }
+        return wispaService;
     }
 }

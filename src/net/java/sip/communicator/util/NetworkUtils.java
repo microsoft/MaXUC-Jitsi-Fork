@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import org.xbill.DNS.AAAARecord;
 import org.xbill.DNS.ARecord;
 import org.xbill.DNS.Cache;
-import org.xbill.DNS.DClass;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.NAPTRRecord;
 import org.xbill.DNS.Name;
@@ -98,9 +97,9 @@ public class NetworkUtils
     public static final int    MIN_PORT_NUMBER = 1024;
 
     /**
-     * The random port number generator that we use in getRandomPortNumer()
+     * The random port number generator that we use in getRandomPortNumber()
      */
-    private static Random portNumberGenerator = new Random();
+    private static final Random portNumberGenerator = new Random();
 
     /**
      * A random number generator.
@@ -179,10 +178,8 @@ public class NetworkUtils
         if (Character.digit(address.charAt(0), 16) != -1
                         || (address.charAt(0) == ':'))
         {
-            byte[] addr = null;
-
             // see if it is IPv4 address
-            addr = strToIPv4(address);
+            byte[] addr = strToIPv4(address);
             // if not, see if it is IPv6 address
             if (addr == null)
             {
@@ -282,7 +279,7 @@ public class NetworkUtils
                     break;
                 case 4:
                     // And now for the most common - four part case. This time
-                    // there's a byte for every part :). Yuppiee! :)
+                    // there's a byte for every part :). Yippee! :)
                     for (int i = 0; i < 4; i++)
                     {
                         currentTkn = Integer.parseInt(tokens[i]);
@@ -494,7 +491,7 @@ public class NetworkUtils
             boolean useDNSCache)
         throws ParseException
     {
-        Record[] records = null;
+        Record[] records;
         String lookupError;
         try
         {
@@ -523,7 +520,7 @@ public class NetworkUtils
         }
 
         //String[][] pvhn = new String[records.length][4];
-        SRVRecord srvRecords[] = new SRVRecord[records.length];
+        SRVRecord[] srvRecords = new SRVRecord[records.length];
 
         for (int i = 0; i < records.length; i++)
         {
@@ -642,7 +639,7 @@ public class NetworkUtils
     public static String[][] getNAPTRRecords(String domain)
         throws ParseException
     {
-        Record[] records = null;
+        Record[] records;
         try
         {
             Lookup lookup = createLookup(domain, Type.NAPTR);
@@ -683,11 +680,11 @@ public class NetworkUtils
         }
 
         // sort the SRV RRs by RR value (lower is preferred)
-        Arrays.sort(recVals, new Comparator<String[]>()
+        Arrays.sort(recVals, new Comparator<>()
         {
             // Sorts NAPTR records by ORDER (low number first), PREFERENCE (low
             // number first) and PROTOCOL (0-TLS, 1-TCP, 2-UDP).
-            public int compare(String array1[], String array2[])
+            public int compare(String[] array1, String[] array2)
             {
                 // First tries to define the priority with the NAPTR order.
                 int order
@@ -807,10 +804,8 @@ public class NetworkUtils
 
         if (NetworkUtils.isValidIPAddress(hostAddress))
         {
-            byte[] addr = null;
-
             // attempt parse as IPv4 address
-            addr = strToIPv4(hostAddress);
+            byte[] addr = strToIPv4(hostAddress);
 
             // if not IPv4, parse as IPv6 address
             if (addr == null)
@@ -838,7 +833,7 @@ public class NetworkUtils
     public static InetSocketAddress[] getAandAAAARecords(String domain, int port)
         throws ParseException
     {
-        byte[] address = null;
+        byte[] address;
         if((address = strToIPv4(domain)) != null
             || (address = strToIPv6(domain)) != null)
         {
@@ -930,7 +925,7 @@ public class NetworkUtils
      * least one IPv6 address) and returns IN6_ADDR_ANY or IN4_ADDR_ANY
      * accordingly. This method is only used to initialize IN_ADDR_ANY so that
      * it could be used when binding sockets. The reason we need it is because
-     * on mac (contrary to lin or win) binding a socket on 0.0.0.0 would make
+     * on Mac (contrary to Linux or Windows) binding a socket on 0.0.0.0 would make
      * it deaf to IPv6 traffic. Binding on ::0 does the trick but that would
      * fail on hosts that have no IPv6 support. Using the result of this method
      * provides an easy way to bind sockets in cases where we simply want any
@@ -973,7 +968,7 @@ public class NetworkUtils
      * @param port the port number that we'd like verified.
      *
      * @return <tt>true</tt> if port is a valid and bindable port number and
-     * <tt>alse</tt> otherwise.
+     * <tt>false</tt> otherwise.
      */
     public static boolean isValidPortNumber(int port)
     {
@@ -994,7 +989,7 @@ public class NetworkUtils
         if (isMappedIPv4Addr(addr))
         {
             byte[] newAddr = new byte[IN4_ADDR_SIZE];
-            System.arraycopy(addr, 12, newAddr, 0, IN6_ADDR_SIZE);
+            System.arraycopy(addr, 12, newAddr, 0, IN4_ADDR_SIZE);
             return newAddr;
         }
 
@@ -1135,7 +1130,7 @@ public class NetworkUtils
     private static void sortSrvRecord(SRVRecord[] srvRecords)
     {
         // Sort the SRV RRs by priority (lower is preferred).
-        Arrays.sort(srvRecords, new Comparator<SRVRecord>()
+        Arrays.sort(srvRecords, new Comparator<>()
         {
             public int compare(SRVRecord obj1, SRVRecord obj2)
             {
@@ -1150,7 +1145,7 @@ public class NetworkUtils
 
     /**
      * Sorts each priority of the SRV record list. Each priority is sorted with
-     * the probabilty given by the weight attribute.
+     * the probability given by the weight attribute.
      *
      * @param srvRecords The list of SRV records already sorted by priority.
      */
@@ -1174,7 +1169,7 @@ public class NetworkUtils
 
     /**
      * Sorts SRV record list for a given priority: this priority is sorted with
-     * the probabilty given by the weight attribute.
+     * the probability given by the weight attribute.
      *
      * @param srvRecords The list of SRV records already sorted by priority.
      * @param startIndex The first index (included) for the current priority.
@@ -1270,15 +1265,6 @@ public class NetworkUtils
                 return;
             }
         }
-    }
-
-    /**
-     * Clears the default DNS cache.
-     */
-    public static void clearDefaultDNSCache()
-    {
-        Cache defaultCache = Lookup.getDefaultCache(DClass.IN);
-        defaultCache.clearCache();
     }
 
     /**

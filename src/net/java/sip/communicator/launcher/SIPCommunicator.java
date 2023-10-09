@@ -9,6 +9,7 @@ package net.java.sip.communicator.launcher;
 
 import static java.util.stream.Collectors.joining;
 import static net.java.sip.communicator.util.launchutils.LaunchArgHandler.*;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -31,6 +32,9 @@ import net.java.sip.communicator.util.ScStdOut;
 import net.java.sip.communicator.util.launchutils.LaunchArgHandler;
 import net.java.sip.communicator.util.launchutils.SipCommunicatorLock;
 import org.jitsi.util.StringUtils;
+
+import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.WinReg;
 
 /**
  * Starts the SIP Communicator.
@@ -204,6 +208,17 @@ public class SIPCommunicator
     private static final int PORT_RANGE_END = 9999;
 
     /**
+     * The registry key under which the default Outlook integration application
+     * is placed. There can only be one such key.
+     */
+    private static String REGISTRY_DEFAULT_OUTLOOK_APPLICATION_KEY
+        = "Software\\IM Providers";
+    private static String REGISTRY_DEFAULT_OUTLOOK_APPLICATION_VALUE
+        = "DefaultIMApp";
+    private static String REGISTRY_DEFAULT_OUTLOOK_APPLICATION_UNSET_VALUE
+        = "None";
+
+    /**
      * Starts the SIP Communicator.
      *
      * @param args command line args if any
@@ -319,33 +334,30 @@ public class SIPCommunicator
         // Must call after obtaining SipCommunicatorLock to avoid creating orphaned UI processes
         startElectronUI();
 
-        /*
-         * Load Jabra and Plantronics Libraries. The libraries are loaded here as a workaround as loading them after Accession has started results
-         * in Accession not being able to find the libraries. However, we wait until determining we're the main instance, to avoid loading them
-         * if we're only going to pass off the URI to another instance, above. This only affects Windows.
-         */
         if (isWindows())
         {
-            try
+            // Load libraries to support various headsets.
+            // The libraries are loaded here as a workaround as loading them after MaX UC has started results
+            // in us not being able to find the libraries. However, we wait until determining we're the main instance,
+            // to avoid loading them if we're only going to pass off the URI to another instance, above. This only affects Windows.
+            String[] libraries = {"libjabra", "libpltwrapper", "libyealinkusbsdk"};
+            for (String library : libraries)
             {
-                System.loadLibrary("libjabra");
-            }
-            catch (Error | Exception e)
-            {
-                logger.error("Unable to load libjabra library: " +
-                    e.getMessage());
-            }
-
-            try
-            {
-                System.loadLibrary("libpltwrapper");
-            }
-            catch (Error | Exception e)
-            {
-                logger.error("Unable to load libpltwrapper library: " +
-                    e.getMessage());
+                try
+                {
+                    System.loadLibrary(library);
+                    logger.info("Loaded " + library);
+                }
+                catch (Error | Exception e)
+                {
+                    logger.error("Unable to load " + library + " library: " +
+                                 e.getMessage());
+                }
             }
         }
+
+        // Clean up this unused registry entry deprecated in V3.20
+        unsetDefaultOutlookApp();
 
         //there was no error, continue;
         System.setOut(new ScStdOut(System.out));
@@ -731,7 +743,7 @@ public class SIPCommunicator
 
             // The log file doesn't exist yet, so save a message to be logged later.
             logMessages += "Failed to rename user data directory in "
-                + location + " from " + oldName + " to " + newName + ". Result: " + result + "\r\n";
+                + sanitiseFilePath(location) + " from " + oldName + " to " + newName + ". Result: " + result + "\r\n";
 
             // OK, so that didn't work.  Now try a copy which is ugly,
             // but as a backup will have to do.
@@ -743,7 +755,7 @@ public class SIPCommunicator
             }
             catch (IOException ex)
             {
-                result += " IOException copying " + ex.getMessage();
+                result += " IOException copying " + sanitiseFilePath(ex.getMessage());
                 logMessages += result;
             }
         }
@@ -818,9 +830,9 @@ public class SIPCommunicator
                 // and the Electron app is <MaX UC App Dir>/Contents/Frameworks/<electronAppName>.app
                 File electronApp = new File("../Frameworks/", electronAppName + ".app");
                 String electronAppAbsolutePath = electronApp.getAbsolutePath();
-                logger.info("Starting Electron UI at: " + electronAppAbsolutePath);
+                logger.info("Starting Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
                 new ProcessBuilder("open", electronAppAbsolutePath).start();
-                logger.info("Started Electron UI at: " + electronAppAbsolutePath);
+                logger.info("Started Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
             }
             catch (Exception e)
             {
@@ -861,9 +873,9 @@ public class SIPCommunicator
                 // and the Electron app is at C:\\Program Files (x86)\\<MaX UC App Dir>\\ui
                 File electronApp = new File("ui/", electronAppName + ".exe");
                 String electronAppAbsolutePath = electronApp.getAbsolutePath();
-                logger.info("Starting Electron UI at: " + electronAppAbsolutePath);
+                logger.info("Starting Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
                 new ProcessBuilder(electronAppAbsolutePath).start();
-                logger.info("Started Electron UI at: " + electronAppAbsolutePath);
+                logger.info("Started Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
             }
             catch (Exception e)
             {
@@ -1060,5 +1072,63 @@ public class SIPCommunicator
     static void setOldAppName(String name)
     {
         oldAppName = name;
+    }
+
+    /**
+     * If there's a default Outlook IM app set in the registry for MaX UC, remove
+     * that registry entry
+     */
+    private static void unsetDefaultOutlookApp()
+    {
+        try
+        {
+            if (defaultOutlookAppIsSet())
+            {
+                Advapi32Util.registrySetStringValue(
+                        WinReg.HKEY_CURRENT_USER,
+                        REGISTRY_DEFAULT_OUTLOOK_APPLICATION_KEY,
+                        REGISTRY_DEFAULT_OUTLOOK_APPLICATION_VALUE,
+                        REGISTRY_DEFAULT_OUTLOOK_APPLICATION_UNSET_VALUE);
+                logger.info("Default outlook registry key unset.");
+            }
+        }
+        catch (Exception e)
+        {
+            logger.info("Hit an exception while checking/setting the Outlook registry key.");
+        }
+    }
+
+    private static boolean defaultOutlookAppIsSet()
+    {
+        return isWindows() &&
+               outlookRegistryKeyExists() &&
+               outlookRegistryValueExists() &&
+               outlookRegistryKeyMatchesAppName();
+    }
+
+    private static boolean outlookRegistryKeyExists()
+    {
+        return Advapi32Util.registryKeyExists(
+                WinReg.HKEY_CURRENT_USER,
+                REGISTRY_DEFAULT_OUTLOOK_APPLICATION_KEY);
+    }
+
+    private static boolean outlookRegistryValueExists()
+    {
+        return Advapi32Util.registryValueExists(
+                WinReg.HKEY_CURRENT_USER,
+                REGISTRY_DEFAULT_OUTLOOK_APPLICATION_KEY,
+                REGISTRY_DEFAULT_OUTLOOK_APPLICATION_VALUE);
+    }
+
+    private static boolean outlookRegistryKeyMatchesAppName()
+    {
+        String defaultOutlookApp =
+                Advapi32Util.registryGetStringValue(
+                        WinReg.HKEY_CURRENT_USER,
+                        REGISTRY_DEFAULT_OUTLOOK_APPLICATION_KEY,
+                        REGISTRY_DEFAULT_OUTLOOK_APPLICATION_VALUE);
+
+        return defaultOutlookApp.equals(appName);
     }
 }

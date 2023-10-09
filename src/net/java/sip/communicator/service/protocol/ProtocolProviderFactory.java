@@ -98,12 +98,6 @@ public abstract class ProtocolProviderFactory
     public static final String SERVER_PORT = "SERVER_PORT";
 
     /**
-     * The name of the property under which we store the name of the transport
-     * protocol that needs to be used to access the server.
-     */
-    public static final String SERVER_TRANSPORT = "SERVER_TRANSPORT";
-
-    /**
      * The name of the property under which we store protocol the address of
      * a protocol proxy.
      */
@@ -137,35 +131,10 @@ public abstract class ProtocolProviderFactory
         = "net.java.sip.communicator.SIP_PREFERRED_SECURE_PORT";
 
     /**
-     * The name of the property under which we store the type of the proxy
-     * stored against the PROXY_ADDRESS property. Exact type values depend on
-     * protocols and among them are socks4, socks5, http and possibly others.
-     */
-    public static final String PROXY_TYPE = "PROXY_TYPE";
-
-    /**
-    * The name of the property under which we store the username for the
-    * proxy stored against the PROXY_ADDRESS property.
-    */
-   public static final String PROXY_USERNAME = "PROXY_USERNAME";
-
-   /**
     * The name of the property under which we store the authorization name
     * for the proxy stored against the PROXY_ADDRESS property.
     */
    public static final String AUTHORIZATION_NAME = "AUTHORIZATION_NAME";
-
-   /**
-    * The name of the property under which we store the password for the proxy
-    * stored against the PROXY_ADDRESS property.
-    */
-   public static final String PROXY_PASSWORD = "PROXY_PASSWORD";
-
-    /**
-     * The name of the property under which we store the name of the transport
-     * protocol that needs to be used to access the proxy.
-     */
-    public static final String PROXY_TRANSPORT = "PROXY_TRANSPORT";
 
     /**
      * The name of the property that indicates whether loose routing should be
@@ -231,21 +200,6 @@ public abstract class ProtocolProviderFactory
         "CLIENT_TLS_CERTIFICATE";
 
     /**
-     * The name of the property under which we store the boolean value
-     * indicating if the user name should be automatically changed if the
-     * specified name already exists. This property is meant to be used by IRC
-     * implementations.
-     */
-    public static final String AUTO_CHANGE_USER_NAME = "AUTO_CHANGE_USER_NAME";
-
-    /**
-     * The name of the property under which we store the boolean value
-     * indicating if a password is required. Initially this property is meant to
-     * be used by IRC implementations.
-     */
-    public static final String NO_PASSWORD_REQUIRED = "NO_PASSWORD_REQUIRED";
-
-    /**
      * The name of the property under which we store if the presence is enabled.
      */
     public static final String IS_PRESENCE_ENABLED = "IS_PRESENCE_ENABLED";
@@ -281,16 +235,6 @@ public abstract class ProtocolProviderFactory
      */
     public static final String IS_SERVER_OVERRIDDEN
                                                 = "IS_SERVER_OVERRIDDEN";
-    /**
-     * Indicates if the proxy address has been validated.
-     */
-    public static final String PROXY_ADDRESS_VALIDATED
-                                                = "PROXY_ADDRESS_VALIDATED";
-
-    /**
-     * Indicates the search strategy chosen for the DICT protocol.
-     */
-    public static final String STRATEGY = "STRATEGY";
 
     /**
      * Indicates a protocol that would not be shown in the user interface as an

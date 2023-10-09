@@ -38,26 +38,6 @@ public class MockMultiUserChat
     }
 
     /**
-     * Returns the <tt>List</tt> of <tt>String</tt>s indicating chat rooms
-     * currently available on the server that this protocol provider is
-     * connected to.
-     *
-     * @return a <tt>java.util.List</tt> of the name <tt>String</tt>s for chat
-     * rooms that are currently available on the server that this protocol
-     * provider is connected to.
-     *
-     */
-    public List<String> getExistingChatRooms()
-    {
-        List<String> existingChatRoomNames
-            = new ArrayList<>(existingChatRooms.size());
-
-        for (ChatRoom existingChatRoom : existingChatRooms)
-            existingChatRoomNames.add(existingChatRoom.getIdentifier().toString());
-        return existingChatRoomNames;
-    }
-
-    /**
      * Returns a list of the chat rooms that we have joined and are currently
      * active in.
      *
@@ -67,26 +47,6 @@ public class MockMultiUserChat
     public List<ChatRoom> getCurrentlyJoinedChatRooms()
     {
         return joinedChatRooms;
-    }
-
-    /**
-     * Returns a list of the chat rooms that <tt>chatRoomMember</tt> has joined
-     * and is currently active in.
-     *
-     * @param chatRoomMember the chatRoomMember whose current ChatRooms we will
-     * be querying.
-     * @return a list of the chat rooms that <tt>chatRoomMember</tt> has
-     * joined and is currently active in.
-     *
-     */
-    public List<String> getCurrentlyJoinedChatRooms(ChatRoomMember chatRoomMember)
-    {
-        List<String> result = new Vector<>();
-
-        for (ChatRoom elem : joinedChatRooms)
-            if (elem.getMembers().contains(chatRoomMember))
-                result.add(elem.getIdentifier().toString());
-        return result;
     }
 
     /**
@@ -127,29 +87,4 @@ public class MockMultiUserChat
         return null;
     }
 
-    /**
-     * Informs the sender of an invitation that we decline their invitation.
-     *
-     * @param invitation the invitation we are rejecting.
-     * @param reason the reason for rejecting.
-     */
-    public void rejectInvitation(ChatRoomInvitation invitation, String reason)
-    {
-        fireInvitationRejectedEvent(
-            invitation.getTargetChatRoom(),
-            provider.getAccountID().getUserID(),
-            invitation.getReason());
-    }
-
-    /**
-     * Returns true if <tt>contact</tt> supports multi user chat sessions.
-     *
-     * @param contact reference to the contact whose support for chat rooms
-     * we are currently querying.
-     * @return a boolean indicating whether <tt>contact</tt> supports chatrooms.
-     */
-    public boolean isMultiChatSupportedByContact(Contact contact)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 }

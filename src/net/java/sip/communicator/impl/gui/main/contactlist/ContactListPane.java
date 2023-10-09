@@ -530,12 +530,9 @@ public class ContactListPane
                                                          contactResource);
         }
 
-        if (metaContact != null)
+        if (metaContact != null && !chatPanel.isChatFocused())
         {
-            // Show an envelope on the sender contact in the contact list and
-            // in the systray.
-            if (!chatPanel.isChatFocused())
-                mContactList.setActiveContact(metaContact, true);
+            mContactList.setActiveContact(metaContact, true);
         }
 
         // We don't need to automatically open the Java/Swing chat window since we're already

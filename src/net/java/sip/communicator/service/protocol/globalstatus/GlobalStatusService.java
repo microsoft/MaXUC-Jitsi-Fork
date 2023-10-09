@@ -93,11 +93,6 @@ public interface GlobalStatusService extends ContactPresenceStatusListener
     void setIsInConference(boolean isInConference);
 
     /**
-     * @return true if the user is in a conference
-     */
-    boolean isInConference();
-
-    /**
      * If true, set 'on the phone' to true then update the global status.
      *
      * @param onThePhone whether the user is on the phone.

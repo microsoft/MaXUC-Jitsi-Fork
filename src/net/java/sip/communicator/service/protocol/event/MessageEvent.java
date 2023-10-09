@@ -212,14 +212,6 @@ public abstract class MessageEvent extends EventObject
     }
 
     /**
-     * Set the read state of the <tt>Message</tt> represented by this event.
-     */
-    public void setMessageRead(boolean value)
-    {
-        this.isRead = value;
-    }
-
-    /**
      * Provides an error message to display to the user if there was an error
      *
      * @return error message to display to the user

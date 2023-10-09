@@ -5,7 +5,6 @@ import java.io.*;
 import java.net.*;
 
 import net.java.sip.communicator.service.browserpanel.BrowserPanelService.UrlCreator;
-import net.java.sip.communicator.service.commportal.*;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -37,64 +36,22 @@ public enum UrlCreatorEnum implements UrlCreator
             }
         }
 
-        @Override
-        boolean isSupported(CPCos classOfService)
-        {
-            return classOfService.getSubscribedMashups().isConferenceAllowed();
-        }
     },
 
     CALL_MANAGER("main.html")
     {
-        @Override
-        boolean isSupported(CPCos classOfService)
-        {
-            return classOfService.getIchAllowed() ||
-                   classOfService.getBCMSubscribed();
-        }
     },
 
     GROUPS("groups.html")
     {
-        @Override
-        boolean isSupported(CPCos classOfService)
-        {
-            // Groups are supported if
-            // * The subscriber type is not an individual line
-            //  (i.e. the subscriber is in a BG)
-            // * The subscriber is a member of a group
-            return classOfService.getGroupListLength() > 0 &&
-                   !"IndividualLine".equals(classOfService.getSubscriberType());
-        }
     },
 
     APPLICATIONS("applications.html")
     {
-        @Override
-        boolean isSupported(CPCos classOfService)
-        {
-            // Not dependent on the CoS
-            return true;
-        }
     },
 
     SETTINGS("settings.html")
     {
-        @Override
-        boolean isSupported(CPCos classOfService)
-        {
-            // Don't show if a meeting only user, as there are no relevant
-            // settings on that page, unless either they are an individual line
-            // or they have email login enabled:
-            //  - Individual lines are allowed to change the name of their
-            // account.
-            //  - Users with email login can change their registered email
-            // address.
-            // Both of the above is done via this settings page.
-            return ConfigurationUtils.isCallingOrImEnabled() ||
-                   ConfigurationUtils.isEmailLoginEnabled() ||
-                   "IndividualLine".equals(classOfService.getSubscriberType());
-        }
     };
 
     private static final Logger logger = Logger.getLogger(UrlCreatorEnum.class);
@@ -126,15 +83,6 @@ public enum UrlCreatorEnum implements UrlCreator
         mPage = page;
         mNameRes = "plugin.toolsmenuoptions.menu." + this;
     }
-
-    /**
-     * Examine the CoS and subscriber info and return true if this menu item is
-     * allowed
-     *
-     * @param classOfService The class of service retrieved from the server
-     * @return true if the class of service allows this menu option
-     */
-    abstract boolean isSupported(CPCos classOfService);
 
     /**
      * Create the url via a short-lived token needed to direct the user to a

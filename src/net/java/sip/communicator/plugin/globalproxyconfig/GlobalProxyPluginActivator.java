@@ -8,12 +8,10 @@
 package net.java.sip.communicator.plugin.globalproxyconfig;
 
 import java.net.*;
-import java.util.*;
 
 import org.jitsi.service.configuration.*;
 import org.osgi.framework.*;
 
-import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
@@ -39,13 +37,6 @@ public class GlobalProxyPluginActivator implements BundleActivator
      * The context of this bundle.
      */
     protected static BundleContext bundleContext;
-
-     /**
-      * Indicates if the global proxy config form should be disabled, i.e.
-      * not visible to the user.
-      */
-    private static final String DISABLED_PROP
-        = "net.java.sip.communicator.plugin.globalproxyconfig.DISABLED";
 
     /**
      * Starts the bundle.

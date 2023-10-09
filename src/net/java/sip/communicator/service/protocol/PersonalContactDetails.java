@@ -128,7 +128,7 @@ public class PersonalContactDetails
     }
 
     /**
-     * Class for the country detail of the contact.
+     * Class for the country/region detail of the contact.
      * <P/>
      * Used when the locale is not known
      */
@@ -136,12 +136,12 @@ public class PersonalContactDetails
     {
         public CountryDetail(String value)
         {
-            super("Country detail", value);
+            super("Country/region detail", value);
         }
     }
 
     /**
-     * Class for work the country detail of the contact.
+     * Class for work country/region detail of the contact.
      * <P/>
      * Used when the locale is not known
      */
@@ -149,7 +149,7 @@ public class PersonalContactDetails
     {
         public WorkCountryDetail(String value)
         {
-            super("Work country detail", value);
+            super("Work country/region detail", value);
         }
     }
 

@@ -9,7 +9,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.Credentials;
 import org.apache.http.client.HttpClient;
-import org.apache.http.util.EntityUtils;
 
 /**
  * Utility class wraps the http requests result and some utility methods
@@ -90,41 +89,17 @@ public class HTTPResponseResult
     }
 
     /**
-     * Returns a content string of the entity.
-     *
-     * @return content string of the entity.
-     *
-     * @throws IOException if the stream could not be created
-     */
-    public String getContentString()
-        throws IOException
-    {
-        try
-        {
-            return EntityUtils.toString(entity);
-        }
-        finally
-        {
-            if(httpClient != null)
-                httpClient.getConnectionManager().shutdown();
-        }
-    }
-
-    /**
      * Get the credentials used by the request.
      *
-     * @return the credentials (login at index 0 and password at index 1)
+     * @return the credentials
      */
-    public String[] getCredentials()
+    public Credentials getCredentials()
     {
-        String[] cred = new String[2];
+        return credentials;
+    }
 
-        if(credentials != null)
-        {
-            cred[0] = credentials.getUserPrincipal().getName();
-            cred[1] = credentials.getPassword();
-        }
-
-        return cred;
+    public int getStatusCode()
+    {
+        return response.getStatusLine().getStatusCode();
     }
 }

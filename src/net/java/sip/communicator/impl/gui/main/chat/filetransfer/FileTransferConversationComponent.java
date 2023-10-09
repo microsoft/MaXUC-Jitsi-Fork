@@ -45,16 +45,6 @@ public abstract class FileTransferConversationComponent
         = Logger.getLogger(FileTransferConversationComponent.class);
 
     /**
-     * Image default width.
-     */
-    protected static final int IMAGE_WIDTH = 64;
-
-    /**
-     * Image default height.
-     */
-    protected static final int IMAGE_HEIGHT = 64;
-
-    /**
      * The image label.
      */
     protected final FileImageLabel imageLabel;
@@ -436,21 +426,6 @@ public abstract class FileTransferConversationComponent
     }
 
     /**
-     * Sets the file transfer.
-     *
-     * @param fileTransfer the file transfer
-     * @param transferredFileSize the size of the transferred file
-     */
-    protected void setFileTransfer(FileTransfer fileTransfer,
-                                   long transferredFileSize)
-    {
-        this.fileTransfer = fileTransfer;
-        this.transferredFileSize = transferredFileSize;
-
-        fileTransfer.addProgressListener(this);
-    }
-
-    /**
      * Handles buttons action events.
      *
      * @param evt the <tt>ActionEvent</tt> that notified us
@@ -603,31 +578,6 @@ public abstract class FileTransferConversationComponent
         String text = format.format(fileSize);
 
         return fileName + " (" + text + ")";
-    }
-
-    /**
-     * Returns the string, showing information for the given file.
-     *
-     * @param fileName the name of the file
-     * @param fileSize the size of the file
-     * @return the name of the given file
-     */
-    protected String getFileLabel(String fileName, long fileSize)
-    {
-        ByteFormat format = new ByteFormat();
-        String text = format.format(fileSize);
-
-        return fileName + " (" + text + ")";
-    }
-
-    /**
-     * Hides all progress related components.
-     */
-    protected void hideProgressRelatedComponents()
-    {
-        progressBar.setVisible(false);
-        progressSpeedLabel.setVisible(false);
-        estimatedTimeLabel.setVisible(false);
     }
 
     /**

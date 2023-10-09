@@ -97,26 +97,6 @@ public abstract class AbstractOperationSetBasicAutoAnswer
     }
 
     /**
-     * Makes a check after creating call locally, should we answer it.
-     *
-     * @param call The new incoming call to auto-answer if needed.
-     * @param isVideoCall Indicates if the remote peer which has created this
-     * call wish to have a video call.
-     *
-     * @return <tt>true</tt> if we have processed and no further processing is
-     *          needed, <tt>false</tt> otherwise.
-     */
-    public boolean autoAnswer(Call call, boolean isVideoCall)
-    {
-        if(answerUnconditional || satisfyAutoAnswerConditions(call))
-        {
-            this.answerCall(call, isVideoCall);
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Answers call if peer in correct state or wait for it.
      *
      * @param call The new incoming call to auto-answer if needed.
@@ -133,62 +113,6 @@ public abstract class AbstractOperationSetBasicAutoAnswer
         {
             new AutoAnswerThread(peers.next(), isVideoCall);
         }
-    }
-
-    /**
-     * Checks if the call satisfy the auto answer conditions.
-     *
-     * @param call The new incoming call to auto-answer if needed.
-     *
-     * @return <tt>true</tt> if the call satisfy the auto answer conditions.
-     * <tt>False</tt> otherwise.
-     */
-    protected abstract boolean satisfyAutoAnswerConditions(Call call);
-
-    /**
-     * Sets the auto answer option to unconditionally answer all incoming calls.
-     */
-    public void setAutoAnswerUnconditional()
-    {
-        clearLocal();
-
-        this.answerUnconditional = true;
-
-        save();
-    }
-
-    /**
-     * Is the auto answer option set to unconditionally
-     * answer all incoming calls.
-     *
-     * @return is auto answer set to unconditional.
-     */
-    public boolean isAutoAnswerUnconditionalSet()
-    {
-        return answerUnconditional;
-    }
-
-    /**
-     * Sets the auto answer with video to video calls.
-     *
-     * @param answerWithVideo A boolean set to true to activate the auto answer
-     * with video when receiving a video call. False otherwise.
-     */
-    public void setAutoAnswerWithVideo(boolean answerWithVideo)
-    {
-        this.answerWithVideo = answerWithVideo;
-        this.save();
-    }
-
-    /**
-     * Returns if the auto answer with video to video calls is activated.
-     *
-     * @return A boolean set to true if the auto answer with video when
-     * receiving a video call is activated. False otherwise.
-     */
-    public boolean isAutoAnswerWithVideoSet()
-    {
-        return this.answerWithVideo;
     }
 
     /**

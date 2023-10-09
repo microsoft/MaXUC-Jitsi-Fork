@@ -140,16 +140,6 @@ public class ChatRoomProviderWrapper
         return null;
     }
 
-    /**
-     * Returns the number of chat rooms contained in this provider.
-     *
-     * @return the number of chat rooms contained in this provider.
-     */
-    public int countChatRooms()
-    {
-        return mChatRoomsOrderedCopy.size();
-    }
-
     public ChatRoomWrapper getChatRoom(int index)
     {
         return mChatRoomsOrderedCopy.get(index);

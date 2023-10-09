@@ -113,28 +113,6 @@ public abstract class AbstractOperationSetBasicInstantMessaging
     public abstract ImMessage createMessage(
         String content, String contentType, String encoding, String subject);
 
-    /**
-     * Notifies all registered message listeners that a message has been
-     * delivered successfully to its addressee..
-     *
-     * @param message the <tt>Message</tt> that has been delivered.
-     * @param to the <tt>Contact</tt> that <tt>message</tt> was delivered to.
-     */
-    protected void fireMessageDelivered(ImMessage message, Contact to)
-    {
-        fireMessageEvent(
-            new MessageDeliveredEvent(message, to, new Date()));
-    }
-
-    protected void fireMessageDeliveryFailed(
-        ImMessage message,
-        Contact to,
-        int errorCode)
-    {
-        fireMessageEvent(
-            new MessageDeliveryFailedEvent(message, to, errorCode));
-    }
-
     enum MessageEventType{
         None,
         MessageDelivered,
@@ -249,19 +227,6 @@ public abstract class AbstractOperationSetBasicInstantMessaging
         {
             logger.error("Error delivering message", e);
         }
-    }
-
-    /**
-     * Notifies all registered message listeners that a message has been
-     * received.
-     *
-     * @param message the <tt>Message</tt> that has been received.
-     * @param from the <tt>Contact</tt> that <tt>message</tt> was received from.
-     */
-    protected void fireMessageReceived(ImMessage message, Contact from)
-    {
-        fireMessageEvent(
-            new MessageReceivedEvent(message, from, new Date()));
     }
 
     /**

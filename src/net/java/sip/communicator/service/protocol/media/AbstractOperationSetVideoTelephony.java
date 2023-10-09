@@ -140,38 +140,6 @@ public abstract class AbstractOperationSetVideoTelephony<
     }
 
     /**
-     * Returns the <tt>ConferenceMember</tt> corresponding to the given
-     * <tt>visualComponent</tt>.
-     *
-     * @param peer the parent <tt>CallPeer</tt>
-     * @param visualComponent the visual <tt>Component</tt>, which corresponding
-     * <tt>ConferenceMember</tt> we're looking for
-     * @return the <tt>ConferenceMember</tt> corresponding to the given
-     * <tt>visualComponent</tt>.
-     */
-    public ConferenceMember getConferenceMember(CallPeer peer,
-                                                Component visualComponent)
-    {
-        @SuppressWarnings("unchecked")
-        W w = (W) peer;
-        VideoMediaStream videoStream
-            = (VideoMediaStream) w.getMediaHandler().getStream(MediaType.VIDEO);
-
-        if (videoStream != null)
-        {
-            for (ConferenceMember member : peer.getConferenceMembers())
-            {
-                Component memberComponent
-                    = videoStream.getVisualComponent(member.getVideoSsrc());
-
-                if (visualComponent.equals(memberComponent))
-                    return member;
-            }
-        }
-        return null;
-    }
-
-    /**
      * Delegates to the <tt>CallPeerMediaHandler</tt> of the specified
      * <tt>CallPeer</tt> because the video is provided by it.
      *
@@ -276,23 +244,6 @@ public abstract class AbstractOperationSetVideoTelephony<
     }
 
     /**
-     * Gets the indicator which determines whether the receiving of remote video
-     * in a specific <tt>Call</tt> is allowed. The setting does not reflect
-     * the availability of actual video capture devices, it just expresses the
-     * desire of the user to receive the remote video stream in the case the
-     * system is actually able to do so.
-     *
-     * @param call the <tt>Call</tt> to get the indicator of
-     *
-     * @return whether remote video streaming is allowed.
-     */
-    @SuppressWarnings("unchecked") // work with MediaAware* in media package
-    public boolean isRemoteVideoAllowed(Call call)
-    {
-        return ((V)call).isRemoteVideoAllowed();
-    }
-
-    /**
      * Adds a specific <tt>PropertyChangeListener</tt> to the list of
      * listeners which get notified when the properties (e.g.
      * {@link #LOCAL_VIDEO_STREAMING}) associated with a specific
@@ -340,17 +291,6 @@ public abstract class AbstractOperationSetVideoTelephony<
     public MediaUseCase getMediaUseCase()
     {
         return MediaUseCase.CALL;
-    }
-
-    /**
-     * Returns the quality control for video calls if any.
-     * Return null so protocols who supports it to override it.
-     * @param peer the peer which this control operates on.
-     * @return the implemented quality control.
-     */
-    public QualityControl getQualityControl(CallPeer peer)
-    {
-        return null;
     }
 
     /**

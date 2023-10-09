@@ -722,11 +722,15 @@ public class NetworkConfigurationWatcher extends Thread
             // if time spent between checks is more than 4 times
             // longer than the check interval we consider it as a
             // new check after standby
-            if(!isAfterStandby && last != 0)
-                isAfterStandby = (last + 4*CHECK_INTERVAL - curr) < 0;
-
-            if(isAfterStandby)
+            if (!isAfterStandby && last != 0)
             {
+                isAfterStandby = (last + 4*CHECK_INTERVAL - curr) < 0;
+            }
+
+            if (isAfterStandby)
+            {
+                logger.warn("Detected wake from sleep");
+
                 // oo standby lets fire down to all interfaces
                 // so they can reconnect
                 downAllInterfaces();
@@ -740,7 +744,8 @@ public class NetworkConfigurationWatcher extends Thread
                 // give time to interfaces
                 synchronized(this)
                 {
-                    try{
+                    try
+                    {
                         wait(CHECK_INTERVAL);
                     }
                     catch (Exception e){}

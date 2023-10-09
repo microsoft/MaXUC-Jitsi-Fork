@@ -31,7 +31,7 @@ public interface FileHistoryTable
     }
 
     // For COL_STATUS.
-    public enum STATUS
+    enum STATUS
     {
          ACTIVE,
          COMPLETED,

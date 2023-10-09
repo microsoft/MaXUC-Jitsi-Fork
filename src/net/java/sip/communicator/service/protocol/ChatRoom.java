@@ -11,7 +11,6 @@ import java.util.*;
 
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
-import org.jxmpp.jid.parts.Resourcepart;
 
 import net.java.sip.communicator.plugin.desktoputil.CreateConferenceMenu.*;
 import net.java.sip.communicator.service.contactlist.*;
@@ -396,21 +395,6 @@ public interface ChatRoom extends CreateConferenceMenuContainer
         throws OperationFailedException;
 
     /**
-     * Kicks a visitor or participant from the room.
-     *
-     * @param chatRoomMember the <tt>ChatRoomMember</tt> to kick from the room
-     * @param reason the reason why the participant is being kicked from the
-     * room
-     * @throws OperationFailedException if an error occurs while kicking the
-     * participant. In particular, an error can occur if a moderator or a user
-     * with an affiliation of "owner" or "administrator" was intended to be
-     * kicked; or if the participant that intended to kick another participant
-     * does not have kicking privileges;
-     */
-    void kickParticipant(ChatRoomMember chatRoomMember, String reason)
-        throws OperationFailedException;
-
-    /**
      * Returns the <tt>ChatRoomConfigurationForm</tt> containing all
      * configuration properties for this chat room. If the user doesn't have
      * permissions to see and change chat room configuration an
@@ -435,95 +419,6 @@ public interface ChatRoom extends CreateConferenceMenuContainer
     boolean isPersistent();
 
     /**
-    * Grants administrator privileges to another user. Room owners may grant
-    * administrator privileges to a member or unaffiliated user. An
-    * administrator is allowed to perform administrative functions such as
-    * banning users and edit moderator list.
-    *
-    * @param address the user address of the user to grant administrator
-    * privileges (e.g. "user@host.org").
-    */
-    void grantAdmin(Jid address);
-
-    /**
-    * Grants membership to a user. Only administrators are able to grant
-    * membership. A user that becomes a room member will be able to enter a room
-    * of type Members-Only (i.e. a room that a user cannot enter without being
-    * on the member list).
-    *
-    * @param address the user address of the user to grant membership
-    * privileges (e.g. "user@host.org").
-    */
-    void grantMembership(Jid address);
-
-    /**
-    * Grants moderator privileges to a participant or visitor. Room
-    * administrators may grant moderator privileges. A moderator is allowed to
-    * kick users, grant and revoke voice, invite other users, modify room's
-    * subject plus all the partcipants privileges.
-    *
-    * @param nickname the nickname of the occupant to grant moderator
-    * privileges.
-    */
-    void grantModerator(Resourcepart nickname);
-
-    /**
-    * Grants ownership privileges to another user. Room owners may grant
-    * ownership privileges. Some room implementations will not allow to grant
-    * ownership privileges to other users. An owner is allowed to change
-    * defining room features as well as perform all administrative functions.
-    *
-    * @param address the user address of the user to grant ownership
-    * privileges (e.g. "user@host.org").
-    */
-    void grantOwnership(Jid address);
-
-    /**
-    * Grants voice to a visitor in the room. In a moderated room, a moderator
-    * may want to manage who does and does not have "voice" in the room. To have
-    * voice means that a room occupant is able to send messages to the room
-    * occupants.
-    *
-    * @param nickname the nickname of the visitor to grant voice in the room
-    * (e.g. "john").
-    */
-    void grantVoice(Resourcepart nickname);
-
-    /**
-    * Revokes administrator privileges from a user. The occupant that loses
-    * administrator privileges will become a member. Room owners may revoke
-    * administrator privileges from a member or unaffiliated user.
-    *
-    * @param address the user address of the user to grant administrator
-    * privileges (e.g. "user@host.org").
-    */
-    void revokeAdmin(Jid address);
-
-    /**
-    * Revokes a user's membership. Only administrators are able to revoke
-    * membership. A user that becomes a room member will be able to enter a room
-    * of type Members-Only (i.e. a room that a user cannot enter without being
-    * on the member list). If the user is in the room and the room is of type
-    * members-only then the user will be removed from the room.
-    *
-    * @param address the user address of the user to revoke membership
-    * (e.g. "user@host.org").
-    */
-    void revokeMembership(Jid address);
-
-    /**
-    * Revokes moderator privileges from another user. The occupant that loses
-    * moderator privileges will become a participant. Room administrators may
-    * revoke moderator privileges only to occupants whose affiliation is member
-    * or none. This means that an administrator is not allowed to revoke
-    * moderator privileges from other room administrators or owners.
-    *
-    * @param nickname the nickname of the occupant to revoke moderator
-    * privileges.
-    */
-    void revokeModerator(Resourcepart nickname);
-
-    /**
     * Revokes ownership privileges from another user. The occupant that loses
     * ownership privileges will become an administrator. Room owners may revoke
     * ownership privileges. Some room implementations will not allow to grant
@@ -537,16 +432,6 @@ public interface ChatRoom extends CreateConferenceMenuContainer
     void revokeOwnership(Jid address) throws OperationFailedException;
 
     /**
-    * Revokes voice from a participant in the room. In a moderated room, a
-    * moderator may want to revoke an occupant's privileges to speak. To have
-    * voice means that a room occupant is able to send messages to the room
-    * occupants.
-    * @param nickname the nickname of the participant to revoke voice
-    * (e.g. "john").
-    */
-    void revokeVoice(Resourcepart nickname);
-
-    /**
      * Returns true if the chat room is active. An active chat room is one that
      * has had a message sent or received during this instance of Accession
      * running.
@@ -554,27 +439,6 @@ public interface ChatRoom extends CreateConferenceMenuContainer
      * @return true if the chat room is active
      */
     boolean isActive();
-
-    /**
-     * Returns true if we've already displayed a toast to notify the user that
-     * they have received historical messages in this chat room, so that we
-     * don't display a new toast for every historical message.
-     *
-     * @return true if we've already displayed a toast.
-     */
-    boolean historyNotificationDisplayed();
-
-    /**
-     * Sets whether we've already displayed a toast to notify the user that
-     * they have received historical messages in this chat room.  This is used
-     * to ensure that we don't display a new toast for every historical
-     * message.
-     *
-     * @param displayed Should be set to true if we've already displayed a
-     * toast.
-     *
-     */
-    void setHistoryNotificationDisplayed(boolean displayed);
 
     /**
      * Whether the Chat Room is currently muted and hence if it shouldn't

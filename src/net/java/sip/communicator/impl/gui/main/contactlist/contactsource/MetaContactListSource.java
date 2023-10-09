@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.contactlist.contactsource;
 
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.text.*;
@@ -509,7 +511,7 @@ public class MetaContactListSource
 
                         if (matcher.find())
                         {
-                            String valueToLog = mQAMode ? detailValue : "<redacted>";
+                            String valueToLog = mQAMode ? detailValue : REDACTED;
                             sLog.debug("Return true as found in detail: " + valueToLog);
                             return true;
                         }

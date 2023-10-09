@@ -20,29 +20,6 @@ import org.jitsi.service.resources.*;
 public interface OperationSetAvatar
     extends OperationSet
 {
-    /**
-     * Returns the maximum width of the avatar. This method should return 0
-     * (zero) if there is no maximum width.
-     *
-     * @return the maximum width of the avatar
-     */
-    int getMaxWidth();
-
-    /**
-     * Returns the maximum height of the avatar. This method should return 0
-     * (zero) if there is no maximum height.
-     *
-     * @return the maximum height of the avatar
-     */
-    int getMaxHeight();
-
-    /**
-     * Returns the maximum size of the avatar. This method should return 0
-     * (zero) if there is no maximum size.
-     *
-     * @return the maximum size of the avatar
-     */
-    int getMaxSize();
 
     /**
      * Defines a new avatar for this protocol

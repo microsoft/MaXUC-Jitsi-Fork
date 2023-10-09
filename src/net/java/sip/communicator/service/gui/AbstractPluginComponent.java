@@ -69,14 +69,6 @@ public abstract class AbstractPluginComponent
     }
 
     /*
-     * Implements PluginComponent#isNativeComponent().
-     */
-    public boolean isNativeComponent()
-    {
-        return false;
-    }
-
-    /*
      * Implements PluginComponent#setCurrentContact(Contact).
      */
     public void setCurrentContact(Contact contact)

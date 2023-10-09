@@ -29,19 +29,28 @@ public class ConferenceConfigurationPanel extends ConfigurationPanel
     public ConferenceConfigurationPanel()
     {
         super(new BorderLayout());
-        mConferenceConfigPanel = sConferenceService.createConfigPanel();
-        add(mConferenceConfigPanel, BorderLayout.CENTER);
+        if (sConferenceService != null)
+        {
+            mConferenceConfigPanel = sConferenceService.createConfigPanel();
+            add(mConferenceConfigPanel, BorderLayout.CENTER);
+        }
     }
 
     @Override
     public void onRefresh()
     {
-        mConferenceConfigPanel.onRefresh();
+        if (mConferenceConfigPanel != null)
+        {
+            mConferenceConfigPanel.onRefresh();
+        }
     }
 
     @Override
     public void onDeactivated()
     {
-        mConferenceConfigPanel.onDeactivated();
+        if (mConferenceConfigPanel != null)
+        {
+            mConferenceConfigPanel.onDeactivated();
+        }
     }
 }

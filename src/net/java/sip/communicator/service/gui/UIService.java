@@ -19,15 +19,13 @@ import java.util.function.Consumer;
 
 import javax.swing.*;
 
-import org.jitsi.util.CustomAnnotations.*;
-
 import net.java.sip.communicator.impl.gui.main.chat.history.HistoryWindowManager;
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommSnakeButton;
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.contactsource.SourceContact;
-import net.java.sip.communicator.service.gui.event.ChatListener;
 import net.java.sip.communicator.service.protocol.Call;
+import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.service.protocol.ChatRoom;
 import net.java.sip.communicator.service.protocol.ChatRoomMember;
 import net.java.sip.communicator.service.protocol.Contact;
@@ -280,15 +278,6 @@ public interface UIService
     Chat getCurrentChat();
 
     /**
-     * Returns the phone number currently entered in the phone number field.
-     * This method is meant to be used by plugins that are interested in
-     * operations with the currently entered phone number.
-     *
-     * @return the phone number currently entered in the phone number field.
-     */
-    String getCurrentPhoneNumber();
-
-    /**
      * Sets the phone number in the phone number field. This method is meant to
      * be used by plugins that are interested in operations with the currently
      * entered phone number.
@@ -439,29 +428,6 @@ public interface UIService
     void addWindowListener(WindowListener l);
 
     /**
-     * Removes the given <tt>WindowListener</tt> from the list of registered
-     * listener. The <tt>WindowListener</tt> is listening for events
-     * triggered by the main UIService component. This is normally the main
-     * application window component, the one containing the contact list. This
-     * listener would also receive events when this window is shown or hidden.
-     * @param l the <tt>WindowListener</tt> to remove
-     */
-    void removeWindowListener(WindowListener l);
-
-    /**
-     * Registers a <tt>NewChatListener</tt> to be informed when new
-     * <tt>Chats</tt> are created.
-     * @param listener listener to be registered
-     */
-    void addChatListener(ChatListener listener);
-
-    /**
-     * Removes the registration of a <tt>NewChatListener</tt>.
-     * @param listener listener to be unregistered
-     */
-    void removeChatListener(ChatListener listener);
-
-    /**
      * Repaints and revalidates the whole UI. This method is meant to be used
      * to runtime apply a skin and refresh automatically the user interface.
      */
@@ -483,6 +449,13 @@ public interface UIService
      * @param call the call to hang up
      */
     void hangupCall(Call call);
+
+    /**
+     * Focus the window of a given call if exists
+     *
+     * @param call the call to focus
+     */
+    void focusCall(Call call);
 
     /**
      * Starts a new <tt>Chat</tt> with a specific set of participants.
@@ -534,16 +507,6 @@ public interface UIService
      * enabled, otherwise they will be disabled.
      */
     void updateVideoButtonsEnabledState();
-
-    /**
-     * Alerts that an event has occurred (e.g. a message has been received or
-     * a call has been missed) in the exported window specified by the
-     * parameter, using a platform-dependent visual clue such as flashing it
-     * in the task bar on Windows and Linux.
-     *
-     * @param windowID The ID of the exported window to alert.
-     */
-    void alertExportedWindow(WindowID windowID);
 
     /**
      * Alerts that an event has occurred (e.g. a message has been received or
@@ -646,42 +609,16 @@ public interface UIService
     void showStackableAlertWindow(Window window);
 
     /**
-     * Gets a button that will launch an Accession CRM search when clicked.
+     * Gets a button that will launch an CRM search when clicked.
      *
      * @param searchName The name on which to search.
      * @param searchNumber The number on which to search.
      *
      * @return the button.
      */
-    SIPCommSnakeButton getAccessionCrmLaunchButton(
+    SIPCommSnakeButton getCrmLaunchButton(
             final String searchName,
             final String searchNumber);
-
-    /**
-     * Gets a button that will launch a WebSocket API CRM integration when
-     * clicked.
-     *
-     * @param searchNumber The number on which to search.
-     *
-     * @return the button.
-     */
-    SIPCommSnakeButton getWebSocketCrmLaunchButton(
-            final @Nullable String searchNumber);
-
-    /**
-     * @return a JLabel that displays an indication that a CRM lookup is in
-     * progress - only used for WebSocket API CRM lookups (since Accession
-     * lookups are instantaneous).
-     */
-    JLabel getCrmLookupInProgressIndicator();
-
-    /**
-     * @return a JLabel that displays an indication that a CRM lookup has found
-     * no matches - only used for WebSocket API CRM lookups and displayed if
-     * the Accession CRM lookup service is not available (otherwise that latter
-     * service's button is displayed instead of this indicator).
-     */
-    JLabel getCrmLookupFailedIndicator();
 
     /**
      * @return true if CRM is configured to always auto-launch, false
@@ -711,6 +648,35 @@ public interface UIService
 
     /** Opens the callpark window */
     void showCallParkWindow();
+
+    /** Opens the add call peer window */
+    void showAddCallPeerWindow(Call call);
+
+    /** Opens the transfer call window */
+    void showTransferCallWindow(CallPeer peer);
+
+    /**
+     * Indicates if local video  is currently enabled for the given<tt>call</tt>.
+     *
+     * @param call the <tt>Call</tt>, for which we would to check if local
+     * video is currently enabled
+     * @return <tt>true</tt> if local video is currently enabled for the
+     * given <tt>call</tt>, <tt>false</tt> otherwise
+     */
+    boolean isLocalVideoEnabled(Call call);
+
+    /**
+     * Enables/disables local video for a specific <tt>Call</tt>.
+     *
+     * @param call the <tt>Call</tt> to enable/disable to local video for
+     * @param enable <tt>true</tt> to enable the local video; otherwise,
+     * <tt>false</tt>
+     */
+    void enableLocalVideo(Call call, boolean enable);
+
+    /** Play DTMF in call
+     * @throws InterruptedException*/
+    void playDTMF(Call call, String toneValue) throws InterruptedException;
 
     /** Opens a service in the browser
      * @param mOption - the Option that should be open in the browser

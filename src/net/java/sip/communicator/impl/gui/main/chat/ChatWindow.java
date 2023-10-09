@@ -986,17 +986,6 @@ public class ChatWindow
     }
 
     /**
-     * Indicates if the parent frame is currently the active window.
-     *
-     * @return <tt>true</tt> if the parent window is currently the active
-     * window, <tt>false</tt> otherwise
-     */
-    public boolean isFrameActive()
-    {
-        return isActive();
-    }
-
-    /**
      * The <tt>MainKeyDispatcher</tt> is added to pre-listen KeyEvents before
      * they're delivered to the current focus owner in order to introduce a
      * specific behavior for the <tt>CallField</tt> on top of the dial pad.
@@ -1088,12 +1077,6 @@ public class ChatWindow
         ChatSession chatSession = chatPanel.getChatSession();
         setConferenceUI(chatSession instanceof ConferenceChatSession);
         notifyChatChanged(chatPanel);
-    }
-
-    @Override
-    public void repaintWindow()
-    {
-        repaint();
     }
 
     @Override

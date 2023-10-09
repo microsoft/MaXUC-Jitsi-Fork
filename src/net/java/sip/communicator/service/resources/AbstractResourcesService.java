@@ -8,7 +8,6 @@
 package net.java.sip.communicator.service.resources;
 
 import java.io.InputStream;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -601,24 +600,6 @@ public abstract class AbstractResourcesService
     }
 
     /**
-     * Returns an <tt>URL</tt> from a given identifier.
-     *
-     * @param urlKey The identifier of the url.
-     * @return The url for the given identifier.
-     */
-    public URL getSettingsURL(String urlKey)
-    {
-        String path = getSettingsString(urlKey);
-
-        if (path == null || path.length() == 0)
-        {
-            logger.warn("Missing resource for key: " + urlKey);
-            return null;
-        }
-        return settingsPack.getClass().getClassLoader().getResource(path);
-    }
-
-    /**
      * Returns a stream from a given identifier.
      *
      * @param streamKey The identifier of the stream.
@@ -763,11 +744,4 @@ public abstract class AbstractResourcesService
         return soundPack;
     }
 
-    @Override
-    public URL getResourceURLFromResourceKey(String resourceKey)
-    {
-        String path = getSettingsString(resourceKey);
-
-        return settingsPack.getClass().getClassLoader().getResource(path);
-    }
 }

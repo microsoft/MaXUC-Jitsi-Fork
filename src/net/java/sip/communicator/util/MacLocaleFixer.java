@@ -58,15 +58,15 @@ public class MacLocaleFixer
                 cmdExec("defaults read .GlobalPreferences AppleLocale");
 
             String language = rawLocale.split("_")[0].trim();
-            String country = rawLocale.split("_")[1].trim();
+            String countryRegion = rawLocale.split("_")[1].trim();
 
-            Locale.setDefault(new Locale(language, country));
-            System.setProperty("user.country", country);
+            Locale.setDefault(new Locale(language, countryRegion));
+            System.setProperty("user.country", countryRegion);
             System.setProperty("user.language", language);
 
             logger.info(String.format(
-                "Fixed locale on Mac. Country=%s Language=%s",
-                country,
+                "Fixed locale on Mac. Country/Region=%s Language=%s",
+                countryRegion,
                 language));
         }
         catch (Throwable e)

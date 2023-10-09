@@ -8,11 +8,14 @@
 package net.java.sip.communicator.impl.neomedia;
 
 import java.beans.*;
-import java.util.*;
 
+import net.java.sip.communicator.plugin.desktoputil.NotificationInfo;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.notification.*;
-import net.java.sip.communicator.service.systray.event.*;
+import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPANamespace;
+import net.java.sip.communicator.service.wispaservice.WISPANotion;
+import net.java.sip.communicator.service.wispaservice.WISPANotionType;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -22,19 +25,12 @@ import net.java.sip.communicator.util.*;
  * @author Vincent Lucas
  */
 public abstract class AbstractDeviceConfigurationListener
-    implements PropertyChangeListener,
-               SystrayPopupMessageListener
+    implements PropertyChangeListener
 {
     /**
      *  The audio or video configuration form.
      */
     private final ConfigurationForm configurationForm;
-
-    /**
-     * A boolean used to verify that this listener registers only once to
-     * the popup message notification handler.
-     */
-    private boolean isRegisteredToPopupMessageListener = false;
 
     /**
      * Creates an abstract listener to the click on the popup message concerning
@@ -49,139 +45,55 @@ public abstract class AbstractDeviceConfigurationListener
     }
 
     /**
-     * Adds/removes this instance as a <tt>PopupMessageListener</tt> to/from the
-     * <tt>NotificationService</tt> in order to be able to detect when the user
-     * clicks on a pop-up notification displayed by this instance.
-     *
-     * @param add <tt>true</tt> to add this instance as a
-     * <tt>PopupMessageListener</tt> to the <tt>NotificationService</tt> or
-     * <tt>false</tt> to remove it
-     */
-    private void addOrRemovePopupMessageListener(boolean add)
-    {
-        Iterator<NotificationHandler> notificationHandlers
-            = NeomediaActivator.getNotificationService()
-                    .getActionHandlers(NotificationAction.ACTION_POPUP_MESSAGE)
-                        .iterator();
-
-        while(notificationHandlers.hasNext())
-        {
-            NotificationHandler notificationHandler
-                = notificationHandlers.next();
-
-            if(notificationHandler instanceof PopupMessageNotificationHandler)
-            {
-                PopupMessageNotificationHandler popupMessageNotificationHandler
-                    = (PopupMessageNotificationHandler) notificationHandler;
-
-                if(add)
-                {
-                    popupMessageNotificationHandler.addPopupMessageListener(
-                            this);
-                }
-                else
-                {
-                    popupMessageNotificationHandler.removePopupMessageListener(
-                            this);
-                }
-            }
-        }
-    }
-
-    /**
-     * Releases the resources acquired by this instance throughout its lifetime,
-     * uninstalls the listeners it has installed and, generally, prepares it for
-     * garbage collection.
-     */
-    public void dispose()
-    {
-        addOrRemovePopupMessageListener(false);
-    }
-
-    /**
-     * Indicates that user has clicked on the systray popup message.
+     * Indicates that user has clicked on the popup message.
      *
      * @param ev the event triggered when user clicks on the systray popup
      * message
      */
-    public void popupMessageClicked(SystrayPopupMessageEvent ev)
+    public void popupMessageClicked()
     {
-        // Checks if this event is fired from one click on one of our popup
-        // message.
-        if(ev.getTag() == this)
+        // Get the UI service
+        UIService uiService
+            = ServiceUtils.getService(
+                    NeomediaActivator.getBundleContext(),
+                    UIService.class);
+
+        if(uiService == null)
         {
-            // Get the UI service
-            UIService uiService
-                = ServiceUtils.getService(
-                        NeomediaActivator.getBundleContext(),
-                        UIService.class);
-
-            if(uiService != null)
-            {
-                // Shows the audio configuration window.
-                ConfigurationContainer configurationContainer
-                    = uiService.getConfigurationContainer();
-
-                configurationContainer.setSelected(configurationForm);
-                configurationContainer.setVisible(true);
-            }
+            return;
         }
-    }
 
-    /**
-     * Function called when an audio device is plugged or unplugged.
-     *
-     * @param ev The property change event which may concern the audio device
-     */
-    public abstract void propertyChange(PropertyChangeEvent ev);
+        // Shows the audio configuration window.
+        ConfigurationContainer configurationContainer
+            = uiService.getConfigurationContainer();
+
+        configurationContainer.setSelected(configurationForm);
+        configurationContainer.setVisible(true);
+    }
 
     /**
      * Shows a pop-up notification corresponding to a device configuration
      * change.
      *
      * @param title The title of the pop-up notification.
-     * @param body A body text describing the device modifications.
-     * @param popUpEvent The event for a device which has fired this
-     * notification: connected, disconnected or selected.
+     * @param body  A body text describing the device modifications.
      */
-    public void showPopUpNotification(
-            String title,
-            String body,
-            String popUpEvent)
+    public void showPopUpNotification(String title, String body)
     {
-        // Shows the pop-up notification.
-        if(title != null && body != null && popUpEvent != null)
+        WISPAService wispaService = NeomediaActivator.getWispaService();
+
+        if (wispaService == null || (title == null && body == null))
         {
-            NotificationService notificationService
-                = NeomediaActivator.getNotificationService();
-
-            if(notificationService != null)
-            {
-                // Registers only once to the popup message notification
-                // handler.
-                if(!isRegisteredToPopupMessageListener)
-                {
-                    isRegisteredToPopupMessageListener = true;
-                    addOrRemovePopupMessageListener(true);
-                }
-
-                // Fires the popup notification.
-                Map<String,Object> extras = new HashMap<>();
-
-                extras.put(
-                        NotificationData.MESSAGE_NOTIFICATION_TAG_EXTRA,
-                        this);
-                notificationService.fireNotification(
-                        popUpEvent,
-                        title,
-                        body
-                        + "\r\n\r\n"
-                        + NeomediaActivator.getResources().getI18NString(
-                                "impl.media.configform"
-                                    + ".AUDIO_DEVICE_CONFIG_MANAGMENT_CLICK"),
-                        null,
-                        extras);
-            }
+            return;
         }
+
+        String clickText = NeomediaActivator.getResources().getI18NString(
+            "impl.media.configform.AUDIO_DEVICE_CONFIG_MANAGMENT_CLICK");
+
+        WISPANotion notion = new WISPANotion(WISPANotionType.NOTIFICATION,
+            new NotificationInfo(title, body + "\r\n\r\n" + clickText,
+                this::popupMessageClicked));
+
+        wispaService.notify(WISPANamespace.EVENTS, WISPAAction.NOTION, notion);
     }
 }

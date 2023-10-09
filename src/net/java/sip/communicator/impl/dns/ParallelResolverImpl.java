@@ -873,16 +873,6 @@ public class ParallelResolverImpl
         return servers.toArray(new String[0]);
     }
 
-    public void setDefaultResolver(Resolver resolver)
-    {
-        defaultResolver = resolver;
-    }
-
-    public void setBackupResolver(ExtendedResolver resolver)
-    {
-        backupResolver = resolver;
-    }
-
     @Override
     public void accountLoaded()
     {

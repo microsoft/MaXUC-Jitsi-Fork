@@ -62,13 +62,6 @@ public interface SoundNotificationHandler
     void addMuteListener(MuteListener listener);
 
     /**
-     * Remove a registered listener from the list of registered listeners
-     *
-     * @param listener The listener to remove
-     */
-    void removeMuteListener(MuteListener listener);
-
-    /**
      * Interface implemented by those users that wish to be informed of changes
      * to the mute state
      */

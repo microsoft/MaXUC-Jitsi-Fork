@@ -302,7 +302,7 @@ public class OutlookUtils
     public static final int PR_BUSINESS_ADDRESS_CITY = 26;
 
     /**
-     * The index of the business country of the postal address.
+     * The index of the business region/country of the postal address.
      */
     public static final int PR_BUSINESS_ADDRESS_COUNTRY = 27;
 
@@ -787,7 +787,7 @@ public class OutlookUtils
                 new ContactDetail.SubCategory[]
                         {
                             ContactDetail.SubCategory.Work,
-                            ContactDetail.SubCategory.Country
+                            ContactDetail.SubCategory.CountryRegion
                         };
         case PR_BUSINESS_ADDRESS_POSTAL_CODE:
             return
@@ -822,7 +822,7 @@ public class OutlookUtils
                 new ContactDetail.SubCategory[]
                         {
                             ContactDetail.SubCategory.Home,
-                            ContactDetail.SubCategory.Country
+                            ContactDetail.SubCategory.CountryRegion
                         };
         case PR_HOME_ADDRESS_POSTAL_CODE:
             return

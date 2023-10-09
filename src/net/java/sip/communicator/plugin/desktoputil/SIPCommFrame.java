@@ -136,6 +136,8 @@ public class SIPCommFrame
         imap = rootPane.getInputMap(
             JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
+        imap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), CLOSE_KEY);
+
         // put the defaults for macosx
         if (OSUtils.IS_MAC)
         {
@@ -191,7 +193,7 @@ public class SIPCommFrame
     }
 
     /**
-     * The action invoked when user presses Ctrl-W and Cmd-W key combination.
+     * The action invoked when user presses Esc, Ctrl-W or Cmd-W key combination.
      */
     private class CloseAction
         extends UIAction
@@ -208,9 +210,9 @@ public class SIPCommFrame
                 saveSizeAndLocation();
             }
 
-            logger.user("Call window closed using CTRL-W or CMD-W");
+            logger.user("Call window closed using ESC, CTRL-W or CMD-W");
 
-            close(false);
+            close(true);
         }
     }
 
@@ -286,16 +288,6 @@ public class SIPCommFrame
         logger.info("Call window closing");
 
         close(false);
-    }
-
-    /**
-     * Invokes the {@link Window#dispose()} implementation of this instance
-     * thus skipping any overriding that may be in effect for the method in
-     * question by extenders.
-     */
-    protected void windowDispose()
-    {
-        super.dispose();
     }
 
     /**
@@ -554,14 +546,7 @@ public class SIPCommFrame
     @Override
     public void setVisible(boolean isVisible)
     {
-        if (isVisible)
-        {
-            this.setSizeAndLocation();
-
-            this.ensureOnScreenLocationAndSize();
-        }
-
-        super.setVisible(isVisible);
+        setVisible(isVisible, true);
     }
 
     /**
@@ -569,24 +554,15 @@ public class SIPCommFrame
      * position of this window before showing it.
      * @param isVisible indicates if this window will be made visible or will
      * be hidden
-     * @param isPackEnabled indicates if the pack() method should be invoked
-     * before showing this window
+     * @param repositionWindow indicates whether the window should be moved
      */
-    public void setVisible(boolean isVisible, boolean isPackEnabled)
+    public void setVisible(boolean isVisible, boolean repositionWindow)
     {
-        if (isVisible)
+        if (isVisible && repositionWindow)
         {
-            /*
-             * Since setSizeAndLocation() will use the width and the height,
-             * pack() should be called prior to it. Otherwise, the width and the
-             * height may be zero or may just change after setSizeAndLocation()
-             * during pack().
-             */
-            this.pack();
             this.setSizeAndLocation();
             this.ensureOnScreenLocationAndSize();
         }
-
         super.setVisible(isVisible);
     }
 
@@ -872,26 +848,6 @@ public class SIPCommFrame
      */
     protected void close(boolean escape)
     {
-    }
-
-    /**
-     * Sets whether this <tt>SIPCommFrame</tt> ignores the presence of modal
-     * dialogs onscreen.
-     *
-     * @param excludeModality <tt>true</tt> if this frame should ignore modal
-     * dialogs; <tt>false</tt> otherwise.
-     */
-    public void setExcludeModality(boolean excludeModality)
-    {
-        if (excludeModality)
-        {
-            setModalExclusionType(
-                                 Dialog.ModalExclusionType.APPLICATION_EXCLUDE);
-        }
-        else
-        {
-            setModalExclusionType(Dialog.ModalExclusionType.NO_EXCLUDE);
-        }
     }
 
     /**

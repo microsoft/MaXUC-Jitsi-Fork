@@ -19,9 +19,10 @@ public class SIPCommMsgTextArea
 {
     private static final long serialVersionUID = 0L;
 
-    public SIPCommMsgTextArea()
-    {
-        init();
+    /** Unused constructor used to block access to the default inherited constructor. */
+    @SuppressWarnings("unused")
+    public SIPCommMsgTextArea() {
+        throw new UnsupportedOperationException();
     }
 
     /**

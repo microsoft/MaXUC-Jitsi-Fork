@@ -15,7 +15,6 @@ import net.java.sip.communicator.plugin.desktoputil.plaf.*;
 import net.java.sip.communicator.service.contactsource.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.util.*;
 
 /**
  * A class which allows the user to choose a number either from a contact or by
@@ -147,7 +146,7 @@ public abstract class AbstractContactInviteDialog extends ContactInviteDialog
                                      "service.gui.SELECT_NUMBER",
                                      details,
                                      this,
-                                     ConfigurationUtils.isCallAlwaysOnTop(),
+                                     true,
                                      true);
 
             if (detail != null)

@@ -12,7 +12,6 @@ import java.util.*;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
 import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.jid.parts.Resourcepart;
 import org.jxmpp.stringprep.XmppStringprepException;
 
 import net.java.sip.communicator.service.contactlist.*;
@@ -511,17 +510,6 @@ public class MockChatRoom
     {}
 
     /**
-     * Kicks a visitor or participant from the room. Not implemented for mock
-     * chat rooms.
-     *
-     * @param chatRoomMember the <tt>ChatRoomMember</tt> to kick from the room
-     * @param reason the reason why the participant is being kicked from the
-     * room
-     */
-    public void kickParticipant(ChatRoomMember chatRoomMember, String reason)
-    {}
-
-    /**
      * Returns the <tt>ChatRoomConfigurationForm</tt> containing all
      * configuration properties for this chat room. Not implemented for mock
      * chat rooms.
@@ -548,94 +536,11 @@ public class MockChatRoom
     }
 
     /**
-     * Grants admin role to the participant given by <tt>address</tt>.
-     * @param address the address of the participant to grant admin role to
-     */
-    public void grantAdmin(Jid address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Grants membership role to the participant given by <tt>address</tt>.
-     * @param address the address of the participant to grant membership role to
-     */
-    public void grantMembership(Jid address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Grants moderator role to the participant given by <tt>address</tt>.
-     * @param address the address of the participant to grant moderator role to
-     */
-    public void grantModerator(Resourcepart address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Grants ownership role to the participant given by <tt>address</tt>.
-     * @param address the address of the participant to grant ownership role to
-     */
-    public void grantOwnership(Jid address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Grants voice to the participant given by <tt>address</tt>.
-     * @param address the address of the participant to grant voice to
-     */
-    public void grantVoice(Resourcepart address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Revokes the admin role for the participant given by <tt>address</tt>.
-     * @param address the address of the participant to revoke admin role for
-     */
-    public void revokeAdmin(Jid address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Revokes the membership role for the participant given by <tt>address</tt>.
-     * @param address the address of the participant to revoke membership role
-     * for
-     */
-    public void revokeMembership(Jid address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Revokes the moderator role for the participant given by <tt>address</tt>.
-     * @param address the address of the participant to revoke moderator role
-     * for
-     */
-    public void revokeModerator(Resourcepart address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
      * Revokes the ownership role for the participant given by <tt>address</tt>.
      * @param address the address of the participant to revoke ownership role
      * for
      */
     public void revokeOwnership(Jid address)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    /**
-     * Revokes the voice for the participant given by <tt>address</tt>.
-     * @param address the address of the participant to revoke voice for
-     */
-    public void revokeVoice(Resourcepart address)
     {
         throw new UnsupportedOperationException("Not supported yet.");
     }
@@ -666,17 +571,6 @@ public class MockChatRoom
 
     @Override
     public void destroy(Date leaveDate, String eventType, String reason)
-    {
-    }
-
-    @Override
-    public boolean historyNotificationDisplayed()
-    {
-        return false;
-    }
-
-    @Override
-    public void setHistoryNotificationDisplayed(boolean displayed)
     {
     }
 

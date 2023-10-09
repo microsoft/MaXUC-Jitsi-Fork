@@ -7,27 +7,31 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
-import java.io.IOException;
+import static java.util.stream.Collectors.joining;
+import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitise;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
-
-import javax.sip.ListeningPoint;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 import javax.sip.SipStack;
-
-import org.jitsi.service.packetlogging.PacketLoggingService;
 
 import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
-import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
+
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.service.packetlogging.PacketLoggingService;
 
 /**
  * This is a custom StackLogger configured as the gov.nist.javax.sip.STACK_LOGGER for JSIP to use.
@@ -61,9 +65,82 @@ public class SipLogger
             new SimpleDateFormat("yyyy_MM_dd HH:mm:ss.SSS", Locale.US);
 
     /**
-     * SipStack to use.
+     * SIP methods. Used for identifying lines in SIP messages that may need
+     * to be sanitised for logging.
      */
-    private SipStack sipStack;
+    private static final List<String> SIP_METHODS = List.of("INVITE",
+                                                            "ACK",
+                                                            "CANCEL",
+                                                            "BYE",
+                                                            "REGISTER",
+                                                            "OPTIONS",
+                                                            "PRACK",
+                                                            "UPDATE",
+                                                            "SUBSCRIBE",
+                                                            "NOTIFY",
+                                                            "REFER",
+                                                            "INFO",
+                                                            "PUBLISH");
+
+    private static final List<String> CONTACT_TAGS  = List.of("From",
+                                                              "To",
+                                                              "Contact");
+
+    private static final List<String> ROUTE_TAGS  = List.of("Call-ID",
+                                                            "Call-Info",
+                                                            "Route",
+                                                            "Via",
+                                                            "WWW-Authenticate");
+
+    /**
+     * Regex for IPv4 Addresses (needed for sanitising logged SIP messages).
+     */
+    private static final Pattern IPV4_ADDR_PATTERN = Pattern
+            .compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
+
+    /**
+     * Regex for contact names (in quotation marks) logged in SIP messages.
+     */
+    private static final Pattern CONTACT_PATTERN = Pattern
+            .compile("(?<=\")(.+)(?=\")");
+
+    /**
+     * Regex for user ID in SIP headers.
+     * They appear as sip:user@[domain or IP address]. This regex selects "user".
+     */
+    private static final Pattern SIP_USER_PATTERN = Pattern
+            .compile("(?<=sip:)(.+)(?=@)");
+
+    /**
+     * Regex for digest username in the authorisation SIP header.
+     */
+    private static final Pattern DIGEST_USER_PATTERN = Pattern
+            .compile("(?<=Digest username=\")[\\w]+.(?=\")");
+
+    /**
+     * SIP messages with non-zero Content Length contain lines
+     * of the form "SYMBOL=...". This regex selects them for sanitization.
+     * Lines which begin with these symbols are the ones that can contain
+     * subscriber numbers and IP addresses.
+     */
+    private static final List<String> SENSITIVE_SIP_CONTENT_FIELDS = List.of("c=", "o=");
+
+    /**
+     * Regex to pick out the subscriber DN from content messages of the form
+     * "o={subscriber_dn} ..."
+     */
+    private static final Pattern SUBSCRIBER_DN_PATTERN = Pattern.compile("(?<=o=)([0-9]+)");
+
+    /**
+     * Regex to pick out the branch from content messages of the form
+     * "branch={branch_param} ..."
+     */
+    private static final Pattern VIA_BRANCH_PATTERN = Pattern.compile("(?<=branch=)(.+)(?=$)");
+
+    /**
+     * New line character.
+     */
+    private static final String NEWLINE = System.lineSeparator();
 
     /*
      * Implementation of StackLogger
@@ -76,7 +153,7 @@ public class SipLogger
     {
         // Do nothing - stack traces aren't terribly useful when we're not
         // looking for real exceptions, and double the number of lines in
-        // FINEST log files.
+        // 'FINEST' log files.
     }
 
     /**
@@ -88,7 +165,7 @@ public class SipLogger
     {
         // Do nothing - stack traces aren't terribly useful when we're not
         // looking for real exceptions, and double the number of lines in
-        // FINEST log files.
+        // 'FINEST' log files.
     }
 
     /**
@@ -120,16 +197,13 @@ public class SipLogger
      */
     public boolean isLoggingEnabled(int logLevel)
     {
-        // always enable trace messages so we can receive packets
+        // always enable trace messages, so we can receive packets
         // and log them to packet logging service
         if (logLevel == TRACE_DEBUG)
             return logger.isDebugEnabled();
         if (logLevel == TRACE_MESSAGES)         // same as TRACE_INFO
             return true;
-        if (logLevel == TRACE_NONE)
-            return false;
-
-        return true;
+        return (logLevel != TRACE_NONE);
     }
 
     /**
@@ -178,17 +252,6 @@ public class SipLogger
     public void logError(String message)
     {
         logger.error(message);
-    }
-
-    /**
-     * Logs an exception and an error message error message.
-     *
-     * @param message that message that we'd like to log.
-     * @param ex the exception that we'd like to log.
-     */
-    public void logError(String message, Exception ex)
-    {
-        logger.error(message, ex);
     }
 
     @Override
@@ -247,7 +310,7 @@ public class SipLogger
     }
 
     /**
-     * Logs the specified trace with a debuf level.
+     * Logs the specified trace with a debug level.
      *
      * @param message the trace to log.
      */
@@ -271,7 +334,7 @@ public class SipLogger
         // We need \r\n instead of \n because the presence of \r\n inside SIP
         // message bodies confuses CSV readers into thinking that the rows
         // themselves are CRLF-separated.
-        // Thus \n alone is ignored by the reader, so we need to use \r\n.
+        // Thus, \n alone is ignored by the reader, so we need to use \r\n.
         csvLogger.info(row + "\r");
     }
 
@@ -354,7 +417,7 @@ public class SipLogger
                  localAddr,
                  remoteAddr,
                  transport,
-                 message.toString());
+                 sanitiseSipMessage(message));
 
         try
         {
@@ -364,6 +427,124 @@ public class SipLogger
         {
             logger.error("Error logging packet", e);
         }
+    }
+
+    /**
+     * Removes Personal Data in SIP messages before logging. Processes each
+     * message line by line.
+     */
+    private static String sanitiseSipMessage(SIPMessage message)
+    {
+        return Arrays.stream(message.toString().split(NEWLINE, -1))
+                .map(SipLogger::processSipMessageLines)
+                .collect(joining(NEWLINE));
+    }
+
+    /**
+     * Sanitises contact names i.e. "General 1234".
+     */
+    private static String sanitiseContactName(String line)
+    {
+        return sanitise(line, CONTACT_PATTERN);
+    }
+
+    /**
+     * Sanitises the "Digest username" field exposed in some SIP messages.
+     */
+    private static String sanitiseDigestUser(String line)
+    {
+        return sanitise(line, DIGEST_USER_PATTERN);
+    }
+
+    /**
+     * Sanitises IPv4 addresses in SIP messages.
+     */
+    private static String sanitiseIPv4Address(String line)
+    {
+        return sanitise(line, IPV4_ADDR_PATTERN);
+    }
+
+    /**
+     * Sanitises lines of the form "sip:[user]@..." to
+     * "sip:[HASHED USER]@...".
+     */
+    private static String sanitiseSipUser(String line)
+    {
+        return sanitise(line, SIP_USER_PATTERN);
+    }
+
+    /**
+     * Sanitises lines of the form "o=0123456 ..." to "o=[HASHED DN] ...".
+     */
+    private static String sanitiseSubscriberDn(String line)
+    {
+        return sanitise(line, SUBSCRIBER_DN_PATTERN);
+    }
+
+    /**
+     * Sanitises branch part of the line of the form "branch=0a1bc3456 ..." to "branch=[HASHED DN] ...".
+     */
+    private static String sanitiseViaBranch(String line)
+    {
+        return sanitise(line, VIA_BRANCH_PATTERN);
+    }
+
+    /**
+     * Sanitises each line according to the specific Personal Data it could
+     * contain.
+     */
+    private static String processSipMessageLines(String line)
+    {
+        if (CONTACT_TAGS.stream().anyMatch(line::startsWith))
+        {
+            return useMultipleSanitisers(List.of(SipLogger::sanitiseContactName,
+                                                 SipLogger::sanitiseIPv4Address,
+                                                 SipLogger::sanitiseSipUser))
+                    .apply(line);
+        }
+        else if (ROUTE_TAGS.stream().anyMatch(line::startsWith))
+        {
+            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
+                                                 SipLogger::sanitiseViaBranch))
+                    .apply(line);
+        }
+        else if (SIP_METHODS.stream().anyMatch(line::startsWith))
+        {
+            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
+                                                 SipLogger::sanitiseSipUser))
+                    .apply(line);
+        }
+        else if (line.startsWith("Authorization"))
+        {
+            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
+                                                 SipLogger::sanitiseSipUser,
+                                                 SipLogger::sanitiseDigestUser))
+                    .apply(line);
+        }
+        else if (line.startsWith("<dialog-info"))
+        {
+            return sanitiseSipUser(line);
+        }
+
+        else if (SENSITIVE_SIP_CONTENT_FIELDS.stream().anyMatch(line::startsWith))
+        {
+            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
+                                                 SipLogger::sanitiseSubscriberDn))
+                    .apply(line);
+        }
+
+        return line;
+    }
+
+    /**
+     * Utility method that stacks multiple sanitisers.
+     * @return a single function that applies all the
+     * supplied {@code sanitisers} at once.
+     */
+    private static Function<String, String> useMultipleSanitisers(
+            List<Function<String, String>> sanitisers)
+    {
+        return sanitisers.stream().reduce(Function.identity(), Function::andThen);
     }
 
     /**
@@ -379,7 +560,7 @@ public class SipLogger
         {
             logger.interval("CRLF", "Logging CRLF packet");
 
-            // Only log CRLF keepalive packets while this function is in beta
+            // Only log CRLF keep-alive packets while this function is in beta
             if (! LOG_KEEPALIVES_PACKETS)
             {
                 return;
@@ -463,14 +644,14 @@ public class SipLogger
                         byte[] newContent =  new byte[len];
                         Arrays.fill(newContent, (byte)'.');
                         newReq.setMessageContent(newContent);
-                        msg = newReq.toString().getBytes("UTF-8");
+                        msg = newReq.toString().getBytes(StandardCharsets.UTF_8);
                     }
                 }
             }
 
             if(msg == null)
             {
-                msg = message.toString().getBytes("UTF-8");
+                msg = message.toString().getBytes(StandardCharsets.UTF_8);
             }
 
             packetLogging.logPacket(
@@ -494,7 +675,7 @@ public class SipLogger
      */
     public void setSipStack(SipStack sipStack)
     {
-        this.sipStack = sipStack;
+        // sipStack is not used in this class
     }
 
     /**
@@ -505,41 +686,6 @@ public class SipLogger
     public String getLoggerName()
     {
         return "SIP Communicator JAIN SIP logger.";
-    }
-
-    /**
-     * Returns a local address to use with the specified TCP destination.
-     * The method forces the JAIN-SIP stack to create
-     * s and binds (if necessary)
-     * and return a socket connected to the specified destination address and
-     * port and then return its local address.
-     *
-     * @param dst the destination address that the socket would need to connect
-     *            to.
-     * @param dstPort the port number that the connection would be established
-     * with.
-     * @param localAddress the address that we would like to bind on
-     * (null for the "any" address).
-     * @param transport the transport that will be used TCP ot TLS
-     *
-     * @return the SocketAddress that this handler would use when connecting to
-     * the specified destination address and port.
-     *
-     * @throws IOException  if we fail binding the local socket
-     */
-    public java.net.InetSocketAddress getLocalAddressForDestination(
-                    java.net.InetAddress dst,
-                    int                  dstPort,
-                    java.net.InetAddress localAddress,
-                    String transport)
-        throws IOException
-    {
-        if(ListeningPoint.TLS.equalsIgnoreCase(transport))
-            return (java.net.InetSocketAddress)(((SipStackImpl)this.sipStack)
-                .getLocalAddressForTlsDst(dst, dstPort, localAddress));
-        else
-            return (java.net.InetSocketAddress)(((SipStackImpl)this.sipStack)
-            .getLocalAddressForTcpDst(dst, dstPort, localAddress, 0));
     }
 
     /**
@@ -579,9 +725,9 @@ public class SipLogger
             csvFileTimestampFormat.format(new Date(timestamp)),
             timestamp,
             direction,
-            clientAddr.getAddress().getHostAddress(),  // IP of client
+            logHasher(clientAddr.getAddress().getHostAddress()),  // IP of client
             clientAddr.getPort(),
-            serverAddr.getAddress().getHostAddress(),  // IP of server
+            logHasher(serverAddr.getAddress().getHostAddress()),  // IP of server
             serverAddr.getPort(),
             transportType,
             contents,
@@ -607,7 +753,7 @@ public class SipLogger
         {
             String objStr = (obj != null) ? obj.toString() : "";
 
-            // Enclose each entity in quotes so we don't have to escape
+            // Enclose each entity in quotes, so we don't have to escape
             // e.g. commas or newlines.
             sb.append("\"");
 

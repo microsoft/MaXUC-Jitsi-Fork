@@ -32,7 +32,7 @@ public class AuthorizationResponse
      * the user to their contact list.
      */
     public static final AuthorizationResponseCode ACCEPT
-        = new AuthorizationResponseCode("service.gui.ACCEPT");
+        = new AuthorizationResponseCode("Accept");
 
     /**
      * Indicates that source authorization request which this response is about
@@ -117,6 +117,12 @@ public class AuthorizationResponse
         public String getCode()
         {
             return code;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getCode();
         }
     }
 }

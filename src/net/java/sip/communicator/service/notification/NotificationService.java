@@ -99,42 +99,6 @@ public interface NotificationService
                                              String defaultMessage);
 
     /**
-     * Registers a notification for the given <tt>eventType</tt> by specifying
-     * the type of the action to be performed when a notification is fired for
-     * this event, the <tt>actionDescriptor</tt> for sound and command actions
-     * and the <tt>defaultMessage</tt> for popup and log actions. Actions
-     * registered by this method would be handled by some default
-     * <tt>NotificationHandler</tt>s, declared by the implementation.
-     * <p>
-     * The method allows registering more than one actionType for a specific
-     * event. Setting the same <tt>actionType</tt> for the same
-     * <tt>eventType</tt> twice however would cause the first setting to be
-     * overridden.
-     *
-     * @param eventType the name of the event (as defined by the plug-in that's
-     *            registering it) that we are setting an action for.
-     * @param actionType the type of the action that is to be executed when the
-     *            specified event occurs (could be one of the ACTION_XXX
-     *            fields).
-     * @param actionDescriptor a String containing a description of the action
-     *            (a URI to the sound file for audio notifications or a command
-     *            line for exec action types) that should be executed when the
-     *            action occurs.
-     * @param defaultMessage the default message to use if no specific message
-     *            has been provided when firing the notification.
-     */
-    void registerNotificationForEvent(String eventType,
-                                      String actionType,
-                                      String actionDescriptor,
-                                      String defaultMessage);
-
-    /**
-     * Deletes all registered events and actions
-     * and registers and saves the default events as current.
-     */
-    void restoreDefaults();
-
-    /**
      * Removes the given <tt>eventType</tt> from the list of event
      * notifications. This means that we delete here all registered
      * notifications for the given <tt>eventType</tt>.
@@ -164,17 +128,6 @@ public interface NotificationService
                                        String actionType);
 
     /**
-     * Returns an iterator over a list of all events registered in this
-     * notification service. Each line in the returned list consists of a
-     * String, representing the name of the event (as defined by the plugin that
-     * registered it).
-     *
-     * @return an iterator over a list of all events registered in this
-     *         notifications service
-     */
-    Iterable<String> getRegisteredEvents();
-
-    /**
      * Returns the <tt>NotificationAction</tt> corresponding to the given event
      * and action type.
      * <p>
@@ -189,26 +142,6 @@ public interface NotificationService
      */
     NotificationAction getEventNotificationAction(String eventType,
                                                   String actionType);
-
-    /**
-     * Registers a listener that would be notified of changes that have occurred
-     * in the registered event notifications.
-     *
-     * @param listener the listener that we'd like to register for changes in
-     * the event notifications stored by this service.
-     */
-    void addNotificationChangeListener(
-            NotificationChangeListener listener);
-
-    /**
-     * Remove the specified listener so that it won't receive further
-     * notifications of changes that occur with actions registered for events
-     * stored by this service.
-     *
-     * @param listener the listener to remove.
-     */
-    void removeNotificationChangeListener(
-            NotificationChangeListener listener);
 
     /**
      * Adds an object that executes the actual action of a notification action.
@@ -351,13 +284,6 @@ public interface NotificationService
      * @param listener The listener to add
      */
     void addHandlerAddedListener(HandlerAddedListener listener);
-
-    /**
-     * Remove a registered listener from the list of registered listeners
-     *
-     * @param listener The listener to remove
-     */
-    void removeHandlerAddedListener(HandlerAddedListener listener);
 
     /**
      * Interface implemented by those users that wish to be informed when a

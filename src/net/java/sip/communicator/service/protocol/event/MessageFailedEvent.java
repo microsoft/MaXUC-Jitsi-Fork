@@ -35,13 +35,7 @@ public abstract class MessageFailedEvent extends MessageEvent
       */
      public static final int NETWORK_FAILURE = 2;
 
-     /**
-      * Set to indicate that delivery has failed because the provider was not
-      * registered.
-      */
-     public static final int PROVIDER_NOT_REGISTERED = 3;
-
-     /**
+    /**
       * Set when delivery fails for implementation specific reasons.
       */
      public static final int INTERNAL_ERROR = 4;
@@ -144,18 +138,6 @@ public abstract class MessageFailedEvent extends MessageEvent
     }
 
     /**
-     * Returns the correctedMessageUID The ID of the message being corrected,
-     * or null if this is a new message and not a correction.
-     *
-     * @return the correctedMessageUID The ID of the message being corrected,
-     * or null if this is a new message and not a correction.
-     */
-    public String getCorrectedMessageUID()
-    {
-        return correctedMessageUID;
-    }
-
-   /**
     * Sets the ID of the message being corrected to the passed ID.
     *
     * @param correctedMessageUID The ID of the message being corrected.

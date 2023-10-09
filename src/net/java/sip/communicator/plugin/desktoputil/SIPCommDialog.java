@@ -177,22 +177,6 @@ public class SIPCommDialog
     }
 
     /**
-     * Adds a key - action pair for this frame.
-     *
-     * @param keyStroke the key combination
-     * @param action the action which will be executed when user presses the
-     * given key combination
-     */
-    protected void addKeyBinding(KeyStroke keyStroke, Action action)
-    {
-        String actionID = action.getClass().getName();
-
-        amap.put(actionID, action);
-
-        imap.put(keyStroke, actionID);
-    }
-
-    /**
      * Before closing the application window saves the current size and position
      * through the <tt>ConfigurationService</tt>.
      */

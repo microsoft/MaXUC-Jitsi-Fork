@@ -9,7 +9,6 @@ import javax.swing.*;
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.impl.gui.main.*;
 import net.java.sip.communicator.service.analytics.*;
 import net.java.sip.communicator.service.calljump.*;
 import net.java.sip.communicator.service.calljump.CallJumpService.*;

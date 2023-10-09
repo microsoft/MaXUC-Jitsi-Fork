@@ -125,7 +125,7 @@ public class DeviceConfigurationComboBoxModel
     private JComboBox<Object> mComboBox;
 
     /**
-     * The device currenly selected in mComboBox.
+     * The device currently selected in mComboBox.
      */
     CaptureDevice mSelectedDevice;
 

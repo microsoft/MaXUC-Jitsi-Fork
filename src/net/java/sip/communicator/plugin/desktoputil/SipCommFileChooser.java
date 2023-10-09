@@ -84,13 +84,6 @@ public interface SipCommFileChooser
     void addFilter(SipCommFileFilter filter);
 
     /**
-     * Removes a file filter to this dialog.
-     *
-     * @param filter the filter to remove
-     */
-    void removeFilter(SipCommFileFilter filter);
-
-    /**
      * Sets whether the AcceptAll file filter should be used.
      *
      * @param used whether the filter should be used
@@ -103,11 +96,4 @@ public interface SipCommFileChooser
      * @param filter the filter to add
      */
     void setFileFilter(SipCommFileFilter filter);
-
-    /**
-     * Returns the filter the user has chosen for saving a file.
-     *
-     * @return SipCommFileFilter the used filter when saving a file
-     */
-    SipCommFileFilter getUsedFilter();
 }

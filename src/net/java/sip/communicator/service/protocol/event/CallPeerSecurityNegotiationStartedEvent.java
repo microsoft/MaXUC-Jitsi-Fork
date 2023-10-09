@@ -48,13 +48,4 @@ public class CallPeerSecurityNegotiationStartedEvent
         this.srtpControl = srtpControl;
     }
 
-    /**
-     * Gets the security controller that caused this event.
-     *
-     * @return the security controller that caused this event.
-     */
-    public SrtpControl getSecurityController()
-    {
-        return srtpControl;
-    }
 }

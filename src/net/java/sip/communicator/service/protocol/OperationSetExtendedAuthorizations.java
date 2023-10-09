@@ -38,16 +38,6 @@ public interface OperationSetExtendedAuthorizations
     }
 
     /**
-     * Send a positive authorization to <tt>contact</tt> thus allowing them to
-     * add us to their contact list without needing to first request an
-     * authorization.
-     * @param contact the <tt>Contact</tt> whom we're granting authorization
-     * prior to receiving a request.
-     */
-    void explicitAuthorize(Contact contact)
-    ;
-
-    /**
      * Send an authorization request, requesting <tt>contact</tt> to add them
      * to our contact list?
      *

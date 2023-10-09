@@ -611,17 +611,6 @@ public class GeolocationExtensionElement implements ExtensionElement
     }
 
     /**
-     * Sets geographic latitude in decimal degrees North.
-     *
-     * @param lat a <tt>String</tt> value indicating geographic latitude in
-     * decimal degrees (e.g. 39.75).
-     */
-    public void setLat(String lat)
-    {
-        this.lat = new Float(lat);
-    }
-
-    /**
      * Returns a locality within the administrative region, such as a town or
      * city.
      *
@@ -666,17 +655,6 @@ public class GeolocationExtensionElement implements ExtensionElement
     public void setLon(float lon)
     {
         this.lon = lon;
-    }
-
-    /**
-     * Sets the longitude in decimal degrees East.
-     *
-     * @param lon a <tt>String</tt> containing the longitude in decimal degrees
-     * East (e.g. -104.99).
-     */
-    public void setLon(String lon)
-    {
-        this.lon = new Float(lon);
     }
 
     /**
@@ -817,21 +795,4 @@ public class GeolocationExtensionElement implements ExtensionElement
         this.timestamp = timestamp;
     }
 
-    /**
-     * Test if latitude and longitude are set.
-     *
-     * @return true if the geolocation extension contains both latitude and
-     * longitude and false otherwise.
-     */
-    public boolean containsLatLon()
-    {
-        if (this.lat != -1 && this.lon != -1)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
 }

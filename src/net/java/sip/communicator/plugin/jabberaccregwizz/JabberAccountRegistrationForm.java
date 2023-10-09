@@ -12,12 +12,9 @@ import java.util.List;
 
 import javax.swing.*;
 
-import org.jitsi.util.*;
-
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.plugin.desktoputil.wizard.*;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.protocol.*;
 
 /**
  * The <tt>JabberAccountRegistrationForm</tt>.
@@ -149,24 +146,6 @@ public class JabberAccountRegistrationForm
         }
 
         return null;
-    }
-
-    /**
-     * Return the user part of the user name (i.e. the string before the @
-     * sign).
-     *
-     * @param userName the username.
-     * @return the user part of the jabber user name.
-     */
-    public static String getUserFromUserName(String userName)
-    {
-        int delimIndex = userName.indexOf("@");
-        if (delimIndex != -1)
-        {
-            return userName.substring(0, delimIndex);
-        }
-
-        return userName;
     }
 
     /**

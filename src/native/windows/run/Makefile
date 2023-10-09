@@ -11,7 +11,7 @@ PRODUCTNAME ?= Jitsi
 PRODUCTBUILDVERSION ?= 1.0.0.0
 TARGET_BASENAME ?= run
 TARGET_DIR ?= ../../../../release/windows/tmp
-JAVA_HOME ?= C:/Program Files (x86)/AdoptOpenJDK/jdk-11.0.17+8
+JAVA_HOME ?= C:/Program Files (x86)/AdoptOpenJDK/jdk-11.0.20+8
 
 ifeq ($(wildcard /bin/cygpath.*),/bin/cygpath.exe)
     target.dir := $(shell cygpath --mixed "$(TARGET_DIR)")

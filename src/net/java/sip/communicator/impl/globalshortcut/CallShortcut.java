@@ -12,10 +12,15 @@ import java.util.*;
 import java.util.List;
 
 import net.java.sip.communicator.service.globalshortcut.*;
+import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.keybindings.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.media.*;
+import net.java.sip.communicator.service.wispaservice.*;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
+import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -42,7 +47,9 @@ public class CallShortcut
         // Answers an incoming call.
         ANSWER,
         // Hangs up a call.
-        HANGUP
+        HANGUP,
+        // call window takes keyboard focus
+        FOCUS
     }
 
     /**
@@ -50,6 +57,12 @@ public class CallShortcut
      */
     private final KeybindingsService keybindingsService
         = GlobalShortcutActivator.getKeybindingsService();
+
+    private static final AnalyticsService analyticsService
+        = GlobalShortcutActivator.getAnalyticsService();
+
+    private static final WISPAService wispaService
+            = GlobalShortcutActivator.getWISPAService();
 
     /**
      * List of incoming calls not yet answered.
@@ -98,20 +111,22 @@ public class CallShortcut
                     continue;
 
                 String entryKey = entry.getKey();
-                if(entryKey.equals("answer") &&
+                if((entryKey.equals("answer") || entryKey.equals("answer_mac")) &&
                     keystroke.getKeyCode() == ks.getKeyCode() &&
                     keystroke.getModifiers() == ks.getModifiers())
                 {
                     logger.info("Answer global shortcut pressed");
+                    // Analytic is sent later as more details are needed
 
                     // Try to answer the new incoming call, if there is any.
                     manageNextIncomingCall(CallAction.ANSWER);
                 }
-                else if(entryKey.equals("hangup") &&
+                else if((entryKey.equals("hangup") || entryKey.equals("hangup_mac")) &&
                     keystroke.getKeyCode() == ks.getKeyCode() &&
                     keystroke.getModifiers() == ks.getModifiers())
                 {
                     logger.info("Hangup global shortcut pressed");
+                    // Analytic is sent later as more details are needed
 
                     // Try to hang up the new incoming call.
                     if(!manageNextIncomingCall(CallAction.HANGUP))
@@ -131,11 +146,12 @@ public class CallShortcut
                         }
                     }
                 }
-                else if(entryKey.equals("answer_hangup") &&
+                else if((entryKey.equals("answer_hangup") || entryKey.equals("answer_hangup_mac")) &&
                     keystroke.getKeyCode() == ks.getKeyCode() &&
                     keystroke.getModifiers() == ks.getModifiers())
                 {
                     logger.info("Answer / Hangup global shortcut pressed");
+                    // Analytic is sent later as more details are needed
 
                     // Try to answer the new incoming call.
                     if(!manageNextIncomingCall(CallAction.ANSWER))
@@ -155,11 +171,28 @@ public class CallShortcut
                         }
                     }
                 }
-                else if(entryKey.equals("mute") &&
+                else if(entryKey.equals("focus_call_mac") &&
+                    keystroke.getKeyCode() == ks.getKeyCode() &&
+                    keystroke.getModifiers() == ks.getModifiers())
+                {
+                    logger.info("Focus call global shortcut pressed");
+                    // Analytic is sent later as more details are needed
+
+                    // Try to focus the new incoming call.
+                    if(!manageNextIncomingCall(CallAction.FOCUS))
+                    {
+                        logger.debug("No active incoming call - focus an active call");
+
+                        // There was no new incoming call. Focus an onging call
+                        focusAnsweredCall();
+                    }
+                }
+                else if((entryKey.equals("mute") || entryKey.equals("mute_mac")) &&
                     keystroke.getKeyCode() == ks.getKeyCode() &&
                     keystroke.getModifiers() == ks.getModifiers())
                 {
                     logger.info("Mute global shortcut pressed");
+                    analyticsService.onEvent(AnalyticsEventType.MUTE_CALL_SHORTCUT);
 
                     try
                     {
@@ -180,6 +213,7 @@ public class CallShortcut
                 {
                     logger.info("Push to talk global shortcut pressed: "
                                 + ptt_pressed);
+                    analyticsService.onEvent(AnalyticsEventType.PTT_CALL_SHORTCUT);
 
                     try
                     {
@@ -342,14 +376,52 @@ public class CallShortcut
                             {
                             case ANSWER:
                                 logger.info("Call answer shortcut pressed");
-                                if(callPeer.getState() == CallPeerState.INCOMING_CALL)
+                                if (callPeer
+                                    .getState() == CallPeerState.INCOMING_CALL)
                                 {
                                     basicTelephony.answerCallPeer(callPeer);
+                                    analyticsService.onEvent(
+                                        AnalyticsEventType.INCOMING_ANSWERED_SHORTCUT);
                                 }
                                 break;
                             case HANGUP:
                                 logger.info("Call hangup shortcut pressed");
+                                if (callPeer
+                                    .getState() == CallPeerState.INCOMING_CALL)
+                                {
+                                    analyticsService.onEvent(
+                                        AnalyticsEventType.INCOMING_REJECT_SHORTCUT);
+                                }
+                                else
+                                {
+                                    analyticsService.onEvent(
+                                        AnalyticsEventType.HANGUP_CALL_SHORTCUT);
+                                }
                                 basicTelephony.hangupCallPeer(callPeer);
+                                break;
+                            case FOCUS:
+                                logger.info("Call focus shortcut pressed");
+                                if (callPeer
+                                    .getState() == CallPeerState.INCOMING_CALL)
+                                {
+                                    wispaService.notify(
+                                        WISPANamespace.ACTIVE_CALLS,
+                                        WISPAAction.MOTION, aCall.getCallID());
+                                    analyticsService.onEvent(
+                                        AnalyticsEventType.FOCUS_CALL_SHORTCUT,
+                                        AnalyticsParameter.CALL_TYPE,
+                                        AnalyticsParameter.VALUE_INCOMING);
+                                }
+                                else
+                                {
+                                    UIService mUIService =
+                                        GlobalShortcutActivator.getUIService();
+                                    mUIService.focusCall(aCall);
+                                    analyticsService.onEvent(
+                                        AnalyticsEventType.FOCUS_CALL_SHORTCUT,
+                                        AnalyticsParameter.CALL_TYPE,
+                                        AnalyticsParameter.VALUE_ONGOING);
+                                }
                                 break;
                             }
                         }
@@ -375,31 +447,73 @@ public class CallShortcut
      */
     private boolean manageNextIncomingCall(CallAction callAction)
     {
-        synchronized(incomingCalls)
+        synchronized (incomingCalls)
         {
             int i = incomingCalls.size();
 
-            while(i != 0)
+            while (i != 0)
             {
                 --i;
 
                 Call call = incomingCalls.get(i);
 
-                // Either this incoming call is already answered, or we will
-                // answered it. Thus, we switch it to the answered list.
-                answeredCalls.add(call);
-                incomingCalls.remove(i);
-
-                // We find a call not answered yet.
-                if(call.getCallState() == CallState.CALL_INITIALIZATION)
+                if (call.getCallState() != CallState.CALL_INITIALIZATION)
                 {
-                    // Answer or hang up the ringing call.
+                    // Update our lists: This "incoming" call has been answered
+                    answeredCalls.add(call);
+                    incomingCalls.remove(i);
+                }
+                else // This call is actually incoming
+                {
+                    if (callAction != CallAction.FOCUS)
+                    {
+                        // We are answering it now, so update our lists
+                        answeredCalls.add(call);
+                        incomingCalls.remove(i);
+                    }
+                    // Answer, hang up or focus the ringing call.
                     CallShortcut.doCallAction(call, callAction);
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    private boolean focusAnsweredCall()
+    {
+        synchronized (answeredCalls)
+        {
+            boolean callFocussed = false;
+            int numAnsweredCalls = answeredCalls.size();
+            int i = numAnsweredCalls;
+
+            // Look for the active call first, and focus it if any
+            while (i != 0 && !callFocussed)
+            {
+                --i;
+                Call call = answeredCalls.get(i);
+                if (CallShortcut.isActiveCall(call))
+                {
+                    CallShortcut.doCallAction(call, CallAction.FOCUS);
+                    callFocussed = true;
+                }
+            }
+
+            // No active call. Focus an inactive call if any
+            // this code usually focuses the call that was the last to be received,
+            // which is not ideal but not worth overengineering
+            if (!callFocussed && numAnsweredCalls != 0)
+            {
+                logger.debug("No active call - focus an inactive call");
+                Call call = answeredCalls.get(0);
+                CallShortcut.doCallAction(call, CallAction.FOCUS);
+                callFocussed = true;
+            }
+
+            logger.debug("Found call to focus? " + callFocussed);
+            return callFocussed;
+        }
     }
 
     /**

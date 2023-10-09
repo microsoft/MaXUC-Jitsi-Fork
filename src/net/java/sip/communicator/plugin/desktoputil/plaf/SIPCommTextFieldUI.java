@@ -132,17 +132,6 @@ public class SIPCommTextFieldUI
     }
 
     /**
-     * Returns <code>true</code> if the delete buttons is enabled and false -
-     * otherwise.
-     * @return <code>true</code> if the delete buttons is enabled and false -
-     * otherwise
-     */
-    public boolean isDeleteButtonEnabled()
-    {
-        return isDeleteButtonEnabled;
-    }
-
-    /**
      * Updates the isDeleteButtonEnabled field.
      *
      * @param isDeleteButtonEnabled indicates if the delete buttons is enabled
@@ -400,38 +389,6 @@ public class SIPCommTextFieldUI
         }
 
         return null;
-    }
-
-    /**
-     * @param bgStartColor the bgStartColor to set
-     */
-    public void setBgStartColor(Color bgStartColor)
-    {
-        this.bgStartColor = bgStartColor;
-    }
-
-    /**
-     * @param bgEndColor the bgEndColor to set
-     */
-    public void setBgEndColor(Color bgEndColor)
-    {
-        this.bgEndColor = bgEndColor;
-    }
-
-    /**
-     * @param bgBorderStartColor the bgBorderStartColor to set
-     */
-    public void setBgBorderStartColor(Color bgBorderStartColor)
-    {
-        this.bgBorderStartColor = bgBorderStartColor;
-    }
-
-    /**
-     * @param bgBorderEndColor the bgBorderEndColor to set
-     */
-    public void setBgBorderEndColor(Color bgBorderEndColor)
-    {
-        this.bgBorderEndColor = bgBorderEndColor;
     }
 
     /**

@@ -61,20 +61,6 @@ public class SIPCommBorders
         }
     }
 
-    private static Border roundBorder;
-
-    public static Border getRoundBorder()
-    {
-        if (!(roundBorder instanceof RoundBorder))
-        {
-            roundBorder =
-                new BorderUIResource.CompoundBorderUIResource(
-                    new SIPCommBorders.RoundBorder(),
-                    new BasicBorders.MarginBorder());
-        }
-        return roundBorder;
-    }
-
     /**
      * The BoldRoundBorder is common border which is used throughout the SIPComm
      * L&F.

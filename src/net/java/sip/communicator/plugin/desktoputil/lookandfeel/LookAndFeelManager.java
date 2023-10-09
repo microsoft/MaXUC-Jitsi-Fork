@@ -54,12 +54,15 @@ public class LookAndFeelManager
                     "");
 
     /**
-     * The default font to use on Windows.  This is initialised to Segoe UI, as
-     * that is the default English font on Windows.  However, this may get
-     * overridden by the OS look-and-feel settings, particularly if the OS
-     * language uses a non-English character set, or by the above branding option.
+     * The default font to use on Windows. It's a "logical" font name,
+     * which is mapped to a "physical" font using a font configuration file
+     * {@see https://docs.oracle.com/en/java/javase/11/intl/font-configuration-files.htm}.
+     * We provide a customized font configuration file {in lib/fontconfig.properties}),
+     * where "sansserif" logical font is mapped to "Segoe UI" physical font, as
+     * that is the default English font on Windows.
+     * This may get overridden by the above branding option.
      */
-    private static String DEFAULT_WIN_FONT_NAME = "Segoe UI";
+    private static String DEFAULT_WIN_FONT_NAME = "sansserif";
 
     /**
      * The default font to use on Mac, set as "Verdana" in settings.
@@ -223,9 +226,9 @@ public class LookAndFeelManager
          * be used for dialogs. And win.messagebox.font will be the font for
          * windows but the L&F will use it for OptionPane which in turn should
          * rather use the font for dialogs. So swap the meanings of the two to
-         * get standard fonts in the windows while compromizing that dialogs may
+         * get standard fonts in the windows while compromising that dialogs may
          * appear in it as well (if the dialogs are created as non-OptionPanes
-         * and in this case SIP Communicator will behave as Mozilla Firfox and
+         * and in this case SIP Communicator will behave as Mozilla Firefox and
          * Eclipse with respect to using the window font for the dialogs).
          */
         Toolkit toolkit = Toolkit.getDefaultToolkit();
@@ -240,34 +243,12 @@ public class LookAndFeelManager
         logger.debug("OptionPane.font: " + messageFont +
                      ", Panel.font: " + controlFont);
 
-        // Determine whether we need to update the Windows UI default fonts.
-        boolean updateFonts = false;
-        if ((messageboxFont != null) && messageboxFont.equals(menuFont))
-        {
-            Object defaultGUIFont
-                = toolkit.getDesktopProperty("win.defaultGUI.font");
-            logger.debug("win.defaultGUI.font: " + defaultGUIFont);
-
-            if ((defaultGUIFont != null)
-                    && !defaultGUIFont.equals(messageboxFont))
-            {
-                updateFonts = ((messageFont != null) && !messageFont.equals(controlFont));
-                logger.info("Need to fix Windows default fonts? " + updateFonts);
-            }
-        }
-
         // Before we fix up the fonts, check whether the Windows font has been
         // overridden in the branding and ensure we have saved the correct default
         // Windows font name to return when we are asked for it by the UI code.
         if (OVERRIDE_DEFAULT_WIN_FONT_NAME.isEmpty())
         {
-            // The default Windows font hasn't been overridden, so store the
-            // default Windows font name defined in the OS settings.
-            if (messageFont != null)
-            {
-                DEFAULT_WIN_FONT_NAME = ((Font) messageFont).getFontName();
-            }
-
+            // The default Windows font hasn't been overridden.
             logger.info("Default Windows font not overridden: " +
                          DEFAULT_WIN_FONT_NAME);
         }
@@ -277,51 +258,48 @@ public class LookAndFeelManager
             // as the default Windows font name and make sure we do fix up the
             // Windows UI default fonts.
             DEFAULT_WIN_FONT_NAME = OVERRIDE_DEFAULT_WIN_FONT_NAME;
-            updateFonts = true;
             logger.info("Default Windows font overridden to " +
                         OVERRIDE_DEFAULT_WIN_FONT_NAME);
         }
 
-        if (updateFonts)
-        {
-            messageFont = getScaledDefaultFont(Font.PLAIN);
-            logger.info("Updating fonts to messageFont: " + messageFont +
-                         ", controlFont: " + controlFont);
+        // Set Windows font to UI defaults.
+        messageFont = getScaledDefaultFont(Font.PLAIN);
+        logger.info("Updating fonts to messageFont: " + messageFont +
+                     ", controlFont: " + controlFont);
 
-            uiDefaults.put("OptionPane.font", controlFont);
-            uiDefaults.put("OptionPane.messageFont", controlFont);
-            uiDefaults.put("OptionPane.buttonFont", controlFont);
-            uiDefaults.put("PasswordField.font", controlFont);
+        uiDefaults.put("OptionPane.font", controlFont);
+        uiDefaults.put("OptionPane.messageFont", controlFont);
+        uiDefaults.put("OptionPane.buttonFont", controlFont);
+        uiDefaults.put("PasswordField.font", controlFont);
 
-            uiDefaults.put("Button.font", messageFont);
-            uiDefaults.put("CheckBox.font", messageFont);
-            uiDefaults.put("ComboBox.font", messageFont);
-            uiDefaults.put("EditorPane.font", messageFont);
-            uiDefaults.put("FormattedTextField.font", messageFont);
-            uiDefaults.put("Label.font", messageFont);
-            uiDefaults.put("List.font", messageFont);
-            uiDefaults.put("RadioButton.font", messageFont);
-            uiDefaults.put("Panel.font", messageFont);
-            uiDefaults.put("ProgressBar.font", messageFont);
-            uiDefaults.put("ScrollPane.font", messageFont);
-            uiDefaults.put("Slider.font", messageFont);
-            uiDefaults.put("Spinner.font", messageFont);
-            uiDefaults.put("TabbedPane.font", messageFont);
-            uiDefaults.put("Table.font", messageFont);
-            uiDefaults.put("TableHeader.font", messageFont);
-            uiDefaults.put("TextField.font", messageFont);
-            uiDefaults.put("TextPane.font", messageFont);
-            uiDefaults.put("TitledBorder.font", messageFont);
-            uiDefaults.put("ToggleButton.font", messageFont);
-            uiDefaults.put("ToolTip.font", messageFont);
-            uiDefaults.put("Tree.font", messageFont);
-            uiDefaults.put("Viewport.font", messageFont);
-            uiDefaults.put("CheckBox.foreground", TEXT_COLOR);
-            uiDefaults.put("Label.foreground", TEXT_COLOR);
-            uiDefaults.put("TextArea.foreground", TEXT_COLOR);
-            uiDefaults.put("EditorPane.foreground", TEXT_COLOR);
-            uiDefaults.put("TextPane.foreground", TEXT_COLOR);
-        }
+        uiDefaults.put("Button.font", messageFont);
+        uiDefaults.put("CheckBox.font", messageFont);
+        uiDefaults.put("ComboBox.font", messageFont);
+        uiDefaults.put("EditorPane.font", messageFont);
+        uiDefaults.put("FormattedTextField.font", messageFont);
+        uiDefaults.put("Label.font", messageFont);
+        uiDefaults.put("List.font", messageFont);
+        uiDefaults.put("RadioButton.font", messageFont);
+        uiDefaults.put("Panel.font", messageFont);
+        uiDefaults.put("ProgressBar.font", messageFont);
+        uiDefaults.put("ScrollPane.font", messageFont);
+        uiDefaults.put("Slider.font", messageFont);
+        uiDefaults.put("Spinner.font", messageFont);
+        uiDefaults.put("TabbedPane.font", messageFont);
+        uiDefaults.put("Table.font", messageFont);
+        uiDefaults.put("TableHeader.font", messageFont);
+        uiDefaults.put("TextField.font", messageFont);
+        uiDefaults.put("TextPane.font", messageFont);
+        uiDefaults.put("TitledBorder.font", messageFont);
+        uiDefaults.put("ToggleButton.font", messageFont);
+        uiDefaults.put("ToolTip.font", messageFont);
+        uiDefaults.put("Tree.font", messageFont);
+        uiDefaults.put("Viewport.font", messageFont);
+        uiDefaults.put("CheckBox.foreground", TEXT_COLOR);
+        uiDefaults.put("Label.foreground", TEXT_COLOR);
+        uiDefaults.put("TextArea.foreground", TEXT_COLOR);
+        uiDefaults.put("EditorPane.foreground", TEXT_COLOR);
+        uiDefaults.put("TextPane.foreground", TEXT_COLOR);
 
         // Workaround for bug 6396936 (http://bugs.sun.com): WinL&F : font for
         // text area is incorrect.

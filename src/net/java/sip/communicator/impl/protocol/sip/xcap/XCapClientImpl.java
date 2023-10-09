@@ -217,18 +217,6 @@ public class XCapClientImpl extends BaseHttpXCapClient implements XCapClient
     }
 
     /**
-     * Gets the xcap-caps from the server.
-     *
-     * @return the xcap-caps.
-     * @throws IllegalStateException if the user has not been connected.
-     */
-    public XCapCapsType getXCapCaps()
-    {
-        assertConnected();
-        return xCapCaps;
-    }
-
-    /**
      * Loads the xcap-caps from the server.
      *
      * @return the xcap-caps.
@@ -314,23 +302,6 @@ public class XCapClientImpl extends BaseHttpXCapClient implements XCapClient
         {
             throw new XCapException("PresRules cannot be parsed", e);
         }
-    }
-
-    /**
-     * Deletes the pres-rules from the server.
-     *
-     * @throws IllegalStateException if the user has not been connected, or
-     *                               pres-rules is not supported.
-     * @throws XCapException         if there is some error during operation.
-     */
-    public void deletePresRules()
-            throws XCapException
-    {
-        assertConnected();
-        assertResourceListsSupported();
-        String presRulesDocument = getPresRulesDocument();
-        XCapResourceId resourceId = new XCapResourceId(presRulesDocument);
-        deleteResource(resourceId);
     }
 
     /**

@@ -312,23 +312,6 @@ public class LdapPersonFoundImpl
     }
 
     /**
-     * Returns telephone numbers from this person
-     *
-     * @return telephone numbers from this person
-     */
-    public Set<String> getAllPhone()
-    {
-        Set<String> allPhone = new HashSet<>();
-
-        allPhone.addAll(this.workPhoneNumbers);
-        allPhone.addAll(this.mobilePhoneNumbers);
-        allPhone.addAll(this.homePhoneNumbers);
-        allPhone.addAll(this.otherPhoneNumbers);
-
-        return allPhone;
-    }
-
-    /**
      * Adds a work telephone number to this person
      *
      * @param telephoneNumber the work telephone number

@@ -9,6 +9,8 @@ import java.util.Timer;
 
 import javax.swing.*;
 
+import com.metaswitch.maxanalytics.event.CallKt;
+
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -201,6 +203,7 @@ public class CallPullButton extends AbstractPluginComponent implements CallJumpC
     {
         sLog.user("'Call Available to Pull' pop-up clicked");
         GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.CALL_PULLED);
+        GuiActivator.getInsightService().logEvent(CallKt.EVENT_CALL_PULL);
 
         if (mCallData != null)
         {

@@ -85,13 +85,18 @@ public class OperationSetVideoTelephonySipImpl
     public void setLocalVideoAllowed(Call call, boolean allowed)
         throws OperationFailedException
     {
-        logger.debug("setLocalVideoAllowed " + allowed);
+        boolean oldValue = isLocalVideoAllowed(call);
+        logger.debug("setLocalVideoAllowed from " + oldValue + " to " + allowed);
 
         // Update the media to change the video
         super.setLocalVideoAllowed(call, allowed);
 
-        /* reinvite all peers */
-        ((CallSipImpl)call).reInvite();
+        /* reinvite all peers if the value has changed*/
+        if (oldValue != allowed)
+        {
+            logger.info("Send re-INVITE, video is now " + (allowed ? "enabled" : "disabled"));
+            ((CallSipImpl)call).reInvite();
+        }
     }
 
     /**
@@ -228,16 +233,6 @@ public class OperationSetVideoTelephonySipImpl
         /* answer with video */
         callPeer.getCall().setLocalVideoAllowed(true, getMediaUseCase());
         callPeer.answer();
-    }
-
-    /**
-     * Returns the quality control for video calls if any.
-     * @param peer the peer which this control operates on.
-     * @return the implemented quality control.
-     */
-    public QualityControl getQualityControl(CallPeer peer)
-    {
-        return ((CallPeerSipImpl) peer).getMediaHandler().getQualityControl();
     }
 
     /**

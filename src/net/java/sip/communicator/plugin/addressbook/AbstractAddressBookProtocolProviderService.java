@@ -445,17 +445,6 @@ public abstract class AbstractAddressBookProtocolProviderService
     }
 
     /**
-     * Returns the "transport" protocol of this instance used to carry the
-     * control channel for the current protocol service.
-     *
-     * @return The "transport" protocol of this instance: TCP, TLS or UNKNOWN.
-     */
-    public TransportProtocol getTransportProtocol()
-    {
-        return TransportProtocol.UNKNOWN;
-    }
-
-    /**
      * Returns the protocol icon.
      * @return the protocol icon
      */
@@ -471,14 +460,6 @@ public abstract class AbstractAddressBookProtocolProviderService
     @Override
     public boolean supportsStatus()
     {
-        return false;
-    }
-
-    @Override
-    public boolean useRegistrationForStatus()
-    {
-        // We don't want to use this account's registration state to set
-        // status
         return false;
     }
 

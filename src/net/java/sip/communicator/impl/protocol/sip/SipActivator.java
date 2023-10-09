@@ -24,15 +24,15 @@ import net.java.sip.communicator.service.commportal.ClassOfServiceService;
 import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.contactsource.ContactSourceService;
 import net.java.sip.communicator.service.gui.UIService;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
 import net.java.sip.communicator.service.protocol.ProtocolNames;
 import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.provisioning.ProvisioningService;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
-import net.java.sip.communicator.service.systray.SystrayService;
 import net.java.sip.communicator.service.threading.ThreadingService;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiErrorService;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
 import org.jitsi.service.configuration.ConfigurationService;
@@ -61,8 +61,8 @@ public class SipActivator
     private static VersionService       versionService        = null;
     private static UIService            uiService             = null;
     private static PacketLoggingService packetLoggingService  = null;
-    private static FileAccessService    fileService           = null;
-    private static SystrayService       systrayService        = null;
+    private static FileAccessService    fileService            = null;
+    private static WISPAService         wispaService          = null;
 
     /**
      * The resource service. Used for checking for default values
@@ -87,9 +87,9 @@ public class SipActivator
 
     private static ShutdownService shutdownService;
 
-    private static WebSocketApiErrorService webSocketApiErrorService;
-
     private static AnalyticsService analyticsService;
+
+    private static InsightService insightService;
 
     /**
      * The threading service, used to schedule tasks
@@ -416,18 +416,18 @@ public class SipActivator
     }
 
     /**
-     * Returns the <tt>SystrayService</tt> obtained from the bundle context.
+     * Returns the <tt>WISPAService</tt> obtained from the bundle context.
      *
-     * @return the <tt>SystrayService</tt> obtained from the bundle context
+     * @return the <tt>WISPAService</tt> obtained from the bundle context
      */
-    static SystrayService getSystrayService()
+    static WISPAService getWispaService()
     {
-        if (systrayService == null)
+        if (wispaService == null)
         {
-            systrayService =
-                ServiceUtils.getService(bundleContext, SystrayService.class);
+            wispaService =
+                ServiceUtils.getService(bundleContext, WISPAService.class);
         }
-        return systrayService;
+        return wispaService;
     }
 
     /**
@@ -482,25 +482,6 @@ public class SipActivator
     }
 
     /**
-     * Returns the <tt>WebSocketApiErrorService</tt> obtained from the bundle
-     * context.
-     *
-     * @return the <tt>WebSocketApiErrorService</tt> obtained from the bundle
-     * context.
-     */
-    static WebSocketApiErrorService getWebSocketApiErrorService()
-    {
-        if (webSocketApiErrorService == null)
-        {
-            webSocketApiErrorService = ServiceUtils.getService(
-                    bundleContext,
-                    WebSocketApiErrorService.class);
-        }
-
-        return webSocketApiErrorService;
-    }
-
-    /**
      * Returns the <tt>AnalyticsService</tt> obtained from the bundle context.
      *
      * @return the <tt>AnalyticsService</tt> obtained from the bundle context
@@ -513,6 +494,16 @@ public class SipActivator
         }
 
         return analyticsService;
+    }
+
+    public static InsightService getInsightService()
+    {
+        if (insightService == null)
+        {
+            insightService = ServiceUtils.getService(bundleContext, InsightService.class);
+        }
+
+        return insightService;
     }
 
     /**

@@ -332,13 +332,6 @@ public abstract class AbstractProtocolProviderService
         return true;
     }
 
-    public boolean useRegistrationForStatus()
-    {
-        // By default, all accounts support the account status being set based
-        // on the account's registration state
-        return true;
-    }
-
     /**
      * Whether this protocol provider supports reconnection using the
      * reconnect plugin

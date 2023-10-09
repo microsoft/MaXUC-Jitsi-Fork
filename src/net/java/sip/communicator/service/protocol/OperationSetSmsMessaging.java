@@ -48,32 +48,6 @@ public interface OperationSetSmsMessaging
     ImMessage createMessage(String messageText);
 
     /**
-     * Sends the <tt>message</tt> to the destination indicated by the
-     * <tt>to</tt> contact.
-     * @param to the <tt>Contact</tt> to send <tt>message</tt> to
-     * @param message the <tt>Message</tt> to send.
-     * @throws java.lang.IllegalStateException if the underlying stack is
-     * not registered and initialized.
-     * @throws java.lang.IllegalArgumentException if <tt>to</tt> is not an
-     * instance belonging to the underlying implementation.
-     */
-    void sendSmsMessage(Contact to, ImMessage message)
-        throws IllegalStateException, IllegalArgumentException;
-
-    /**
-     * Sends the <tt>message</tt> to the destination indicated by the
-     * <tt>to</tt> parameter.
-     * @param to the destination to send <tt>message</tt> to
-     * @param message the <tt>Message</tt> to send.
-     * @throws java.lang.IllegalStateException if the underlying stack is
-     * not registered and initialized.
-     * @throws java.lang.IllegalArgumentException if <tt>to</tt> is not an
-     * instance belonging to the underlying implementation.
-     */
-    void sendSmsMessage(String to, ImMessage message)
-        throws IllegalStateException, IllegalArgumentException;
-
-    /**
      * Registers a MessageListener with this operation set so that it gets
      * notifications of successful message delivery, failure or reception of
      * incoming messages..
@@ -91,12 +65,4 @@ public interface OperationSetSmsMessaging
      */
     void removeMessageListener(MessageListener listener);
 
-    /**
-     * Determines whether the protocol supports the supplied content type
-     *
-     * @param contentType the type we want to check
-     * @return <tt>true</tt> if the protocol supports it and
-     * <tt>false</tt> otherwise.
-     */
-    boolean isContentTypeSupported(String contentType);
 }

@@ -53,6 +53,8 @@ import org.jxmpp.jid.Jid;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.stringprep.XmppStringprepException;
 
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsServiceRegistrar;
 import net.java.sip.communicator.service.diagnostics.StateDumper;
 import net.java.sip.communicator.service.imageloader.BufferedImageAvailableFromBytes;
@@ -351,11 +353,9 @@ public class OperationSetPersistentPresenceJabberImpl
     }
 
     /**
-     * Creates a non persistent contact for the specified address. This would
-     * also create (if necessary) a group for volatile contacts that would not
-     * be added to the server stored contact list. The volatile contact would
-     * remain in the list until it is really added to the contact list or
-     * until the application is terminated.
+     * Creates a non-persistent contact for the specified address. This would
+     * not create (if necessary) a group for volatile contacts or add them to
+     * existing groups. Volatile contacts are not shown in the contact list.
      * @param id the address of the contact to create.
      * @return the newly created volatile <tt>ContactImpl</tt>
      */
@@ -505,18 +505,6 @@ public class OperationSetPersistentPresenceJabberImpl
     public String getCurrentStatusMessage()
     {
         return currentStatusMessage;
-    }
-
-    /**
-     * Returns the protocol specific contact instance representing the local
-     * user.
-     *
-     * @return the Contact (address, phone number, or uin) that the Provider
-     *   implementation is communicating on behalf of.
-     */
-    public Contact getLocalContact()
-    {
-        return null;
     }
 
     /**
@@ -2148,9 +2136,8 @@ public class OperationSetPersistentPresenceJabberImpl
 
             if (presenceType == Presence.Type.subscribe)
             {
-                // run waiting for user response in different thread
-                // as this seems to block the packet dispatch thread
-                // and we don't receive anything till we unblock it
+                // Run in different thread to prevent blocking the packet
+                // dispatch thread and we don't receive anything till we unblock it
                 mSubcribeThreadPool.submit(
                     new Runnable() {
                 public void run()
@@ -2203,43 +2190,33 @@ public class OperationSetPersistentPresenceJabberImpl
                         }
                     }
 
-                    if(responsePresenceType == null)
+                    if (responsePresenceType == null)
                     {
                         AuthorizationRequest req = new AuthorizationRequest();
+                        boolean isInSameBG = bgIMContactManager.getBGContactForIMContact(srcContact) != null;
                         AuthorizationResponse response
-                            = handler.processAuthorisationRequest(
-                                            req, srcContact);
+                            = handler.processAuthorisationRequest(req, srcContact, isInSameBG);
 
-                        if(response != null)
+                        if (response != null)
                         {
-                            if(response.getResponseCode()
-                                   .equals(AuthorizationResponse.ACCEPT))
+                            if (response.getResponseCode().equals(AuthorizationResponse.ACCEPT))
                             {
-                                responsePresenceType
-                                    = Presence.Type.subscribed;
+                                responsePresenceType = Presence.Type.subscribed;
+
                                 sLog.info("Sending Accepted Subscription");
                             }
-                            else if(response.getResponseCode()
-                                    .equals(AuthorizationResponse.REJECT))
+                            else if (response.getResponseCode().equals(AuthorizationResponse.REJECT))
                             {
-                                try
-                                {
-                                    // Remove the volatile contact
-                                    ssContactList.removeContact(srcContact);
-                                }
-                                catch (OperationFailedException e)
-                                {
-                                    // No need to hash Contact, as its
-                                    // toString() method does that.
-                                    sLog.error(
-                                        "Authorization request rejected for contact " +
-                                        srcContact +
-                                        " but failed to delete volatile contact." + e);
-                                }
-                                responsePresenceType
-                                    = Presence.Type.unsubscribed;
+                                responsePresenceType = Presence.Type.unsubscribed;
                                 sLog.info("Sending Rejected Subscription");
                             }
+
+                            // Send analytics
+                            JabberActivator.getAnalyticsService().onEvent(
+                                    AnalyticsEventType.CHAT_AUTHORISATION_REQUEST_RECEIVED,
+                                    AnalyticsParameter.PARAM_AUTH_RESPONSE, response.getResponseCode().getCode(),
+                                    AnalyticsParameter.PARAM_AUTH_RESPONSE_REASON, response.getReason(),
+                                    AnalyticsParameter.PARAM_EXTERNAL_CONTACT, Boolean.toString(!isInSameBG));
                         }
                     }
 
@@ -2640,5 +2617,9 @@ public class OperationSetPersistentPresenceJabberImpl
         {
             bgIMContactManager.cleanUp();
         }
+    }
+    public void subscribeToIMContact(Contact contact)
+    {
+        bgIMContactManager.subscribeToIMContact(contact);
     }
 }

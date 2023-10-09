@@ -43,13 +43,4 @@ public class WizardEvent
 
         this.eventCode = eventCode;
     }
-
-    /**
-     * Returns the event code of this event : SUCCESS or ERRROR.
-     * @return the event code of this event : SUCCESS or ERRROR
-     */
-    public int getEventCode()
-    {
-        return this.eventCode;
-    }
 }

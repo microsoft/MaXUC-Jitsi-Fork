@@ -173,8 +173,7 @@ public class VideoDeviceConfigurationListener
             {
                 showPopUpNotification(
                         title,
-                        body.toString(),
-                        NeomediaActivator.DEVICE_CONFIGURATION_HAS_CHANGED);
+                        body.toString());
             }
 
             /*

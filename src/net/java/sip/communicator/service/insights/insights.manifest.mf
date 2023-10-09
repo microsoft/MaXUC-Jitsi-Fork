@@ -1,0 +1,10 @@
+Bundle-Name: Insights Service
+Bundle-Description: Insights Service - an analytics service.
+Bundle-Vendor: metaswitch.com
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Import-Package: org.osgi.framework
+Export-Package: net.java.sip.communicator.service.insights,
+ com.metaswitch.maxanalytics.event
+
+

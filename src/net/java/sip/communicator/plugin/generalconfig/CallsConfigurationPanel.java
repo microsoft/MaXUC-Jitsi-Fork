@@ -86,14 +86,6 @@ public class CallsConfigurationPanel
 
         final ConfigSectionPanel voipContainer = new ConfigSectionPanel(false);
 
-        if (!ConfigurationUtils.isAccessibilityMode())
-        {
-            // Macs do not allow the user to switch to an always on top window
-            // so do not let the user choose this option when in accessibility
-            // mode
-            voipContainer.add(createCallWindowAlwaysOnTopCheckBox());
-        }
-
         // Call Park option.  First, get the CallPark operation set.
         ProtocolProviderService[] providers =
                             GeneralConfigPluginActivator.getProtocolProviders();
@@ -259,34 +251,6 @@ public class CallsConfigurationPanel
         });
 
         return container;
-    }
-
-    private Component createCallWindowAlwaysOnTopCheckBox()
-    {
-        final JCheckBox callAlwaysOnTopCheckBox = new SIPCommCheckBox();
-
-        callAlwaysOnTopCheckBox.setText(
-            Resources.getString("plugin.generalconfig.CALL_ALWAYS_ON_TOP"));
-        callAlwaysOnTopCheckBox.setForeground(TEXT_COLOR);
-
-        callAlwaysOnTopCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        callAlwaysOnTopCheckBox.setSelected(
-            ConfigurationUtils.isCallAlwaysOnTop());
-
-        callAlwaysOnTopCheckBox.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                logger.user("Call window always on top checkbox toggled to: " +
-                                    callAlwaysOnTopCheckBox.isSelected());
-
-                ConfigurationUtils.setCallAlwaysOnTop(
-                    callAlwaysOnTopCheckBox.isSelected());
-            }
-        });
-
-        return callAlwaysOnTopCheckBox;
     }
 
     /**

@@ -54,19 +54,6 @@ public abstract class AbstractBufferedImageFuture implements BufferedImageFuture
     }
 
     @Override
-    public void addToFrame(final JFrame frame)
-    {
-        onUiResolve(new Resolution<>()
-        {
-            @Override
-            public void onResolution(BufferedImage image)
-            {
-                frame.setIconImage(image);
-            }
-        });
-    }
-
-    @Override
     public void addToWindow(final Window window)
     {
         onUiResolve(new Resolution<>()
@@ -77,23 +64,6 @@ public abstract class AbstractBufferedImageFuture implements BufferedImageFuture
                 window.setIconImage(image);
             }
         });
-    }
-
-    @Override
-    public BufferedImageFuture getScaledInstance(final int width, final int height, final int hint)
-    {
-        AlteredBufferedImagePending alteration = new AlteredBufferedImagePending(this)
-        {
-            @Override
-            public BufferedImage alterImage(BufferedImage image)
-            {
-                return ImageUtils.getBufferedImage(image.getScaledInstance(width, height, hint));
-            }
-        };
-
-        onResolve(alteration);
-
-        return alteration;
     }
 
     @Override
@@ -173,23 +143,6 @@ public abstract class AbstractBufferedImageFuture implements BufferedImageFuture
             public ImageIcon alterImage(BufferedImage image)
             {
                 return ImageUtils.scaleIconWithinBounds(image, width, height);
-            }
-        };
-
-        onResolve(alteration);
-
-        return alteration;
-    }
-
-    @Override
-    public BufferedImageFuture fade()
-    {
-        AlteredBufferedImagePending alteration = new AlteredBufferedImagePending(this)
-        {
-            @Override
-            public BufferedImage alterImage(BufferedImage image)
-            {
-                return ImageUtils.fadeImage(image);
             }
         };
 

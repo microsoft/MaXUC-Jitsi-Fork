@@ -6,6 +6,5 @@ package net.java.sip.communicator.service.wispaservice;
  */
 public enum WISPANotionType
 {
-    ERROR,
-    SEND_SALT
+    ERROR, NOTIFICATION, SEND_SALT
 }

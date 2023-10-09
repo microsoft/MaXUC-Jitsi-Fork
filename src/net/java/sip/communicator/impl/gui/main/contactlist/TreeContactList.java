@@ -399,14 +399,6 @@ public class TreeContactList
     }
 
     /**
-     * @return the presence filter
-     */
-    public PresenceFilter getPresenceFilter()
-    {
-        return mPresenceFilter;
-    }
-
-    /**
      * @return the search filter
      */
     public SearchFilter getSearchFilter()
@@ -668,20 +660,6 @@ public class TreeContactList
 
             mTreeModel.nodeChanged(contactNode);
         }
-    }
-
-    /**
-     * Returns <tt>true</tt> if the given <tt>metaContact</tt> has been
-     * previously set to active, otherwise returns <tt>false</tt>.
-     * @param contact the <tt>UIContact</tt> to check
-     * @return <tt>true</tt> if the given <tt>metaContact</tt> has been
-     * previously set to active, otherwise returns <tt>false</tt>
-     */
-    public boolean isContactActive(UIContactImpl contact)
-    {
-        ContactNode contactNode = contact.getContactNode();
-
-        return (contactNode == null) ? false : contactNode.isActive();
     }
 
     @Override
@@ -1311,7 +1289,7 @@ public class TreeContactList
                 {
                     try
                     {
-                        // If in the mean time someone has changed the filter
+                        // If in the meantime someone has changed the filter
                         // we don't wait here.
                         if (filterQuery == mCurrentFilterQuery)
                             wait();
@@ -2263,21 +2241,6 @@ public class TreeContactList
     }
 
     /**
-     * Removes the given contact source from the list of available contact
-     * sources.
-     *
-     * @param contactSource
-     */
-    public void removeContactSource(ContactSourceService contactSource)
-    {
-        synchronized (mContactSources)
-        {
-            sLog.info("Removing contact source " + logHasher(contactSource.getDisplayName()));
-            mContactSources.remove(contactSource);
-        }
-    }
-
-    /**
      * Removes all stored contact sources.
      */
     public void removeAllContactSources()
@@ -2945,33 +2908,6 @@ public class TreeContactList
     }
 
     /**
-     * Returns the list of selected contacts.
-     *
-     * @return the list of selected contacts
-     */
-    public List<UIContact> getSelectedContacts()
-    {
-        TreePath[] selectionPaths = getSelectionPaths();
-
-        if (selectionPaths == null)
-            return null;
-
-        List<UIContact> selectedContacts = new ArrayList<>();
-
-        for (TreePath selectionPath : selectionPaths)
-        {
-            if (selectionPath.getLastPathComponent() instanceof ContactNode)
-            {
-                selectedContacts.add(
-                    ((ContactNode) selectionPath.getLastPathComponent())
-                        .getContactDescriptor());
-            }
-        }
-
-        return selectedContacts;
-    }
-
-    /**
      * Returns the currently selected <tt>UIGroup</tt> if there's one.
      *
      * @return the currently selected <tt>UIGroup</tt> if there's one.
@@ -3136,22 +3072,6 @@ public class TreeContactList
         // if we're in the search view, refresh as we may need to update our
         // search results
         if (mCurrentFilter.equals(mCallHistoryFilter) ||
-            mCurrentFilter.equals(mAllHistoryFilter) ||
-            mCurrentFilter.equals(mSearchFilter))
-        {
-            applyFilter(mCurrentFilter);
-        }
-    }
-
-    /**
-     * Refreshes the contact list if the message history tab is selected
-     */
-    public void messageHistoryChanged()
-    {
-        // If we're currently in the message history view, refresh it. Similarly,
-        // if we're in the search view, refresh as we may need to update our
-        // search results
-        if (mCurrentFilter.equals(mMessageHistoryFilter) ||
             mCurrentFilter.equals(mAllHistoryFilter) ||
             mCurrentFilter.equals(mSearchFilter))
         {

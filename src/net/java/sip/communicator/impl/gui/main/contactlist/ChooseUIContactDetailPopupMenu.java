@@ -113,18 +113,6 @@ public class ChooseUIContactDetailPopupMenu
     }
 
     /**
-     * Shows the dialog at the given location.
-     *
-     * @param x the x coordinate
-     * @param y the y coordinate
-     */
-    public void showPopupMenu(int x, int y)
-    {
-        setLocation(x, y);
-        setVisible(true);
-    }
-
-    /**
      * Shows this popup menu regarding to its invoker location.
      */
     public void showPopupMenu()

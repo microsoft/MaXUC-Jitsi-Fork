@@ -155,32 +155,6 @@ public class OperationSetAutoAnswerSipImpl
     }
 
     /**
-     * Is the auto answer option set to conditionally
-     * answer all incoming calls.
-     *
-     * @return is auto answer set to conditional.
-     */
-    public boolean isAutoAnswerConditionSet()
-    {
-        return answerConditional;
-    }
-
-    /**
-     * Set to automatically forward all calls to the specified
-     * number using the same provider.
-     *
-     * @param numberTo number to use for forwarding
-     */
-    public void setCallForward(String numberTo)
-    {
-        clearLocal();
-
-        this.callFwdTo = numberTo;
-
-        save();
-    }
-
-    /**
      * Get the value for automatically forward all calls to the specified
      * number using the same provider.
      *
@@ -202,26 +176,6 @@ public class OperationSetAutoAnswerSipImpl
         this.headerName = null;
         this.headerValue = null;
         this.callFwdTo = null;
-    }
-
-    /**
-     * Returns the name of the header if conditional auto answer is set.
-     *
-     * @return the name of the header if conditional auto answer is set.
-     */
-    public String getAutoAnswerHeaderName()
-    {
-        return headerName;
-    }
-
-    /**
-     * Returns the value of the header for the conditional auto answer.
-     *
-     * @return the value of the header for the conditional auto answer.
-     */
-    public String getAutoAnswerHeaderValue()
-    {
-        return headerValue;
     }
 
     /**

@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 
 import net.java.sip.communicator.impl.gui.main.contactlist.ContactListPane;
-import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.OperationSetMultiUserChat;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
@@ -60,25 +59,7 @@ public class StandaloneMainFrame
     }
 
     @Override
-    public void repaintWindow()
-    {
-    }
-
-    @Override
     public void selectTab(String tabName)
-    {
-        // Do nothing - UI component unused
-    }
-
-    @Override
-    public void selectSubTab(String tabName)
-    {
-        // Do nothing - UI component unused
-    }
-
-    @Override
-    public void setSubTabNotification(String tabName,
-        boolean notificationsActive)
     {
         // Do nothing - UI component unused
     }
@@ -117,21 +98,9 @@ public class StandaloneMainFrame
     }
 
     @Override
-    public void setContactList(MetaContactListService contactListService)
-    {
-        // Do nothing - UI component unused
-    }
-
-    @Override
     public int getProviderIndex(ProtocolProviderService protocolProvider)
     {
         // Do nothing - UI component unused
         return 0;
-    }
-
-    @Override
-    public void addNativePlugins()
-    {
-        // Do nothing - UI component unused
     }
 }

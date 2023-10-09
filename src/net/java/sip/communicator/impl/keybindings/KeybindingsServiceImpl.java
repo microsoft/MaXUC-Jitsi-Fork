@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.keybindings;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.awt.*;
 import java.io.*;
 import java.text.*;
@@ -230,7 +232,7 @@ class KeybindingsServiceImpl
                 catch (IOException exc)
                 {
                     logger.error("unable to write to: "
-                        + customFile.getAbsolutePath(), exc);
+                        + sanitiseFilePath(customFile.getAbsolutePath()), exc);
                 }
             }
 
@@ -315,7 +317,7 @@ class KeybindingsServiceImpl
                         catch (IOException exc)
                         {
                             logger.error("unable to write to: "
-                                + customFile.getAbsolutePath(), exc);
+                                + sanitiseFilePath(customFile.getAbsolutePath()), exc);
                         }
                     }
                 }
@@ -338,8 +340,8 @@ class KeybindingsServiceImpl
         String shortcut2 = null;
         String propName = null;
         String propName2 = null;
-        String names[] = new String[]{"answer", "hangup", "answer_hangup",
-            "contactlist", "mute", "push_to_talk"};
+        String names[] = new String[]{"answer", "hangup", "answer_hangup", "focus_call_mac", "answer_mac",
+            "hangup_mac", "answer_hangup_mac", "contactlist", "mute", "mute_mac", "push_to_talk"};
         Object configured = configService.user().getProperty(
             "net.java.sip.communicator.impl.keybinding.global.configured");
 

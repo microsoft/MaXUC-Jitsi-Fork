@@ -10,6 +10,8 @@ package net.java.sip.communicator.service.protocol;
  * <tt>OperationFailedException</tt> indicates an exception that occurred in the
  * API.
  * <p>
+ * <p>A matching class is provided by org.jitsi.service.protocol.OperationFailedException
+ * <p>
  * <tt>OperationFailedException</tt> contains an error code that gives more
  * information on the exception. The application can obtain the error code using
  * {@link OperationFailedException#getErrorCode()}. The error code values are

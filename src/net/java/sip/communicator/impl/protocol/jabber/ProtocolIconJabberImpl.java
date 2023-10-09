@@ -8,7 +8,6 @@
 package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.util.Hashtable;
-import java.util.Iterator;
 
 import org.osgi.framework.ServiceReference;
 
@@ -69,16 +68,6 @@ public class ProtocolIconJabberImpl
     }
 
     /**
-     * Implements the <tt>ProtocolIcon.getSupportedSizes()</tt> method. Returns
-     * an iterator to a set containing the supported icon sizes.
-     * @return an iterator to a set containing the supported icon sizes
-     */
-    public Iterator<String> getSupportedSizes()
-    {
-        return iconsTable.keySet().iterator();
-    }
-
-    /**
      * Returns TRUE if a icon with the given size is supported, FALSE-otherwise.
      *
      * @return TRUE if a icon with the given size is supported, FALSE-otherwise.
@@ -105,18 +94,6 @@ public class ProtocolIconJabberImpl
     public String getIconPath(String iconSize)
     {
         return iconPathsTable.get(iconSize);
-    }
-
-    /**
-     * Returns the icon image used to represent the protocol connecting state.
-     * @return the icon image used to represent the protocol connecting state
-     */
-    public BufferedImageFuture getConnectingIcon()
-    {
-        ImageLoaderService imageLoaderService = JabberActivator.getImageLoaderService();
-
-        return imageLoaderService.getIconFromPath(iconPath + "/status16x16-connecting.gif")
-            .getImage();
     }
 
     /**

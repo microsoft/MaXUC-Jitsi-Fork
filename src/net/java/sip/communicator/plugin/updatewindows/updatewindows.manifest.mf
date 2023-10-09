@@ -4,7 +4,10 @@ Bundle-Name: Update
 Bundle-Vendor: jitsi.org
 Bundle-Version: 0.0.1
 System-Bundle: yes
-Import-Package: org.osgi.framework,
+Import-Package: com.sun.jna,
+ com.sun.jna.platform.win32,
+ org.apache.commons.codec.binary,
+ org.osgi.framework,
  org.jitsi.service.configuration,
  org.jitsi.service.resources,
  org.jitsi.service.version,

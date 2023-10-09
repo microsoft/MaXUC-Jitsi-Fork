@@ -7,7 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.contactlist;
 
-import static java.util.stream.Collectors.toSet;
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
@@ -16,12 +15,18 @@ import java.util.*;
 import org.jitsi.service.resources.*;
 import org.jitsi.util.CustomAnnotations.*;
 import org.jitsi.util.xml.*;
+
+import com.metaswitch.maxanalytics.event.AnalyticsResult;
+import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
+import com.metaswitch.maxanalytics.event.ContactsKt;
+import com.metaswitch.maxanalytics.event.SIFailureReason;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactlist.event.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.GenericDetail;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -284,20 +289,6 @@ public class MetaContactListServiceImpl
     }
 
     /**
-     * Returns true if there are no known asynchronous responses
-     * to contact events remaining to listen out for.
-     */
-    public boolean hasProcessedAllAsyncEvents(final MetaContact metaContact)
-    {
-        synchronized (PendingContactList.metaContactToContactIdSet)
-        {
-            return PendingContactList
-                    .metaContactToContactIdSet.stream()
-                    .noneMatch(e -> e.getMetaContact().equals(metaContact));
-        }
-    }
-
-    /**
      * First makes the specified protocol provider create the contact as
      * indicated by <tt>contactID</tt>, and then associates it to the
      * _existing_ <tt>metaContact</tt> given as an argument.
@@ -421,13 +412,6 @@ public class MetaContactListServiceImpl
         }
 
         PendingContactList.Listener listener = pendingContacts.addListener(provider, contactID);
-
-        synchronized (PendingContactList.metaContactToContactIdSet)
-        {
-            PendingContactList.metaContactToContactIdSet.add(
-                    new MetaContactAndContactID(metaContact, contactID));
-        }
-
         try
         {
             //create the contact in the group
@@ -439,22 +423,27 @@ public class MetaContactListServiceImpl
 
             //wait for a confirmation event
             listener.waitForEvent(CONTACT_LIST_MODIFICATION_TIMEOUT);
+            sendTelemetryContactAdd(AnalyticsResult.Success.INSTANCE);
         }
         catch (OperationFailedException ex)
         {
             if (ex.getErrorCode() == OperationFailedException.SUBSCRIPTION_ALREADY_EXISTS)
             {
+                // Event does not exist
+                sendTelemetryContactAdd(new AnalyticsResult.Failure(SIFailureReason.UPDATE_ERROR));
                 throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
                     ex,
                     MetaContactListException.CODE_CONTACT_ALREADY_EXISTS_ERROR);
             }
             else if (ex.getErrorCode() == OperationFailedException.NOT_SUPPORTED_OPERATION)
             {
+                sendTelemetryContactAdd(new AnalyticsResult.Failure(SIFailureReason.NOT_SUPPORTED_FOR_SUBSCRIBER));
                 throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
                     ex,
                     MetaContactListException.CODE_NOT_SUPPORTED_OPERATION);
             }
 
+            sendTelemetryContactAdd(AnalyticsResult.NetworkError.INSTANCE);
             throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
                     ex,
                     MetaContactListException.CODE_NETWORK_ERROR);
@@ -479,6 +468,7 @@ public class MetaContactListServiceImpl
             int errorCode = MetaContactListException.CODE_NETWORK_ERROR;
             Contact srcContact = opSetPersPresence.findContactByID(contactID);
 
+            sendTelemetryContactAdd(new AnalyticsResult.Failure(SIFailureReason.UPDATE_ERROR));
             logger.debug("No contact add event retrieved for " + sanitiseChatAddress(contactID) +
                          ". Contact found on server = " + srcContact);
 
@@ -530,6 +520,7 @@ public class MetaContactListServiceImpl
             listener.evt.getEventID() ==
             SubscriptionEvent.SUBSCRIPTION_FAILED)
         {
+            sendTelemetryContactAdd(AnalyticsResult.FailureUnknown.INSTANCE);
             throw new MetaContactListException(
                 "Failed to create a contact with address: " +
                 sanitiseChatAddress(contactID) + " " +
@@ -554,6 +545,19 @@ public class MetaContactListServiceImpl
                                        null);
         }
         ((MetaContactGroupImpl) parentMetaGroup).addMetaContact((MetaContactImpl)metaContact);
+    }
+
+    private static void sendTelemetryContactAdd(AnalyticsResult result)
+    {
+        ContactlistActivator.getInsightService().logEvent(
+                new InsightEvent(
+                        ContactsKt.EVENT_CONTACT_ADD,
+                        Map.of(
+                                AnalyticsResultKt.PARAM_RESULT,
+                                result.getValue()
+                        )
+                )
+        );
     }
 
     /**
@@ -1548,19 +1552,6 @@ public class MetaContactListServiceImpl
     }
 
     /**
-     * Removes local resources storing copies of the meta contact list. This
-     * method is meant primarily to aid automated testing which may depend on
-     * beginning the tests with an empty local contact list.
-     */
-    @Override
-    public void purgeLocallyStoredContactListCopy()
-    {
-        this.storageManager.storeContactListAndStopStorageManager();
-        this.storageManager.removeContactListFile();
-        logger.trace("Removed meta contact list storage file.");
-    }
-
-    /**
      * Goes through the specified group and removes from all meta contacts,
      * protocol specific contacts belonging to the specified
      * <tt>groupToRemove</tt>. Note that this method won't undertake any calls
@@ -1770,31 +1761,6 @@ public class MetaContactListServiceImpl
         this.findAllMetaContactsForProvider(protocolProvider,
                                             rootMetaGroup,
                                             resultList);
-
-        return resultList.iterator();
-    }
-
-    /**
-     * Returns a list of all <tt>MetaContact</tt>s contained in the given group
-     * and containing a protocol contact from the given
-     * <tt>ProtocolProviderService</tt>.
-     *
-     * @param protocolProvider the <tt>ProtocolProviderService</tt> whose
-     * contacts we're looking for.
-     * @param metaContactGroup the parent group.
-     *
-     * @return a list of all <tt>MetaContact</tt>s containing a protocol contact
-     * from the given <tt>ProtocolProviderService</tt>.
-     */
-    @Override
-    public Iterator<MetaContact> findAllMetaContactsForProvider(
-        ProtocolProviderService protocolProvider,
-        MetaContactGroup metaContactGroup)
-    {
-        List<MetaContact> resultList = new LinkedList<>();
-
-        this.findAllMetaContactsForProvider(protocolProvider,
-            metaContactGroup, resultList);
 
         return resultList.iterator();
     }
@@ -2544,18 +2510,6 @@ public class MetaContactListServiceImpl
                 new HashMap<>();
 
         /**
-         * This keeps a list of outstanding contacts which have been added by the
-         * client. The objects are MetaContact objects paired with a corresponding contactID.
-         * This contactID is used by us and the server to
-         * correlate updates to contacts that we receive on our listeners.
-         *
-         * Synchronisation policy: all accesses of this Set must be guarded
-         * using client-side locking.
-         */
-        public static final Set<MetaContactAndContactID> metaContactToContactIdSet =
-            new HashSet<>();
-
-        /**
          * Listen for a pending contact to be acknowledged by the server.
          *
          * Note, the contact acts as a key, it's not used for checking whether a added contact matches
@@ -2642,13 +2596,6 @@ public class MetaContactListServiceImpl
             if (local == listener)
             {
                 providerContacts.remove(contact);
-                synchronized (metaContactToContactIdSet)
-                {
-                    metaContactToContactIdSet.removeAll(
-                            metaContactToContactIdSet.stream()
-                                    .filter(e -> e.getContactID().equalsIgnoreCase(contact))
-                                    .collect(toSet()));
-                }
             }
             else
             {
@@ -3822,32 +3769,6 @@ public class MetaContactListServiceImpl
                                  ex);
                 }
             }
-        }
-    }
-
-    /**
-     * Utility class to assist us with tracking metaContacts and the contactIDs generated
-     * by asynchronous server actions on said metaContact.
-     */
-    private class MetaContactAndContactID
-    {
-        private final MetaContact metaContact;
-        private final String contactID;
-
-        MetaContactAndContactID(MetaContact metaContact, String contactID)
-        {
-            this.metaContact = metaContact;
-            this.contactID = contactID;
-        }
-
-        String getContactID()
-        {
-            return this.contactID;
-        }
-
-        MetaContact getMetaContact()
-        {
-            return this.metaContact;
         }
     }
 

@@ -46,23 +46,4 @@ public class KeyStoreType
     {
         return name;
     }
-
-    /**
-     * Gets the known file name extensions.
-     * @return Known file name extensions (including the dot).
-     */
-    public String[] getFileExtensions()
-    {
-        return fileExtensions;
-    }
-
-    /**
-     * Flag that indicates if the keystore supports passwords.
-     * @return <tt>true</tt> if the keystore supports passwords, <tt>false</tt>
-     *         otherwise.
-     */
-    public boolean hasKeyStorePassword()
-    {
-        return hasKeyStorePassword;
-    }
 }

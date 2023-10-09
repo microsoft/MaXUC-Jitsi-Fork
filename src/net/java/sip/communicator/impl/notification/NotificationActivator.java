@@ -14,7 +14,7 @@ import org.osgi.framework.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.notification.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
-import net.java.sip.communicator.service.systray.*;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -32,9 +32,9 @@ public class NotificationActivator
     protected static BundleContext bundleContext;
 
     private static AudioNotifierService audioNotifierService;
-    private static SystrayService systrayService;
     private static NotificationService notificationService;
     private static GlobalStatusService globalStatusService;
+    private static WISPAService wispaService;
 
     /**
      * A reference to the <tt>UIService</tt> currently in use in Jitsi.
@@ -129,22 +129,22 @@ public class NotificationActivator
     }
 
     /**
-     * Returns the <tt>SystrayService</tt> obtained from the bundle context.
+     * Returns the <tt>WISPAService</tt> obtained from the bundle context.
      *
-     * @return the <tt>SystrayService</tt> obtained from the bundle context
+     * @return the <tt>WISPAService</tt> obtained from the bundle context
      */
-    public static SystrayService getSystray()
+    public static WISPAService getWispaService()
     {
-        if (systrayService == null)
+        if (wispaService == null)
         {
             ServiceReference<?> serviceReference = bundleContext
-                .getServiceReference(SystrayService.class.getName());
+                .getServiceReference(WISPAService.class.getName());
 
-            systrayService = (SystrayService) bundleContext
+            wispaService = (WISPAService) bundleContext
                 .getService(serviceReference);
         }
 
-        return systrayService;
+        return wispaService;
     }
 
     /**

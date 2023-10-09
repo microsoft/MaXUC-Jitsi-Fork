@@ -85,16 +85,4 @@ public interface LoginRenderer
      */
     SecurityAuthority getSecurityAuthorityImpl(
             ProtocolProviderService protocolProvider);
-
-    /**
-     * Indicates if the given <tt>protocolProvider</tt> related user interface
-     * is already rendered.
-     *
-     * @param protocolProvider the <tt>ProtocolProviderService</tt>, which
-     * related user interface we're looking for
-     * @return <tt>true</tt> if the given <tt>protocolProvider</tt> related user
-     * interface is already rendered
-     */
-    boolean containsProtocolProviderUI(
-            ProtocolProviderService protocolProvider);
 }

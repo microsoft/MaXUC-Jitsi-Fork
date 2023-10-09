@@ -71,12 +71,6 @@ public interface MetaContactListService
         "net.java.sip.communicator.service.contactlist.PROVIDER_MASK";
 
     /**
-     * Returns true if there are no known asynchronous responses
-     * to contact events remaining to listen out for.
-     */
-    boolean hasProcessedAllAsyncEvents(MetaContact metaContact);
-
-    /**
      * Returns a MetaContact list featuring all contacts supplied by this
      * service which should be displayed by the UI. For use in UI processing,
      * which only cares which contacts are in the top-level list. We also
@@ -228,22 +222,6 @@ public interface MetaContactListService
      */
     Iterator<MetaContact> findAllMetaContactsForProvider(
             ProtocolProviderService protocolProvider);
-
-    /**
-     * Returns a list of all <tt>MetaContact</tt>s contained in the given group
-     * and containing a protocol contact from the given
-     * <tt>ProtocolProviderService</tt>.
-     *
-     * @param protocolProvider the <tt>ProtocolProviderService</tt> whose
-     * contacts we're looking for.
-     * @param metaContactGroup the parent group.
-     *
-     * @return a list of all <tt>MetaContact</tt>s containing a protocol contact
-     * from the given <tt>ProtocolProviderService</tt>.
-     */
-    Iterator<MetaContact> findAllMetaContactsForProvider(
-            ProtocolProviderService protocolProvider,
-            MetaContactGroup metaContactGroup);
 
     /**
      * If it can match the given SMS number to a single <tt>MetaContact</tt>,
@@ -460,11 +438,4 @@ public interface MetaContactListService
      */
     void removeMetaContactGroup(MetaContactGroup groupToRemove)
         throws MetaContactListException;
-
-    /**
-     * Removes local resources storing copies of the meta contact list. This
-     * method is meant primarily to aid automated testing which may depend on
-     * beginning the tests with an empty local contact list.
-     */
-    void purgeLocallyStoredContactListCopy();
 }

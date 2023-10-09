@@ -221,19 +221,9 @@
             <arg value="resources/languages/resources_bg_BG.properties.template"/>
         </exec>
 
-        <exec executable="sed" output="resources/languages/resources_de.properties" logError="true" failonerror="true">
-            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Vereinheitlichter Kommunikations-Client/g"/>
-            <arg value="resources/languages/resources_de.properties.template"/>
-        </exec>
-
         <exec executable="sed" output="resources/languages/resources_de_DE.properties" logError="true" failonerror="true">
             <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Vereinheitlichter Kommunikations-Client/g"/>
             <arg value="resources/languages/resources_de_DE.properties.template"/>
-        </exec>
-
-        <exec executable="sed" output="resources/languages/resources_el_CY.properties" logError="true" failonerror="true">
-            <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Unified Communications Client/g"/>
-            <arg value="resources/languages/resources_el_CY.properties.template"/>
         </exec>
 
         <exec executable="sed" output="resources/languages/resources_el_GR.properties" logError="true" failonerror="true">
@@ -246,9 +236,9 @@
             <arg value="resources/languages/resources_en_GB.properties.template"/>
         </exec>
 
-        <exec executable="sed" output="resources/languages/resources_es.properties" logError="true" failonerror="true">
+        <exec executable="sed" output="resources/languages/resources_es_MX.properties" logError="true" failonerror="true">
             <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Cliente de Comunicaciones Unificadas/g"/>
-            <arg value="resources/languages/resources_es.properties.template"/>
+            <arg value="resources/languages/resources_es_MX.properties.template"/>
         </exec>
 
         <exec executable="sed" output="resources/languages/resources_es_ES.properties" logError="true" failonerror="true">
@@ -286,9 +276,9 @@
             <arg value="resources/languages/resources_pl_PL.properties.template"/>
         </exec>
 
-        <exec executable="sed" output="resources/languages/resources_pt_AO.properties" logError="true" failonerror="true">
+        <exec executable="sed" output="resources/languages/resources_pt_PT.properties" logError="true" failonerror="true">
             <arg value="${resource.locale.sed.independent};s/@@TAGLINE@@/Aplicativo de Comunica\\u00e7\\u00f5es Unificadas/g"/>
-            <arg value="resources/languages/resources_pt_AO.properties.template"/>
+            <arg value="resources/languages/resources_pt_PT.properties.template"/>
         </exec>
 
         <exec executable="sed" output="resources/languages/resources_pt_BR.properties" logError="true" failonerror="true">
@@ -330,6 +320,7 @@
                 <include name="**/gtkrc"/>
                 <include name="**/*.css"/>
                 <include name="**/*.properties"/>
+                <include name="**/*.json"/>
                 <include name="**/*.licences"/>
             </fileset>
             <fileset dir="${testsrc}">
@@ -426,10 +417,8 @@
         bundle-jnalib,
         bundle-contactlist,meta-contactlist,
         bundle-plugin-jabberaccregwizz,
-        bundle-plugin-sipaccregwizz,
         bundle-commons-codec,bundle-guava,bundle-httputil,
         bundle-version-impl,bundle-shutdown-timeout,bundle-windows-clean-shutdown,
-        bundle-swingnotification,
         bundle-sparkle, bundle-plugin-branding,
         bundle-systemactivitynotifications,
         bundle-osdependent,bundle-browserlauncher,
@@ -451,16 +440,20 @@
         bundle-certificate,bundle-packetlogging,
         bundle-provisioning,
         bundle-addressbook,
-        bundle-globalshortcut,bundle-plugin-msofficecomm,bundle-plugin-urlprotocolhandler,bundle-libjitsi,
+        bundle-globalshortcut,bundle-plugin-urlprotocolhandler,bundle-libjitsi,
         bundle-customcontactactions,
         bundle-managecontact-service, bundle-analytics-service, bundle-browserpanel-service,
         bundle-diagnostics-service, bundle-desktoputil,
-        bundle-globaldisplaydetails, bundle-phonenumberutils-service, bundle-gson,
+        bundle-globaldisplaydetails,
+        bundle-insights-service,
+        bundle-applicationinsights-core,
+        bundle-phonenumberutils-service, bundle-gson,
         bundle-commportal-service, bundle-reset-service, bundle-image-loader, bundle-conference-service,
         bundle-threading-service,
+        bundle-cdap-service,
         bundle-hsql, bundle-database,
-        bundle-headsetmanager-service, bundle-websocketserver-service, bundle-wispaservice,
-        bundle-metadata-extractor, bundle-websocket,
+        bundle-headsetmanager-service, bundle-wispaservice,
+        bundle-metadata-extractor,
         bundle-commons-lang, bundle-commons-logging, bundle-commons-io,bundle-commons-text" />
 
     <!--BUNDLE-SC-LAUNCHER-->
@@ -873,17 +866,6 @@
         </jar>
     </target>
 
-    <!-- BUNDLE-PLUGIN-SIPACCREGWIZZ -->
-    <target name="bundle-plugin-sipaccregwizz">
-        <!-- Creates a bundle for the plugin SIP Account Registration Wizard.-->
-        <jar compress="false" destfile="${bundles.dest}/sipaccregwizz.jar"
-            manifest="${src}/net/java/sip/communicator/plugin/sipaccregwizz/sipaccregwizz.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/sipaccregwizz"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/plugin/sipaccregwizz"/>
-        </jar>
-    </target>
-
     <!-- BUNDLE-VERSION-IMPL -->
     <target name="bundle-version-impl">
         <!-- Creates a bundle for the version service impl.-->
@@ -914,17 +896,6 @@
              <zipfileset dir="${dest}/net/java/sip/communicator/plugin/windowscleanshutdown"
                          excludes="**/Test*.class"
                          prefix="net/java/sip/communicator/plugin/windowscleanshutdown"/>
-        </jar>
-    </target>
-
-    <!--BUNDLE-SWINGNOTIFICATION-->
-    <target name="bundle-swingnotification">
-        <!-- Creates a bundle for the swingnotification plugin.-->
-        <jar compress="false" destfile="${bundles.dest}/swingnotification.jar"
-            manifest="${src}/net/java/sip/communicator/impl/swingnotification/swingnotification.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/impl/swingnotification"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/impl/swingnotification" />
         </jar>
     </target>
 
@@ -963,13 +934,10 @@
 
     <!--BUNDLE-OSDEPENDENT-->
     <target name="bundle-osdependent">
-        <!-- Creates a bundle for the OS dependent packages like systray and desktop."-->
+        <!-- Creates a bundle for the OS dependent packages."-->
         <jar
             compress="false" destfile="${bundles.dest}/osdependent.jar"
             manifest="${src}/net/java/sip/communicator/impl/osdependent/osdependent.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/service/systray"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/service/systray"/>
             <zipfileset dir="${dest}/net/java/sip/communicator/impl/osdependent"
                         excludes="**/Test*.class"
                         prefix="net/java/sip/communicator/impl/osdependent"/>
@@ -987,26 +955,6 @@
             <zipfileset dir="${dest}/net/java/sip/communicator/impl/browserlauncher"
                         excludes="**/Test*.class"
                         prefix="net/java/sip/communicator/impl/browserlauncher"/>
-        </jar>
-    </target>
-
-    <!--BUNDLE-WEBSOCKET -->
-    <target name="bundle-websocket">
-        <jar compress="true" destfile="lib/bundle/Java-WebSocket.jar"
-             filesetmanifest="merge">
-
-            <zipfileset src="${lib.noinst}/Java-WebSocket.jar" prefix=""/>
-            <manifest>
-                <attribute name="Import-Package" value="javax.net.ssl,
-                                                        org.slf4j"/>
-                <attribute name="Export-Package" value="org.java_websocket,
-                                                        org.java_websocket.framing,
-                                                        org.java_websocket.handshake,
-                                                        org.java_websocket.server"/>
-                <attribute name="Bundle-Name" value="Websocket"/>
-                <attribute name="Bundle-Description" value="Websocket server."/>
-                <attribute name="System-Bundle" value="yes"/>
-            </manifest>
         </jar>
     </target>
 
@@ -1349,9 +1297,9 @@
 
     <!--BUNDLE-BOUNCYCASTLE -->
     <target name="bundle-bouncycastle">
-        <copy file="${lib.noinst}/bcprov-jdk15on.jar" tofile="${bundles.dest}/bouncycastle.jar"/>
-        <copy file="${lib.noinst}/bcpkix-jdk15on.jar" tofile="${bundles.dest}/bouncycastle-pkix.jar"/>
-        <copy file="${lib.noinst}/bcutil-jdk15on.jar" tofile="${bundles.dest}/bouncycastle-util.jar"/>
+        <copy file="${lib.noinst}/bcprov-jdk18on.jar" tofile="${bundles.dest}/bouncycastle.jar"/>
+        <copy file="${lib.noinst}/bcpkix-jdk18on.jar" tofile="${bundles.dest}/bouncycastle-pkix.jar"/>
+        <copy file="${lib.noinst}/bcutil-jdk18on.jar" tofile="${bundles.dest}/bouncycastle-util.jar"/>
     </target>
 
     <!-- BUNDLE-PLUGIN-GLOBALPROXYCONFIG -->
@@ -1490,15 +1438,6 @@
         </jar>
     </target>
 
-    <target name="bundle-plugin-msofficecomm">
-        <jar compress="false" destfile="${bundles.dest}/plugin-msofficecomm.jar"
-                manifest="${src}/net/java/sip/communicator/plugin/msofficecomm/msofficecomm.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/plugin/msofficecomm"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/plugin/msofficecomm" />
-        </jar>
-    </target>
-
     <target name="bundle-plugin-urlprotocolhandler">
         <jar compress="false" destfile="${bundles.dest}/plugin-urlprotocolhandler.jar"
                 manifest="${src}/net/java/sip/communicator/plugin/urlprotocolhandler/urlprotocolhandler.manifest.mf">
@@ -1538,6 +1477,29 @@
             <zipfileset dir="${dest}/net/java/sip/communicator/service/analytics"
                         excludes="**/Test*.class"
                         prefix="net/java/sip/communicator/service/analytics"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-INSIGHTS-SERVICE -->
+    <target name="bundle-insights-service">
+        <!-- Creates a bundle containing the insights interface. -->
+        <jar compress="false" destfile="${bundles.dest}/insightsservice.jar"
+            manifest="${src}/net/java/sip/communicator/service/insights/insights.manifest.mf">
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/insights"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/insights"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-APPLICATIONINSIGHTS-CORE -->
+    <target name="bundle-applicationinsights-core">
+        <jar compress="true" destfile="${bundles.dest}/applicationinsights-core.jar"
+             filesetmanifest="skip">
+
+            <zipfileset excludes="META-INF/**/*" src="${lib.noinst}/applicationinsights-core.jar" prefix=""/>
+            <manifest>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
         </jar>
     </target>
 
@@ -1582,17 +1544,6 @@
          <zipfileset dir="${dest}/net/java/sip/communicator/service/headsetmanager"
                      excludes="**/Test*.class"
                      prefix="net/java/sip/communicator/service/headsetmanager"/>
-        </jar>
-    </target>
-
-    <!-- BUNDLE-WEBSOCKETSERVER-SERVICE -->
-    <target name="bundle-websocketserver-service">
-        <!-- Creates a bundle exposing a websocket server API -->
-        <jar compress="false" destfile="${bundles.dest}/websocketserverservice.jar"
-             manifest="${src}/net/java/sip/communicator/service/websocketserver/websocket.manifest.mf">
-            <zipfileset dir="${dest}/net/java/sip/communicator/service/websocketserver"
-                        excludes="**/Test*.class"
-                        prefix="net/java/sip/communicator/service/websocketserver"/>
         </jar>
     </target>
 
@@ -1756,6 +1707,21 @@
             <zipfileset dir="${dest}/net/java/sip/communicator/impl/database"
                         excludes="**/Test*.class"
                         prefix="net/java/sip/communicator/impl/database"/>
+        </jar>
+    </target>
+
+    <!-- BUNDLE-CDAP-SERVICE -->
+    <target name="bundle-cdap-service">
+        <jar compress="false" destfile="${bundles.dest}/cdap-service.jar" >
+            <zipfileset dir="${dest}/net/java/sip/communicator/service/cdap"
+                        excludes="**/Test*.class"
+                        prefix="net/java/sip/communicator/service/cdap"/>
+            <manifest>
+                <attribute name="Export-Package" value="net.java.sip.communicator.service.cdap"/>
+                <attribute name="Bundle-Name" value="CDAP service"/>
+                <attribute name="Bundle-Description" value="Provides access to the CDAP Service"/>
+                <attribute name="System-Bundle" value="yes"/>
+            </manifest>
         </jar>
     </target>
 </project>

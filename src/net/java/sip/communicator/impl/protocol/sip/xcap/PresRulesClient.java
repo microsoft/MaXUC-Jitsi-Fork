@@ -51,13 +51,4 @@ public interface PresRulesClient
      */
     RulesetType getPresRules()
             throws XCapException;
-
-    /**
-     * Deletes the pres-rules from the server.
-     *
-     * @throws IllegalStateException if the user has not been connected.
-     * @throws XCapException         if there is some error during operation.
-     */
-    void deletePresRules()
-            throws XCapException;
 }

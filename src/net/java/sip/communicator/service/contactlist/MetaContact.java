@@ -364,19 +364,6 @@ public interface MetaContact extends CreateConferenceMenuContainer
     String getDetail(String name);
 
     /**
-     * Remove the given detail.
-     * @param name of the detail to be removed.
-     * @param value value of the detail to be removed.
-     */
-    void removeDetail(String name, String value);
-
-    /**
-     * Remove all details with given name.
-     * @param name of the details to be removed.
-     */
-    void removeDetails(String name);
-
-    /**
      * Change the detail.
      * @param name of the detail to be changed.
      * @param oldValue the old value of the detail.

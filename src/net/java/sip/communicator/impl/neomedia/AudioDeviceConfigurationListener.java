@@ -260,8 +260,7 @@ public class AudioDeviceConfigurationListener
             {
                 showPopUpNotification(
                         title,
-                        body.toString(),
-                        NeomediaActivator.DEVICE_CONFIGURATION_HAS_CHANGED);
+                        body.toString());
             }
 
             deviceLogger.debug("Finished processing device change");

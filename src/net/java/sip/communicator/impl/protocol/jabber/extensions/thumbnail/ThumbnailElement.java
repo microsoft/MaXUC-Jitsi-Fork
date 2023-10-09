@@ -182,15 +182,6 @@ public class ThumbnailElement
     }
 
     /**
-     * Sets the mime type of the thumbnail.
-     * @param mimeType the mime type of the thumbnail
-     */
-    public void setMimeType(String mimeType)
-    {
-        this.mimeType = mimeType;
-    }
-
-    /**
      * Sets the width of the thumbnail
      * @param width the width of the thumbnail
      */

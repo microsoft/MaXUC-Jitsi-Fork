@@ -53,40 +53,6 @@ public class OperationSetExtendedAuthorizationsJabberImpl
     }
 
     /**
-     * Send a positive authorization to <tt>contact</tt> thus allowing them to
-     * add us to their contact list without needing to first request an
-     * authorization.
-     * @param contact the <tt>Contact</tt> whom we're granting authorization
-     * prior to receiving a request.
-     */
-    public void explicitAuthorize(Contact contact)
-    {
-        opSetPersPresence.assertConnected();
-
-        if( !(contact instanceof ContactJabberImpl) )
-            throw new IllegalArgumentException(
-                "The specified contact is not an jabber contact." +
-                    contact);
-
-        Presence responsePacket =
-            parentProvider.getConnection()
-                          .getStanzaFactory()
-                          .buildPresenceStanza()
-                          .ofType(Presence.Type.subscribed).build();
-
-        try
-        {
-            responsePacket.setTo(((ContactJabberImpl)contact).getAddressAsJid());
-            parentProvider.getConnection().sendStanza(responsePacket);
-        }
-        catch (NotConnectedException | InterruptedException e)
-        {
-            logger.error("Failed to send positive authorization for contact: "
-                + contact + ".", e);
-        }
-   }
-
-    /**
      * Send an authorization request, requesting <tt>contact</tt> to add them
      * to our contact list?
      *

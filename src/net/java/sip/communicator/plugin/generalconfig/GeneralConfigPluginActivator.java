@@ -44,8 +44,8 @@ import net.java.sip.communicator.service.reset.ResetService;
 import net.java.sip.communicator.service.resources.ResourceManagementServiceUtils;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
 import net.java.sip.communicator.service.sysactivity.SystemActivityNotificationsService;
-import net.java.sip.communicator.service.systray.SystrayService;
 import net.java.sip.communicator.util.AbstractServiceDependentActivator;
+import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.ServiceUtils;
 import org.jitsi.service.audionotifier.AudioNotifierService;
 import org.jitsi.service.configuration.ConfigurationService;
@@ -77,11 +77,6 @@ public class GeneralConfigPluginActivator
      * The account manager service.
      */
     private static AccountManager accountManager;
-
-    /**
-     * The systray service.
-     */
-    private static SystrayService systrayService;
 
     /**
      * The bundle context.
@@ -204,32 +199,6 @@ public class GeneralConfigPluginActivator
      */
     private static final String DEFAULT_AUTO_LOG_IN =
         "net.java.sip.communicator.plugin.generalconfig.autologin.ENABLED";
-
-    /**
-     * Name of the provisioning username in the configuration service.
-     */
-    private static final String PROPERTY_PROVISIONING_USERNAME =
-        "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
-
-    /**
-     * Name of the provisioning password in the configuration service (HTTP
-     * authentication).
-     */
-    private static final String PROPERTY_PROVISIONING_PASSWORD =
-        "net.java.sip.communicator.plugin.provisioning.auth";
-
-    /**
-     * Name of the encrypted provisioning password in the configuration
-     * service.
-     */
-    private static final String PROPERTY_PROVISIONING_ENCRYPTED_PASSWORD =
-        "net.java.sip.communicator.plugin.provisioning.auth.ENCRYPTED_PASSWORD";
-
-    /**
-     * Name of the active user being used by configuration.
-     */
-    private static final String PROPERTY_ACTIVE_USER =
-        "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER";
 
     /**
      * Service Registration for the Chat form. Needs to be stored so that we
@@ -507,13 +476,7 @@ public class GeneralConfigPluginActivator
         if (! configService.user().getBoolean(DEFAULT_AUTO_LOG_IN, true))
         {
             logger.info("No auto log in - remove passwords etc.");
-            configService.global().removeProperty(PROPERTY_ACTIVE_USER);
-            configService.global().removeProperty(
-                PROPERTY_PROVISIONING_USERNAME);
-            configService.user().removeProperty(
-                PROPERTY_PROVISIONING_PASSWORD);
-            configService.user().removeProperty(
-                PROPERTY_PROVISIONING_ENCRYPTED_PASSWORD);
+            ConfigurationUtils.forgetUserCredentials(false);
         }
         stopThread();
     }
@@ -551,25 +514,6 @@ public class GeneralConfigPluginActivator
         }
 
         return accountManager;
-    }
-
-    /**
-     * Returns the <tt>SystrayService</tt> obtained from the bundle
-     * context.
-     * @return the <tt>SystrayService</tt> obtained from the bundle
-     * context
-     */
-    static SystrayService getSystrayService()
-    {
-        if(systrayService == null) {
-            ServiceReference<?> configReference = bundleContext
-                .getServiceReference(SystrayService.class.getName());
-
-            systrayService = (SystrayService) bundleContext
-                .getService(configReference);
-        }
-
-        return systrayService;
     }
 
     /**

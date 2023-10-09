@@ -7,7 +7,6 @@
 package net.java.sip.communicator.impl.protocol.sip.security;
 
 import java.util.*;
-import java.util.Map.Entry;
 
 import javax.sip.header.*;
 
@@ -46,46 +45,6 @@ class CredentialsCache
                     CredentialsCacheEntry cacheEntry)
     {
         authenticatedRealms.put(realm, cacheEntry);
-    }
-
-    /**
-     * Returns the credentials corresponding to the specified realm
-     * or null if none could be found.
-     *
-     * @param realm the realm that the credentials apply to
-     * @return the credentials corresponding to the specified realm
-     * or null if none could be found.
-     */
-    CredentialsCacheEntry get(String realm)
-    {
-        return this.authenticatedRealms.get(realm);
-    }
-
-    /**
-     * Returns the list of realms that <tt>branchID</tt> has been used to
-     * authenticate against.
-     *
-     * @param branchID the transaction branchID that we are looking for.
-     *
-     * @return the list of realms that <tt>branchID</tt> has been used to
-     * authenticate against.
-     */
-    List<String> getRealms(String branchID)
-    {
-        List<String> realms = new LinkedList<>();
-
-        Iterator<Entry<String, CredentialsCacheEntry>> credentials =
-            authenticatedRealms.entrySet().iterator();
-
-        while ( credentials.hasNext())
-        {
-            Entry<String, CredentialsCacheEntry> entry = credentials.next();
-
-            if (entry.getValue().containsBranchID(branchID))
-                realms.add(entry.getKey());
-        }
-
-        return realms;
     }
 
     /**

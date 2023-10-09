@@ -145,21 +145,6 @@ class NotificationServiceImpl
     }
 
     /**
-     * Adds the given <tt>listener</tt> to the list of change listeners.
-     *
-     * @param listener the listener that we'd like to register to listen for
-     * changes in the event notifications stored by this service.
-     */
-    public void addNotificationChangeListener(
-        NotificationChangeListener listener)
-    {
-        synchronized (changeListeners)
-        {
-            changeListeners.add(listener);
-        }
-    }
-
-    /**
      * Checking an action when it is edited (property .default=false).
      * Checking for older versions of the property. If it is older one
      * we migrate it to new configuration using the default values.
@@ -255,10 +240,20 @@ class NotificationServiceImpl
     private void fireNotification(NotificationData data)
     {
         logger.entry(data);
-        Notification notification = notifications.get(data.getEventType());
+        String eventType = data.getEventType();
+        Notification notification = notifications.get(eventType);
 
         if((notification == null) || !notification.isActive())
             return;
+
+        if (eventType.equals(NotificationManager.INCOMING_CALL)
+            || eventType.equals(NotificationManager.INCOMING_CONFERENCE))
+        {
+            // If we're about to play an incoming ringtone, check that if we
+            // have a custom ringtone set that it's still accessible. If it's gone,
+            // set to the default ringtone.
+            checkAndSetCustomRingtone();
+        }
 
         for(NotificationAction action : notification.getActions().values())
         {
@@ -290,12 +285,7 @@ class NotificationServiceImpl
                     ((PopupMessageNotificationHandler) handler).popupMessage(
                             (PopupMessageNotificationAction) action,
                             data.getTitle(),
-                            data.getMessage(),
-                            data.getIcon(),
-                            data.getExtra(
-                                    NotificationData
-                                            .MESSAGE_NOTIFICATION_TAG_EXTRA),
-                            isError);
+                            data.getMessage());
                     break;
                 case ACTION_LOG_MESSAGE:
                     ((LogMessageNotificationHandler) handler).logMessage(
@@ -604,21 +594,6 @@ class NotificationServiceImpl
         return
             (String)
                 configService.user().getProperty(actionTypeNodeName + "." + property);
-    }
-
-    /**
-     * Returns an iterator over a list of all events registered in this
-     * notification service. Each line in the returned list consists of
-     * a String, representing the name of the event (as defined by the plugin
-     * that registered it).
-     *
-     * @return an iterator over a list of all events registered in this
-     * notifications service
-     */
-    public Iterable<String> getRegisteredEvents()
-    {
-        return Collections.unmodifiableSet(
-            notifications.keySet());
     }
 
     /**
@@ -1035,59 +1010,6 @@ class NotificationServiceImpl
     }
 
     /**
-     * Creates a new <tt>EventNotification</tt> or obtains the corresponding
-     * existing one and registers a new action in it.
-     *
-     * @param eventType the name of the event (as defined by the plugin that's
-     * registering it) that we are setting an action for.
-     * @param actionType the type of the action that is to be executed when the
-     * specified event occurs (could be one of the ACTION_XXX fields).
-     * @param actionDescriptor a String containing a description of the action
-     * (a URI to the sound file for audio notifications or a command line for
-     * exec action types) that should be executed when the action occurs.
-     * @param defaultMessage the default message to use if no specific message
-     * has been provided when firing the notification.
-     */
-    public void registerNotificationForEvent(   String eventType,
-                                                String actionType,
-                                                String actionDescriptor,
-                                                String defaultMessage)
-    {
-        logger.debug("Registering event " + eventType + "/" +
-            actionType + "/" + actionDescriptor + "/" + defaultMessage);
-
-        switch (actionType)
-        {
-            case ACTION_SOUND:
-                Notification notification = defaultNotifications.get(eventType);
-                SoundNotificationAction action =
-                        (SoundNotificationAction) notification.getAction(
-                                ACTION_SOUND);
-                registerNotificationForEvent(
-                        eventType,
-                        new SoundNotificationAction(
-                                actionDescriptor,
-                                action.getLoopInterval()));
-                break;
-            case ACTION_LOG_MESSAGE:
-                registerNotificationForEvent(eventType,
-                                             new LogMessageNotificationAction(
-                                                     LogMessageNotificationAction.INFO_LOG_TYPE));
-                break;
-            case ACTION_POPUP_MESSAGE:
-                registerNotificationForEvent(eventType,
-                                             new PopupMessageNotificationAction(
-                                                     defaultMessage));
-                break;
-            case ACTION_COMMAND:
-                registerNotificationForEvent(eventType,
-                                             new CommandNotificationAction(
-                                                     actionDescriptor));
-                break;
-        }
-    }
-
-    /**
      * Removes an object that executes the actual action of notification action.
      * @param actionType The handler type to remove.
      */
@@ -1152,48 +1074,6 @@ class NotificationServiceImpl
             ACTION_REMOVED,
             eventType,
             action);
-    }
-
-    /**
-     * Removes the given <tt>listener</tt> from the list of change listeners.
-     *
-     * @param listener the listener that we'd like to remove
-     */
-    public void removeNotificationChangeListener(
-        NotificationChangeListener listener)
-    {
-        synchronized (changeListeners)
-        {
-            changeListeners.remove(listener);
-        }
-    }
-
-    /**
-     * Deletes all registered events and actions
-     * and registers and saves the default events as current.
-     */
-    public void restoreDefaults()
-    {
-        for (String eventType : new Vector<>(notifications.keySet()))
-        {
-            Notification notification = notifications.get(eventType);
-
-            for (String actionType
-                    : new Vector<>(notification.getActions().keySet()))
-                removeEventNotificationAction(eventType, actionType);
-
-            removeEventNotification(eventType);
-        }
-
-        for (Map.Entry<String, Notification> entry
-                : defaultNotifications.entrySet())
-        {
-            String eventType = entry.getKey();
-            Notification notification = entry.getValue();
-
-            for (NotificationAction action : notification.getActions().values())
-                registerNotificationForEvent(eventType, action);
-        }
     }
 
     /**
@@ -1451,15 +1331,6 @@ class NotificationServiceImpl
         synchronized (handlerAddedListeners)
         {
             handlerAddedListeners.add(listener);
-        }
-    }
-
-    @Override
-    public void removeHandlerAddedListener(HandlerAddedListener listener)
-    {
-        synchronized (handlerAddedListeners)
-        {
-            handlerAddedListeners.remove(listener);
         }
     }
 

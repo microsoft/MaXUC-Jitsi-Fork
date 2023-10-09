@@ -97,59 +97,6 @@ public class GroupContactMenuUtils
     }
 
     /**
-     * @return a menu item for creating a new group contact
-     */
-    public static JMenuItem createNewGroupContactMenu()
-    {
-        return createNewGroupContactMenu(null,
-                                         null,
-                                         getOpSet(),
-                                         null,
-                                         true,
-                                         CREATE_FILE_MENU_TEXT);
-    }
-
-    /**
-     * Identical to createNewGroupContactMenu except it returns a SIPCommMenuItem
-     * rather than a JMenuItem
-     *
-     * @return a menu item for creating a new group contact
-     */
-    public static JMenuItem createNewGroupContactSipCommMenu()
-    {
-        return createNewGroupContactMenu(null,
-                                         null,
-                                         getOpSet(),
-                                         null,
-                                         false,
-                                         CREATE_FILE_MENU_TEXT);
-    }
-
-    /**
-     * Enable or disable the menu item depending on whether or not there is a
-     * registered GroupContacts operation set.
-     *
-     * @param menuItem the menu item to enable / disable
-     */
-    public static void setMenuItemEnabled(JMenuItem menuItem)
-    {
-        menuItem.setEnabled(getOpSet() != null);
-    }
-
-    /**
-     * @return the OperationSetGroupContacts or null if one doesn't exist
-     */
-    private static OperationSetGroupContacts getOpSet()
-    {
-        ProtocolProviderService provider = getOpSetProvider();
-        OperationSetGroupContacts opSet = (provider == null) ?
-                                   null : provider.getOperationSet(OPSET_CLASS);
-        sLog.debug("Found opSet " + opSet);
-
-        return opSet;
-    }
-
-    /**
      * @return the Protocol Provider that implements the group contact op set or
      *         null if one doesn't exist
      */

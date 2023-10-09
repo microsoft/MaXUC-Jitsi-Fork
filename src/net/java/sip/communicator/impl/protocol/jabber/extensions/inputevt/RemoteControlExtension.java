@@ -8,7 +8,6 @@ package net.java.sip.communicator.impl.protocol.jabber.extensions.inputevt;
 
 import java.awt.*;
 import java.awt.event.ComponentEvent;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -36,46 +35,12 @@ public class RemoteControlExtension implements ExtensionElement
     /**
      * Constructor.
      *
-     */
-    public RemoteControlExtension()
-    {
-        videoPanelSize = null;
-        event = null;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param videoPanelSize size of the panel that contains video
-     */
-    public RemoteControlExtension(Dimension videoPanelSize)
-    {
-        this.videoPanelSize = videoPanelSize;
-        this.event = null;
-    }
-
-    /**
-     * Constructor.
-     *
      * @param event AWT event
      */
     public RemoteControlExtension(ComponentEvent event)
     {
         this.event = event;
         this.videoPanelSize = null;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param videoPanelSize size of the panel that contains video
-     * @param event AWT event
-     */
-    public RemoteControlExtension(InputEvent event,
-            Dimension videoPanelSize)
-    {
-        this.videoPanelSize = videoPanelSize;
-        this.event = event;
     }
 
     /**

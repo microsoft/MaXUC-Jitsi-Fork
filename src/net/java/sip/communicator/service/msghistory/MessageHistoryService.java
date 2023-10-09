@@ -27,33 +27,6 @@ public interface MessageHistoryService
 
     /**
      * Returns all the messages exchanged by all the contacts
-     * in the supplied metacontact after the given date
-     *
-     * @param metaContact MetaContact
-     * @param startDate Date the start date of the conversations
-     * @return Collection of MessageReceivedEvents or MessageDeliveredEvents
-     * @throws RuntimeException
-     */
-    Collection<MessageEvent> findByStartDate(MetaContact metaContact,
-                                             Date startDate)
-        throws RuntimeException;
-
-    /**
-     * Returns the supplied number of recent messages after the given date
-     * exchanged with the given SMS number and the metacontact (if any) that
-     * contains that number.
-     *
-     * @param smsNumber the SMS number
-     * @param startDate Date the start date of the conversations
-     * @return Collection of MessageReceivedEvents or MessageDeliveredEvents
-     * @throws RuntimeException
-     */
-    Collection<MessageEvent> findByStartDate(String smsNumber,
-                                             Date startDate)
-        throws RuntimeException;
-
-    /**
-     * Returns all the messages exchanged by all the contacts
      * in the supplied metacontact before the given date
      *
      * @param metaContact MetaContact
@@ -244,18 +217,6 @@ public interface MessageHistoryService
     Collection<MessageEvent> findLastMessagesBefore(MetaContact metaContact,
                                                     Date date,
                                                     int count)
-        throws RuntimeException;
-
-   /**
-     * Returns all the messages exchanged in the supplied
-     * chat room after the given date
-     *
-     * @param room The chat room
-     * @param startDate Date the start date of the conversations
-     * @return Collection of MessageReceivedEvents or MessageDeliveredEvents
-     * @throws RuntimeException
-     */
-   Collection<MessageEvent> findByStartDate(ChatRoom room, Date startDate)
         throws RuntimeException;
 
     /**

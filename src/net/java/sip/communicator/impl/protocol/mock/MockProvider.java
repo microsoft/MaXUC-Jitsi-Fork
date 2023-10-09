@@ -251,17 +251,6 @@ public class MockProvider extends AbstractProtocolProviderService
     }
 
     /**
-     * Returns the "transport" protocol of this instance used to carry the
-     * control channel for the current protocol service.
-     *
-     * @return The "transport" protocol of this instance: UNKNOWN.
-     */
-    public TransportProtocol getTransportProtocol()
-    {
-        return TransportProtocol.UNKNOWN;
-    }
-
-    /**
      * Returns the AccountID that uniquely identifies the account represented by
      * this instance of the ProtocolProviderService.
      * @return the id of the account represented by this provider.
@@ -283,13 +272,6 @@ public class MockProvider extends AbstractProtocolProviderService
     public boolean supportsStatus()
     {
         // Default is to support status
-        return true;
-    }
-
-    public boolean useRegistrationForStatus()
-    {
-        // Default is to support the account status being set based on the
-        // account's registration state
         return true;
     }
 

@@ -340,7 +340,11 @@ public class GlobalStatusServiceImpl
 
         GlobalStatusEnum globalStatus = getGlobalStatus();
 
-        if (globalStatus == GlobalStatusEnum.DO_NOT_DISTURB)
+        if (globalStatus == GlobalStatusEnum.OFFLINE)
+        {
+            logger.info("Global status is OFFLINE. Skip broadcasting of presence status.");
+        }
+        else if (globalStatus == GlobalStatusEnum.DO_NOT_DISTURB)
         {
             publishStatus(imProvider,
                           PresenceStatus.ONLINE_THRESHOLD,
@@ -509,11 +513,6 @@ public class GlobalStatusServiceImpl
 
             publishStatus();
         }
-    }
-
-    public boolean isInConference()
-    {
-        return this.isInConference;
     }
 
     public void setIsOnThePhone(boolean onThePhone, boolean isLocal)

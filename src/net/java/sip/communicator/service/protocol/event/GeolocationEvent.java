@@ -91,18 +91,6 @@ public class GeolocationEvent
     }
 
     /**
-     * Returns the <tt>GeolocationOperationSet</tt> instance that is the source
-     * of this event.
-     *
-     * @return the <tt>OperationSetGeolocation</tt> instance that is the source
-     * of this event.
-     */
-    public OperationSetGeolocation getSourceGeolocationOperationSet()
-    {
-        return (OperationSetGeolocation)getSource();
-    }
-
-    /**
      * Returns a String representation of this GeolocationContactChangeEvent
      *
      * @return A <tt>java.lang.String</tt> representation of this

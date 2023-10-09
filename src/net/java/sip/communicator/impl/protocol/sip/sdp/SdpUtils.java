@@ -114,25 +114,6 @@ public class SdpUtils
      *
      * @param localAddress the <tt>InetAddress</tt> corresponding to the local
      * address that we'd like to use when talking to the remote party.
-     *
-     * @return an empty instance of a <tt>SessionDescription</tt> with
-     * preinitialized <tt>s</tt>, <tt>v</tt>, and <tt>t</tt> parameters.
-     * @throws OperationFailedException if the SDP creation failed
-     */
-    public static SessionDescription createSessionDescription(
-                    InetAddress localAddress)
-            throws OperationFailedException
-    {
-        return createSessionDescription(localAddress, null, null);
-    }
-
-    /**
-     * Creates an empty instance of a <tt>SessionDescription</tt> with
-     * preinitialized  <tt>s</tt>, <tt>v</tt>, <tt>c</tt>, <tt>o</tt> and
-     * <tt>t</tt> parameters.
-     *
-     * @param localAddress the <tt>InetAddress</tt> corresponding to the local
-     * address that we'd like to use when talking to the remote party.
      * @param userName the user name to use in the origin parameter or
      * <tt>null</tt> in case we'd like to use a default.
      * @param mediaDescriptions a <tt>Vector</tt> containing the list of

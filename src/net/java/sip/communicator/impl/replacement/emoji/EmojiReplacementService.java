@@ -9,17 +9,10 @@ import net.java.sip.communicator.impl.gui.main.chat.DisplayablePartOfMessage;
 import net.java.sip.communicator.impl.gui.main.chat.PicturePartOfMessage;
 import net.java.sip.communicator.impl.gui.main.chat.TextPartOfMessage;
 import net.java.sip.communicator.service.replacement.ChatPartReplacementService;
-import net.java.sip.communicator.util.*;
 
 public class EmojiReplacementService
     implements ChatPartReplacementService
 {
-    /**
-     * The <tt>Logger</tt> used by the <tt>EmoticonReplacementService</tt>
-     * class and its instances for logging output.
-     */
-    private static final Logger logger
-        = Logger.getLogger(EmojiReplacementService.class);
 
     /**
      * Configuration label shown in the config form.

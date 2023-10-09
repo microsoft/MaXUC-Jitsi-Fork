@@ -33,18 +33,6 @@ public class DisplayNameType
     }
 
     /**
-     * Creates display-name with value and lang properties.
-     *
-     * @param value the value property.
-     * @param lang  the lang property.
-     */
-    public DisplayNameType(String value, String lang)
-    {
-        this.value = value;
-        this.lang = lang;
-    }
-
-    /**
      * Gets the value of the value property.
      *
      * @return the value property.

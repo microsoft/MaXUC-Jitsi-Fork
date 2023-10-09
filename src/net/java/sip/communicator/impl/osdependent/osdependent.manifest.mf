@@ -4,9 +4,7 @@ Bundle-Description: OS dependent.
 Bundle-Vendor: jitsi.org
 Bundle-Version: 0.0.1
 System-Bundle: yes
-Export-Package: net.java.sip.communicator.service.systray,
- net.java.sip.communicator.service.systray.event,
- net.java.sip.communicator.service.desktop
+Export-Package: net.java.sip.communicator.service.desktop
 Import-Package: org.osgi.framework,
  com.apple.cocoa.application,
  com.apple.cocoa.foundation,
@@ -20,8 +18,6 @@ Import-Package: org.osgi.framework,
  net.java.sip.communicator.service.protocol.event,
  org.jitsi.service.resources, net.java.sip.communicator.service.resources,
  net.java.sip.communicator.service.shutdown,
- net.java.sip.communicator.service.systray,
- net.java.sip.communicator.service.systray.event,
  org.jitsi.util,
  net.java.sip.communicator.util,
  net.java.sip.communicator.plugin.desktoputil,

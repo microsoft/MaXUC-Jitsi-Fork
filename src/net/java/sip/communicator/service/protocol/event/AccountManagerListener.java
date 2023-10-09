@@ -8,7 +8,7 @@ package net.java.sip.communicator.service.protocol.event;
 
 import java.util.*;
 
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.protocol.AccountManager;
 
 /**
  * Represents a listener receiving notifications from {@link AccountManager}.

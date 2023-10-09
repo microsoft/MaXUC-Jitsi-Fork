@@ -72,21 +72,6 @@ public abstract class AbstractOperationSetAvatar<T extends ProtocolProviderServi
         this.maxSize = maxSize;
     }
 
-    public int getMaxWidth()
-    {
-        return this.maxWidth;
-    }
-
-    public int getMaxHeight()
-    {
-        return this.maxHeight;
-    }
-
-    public int getMaxSize()
-    {
-        return this.maxSize;
-    }
-
     public BufferedImageFuture getAvatar()
     {
         return AccountInfoUtils.getImage(this.accountInfoOpSet);

@@ -22,11 +22,6 @@ public abstract class FilterQuery
     private int maxResultCount = 10;
 
     /**
-     * A listener, which is notified when this query finishes.
-     */
-    private FilterQueryListener filterQueryListener;
-
-    /**
      * Adds the given <tt>contactQuery</tt> to the list of filterQueries.
      * @param contactQuery the <tt>ContactQuery</tt> to add
      */
@@ -75,7 +70,6 @@ public abstract class FilterQuery
      */
     public void setQueryListener(FilterQueryListener l)
     {
-        filterQueryListener = l;
     }
 
     /**

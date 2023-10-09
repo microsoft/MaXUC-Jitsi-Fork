@@ -1,19 +1,24 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.conference;
 
-import java.util.*;
+import java.util.Set;
 
-import org.jitsi.util.CustomAnnotations.*;
-
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.contactlist.*;
-import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.plugin.desktoputil.ConfigurationPanel;
+import net.java.sip.communicator.service.contactlist.MetaContact;
+import net.java.sip.communicator.service.protocol.CallConference;
+import net.java.sip.communicator.service.protocol.ChatRoom;
+import org.jitsi.util.CustomAnnotations.Nullable;
 
 /**
  * The interface over which conferences should be handled
  */
 public interface ConferenceService
 {
+    /**
+     * Returns true if the conference invite is ringing
+     */
+    boolean isRinging();
+
     /**
      * Returns true if this implementation of the conference service is
      * enabled, false otherwise.
@@ -67,13 +72,6 @@ public interface ConferenceService
     void createOrAdd(MetaContact contact, boolean createImmediately);
 
     /**
-     * Create a conference with a set of IM contacts.
-     *
-     * @param contacts The contact to create the conference with.
-     */
-    void createOrAdd(Set<MetaContact> contacts);
-
-    /**
      * Create a conference with a set of IM contacts, transitioning audio from
      * an existing call.
      *
@@ -116,18 +114,13 @@ public interface ConferenceService
     boolean isConferenceCreated();
 
     /**
-     * Returns true if the user has started a conference, even if they haven't
-     * yet joined
+     * Returns true if the user is in a conference or in the process
+     * of starting a conference.
      *
-     * @return true if the user has started a conference
+     * @return true if a conference is currently in progress or the user is
+     * starting a conference.
      */
     boolean isConferenceStarted();
-
-    /**
-     * @return true if the user is in a conference, or is connecting to a
-     * conference
-     */
-    //boolean isConferenceConnectingOrConnected();
 
     /**
      * Returns true if the user is in a conference.
@@ -171,11 +164,6 @@ public interface ConferenceService
     void bringConferenceToForeground();
 
     /**
-     * If there is a meeting client, then exit it.
-     */
-    void exitMeetingClient();
-
-    /**
      * Open the advanced settings webpage.
      */
     void showAdvancedSettings();
@@ -204,29 +192,81 @@ public interface ConferenceService
      * @param listener The listener that wants to be notified when the
      *                 user enters or leaves a conference.
      */
-    void addConferencesListener(ConferencesListener listener);
+    void addConferencesChangedListener(ConferencesChangedListener listener);
 
     /**
      * @param listener The listener that no longer wants to be notified
      *                 when the user enters or leaves a conference.
      */
-    void removeConferencesListener(ConferencesListener listener);
+    void removeConferencesChangedListener(ConferencesChangedListener listener);
 
     /**
-     * Get the ID of the current conference if there is one, otherwise
-     * returns an empty string.
+     * @param listener The listener that wants to be notified when the
+     *                 ringing state occurs.
      */
-    String getCurrentConferenceId();
+    void addConferenceRingingStateListener(ConferenceRingingStateListener listener);
+
+    /**
+     * @param listener The listener that no longer wants to be notified
+     *                 when the ringing state occurs.
+     */
+    void removeConferenceRingingStateListener(ConferenceRingingStateListener listener);
+
+    /**
+     * @param listener The listener that wants to be notified when the
+     *                 failure occurs.
+     */
+    void addConferenceFailureListener(ConferenceFailureListener listener);
+
+    /**
+     * @param listener The listener that no longer wants to be notified
+     *                 when the user enters or leaves a conference.
+     */
+    void removeConferenceFailureListener(ConferenceFailureListener listener);
+
+    /**
+     * Get the ID of the conference we are currently either in or in the process,
+     * of creating, if there is one, otherwise returns an empty string.
+     */
+    String getConfId();
+
+    /**
+     * Resend the ringing state to the UI.
+     */
+    void notifyListenersRingingStateChanged();
+
+    void cancelMeeting();
 
     /** Interface for notifications whether we are in a conference. */
-    interface ConferencesListener
+    interface ConferencesChangedListener
     {
         /**
          * Called when the overall state of conferences changes.
-         * @param newId New ID, empty indicates no conference.
-         * @param oldId Old ID, empty indicates no conference.
          */
-        void onConferencesChanged(String newId, String oldId);
+        void onConferencesChanged();
+    }
+
+    interface ConferenceRingingStateListener
+    {
+        /**
+         * Called when the ringing state changes.
+         */
+        void onRingingStateChanged();
+    }
+
+    interface ConferenceFailureListener
+    {
+        /**
+         * Called when the meeting invite is rejected
+         * @param chatAddress is the other party
+         */
+        void onInviteRejection(String chatAddress);
+
+        /**
+         * Called when the meeting invite fails
+         * @param chatAddress is the other party
+         */
+        void onInviteFailure(String chatAddress);
     }
 
     /**
@@ -237,22 +277,12 @@ public interface ConferenceService
     {
         /**
          * Called when we have finished executing the code to quit the meeting
+         * Called when we have finished executing the code to quit the meeting
          * client.
          *
          * @param cancelled if true, the user chose to cancelling quitting the
          *                  meeting client (e.g. because a meeting is in progress).
          */
         void onMeetingClientQuitComplete(boolean cancelled);
-    }
-
-    /**
-     * Enum representing the different types of room system that can be invited
-     * using room call-out
-     */
-    enum RoomSystemType
-    {
-        H323,
-        SIP,
-        BOTH
     }
 }

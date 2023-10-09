@@ -4,6 +4,8 @@ package net.java.sip.communicator.plugin.generalconfig;
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import javax.swing.*;
@@ -566,7 +568,7 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
 
         try
         {
-            FileUtils.copyFile(file, target);
+            Files.copy(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
         catch (IOException e)
         {

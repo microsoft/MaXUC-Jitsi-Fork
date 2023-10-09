@@ -92,18 +92,6 @@ public class ContactPhoneUtil
     }
 
     /**
-     * Adds response listener that will be informed when data is available.
-     * This in case there is no currently cached data.
-     * @param contact the contact which details will be checked.
-     * @param listener the listener.
-     */
-    public void addDetailsResponseListener(
-        Contact contact, DetailsResponseListener listener)
-    {
-        responseListeners.put(contact, listener);
-    }
-
-    /**
      * Returns localized addition phones list for contact, if any.
      * Return null if we have stopped searching and a listener is available
      * and will be used to inform for results.

@@ -8,6 +8,7 @@
 package net.java.sip.communicator.util;
 
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
 
 import java.awt.image.*;
 import java.io.*;
@@ -402,9 +403,8 @@ public class AvatarCacheUtils
             // Hence if the file does not exist, create it.
             if(!avatarFile.exists() && !avatarFile.createNewFile())
             {
-                throw new IOException(
-                                "Failed to create file"
-                                    + avatarFile.getAbsolutePath());
+                throw new IOException("Failed to create file"
+                    + sanitiseFilePath(avatarFile.getAbsolutePath()));
             }
 
             try (FileOutputStream fileOutStream = new FileOutputStream(
@@ -452,16 +452,15 @@ public class AvatarCacheUtils
 
                 if (!success)
                 {
-                    throw new IOException(
-                            "Failed to delete file: "
-                                + avatarFile.getAbsolutePath());
+                    throw new IOException("Failed to delete file: "
+                        + sanitiseFilePath(avatarFile.getAbsolutePath()));
                 }
             }
         }
         catch (IOException | SecurityException e)
         {
-            logger.error("Failed to delete avatar. File=" + avatarFile,
-                         e);
+            logger.error("Failed to delete avatar. File="
+                + sanitiseFilePath(avatarFile.getAbsolutePath()), e);
         }
     }
 

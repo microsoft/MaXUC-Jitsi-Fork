@@ -2,6 +2,7 @@
 package net.java.sip.communicator.plugin.generalconfig;
 
 import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
 
 import java.io.*;
 import java.util.*;
@@ -86,8 +87,8 @@ public class CallRecordingDirSelectorComboBox
         // might change later, but there's no harm in catching it early if we
         // can.
 
-        logger.user("Location to save call recordings to changed to: " +
-                            chosenDir.getAbsolutePath());
+        logger.user("Location to save call recordings to changed to: "
+            + sanitiseFilePath(chosenDir.getAbsolutePath()));
 
         Exception e = null;
         LabelledPath result = null;

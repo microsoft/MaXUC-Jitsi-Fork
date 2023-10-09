@@ -216,18 +216,6 @@ public class SystemActivityNotificationsServiceImpl
     }
 
     /**
-     * The time since last user input. The time the system has been idle.
-     * @return time the system has been idle.
-     */
-    public long getTimeSinceLastInput()
-    {
-        if(SystemActivityNotifications.isLoaded())
-            return SystemActivityNotifications.getLastInput();
-        else
-            return -1;
-    }
-
-    /**
      * Callback method when receiving notifications.
      *
      * @param type type of the notification.
@@ -297,52 +285,6 @@ public class SystemActivityNotificationsServiceImpl
         {
             fireSystemActivityEvent(evt);
         }
-    }
-
-    /**
-     * Callback method when receiving special network notifications.
-     *
-     * @param family family of network change (ipv6, ipv4)
-     *  AF_UNSPEC = 0 (The address family is unspecified.)
-     *  AF_INET = 2 (The Internet Protocol version 4 (IPv4) address family)
-     *  AF_INET6 = 23 (The Internet Protocol version 6 (IPv6) address family)
-     * @param luidIndex unique index of interface
-     * @param name name of the interface
-     * @param type of the interface
-     *  Possible values for the interface type are listed in the Ipifcons.h file.
-     *  common values:
-     *  IF_TYPE_OTHER = 1 (Some other type of network interface.)
-     *  IF_TYPE_ETHERNET_CSMACD = 6 (An Ethernet network interface.)
-     *  IF_TYPE_ISO88025_TOKENRING = 9 (A token ring network interface.)
-     *  IF_TYPE_PPP = 23 (A PPP network interface.)
-     *  IF_TYPE_SOFTWARE_LOOPBACK = 24 (A software loopback network interface.)
-     *  IF_TYPE_IEEE80211 = 71 (An IEEE 802.11 wireless network interface.)
-     *  IF_TYPE_TUNNEL = 131 (A tunnel type encapsulation network interface.)
-     *  IF_TYPE_IEEE1394 = 144 (An IEEE 1394 (Firewire) high performance
-     *                          serial bus network interface.)
-     * @param connected whether interface is connected or not.
-     */
-    public void notifyNetworkChange(
-            int family,
-            long luidIndex,
-            String name,
-            long type,
-            boolean connected)
-    {
-        long current = System.currentTimeMillis();
-        if(current - lastNetworkChange <= NETWORK_EVENT_SILENT_TIME &&
-           networkIsConnected != null &&
-           networkIsConnected.equals(connected))
-        {
-            return;
-        }
-
-        lastNetworkChange = current;
-        networkIsConnected = connected;
-
-        SystemActivityEvent evt = new SystemActivityEvent(this,
-                    SystemActivityEvent.EVENT_NETWORK_CHANGE);
-        fireSystemActivityEvent(evt);
     }
 
     /**

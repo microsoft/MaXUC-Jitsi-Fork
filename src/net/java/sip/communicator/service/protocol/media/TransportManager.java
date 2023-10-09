@@ -522,37 +522,6 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
     }
 
     /**
-     * Returns the port tracker that we are supposed to use when binding ports
-     * for the {@link MediaType} indicated by the string param. If we do not
-     * recognize the string as a valid media type, we simply return the default
-     * port tracker.
-     *
-     * @param mediaTypeStr the name of the media type that we want to obtain a
-     * locator for.
-     *
-     * @return the port tracker that we are supposed to use when binding ports
-     * for the {@link MediaType} with the specified name or the default tracker
-     * in case the name doesn't ring a bell.
-     */
-    protected static PortTracker getPortTracker(String mediaTypeStr)
-    {
-        try
-        {
-            MediaType mediaType = MediaType.parseString(mediaTypeStr);
-
-            return getPortTracker(mediaType);
-        }
-        catch (Exception exc)
-        {
-            logger.info(
-                "Returning default port tracker for unrecognized media type: "
-                + mediaTypeStr);
-
-            return defaultPortTracker;
-        }
-    }
-
-    /**
      * Returns the extended type of the candidate selected if this transport
      * manager is using ICE.
      *

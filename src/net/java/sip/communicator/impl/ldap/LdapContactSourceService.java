@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.ldap;
 
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
+
 import java.util.*;
 import java.util.regex.*;
 
@@ -203,7 +205,7 @@ public class LdapContactSourceService
      */
     private void logQuery(String identifier, String query)
     {
-        String queryToLog = mQAMode ? query : "<redacted>";
+        String queryToLog = mQAMode ? query : REDACTED;                ;
         logger.debug(identifier + " " + queryToLog);
     }
 

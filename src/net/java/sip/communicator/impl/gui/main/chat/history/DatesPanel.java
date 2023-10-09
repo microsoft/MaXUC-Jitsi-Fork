@@ -91,29 +91,6 @@ public class DatesPanel
     }
 
     /**
-     * Returns the next date in the list.
-     * @param date the date from which to start
-     * @return the next date in the list
-     */
-    public Date getNextDate(Date date)
-    {
-        synchronized (listModel)
-        {
-            Date nextDate;
-            int dateIndex = listModel.indexOf(date);
-
-            if (dateIndex < listModel.getSize() - 1) {
-                nextDate = getDate(dateIndex + 1);
-            }
-            else
-            {
-                nextDate = new Date(System.currentTimeMillis());
-            }
-            return nextDate;
-        }
-    }
-
-    /**
      * Adds the given date to the list of dates.
      * @param date the date to add
      */

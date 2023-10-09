@@ -47,24 +47,4 @@ public class ProviderStatusChangeEvent extends PropertyChangeEvent
         return (ProtocolProviderService)getSource();
     }
 
-    /**
-     * Returns the status of the provider before this event took place.
-     * @return a PresenceStatus instance indicating the event the source
-     * provider was in before it entered its new state.
-     */
-    public PresenceStatus getOldStatusValue()
-    {
-        return (PresenceStatus)super.getOldValue();
-    }
-
-    /**
-     * Returns the status of the provider after this event took place.
-     * (i.e. at the time the event is being dispatched).
-     * @return a PresenceStatus instance indicating the event the source
-     * provider is in after the status change occurred.
-     */
-    public PresenceStatus getNewStatusValue()
-    {
-        return (PresenceStatus)super.getNewValue();
-    }
 }

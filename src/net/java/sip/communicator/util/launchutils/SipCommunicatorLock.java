@@ -231,6 +231,7 @@ public class SipCommunicatorLock
                 {
                     public void run()
                     {
+                        logger.info("Running shutdown hook for SipCommunicatorLock");
                         try
                         {
                             lockChannel.close();
@@ -1152,7 +1153,7 @@ public class SipCommunicatorLock
      * <tt>NetworkInterface.isLoopback()</tt> method that only comes with
      * java 1.6.
      *
-     * @param iface the inteface that we'd like to determine as loopback or not.
+     * @param iface the interface that we'd like to determine as loopback or not.
      *
      * @return true if <tt>iface</tt> contains at least one loopback address
      * and <tt>false</tt> otherwise.

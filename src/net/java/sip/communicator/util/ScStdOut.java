@@ -39,17 +39,6 @@ public class ScStdOut extends PrintStream
     }
 
     /**
-     * Returns the default System.out <tt>PrintStream</tt> that was in use
-     * before this class was instantiated.
-     *
-     * @return the original System.out PrintStream
-     */
-    public PrintStream getSystemOut()
-    {
-        return systemOut;
-    }
-
-    /**
      * Prints <tt>string</tt> if <tt>stdOutPrintingEnabled</tt> is enabled.
      *
      * @param string the <tt>String</tt> to print.

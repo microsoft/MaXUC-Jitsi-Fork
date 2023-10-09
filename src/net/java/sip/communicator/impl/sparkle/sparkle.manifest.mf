@@ -12,4 +12,5 @@ Import-Package: org.osgi.framework,
  net.java.sip.communicator.service.credentialsstorage,
  net.java.sip.communicator.service.resources,
  net.java.sip.communicator.service.update,
- net.java.sip.communicator.util
+ net.java.sip.communicator.util,
+ net.java.sip.communicator.plugin.desktoputil

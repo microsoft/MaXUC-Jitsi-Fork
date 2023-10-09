@@ -238,15 +238,6 @@ public class SourceUIContact
     }
 
     /**
-     * Returns the tooltip display details for the underlying <tt>SourceContact</tt>.
-     * @return the tooltip display details for the underlying <tt>SourceContact</tt>
-     */
-    public String getTooltipDisplayDetails()
-    {
-        return mSourceContact.getTooltipDisplayDetails();
-    }
-
-    /**
      * Returns a list of all contained <tt>UIContactDetail</tt>s.
      *
      * @return a list of all contained <tt>UIContactDetail</tt>s
@@ -422,27 +413,6 @@ public class SourceUIContact
                 detail.getPreferredProtocolProvider(opSetClass));
             addPreferredProtocol(opSetClass,
                 detail.getPreferredProtocol(opSetClass));
-        }
-
-        /**
-         * Creates an instance of <tt>SourceContactDetail</tt> by specifying
-         * the underlying <tt>detail</tt> and the <tt>OperationSet</tt> class
-         * for it.
-         *
-         * @param displayName the display name
-         * @param sourceContact the source contact
-         */
-        public SourceContactDetail(String displayName,
-                                   SourceContact sourceContact)
-        {
-            super(displayName,
-                  displayName,
-                  null,
-                  null,
-                  null,
-                  null,
-                  null,
-                  sourceContact);
         }
 
         /**
@@ -690,7 +660,7 @@ public class SourceUIContact
         case City:
             label = resources.getI18NString("service.gui.CITY");
             break;
-        case Country:
+        case CountryRegion:
             label = resources.getI18NString("service.gui.COUNTRY");
             break;
         case Fax:

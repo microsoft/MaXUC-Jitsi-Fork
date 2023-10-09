@@ -173,5 +173,5 @@ public interface CallHistoryService
     /**
      * Retrieves the NetworkCallHistoryHandler attribute
      */
-     public NetworkCallHistoryDataHandler getNetworkCallHistoryHandler();
+     NetworkCallHistoryDataHandler getNetworkCallHistoryHandler();
 }

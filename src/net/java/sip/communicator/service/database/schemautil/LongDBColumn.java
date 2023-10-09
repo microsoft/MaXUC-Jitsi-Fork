@@ -15,13 +15,6 @@ public class LongDBColumn extends DBColumn
         mDefault = -1;
     }
 
-    public LongDBColumn(String name, long defaultVal)
-    {
-        super(name);
-        mHasDefault = true;
-        mDefault = defaultVal;
-    }
-
     public LongDBColumn setDefault(String stringDefault)
     {
         mHasDefault = true;

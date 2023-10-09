@@ -170,32 +170,6 @@ public class MessageDialog
     }
 
     /**
-     * Creates an instance of <tt>MessageDialog</tt> by specifying the
-     * owner window and the message to be displayed.
-     * @param owner the dialog owner
-     * @param title the title of the message
-     * @param message the message to be displayed
-     * @param isCancelButtonEnabled <code>true</code> to show the Cancel button,
-     * <code>false</code> - otherwise
-     */
-    public MessageDialog(   Frame owner,
-                            String title,
-                            String message,
-                            boolean isCancelButtonEnabled)
-    {
-        this(owner, title, message, ImageLoaderService.WARNING_ICON, false);
-
-        this.init();
-        if(!isCancelButtonEnabled)
-        {
-            doNotAskAgain.setText(GuiActivator.getResources()
-                .getI18NString("service.gui.DO_NOT_SHOW_AGAIN"));
-
-            buttonsPanel.remove(cancelButton);
-        }
-    }
-
-    /**
      * Initializes this dialog.
      */
     private void init()

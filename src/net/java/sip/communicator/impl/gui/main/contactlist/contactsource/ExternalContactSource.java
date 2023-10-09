@@ -23,7 +23,6 @@ import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactsource.*;
 import net.java.sip.communicator.service.customcontactactions.*;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.protocol.*;
 
 /**
  * The <tt>ExternalContactSource</tt> is the UI abstraction of the

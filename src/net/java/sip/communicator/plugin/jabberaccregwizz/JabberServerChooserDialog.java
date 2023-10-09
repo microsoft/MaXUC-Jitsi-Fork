@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.jabberaccregwizz;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -219,8 +221,8 @@ public class JabberServerChooserDialog
                 }
                 catch (IOException e)
                 {
-                    logger.error("Failed to create file"
-                        + localServersListFile.getAbsolutePath(), e);
+                    logger.error("Failed to create file" + sanitiseFilePath(
+                        localServersListFile.getAbsolutePath()), e);
                 }
             }
 

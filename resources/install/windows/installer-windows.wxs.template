@@ -1,4 +1,4 @@
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 <!--
   Jitsi, the OpenSource Java VoIP and Instant Messaging client.
 
@@ -6,30 +6,22 @@
   See terms of license at gnu.org.
 -->
 
-<Product
-    Id="*"
+<!-- in Language we list all languages we support for localize -->
+<Package
     Language="@WIX_DEFAULT_LOCALE@"
-    Codepage='$(var.codepage)'
+    Codepage="$(var.codepage)"
     Manufacturer="@@COMPANY_NAME@@"
     Name="@@PRODUCT_NAME_TITLECASE@@"
     UpgradeCode="@WIX_UPGRADE_CODE@"
-    Version="@PRODUCTBUILDVERSION@">
+    Version="@PRODUCTBUILDVERSION@"
+    InstallerVersion="200">
 
-<!-- in Language we list all languages we support for localize -->
-<Package
-    Comments="@PKG_COMMENTS@"
-    Compressed="yes"
+<SummaryInformation
     Description="@PKG_DESCRIPTION@"
-    InstallerVersion="200"
-    InstallScope="perMachine"
-    Languages="@WIX_LOCALE_LIST@"
     Manufacturer="@@COMPANY_NAME@@"
-    Platform="$(var.Platform)"
-    SummaryCodepage='$(var.codepage)' />
+    Codepage="$(var.codepage)" />
 
-<Condition Message="!(loc.SysReqError)">
-    <![CDATA[Installed OR (VersionNT > 600)]]>
-</Condition>
+<Launch Condition="Installed OR (VersionNT &gt; 602)" Message="!(loc.SysReqError)" />
 
 <Upgrade Id="@WIX_UPGRADE_CODE@">
   <UpgradeVersion
@@ -41,122 +33,12 @@
       Property="UPGRADEFOUND" />
 </Upgrade>
 
-<Directory Id="TARGETDIR" Name="SourceDir">
-
-  <!--
-    The 64-bit MSI should default to "Program Files" and not
-    "Program Files (x86)".
-  -->
-  <?ifndef ProgramFilesFolder ?>
-    <?if $(var.Platform) = x64 ?>
-      <?define ProgramFilesFolder = ProgramFiles64Folder ?>
-    <?else ?>
-      <?define ProgramFilesFolder = ProgramFilesFolder ?>
-    <?endif ?>
-  <?endif ?>
-
-  <Directory Id="$(var.ProgramFilesFolder)" Name="PFiles">
-    <Directory Id="INSTALLDIR" Name="@@PRODUCT_NAME_ASCII@@">
-
-      <!--
-        The variable Win64 which is of YesNoType may be used in
-        component-defines.wxi.
-      -->
-      <?if $(var.Platform) = x64 ?>
-        <?define Win64 = yes ?>
-      <?else ?>
-        <?define Win64 = no ?>
-      <?endif ?>
-
-      <?include component-defines.wxi ?>
-
-      <!-- Add the WebSocket server Java keystore to the installer -->
-      <Directory Id="KEYSTORE" Name="keystore"></Directory>
-    </Directory>
-  </Directory>
-
-  <Directory Id="DesktopFolder" Name="Desktop">
-    <Component Id="Component_DesktopShortcut" Guid="49BF78B5-155F-43F2-BCEC-3CABC0D9531E">
-      <Condition><![CDATA[CREATE_DESKTOP_SHORTCUT = 1]]></Condition>
-      <Shortcut
-          Id="Shortcut_Desktop"
-          Icon="Icon.ico"
-          Name="@@PRODUCT_NAME_TITLECASE@@"
-          Target="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe"
-          WorkingDirectory="INSTALLDIR" />
-      <RemoveFolder
-          Id="DesktopFolder"
-          On="uninstall" />
-      <RegistryValue
-          Key="Software\Microsoft\@@PRODUCT_NAME_ASCII@@"
-          KeyPath="yes"
-          Name="DesktopShortcut"
-          Root="HKCU"
-          Type="integer"
-          Value="1" />
-    </Component>
-  </Directory>
-
-  <Directory Id="ProgramMenuFolder" Name="Programs">
-    <Component Id="Component_StartMenuShortcut" Guid="6B8CDA4E-16C9-4AF4-B338-CBA4775ADD0D">
-      <Condition><![CDATA[CREATE_START_MENU_SHORTCUT = 1]]></Condition>
-      <Shortcut
-          Id="Shortcut_StartMenu"
-          Icon="Icon.ico"
-          Name="@@PRODUCT_NAME_TITLECASE@@"
-          Target="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe"
-          WorkingDirectory="INSTALLDIR" >
-        <ShortcutProperty Key="System.AppUserModel.ID" Value="@@APP_ID@@" />
-      </Shortcut>
-      <RemoveFolder
-          Id="ProgramMenuFolder"
-          On="uninstall" />
-      <RegistryValue
-          Key="Software\Microsoft\@@PRODUCT_NAME_ASCII@@"
-          KeyPath="yes"
-          Name="StartMenuShortcut"
-          Root="HKCU"
-          Type="integer"
-          Value="1" />
-    </Component>
-  </Directory>
-
-  <Directory Id="StartupFolder" Name="Startup">
-    <Component Id="Component_StartupShortcut" Guid="5059067F-16B1-435A-84B4-FC16CB5CEDA2">
-      <Condition><![CDATA[CREATE_STARTUP_SHORTCUT = 1]]></Condition>
-      <Shortcut
-          Id="Shortcut_Startup"
-          Icon="Icon.ico"
-          Name="@@PRODUCT_NAME_TITLECASE@@"
-          Target="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe"
-          WorkingDirectory="INSTALLDIR" />
-      <RemoveFolder
-          Id="StartupFolder"
-          On="uninstall" />
-      <RegistryValue
-          Key="Software\Microsoft\@@PRODUCT_NAME_ASCII@@"
-          KeyPath="yes"
-          Name="StartupShortcut"
-          Root="HKCU"
-          Type="integer"
-          Value="1" />
-    </Component>
-  </Directory>
-</Directory>
-
-<DirectoryRef Id="KEYSTORE">
-  <Component Id="WebSocketServerKeystore">
-    <File Id="WebSocketServerKeystore" Name="websocket_keystore.jks" Source="$(sys.SOURCEFILEDIR)websocket_keystore.jks" KeyPath="yes"/>
-  </Component>
-</DirectoryRef>
-
 <Feature Id="Universe" Level="1" Title="@@PRODUCT_NAME_ASCII@@">
   <?include component-refs.wxi ?>
 
   <ComponentRef Id="Component_DesktopShortcut" />
   <ComponentRef Id="Component_StartMenuShortcut" />
   <ComponentRef Id="Component_StartupShortcut" />
-  <ComponentRef Id="WebSocketServerKeystore" />
 
   <ComponentGroupRef Id="ComponentGroup_RegistryEntries" />
 </Feature>
@@ -174,7 +56,7 @@
   <UIRef Id="WixUI_CInstallDir" />
 
   <TextStyle Id="GreyText" Blue="127" FaceName="Ms Shell Dlg" Green="127" Red="127" Size="8" />
-  <TextStyle Id="WhiteText" Blue="240" FaceName="Ms Shell Dlg" Green="240" Red="240" Size="9"/>
+  <TextStyle Id="WhiteText" Blue="240" FaceName="Ms Shell Dlg" Green="240" Red="240" Size="9" />
 
             <!-- Modified ExitDialog -->
             <Dialog Id="CExitDialog" Width="370" Height="270" Title="!(loc.ExitDialog_Title)">
@@ -185,22 +67,16 @@
                 <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
                 <Control Id="Description" Type="Text" X="135" Y="70" Width="220" Height="40" Transparent="yes" NoPrefix="yes" Text="!(loc.ExitDialogDescription)" />
                 <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="!(loc.ExitDialogTitle)" />
-                <Control Id="OptionalText" Type="Text" X="135" Y="110" Width="220" Height="80" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="[WIXUI_EXITDIALOGOPTIONALTEXT]">
-                    <Condition Action="show">WIXUI_EXITDIALOGOPTIONALTEXT AND NOT Installed</Condition>
-                </Control>
-                <Control Id="OptionalCheckBoxText" Type="Text" X="150" Y="190" Width="205" Height="40" Hidden="yes" Transparent="yes" Text="[WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT]">
-                    <Condition Action="show">WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT AND NOT Installed</Condition>
-                </Control>
-                <Control Id="OptionalCheckBox" Type="CheckBox" X="135" Y="190" Width="10" Height="10" Hidden="yes" Property="WIXUI_EXITDIALOGOPTIONALCHECKBOX" CheckBoxValue="1" Text="[WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT]">
-                    <Condition Action="show">WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT AND NOT Installed</Condition>
-                </Control>
+                <Control Id="OptionalText" Type="Text" X="135" Y="110" Width="220" Height="80" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="[WIXUI_EXITDIALOGOPTIONALTEXT]" ShowCondition="WIXUI_EXITDIALOGOPTIONALTEXT AND NOT Installed" />
+                <Control Id="OptionalCheckBoxText" Type="Text" X="150" Y="190" Width="205" Height="40" Hidden="yes" Transparent="yes" Text="[WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT]" ShowCondition="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT AND NOT Installed" />
+                <Control Id="OptionalCheckBox" Type="CheckBox" X="135" Y="190" Width="10" Height="10" Hidden="yes" Property="WIXUI_EXITDIALOGOPTIONALCHECKBOX" CheckBoxValue="1" Text="[WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT]" ShowCondition="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT AND NOT Installed" />
             </Dialog>
 
             <!-- Modified WelcomeDlg -->
             <Dialog Id="CWelcomeDlg" Width="370" Height="270" Title="!(loc.WelcomeDlg_Title)">
                 <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
                 <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
-                    <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+                    <Publish Event="SpawnDialog" Value="CancelDlg" />
                 </Control>
                 <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="!(loc.WelcomeDlgBitmap)" />
                 <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Disabled="yes" Text="!(loc.WixUIBack)" />
@@ -216,7 +92,7 @@
                 <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
                 <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
                 <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
-                    <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+                    <Publish Event="SpawnDialog" Value="CancelDlg" />
                 </Control>
 
                 <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.ShortcutsAndRegistryDlgDescription)" />
@@ -239,69 +115,33 @@
 -->
             </Dialog>
 
-  <Publish
-      Control="Finish"
-      Dialog="CExitDialog"
-      Event="DoAction"
-      Value="LaunchApplication">
-    <![CDATA[WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND JRE_VERSION >= "1.5" AND NOT Installed]]>
-  </Publish>
+  <Publish Control="Finish" Dialog="CExitDialog" Event="DoAction" Value="LaunchApplication" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND JRE_VERSION &gt;= &quot;1.5&quot; AND NOT Installed" />
 <?ifdef JRESetup ?>
-  <Publish
-      Control="Finish"
-      Dialog="CExitDialog"
-      Event="DoAction"
-      Value="InstallJRE">
-    <![CDATA[WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND JRE_VERSION < "1.5" AND NOT Installed]]>
-  </Publish>
+  <Publish Control="Finish" Dialog="CExitDialog" Event="DoAction" Value="InstallJRE" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND JRE_VERSION &lt; &quot;1.5&quot; AND NOT Installed" />
 <?endif?>
 
   <InstallUISequence>
-    <Show Dialog="CExitDialog" OnExit="success">
-      NOT (IS_AUTOUPDATE = 1)
-    </Show>
-    <Show Dialog="CWelcomeDlg" Before="CProgressDlg">
-      NOT Installed AND (NOT (IS_AUTOUPDATE = 1) OR (SHOW_UPGRADE_FULLUI = 1))
-    </Show>
+    <Show Dialog="CExitDialog" OnExit="success" Condition="NOT (IS_AUTOUPDATE = 1)" />
+    <Show Dialog="CWelcomeDlg" Before="CProgressDlg" Condition="NOT Installed AND (NOT (IS_AUTOUPDATE = 1) OR (SHOW_UPGRADE_FULLUI = 1))" />
 
-    <Show Dialog="CProgressDlg" Before="ExecuteAction">
-      NOT (IS_AUTOUPDATE = 1) OR (SHOW_UPGRADE_FULLUI = 1)
-    </Show>
-    <Show Dialog="CAutoupdateProgressDlg" Before="ExecuteAction">
-      IS_AUTOUPDATE = 1 AND NOT (SHOW_UPGRADE_FULLUI = 1)
-    </Show>
+    <Show Dialog="CProgressDlg" Before="ExecuteAction" Condition="NOT (IS_AUTOUPDATE = 1) OR (SHOW_UPGRADE_FULLUI = 1)" />
+    <Show Dialog="CAutoupdateProgressDlg" Before="ExecuteAction" Condition="IS_AUTOUPDATE = 1 AND NOT (SHOW_UPGRADE_FULLUI = 1)" />
 
-    <Custom Action="LaunchApplication" After="ExecuteAction">
-      IS_AUTOUPDATE = 1
-    </Custom>
+    <Custom Action="LaunchApplication" After="ExecuteAction" Condition="IS_AUTOUPDATE = 1" />
 
     <!-- Make sure OLD_APP_NAME is set before AppSearch because it's used in registry searches. -->
-    <Custom Action="SetOLD_APP_NAMEfromBranding" Before="SetOLD_APP_NAMEfromApp">
-      <![CDATA["@@OLD_PRODUCT_NAME_ASCII@@" <> ""]]>
-    </Custom>
-    <Custom Action="SetOLD_APP_NAMEfromApp" Before="AppSearch">
-      <![CDATA[SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME <> ""]]>
-    </Custom>
+    <Custom Action="SetOLD_APP_NAMEfromBranding" Before="SetOLD_APP_NAMEfromApp" Condition="&quot;@@OLD_PRODUCT_NAME_ASCII@@&quot; &lt;&gt; &quot;&quot;" />
+    <Custom Action="SetOLD_APP_NAMEfromApp" Before="AppSearch" Condition="SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME &lt;&gt; &quot;&quot;" />
 
-    <Custom Action="SetIS_AUTOUPDATE" After="AppSearch">
-      <![CDATA[NOT Installed AND SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR <> ""]]>
-    </Custom>
-    <Custom Action="SetAPP_NAME_CHANGED" After="SetOLD_APP_NAMEfromApp">
-      <![CDATA[OLD_APP_NAME <> "@@PRODUCT_NAME_ASCII@@"]]>
-    </Custom>
-    <Custom Action="SetEXPECTED_INSTALLDIR" After="CostFinalize">
-      APP_NAME_CHANGED = 1
-    </Custom>
+    <Custom Action="SetIS_AUTOUPDATE" After="AppSearch" Condition="NOT Installed AND SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; &quot;&quot;" />
+    <Custom Action="SetAPP_NAME_CHANGED" After="SetOLD_APP_NAMEfromApp" Condition="OLD_APP_NAME &lt;&gt; &quot;@@PRODUCT_NAME_ASCII@@&quot;" />
+    <Custom Action="SetEXPECTED_INSTALLDIR" After="CostFinalize" Condition="APP_NAME_CHANGED = 1" />
     <!-- Most upgrades don't require the full UI. It's only needed if both of the following are true:
       (i)  The app name has changed.
       (ii) The previous version was installed in a non-default directory. -->
-    <Custom Action="SetSHOW_UPGRADE_FULLUI" After="SetEXPECTED_INSTALLDIR">
-      <![CDATA[(IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR <> EXPECTED_INSTALLDIR)]]>
-    </Custom>
+    <Custom Action="SetSHOW_UPGRADE_FULLUI" After="SetEXPECTED_INSTALLDIR" Condition="(IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; EXPECTED_INSTALLDIR)" />
     <!-- If it's an upgrade and the app name hasn't changed set INSTALLDIR to match the existing installation. -->
-    <Custom Action="SetINSTALLDIR" After="SetAPP_NAME_CHANGED">
-      <![CDATA[(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1)]]>
-    </Custom>
+    <Custom Action="SetINSTALLDIR" After="SetAPP_NAME_CHANGED" Condition="(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1)" />
     <!-- Only set the CREATE_DESKTOP_SHORTCUT property if:
     - It's a fresh install, so that the checkbox is checked by default (UILevel = 5).
     - It's an upgrade and the previous version had the shortcut (UILevel = 5).
@@ -319,137 +159,57 @@
     properties until after we've shown the UI, otherwise whatever choice the user
     makes about shortcuts will be ignored and the default (no shortcuts) will be used.
     -->
-    <Custom Action="SetCREATE_DESKTOP_SHORTCUT" After="SetSHOW_UPGRADE_FULLUI">
-      <![CDATA[(NOT Installed AND NOT (IS_AUTOUPDATE = 1)) OR ((IS_AUTOUPDATE = 1) AND HAS_DESKTOP_SHORTCUT_FILE) OR ((IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (HAS_DESKTOP_SHORTCUT_REGISTRY OR HAS_DESKTOP_SHORTCUT_FILE)) OR (UILevel < 4)]]>
-    </Custom>
+    <Custom Action="SetCREATE_DESKTOP_SHORTCUT" After="SetSHOW_UPGRADE_FULLUI" Condition="(NOT Installed AND NOT (IS_AUTOUPDATE = 1)) OR ((IS_AUTOUPDATE = 1) AND HAS_DESKTOP_SHORTCUT_FILE) OR ((IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (HAS_DESKTOP_SHORTCUT_REGISTRY OR HAS_DESKTOP_SHORTCUT_FILE)) OR (UILevel &lt; 4)" />
 
-    <Custom Action="SetCREATE_STARTUP_REGISTRY" After="SetSHOW_UPGRADE_FULLUI">
-      <![CDATA[HAS_STARTUP_REGISTRY OR HAS_STARTUP_SHORTCUT AND NOT (SHOW_UPGRADE_FULLUI = 1)]]>
-    </Custom>
+    <Custom Action="SetCREATE_STARTUP_REGISTRY" After="SetSHOW_UPGRADE_FULLUI" Condition="HAS_STARTUP_REGISTRY OR HAS_STARTUP_SHORTCUT AND NOT (SHOW_UPGRADE_FULLUI = 1)" />
 
 <?ifdef JRESetup ?>
-    <Custom Action="SetWIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" After="AppSearch">
-      <![CDATA[JRE_VERSION < "1.5" AND NOT Installed]]>
-    </Custom>
+    <Custom Action="SetWIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" After="AppSearch" Condition="JRE_VERSION &lt; &quot;1.5&quot; AND NOT Installed" />
 <?endif?>
   </InstallUISequence>
 
   <AdminUISequence>
-    <Show Dialog="CExitDialog" OnExit="success">
-      NOT (IS_AUTOUPDATE = 1)
-    </Show>
+    <Show Dialog="CExitDialog" OnExit="success" Condition="NOT (IS_AUTOUPDATE = 1)" />
   </AdminUISequence>
 </UI>
 
 <?ifdef JRESetup ?>
-<CustomAction
-    Id="InstallJRE"
-    BinaryKey="JRESetup"
-    ExeCommand=""
-    Return="asyncNoWait" />
+<CustomAction Id="InstallJRE" ExeCommand="" Return="asyncNoWait" BinaryRef="JRESetup" />
 <?endif?>
-<CustomAction
-        Id="LaunchApplication"
-        ExeCommand="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe --old_name=&quot;[OLD_APP_NAME]&quot;"
-        Directory="INSTALLDIR"
-        Impersonate="yes"
-        Return="asyncNoWait" />
-<CustomAction
-    Id="SetCREATE_DESKTOP_SHORTCUT"
-    Property="CREATE_DESKTOP_SHORTCUT"
-    Value="1" />
-<CustomAction
-    Id="SetCREATE_START_MENU_SHORTCUT"
-    Property="CREATE_START_MENU_SHORTCUT"
-    Value="1" />
-<CustomAction
-    Id="SetCREATE_STARTUP_REGISTRY"
-    Property="CREATE_STARTUP_REGISTRY"
-    Value="1" />
-<CustomAction
-    Id="SetINSTALLDIR"
-    Property="INSTALLDIR"
-    Value="[SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR]" />
-<CustomAction
-    Id="SetIS_AUTOUPDATE"
-    Property="IS_AUTOUPDATE"
-    Value="1" />
-<CustomAction
-    Id="SetOLD_APP_NAMEfromBranding"
-    Property="OLD_APP_NAME"
-    Value="@@OLD_PRODUCT_NAME_ASCII@@" />
-<CustomAction
-    Id="SetOLD_APP_NAMEfromApp"
-    Property="OLD_APP_NAME"
-    Value="[SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME]" />
-<CustomAction
-    Id="SetAPP_NAME_CHANGED"
-    Property="APP_NAME_CHANGED"
-    Value="1" />
-<CustomAction
-    Id="SetEXPECTED_INSTALLDIR"
-    Property="EXPECTED_INSTALLDIR"
-    Value="[ProgramFilesFolder][OLD_APP_NAME]" />
-<CustomAction
-    Id="SetSHOW_UPGRADE_FULLUI"
-    Property="SHOW_UPGRADE_FULLUI"
-    Value="1" />
+<CustomAction Id="LaunchApplication" ExeCommand="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe --old_name=&quot;[OLD_APP_NAME]&quot;" Directory="INSTALLDIR" Impersonate="yes" Return="asyncNoWait" />
+<CustomAction Id="SetCREATE_DESKTOP_SHORTCUT" Property="CREATE_DESKTOP_SHORTCUT" Value="1" />
+<CustomAction Id="SetCREATE_START_MENU_SHORTCUT" Property="CREATE_START_MENU_SHORTCUT" Value="1" />
+<CustomAction Id="SetCREATE_STARTUP_REGISTRY" Property="CREATE_STARTUP_REGISTRY" Value="1" />
+<CustomAction Id="SetINSTALLDIR" Property="INSTALLDIR" Value="[SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR]" />
+<CustomAction Id="SetIS_AUTOUPDATE" Property="IS_AUTOUPDATE" Value="1" />
+<CustomAction Id="SetOLD_APP_NAMEfromBranding" Property="OLD_APP_NAME" Value="@@OLD_PRODUCT_NAME_ASCII@@" />
+<CustomAction Id="SetOLD_APP_NAMEfromApp" Property="OLD_APP_NAME" Value="[SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME]" />
+<CustomAction Id="SetAPP_NAME_CHANGED" Property="APP_NAME_CHANGED" Value="1" />
+<CustomAction Id="SetEXPECTED_INSTALLDIR" Property="EXPECTED_INSTALLDIR" Value="[ProgramFiles6432Folder][OLD_APP_NAME]" />
+<CustomAction Id="SetSHOW_UPGRADE_FULLUI" Property="SHOW_UPGRADE_FULLUI" Value="1" />
 <?ifdef JRESetup ?>
-<CustomAction
-    Id="SetWIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
-    Property="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
-    Value="Install Java(TM) SE Runtime Environment" />
+<CustomAction Id="SetWIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Property="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Install Java(TM) SE Runtime Environment" />
 <?endif?>
 
 <!-- Clear User Config - Step 1
      Delete the remaining config folders and their contents in %APPDATA%\@@PRODUCT_NAME_ASCII@@ -->
-<Property
-    Id="ClearUserConfig_Step1"
-    Value="&quot;cmd.exe&quot; /C (FOR /D %i IN (&quot;%APPDATA%\@@PRODUCT_NAME_ASCII@@\*&quot;) DO (RD /S /Q &quot;%i&quot;))" />
-<CustomAction
-    Id="ClearUserConfig_Step1"
-    BinaryKey="WixCA"
-    DllEntry="CAQuietExec"
-    Execute="deferred"
-    Impersonate="no"
-    Return="ignore" />
+<Property Id="ClearUserConfig_Step1" Value="&quot;cmd.exe&quot; /C (FOR /D %i IN (&quot;%APPDATA%\@@PRODUCT_NAME_ASCII@@\*&quot;) DO (RD /S /Q &quot;%i&quot;))" />
+<CustomAction Id="ClearUserConfig_Step1" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
 <!-- Clear User Config - Step 2
      Delete the config files which are not in a directory in %APPDATA%\@@PRODUCT_NAME_ASCII@@ -->
-<Property
-    Id="ClearUserConfig_Step2"
-    Value="&quot;cmd.exe&quot; /C DEL /Q &quot;%APPDATA%\@@PRODUCT_NAME_ASCII@@\*.*&quot;"/>
-<CustomAction
-    Id="ClearUserConfig_Step2"
-    BinaryKey="WixCA"
-    DllEntry="CAQuietExec"
-    Execute="deferred"
-    Impersonate="no"
-    Return="ignore" />
+<Property Id="ClearUserConfig_Step2" Value="&quot;cmd.exe&quot; /C DEL /Q &quot;%APPDATA%\@@PRODUCT_NAME_ASCII@@\*.*&quot;" />
+<CustomAction Id="ClearUserConfig_Step2" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
 <!-- Clear User Config - Step 3
      Deletes the %APPDATA%\@@PRODUCT_NAME_ASCII@@ folder -->
-<Property
-    Id="ClearUserConfig_Step3"
-    Value="&quot;cmd.exe&quot; /C rmdir /S /Q &quot;%APPDATA%\@@PRODUCT_NAME_ASCII@@&quot;"/>
-<CustomAction
-    Id="ClearUserConfig_Step3"
-    BinaryKey="WixCA"
-    DllEntry="CAQuietExec"
-    Execute="deferred"
-    Impersonate="no"
-    Return="ignore" />
+<Property Id="ClearUserConfig_Step3" Value="&quot;cmd.exe&quot; /C rmdir /S /Q &quot;%APPDATA%\@@PRODUCT_NAME_ASCII@@&quot;" />
+<CustomAction Id="ClearUserConfig_Step3" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
 <!-- Manually delete the jre\lib\ext folder that was used on Java 8 (pre 2.31) but whose presence will prevent Java 11 (2.31+) from starting up.
      In normal circumstances this would be automatically removed over upgrade, but various edge cases mean it's best to try a manual delete. -->
-<SetProperty Id="DeleteJreLibExt" Value="&quot;cmd.exe&quot; /C rmdir /S /Q &quot;[ProgramFilesFolder]\@@PRODUCT_NAME_ASCII@@\jre\lib\ext&quot;" After="SetINSTALLDIR"/>
-<CustomAction
-    Id="DeleteJreLibExt"
-    BinaryKey="WixCA"
-    DllEntry="CAQuietExec"
-    Execute="deferred"
-    Impersonate="no"
-    Return="ignore" />
+<SetProperty Id="DeleteJreLibExt" Value="&quot;cmd.exe&quot; /C rmdir /S /Q &quot;[INSTALLDIR]\jre\lib\ext&quot;" After="SetINSTALLDIR" />
+<CustomAction Id="DeleteJreLibExt" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
 <InstallExecuteSequence>
   <!-- We've seen upgrades break pinned taskbar icons so explicitly don't remove them -->
@@ -457,32 +217,18 @@
   <RemoveExistingProducts Before="InstallInitialize" />
 
   <!-- Make sure OLD_APP_NAME is set before AppSearch because it's used in registry searches. -->
-  <Custom Action="SetOLD_APP_NAMEfromBranding" Before="SetOLD_APP_NAMEfromApp">
-    <![CDATA["@@OLD_PRODUCT_NAME_ASCII@@" <> ""]]>
-  </Custom>
-  <Custom Action="SetOLD_APP_NAMEfromApp" Before="AppSearch">
-    <![CDATA[SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME <> ""]]>
-  </Custom>
+  <Custom Action="SetOLD_APP_NAMEfromBranding" Before="SetOLD_APP_NAMEfromApp" Condition="&quot;@@OLD_PRODUCT_NAME_ASCII@@&quot; &lt;&gt; &quot;&quot;" />
+  <Custom Action="SetOLD_APP_NAMEfromApp" Before="AppSearch" Condition="SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME &lt;&gt; &quot;&quot;" />
 
-  <Custom Action="SetIS_AUTOUPDATE" After="AppSearch">
-    <![CDATA[NOT Installed AND SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR <> ""]]>
-  </Custom>
-  <Custom Action="SetAPP_NAME_CHANGED" After="SetOLD_APP_NAMEfromApp">
-    <![CDATA[OLD_APP_NAME <> "@@PRODUCT_NAME_ASCII@@"]]>
-  </Custom>
-  <Custom Action="SetEXPECTED_INSTALLDIR" After="CostFinalize">
-    APP_NAME_CHANGED = 1
-  </Custom>
+  <Custom Action="SetIS_AUTOUPDATE" After="AppSearch" Condition="NOT Installed AND SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; &quot;&quot;" />
+  <Custom Action="SetAPP_NAME_CHANGED" After="SetOLD_APP_NAMEfromApp" Condition="OLD_APP_NAME &lt;&gt; &quot;@@PRODUCT_NAME_ASCII@@&quot;" />
+  <Custom Action="SetEXPECTED_INSTALLDIR" After="CostFinalize" Condition="APP_NAME_CHANGED = 1" />
   <!-- Most upgrades don't require the full UI. It's only needed if both of the following are true:
       (i)  The app name has changed.
       (ii) The previous version was installed in a non-default directory. -->
-  <Custom Action="SetSHOW_UPGRADE_FULLUI" After="SetEXPECTED_INSTALLDIR">
-    <![CDATA[(IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR <> EXPECTED_INSTALLDIR)]]>
-  </Custom>
+  <Custom Action="SetSHOW_UPGRADE_FULLUI" After="SetEXPECTED_INSTALLDIR" Condition="(IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; EXPECTED_INSTALLDIR)" />
   <!-- If it's an upgrade and the app name hasn't changed set INSTALLDIR to match the existing installation. -->
-  <Custom Action="SetINSTALLDIR" After="SetAPP_NAME_CHANGED">
-    <![CDATA[(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1)]]>
-  </Custom>
+  <Custom Action="SetINSTALLDIR" After="SetAPP_NAME_CHANGED" Condition="(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1)" />
   <!-- The equivalent section above in InstallUISequence handles setting whether
        or not to create shortcuts if we're showing the UI and the user may have
        the chance to choose whether or not they want to create shortcuts.  Here
@@ -494,26 +240,18 @@
        default is not to create them.  Both a full, interactive fresh install and
        an upgrade run at UILevel 5.  An install in passive mode runs at UILevel 3.
   -->
-  <Custom Action="SetCREATE_DESKTOP_SHORTCUT" Before="CostInitialize">
-    <![CDATA[UILevel < 4]]>
-  </Custom>
-  <Custom Action="SetCREATE_START_MENU_SHORTCUT" Before="CostInitialize">
-    <![CDATA[UILevel < 4]]>
-  </Custom>
-  <Custom Action="SetCREATE_STARTUP_REGISTRY" After="SetSHOW_UPGRADE_FULLUI">
-    <![CDATA[HAS_STARTUP_REGISTRY OR HAS_STARTUP_SHORTCUT AND NOT (SHOW_UPGRADE_FULLUI = 1)]]>
-  </Custom>
+  <Custom Action="SetCREATE_DESKTOP_SHORTCUT" Before="CostInitialize" Condition="UILevel &lt; 4" />
+  <Custom Action="SetCREATE_START_MENU_SHORTCUT" Before="CostInitialize" Condition="UILevel &lt; 4" />
+  <Custom Action="SetCREATE_STARTUP_REGISTRY" After="SetSHOW_UPGRADE_FULLUI" Condition="HAS_STARTUP_REGISTRY OR HAS_STARTUP_SHORTCUT AND NOT (SHOW_UPGRADE_FULLUI = 1)" />
 
 <?ifdef JRESetup ?>
-  <Custom Action="SetWIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" After="AppSearch">
-    <![CDATA[JRE_VERSION < "1.5" AND NOT Installed]]>
-  </Custom>
+  <Custom Action="SetWIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" After="AppSearch" Condition="JRE_VERSION &lt; &quot;1.5&quot; AND NOT Installed" />
 <?endif?>
 
-<Custom Action='ClearUserConfig_Step1' After="RemoveFiles">(NOT UPGRADINGPRODUCTCODE) AND (REMOVE="ALL")</Custom>
-<Custom Action='ClearUserConfig_Step2' After="ClearUserConfig_Step1">(NOT UPGRADINGPRODUCTCODE) AND (REMOVE="ALL")</Custom>
-<Custom Action='ClearUserConfig_Step3' After="ClearUserConfig_Step2">(NOT UPGRADINGPRODUCTCODE) AND (REMOVE="ALL")</Custom>
-<Custom Action='DeleteJreLibExt' After="ClearUserConfig_Step3"></Custom>
+<Custom Action="ClearUserConfig_Step1" After="RemoveFiles" Condition="(NOT UPGRADINGPRODUCTCODE) AND (REMOVE=&quot;ALL&quot;)" />
+<Custom Action="ClearUserConfig_Step2" After="ClearUserConfig_Step1" Condition="(NOT UPGRADINGPRODUCTCODE) AND (REMOVE=&quot;ALL&quot;)" />
+<Custom Action="ClearUserConfig_Step3" After="ClearUserConfig_Step2" Condition="(NOT UPGRADINGPRODUCTCODE) AND (REMOVE=&quot;ALL&quot;)" />
+<Custom Action="DeleteJreLibExt" After="ClearUserConfig_Step3"></Custom>
 
 </InstallExecuteSequence>
 
@@ -531,12 +269,7 @@
   </DirectorySearch>
 </Property>
 <Property Id="HAS_DESKTOP_SHORTCUT_REGISTRY">
-  <RegistrySearch
-      Id="RegistrySearch_HasDesktopShortcut"
-      Key="Software\Microsoft\[OLD_APP_NAME]"
-      Name="DesktopShortcut"
-      Root="HKCU"
-      Type="raw" />
+  <RegistrySearch Id="RegistrySearch_HasDesktopShortcut" Key="Software\Microsoft\[OLD_APP_NAME]" Name="DesktopShortcut" Root="HKCU" Type="raw" />
 </Property>
 <Property Id="HAS_START_MENU_SHORTCUT_FILE">
   <DirectorySearch Id="CheckStartMenuFileDir" Path="[ProgramMenuFolder]">
@@ -544,53 +277,25 @@
   </DirectorySearch>
 </Property>
 <Property Id="HAS_START_MENU_SHORTCUT_REGISTRY">
-  <RegistrySearch
-      Id="RegistrySearch_HasStartMenuShortcut"
-      Key="Software\Microsoft\[OLD_APP_NAME]"
-      Name="StartMenuShortcut"
-      Root="HKCU"
-      Type="raw" />
+  <RegistrySearch Id="RegistrySearch_HasStartMenuShortcut" Key="Software\Microsoft\[OLD_APP_NAME]" Name="StartMenuShortcut" Root="HKCU" Type="raw" />
 </Property>
 <Property Id="HAS_STARTUP_SHORTCUT">
-  <RegistrySearch
-      Id="RegistrySearch_HasStartupShortcut"
-      Key="Software\Microsoft\[OLD_APP_NAME]"
-      Name="StartupShortcut"
-      Root="HKCU"
-      Type="raw" />
+  <RegistrySearch Id="RegistrySearch_HasStartupShortcut" Key="Software\Microsoft\[OLD_APP_NAME]" Name="StartupShortcut" Root="HKCU" Type="raw" />
 </Property>
 <Property Id="HAS_STARTUP_REGISTRY">
-  <RegistrySearch
-      Id="RegistrySearch_HasStartupRegistry"
-      Key="Software\Microsoft\Windows\CurrentVersion\Run"
-      Name="[OLD_APP_NAME]"
-      Root="HKCU"
-      Type="raw" />
+  <RegistrySearch Id="RegistrySearch_HasStartupRegistry" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="[OLD_APP_NAME]" Root="HKCU" Type="raw" />
 </Property>
-<SetProperty Id="HAS_STARTUP_REGISTRY" After="AppSearch" Value="[HAS_STARTUP_SHORTCUT]">
-     HAS_STARTUP_SHORTCUT
-</SetProperty>
+<SetProperty Id="HAS_STARTUP_REGISTRY" After="AppSearch" Value="[HAS_STARTUP_SHORTCUT]" Condition="HAS_STARTUP_SHORTCUT" />
 <Property Id="IS_DEFAULT_IM_APP">
-  <RegistrySearch
-      Id="RegistrySearch_IsDefaultIMApp"
-      Key="Software\IM Providers"
-      Name="DefaultIMApp"
-      Root="HKCU"
-      Type="raw" />
+  <RegistrySearch Id="RegistrySearch_IsDefaultIMApp" Key="Software\IM Providers" Name="DefaultIMApp" Root="HKCU" Type="raw" />
 </Property>
-<Property Id="JRE_VERSION">
 <?ifdef JRESetup ?>
-  <RegistrySearch
-      Id="RegistrySearch_JREVersion"
-      Key="Software\JavaSoft\Java Runtime Environment"
-      Name="CurrentVersion"
-      Root="HKLM"
-      Type="raw"
-      Win64="@WINDOWS_IS_64@" />
-<?else?>
-  1.5
-<?endif?>
+<Property Id="JRE_VERSION">
+  <RegistrySearch Id="RegistrySearch_JREVersion" Key="Software\JavaSoft\Java Runtime Environment" Name="CurrentVersion" Root="HKLM" Type="raw" />
 </Property>
+<?else?>
+<Property Id="JRE_VERSION" Value="1.5" />
+<?endif?>
 
 <Property Id="ARPHELPLINK" Value="@APP_WEB@" />
 <Property Id="ARPPRODUCTICON" Value="Icon.ico" />
@@ -606,7 +311,6 @@
   sense to associate SIP Communicator with the FEED protocol.
 -->
 <Property Id="CREATE_FEED_REGISTRY_ENTRIES" Value="0" />
-<Property Id="CREATE_MSOFFICECOMM_REGISTRY_ENTRIES" Value="1" />
 <Property Id="IS_AUTOUPDATE" Value="0" Hidden="yes" />
 <!-- Use the current app name as default value, which will be overridden if either an
      old app name was branded in or if an old app name was passed in from Accession itself.-->
@@ -632,14 +336,48 @@
 <!-- Includes any default translated Error or ProgressText elements -->
 <UIRef Id="WixUI_ErrorProgressText" />
 
-</Product>
+  <StandardDirectory Id="ProgramFiles6432Folder">
+    <Directory Id="INSTALLDIR" Name="@@PRODUCT_NAME_ASCII@@">
+      <?include component-defines.wxi ?>
+    </Directory>
+  </StandardDirectory>
+
+  <StandardDirectory Id="DesktopFolder">
+    <Component Id="Component_DesktopShortcut" Condition="CREATE_DESKTOP_SHORTCUT = 1">
+
+      <Shortcut Id="Shortcut_Desktop" Icon="Icon.ico" Name="@@PRODUCT_NAME_TITLECASE@@" Target="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" WorkingDirectory="INSTALLDIR" />
+      <RemoveFolder Id="DesktopFolder" On="uninstall" />
+      <RegistryValue Key="Software\Microsoft\@@PRODUCT_NAME_ASCII@@" KeyPath="yes" Name="DesktopShortcut" Root="HKCU" Type="integer" Value="1" />
+    </Component>
+  </StandardDirectory>
+
+  <StandardDirectory Id="ProgramMenuFolder">
+    <Component Id="Component_StartMenuShortcut" Condition="CREATE_START_MENU_SHORTCUT = 1">
+
+      <Shortcut Id="Shortcut_StartMenu" Icon="Icon.ico" Name="@@PRODUCT_NAME_TITLECASE@@" Target="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" WorkingDirectory="INSTALLDIR">
+        <ShortcutProperty Key="System.AppUserModel.ID" Value="@@APP_ID@@" />
+      </Shortcut>
+      <RemoveFolder Id="ProgramMenuFolder" On="uninstall" />
+      <RegistryValue Key="Software\Microsoft\@@PRODUCT_NAME_ASCII@@" KeyPath="yes" Name="StartMenuShortcut" Root="HKCU" Type="integer" Value="1" />
+    </Component>
+  </StandardDirectory>
+
+  <StandardDirectory Id="StartupFolder">
+    <Component Id="Component_StartupShortcut" Condition="CREATE_STARTUP_SHORTCUT = 1">
+
+      <Shortcut Id="Shortcut_Startup" Icon="Icon.ico" Name="@@PRODUCT_NAME_TITLECASE@@" Target="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" WorkingDirectory="INSTALLDIR" />
+      <RemoveFolder Id="StartupFolder" On="uninstall" />
+      <RegistryValue Key="Software\Microsoft\@@PRODUCT_NAME_ASCII@@" KeyPath="yes" Name="StartupShortcut" Root="HKCU" Type="integer" Value="1" />
+    </Component>
+  </StandardDirectory>
+</Package>
 
     <!-- Modified ProgressDlg to not include InstallUISequence -->
     <Fragment>
         <UI>
             <Dialog Id="CProgressDlg" Width="370" Height="270" Title="!(loc.ProgressDlg_Title)" Modeless="yes">
                 <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Text="!(loc.WixUICancel)">
-                    <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+                    <Publish Event="SpawnDialog" Value="CancelDlg" />
                 </Control>
                 <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.ProgressDlgBannerBitmap)" />
                 <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Disabled="yes" Text="!(loc.WixUIBack)" />
@@ -647,30 +385,14 @@
                 <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
                 <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
                 <!-- mutually exclusive title and description strings overlap  -->
-                <Control Id="TextInstalling" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextInstalling)">
-                    <Condition Action="show">NOT Installed OR (Installed AND (RESUME OR Preselected) AND NOT PATCH)</Condition>
-                </Control>
-                <Control Id="TitleInstalling" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleInstalling)">
-                    <Condition Action="show">NOT Installed OR (Installed AND (RESUME OR Preselected) AND NOT PATCH)</Condition>
-                </Control>
-                <Control Id="TextChanging" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextChanging)">
-                    <Condition Action="show">WixUI_InstallMode = "Change"</Condition>
-                </Control>
-                <Control Id="TitleChanging" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleChanging)">
-                    <Condition Action="show">WixUI_InstallMode = "Change"</Condition>
-                </Control>
-                <Control Id="TextRepairing" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextRepairing)">
-                    <Condition Action="show">WixUI_InstallMode = "Repair"</Condition>
-                </Control>
-                <Control Id="TitleRepairing" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleRepairing)">
-                    <Condition Action="show">WixUI_InstallMode = "Repair"</Condition>
-                </Control>
-                <Control Id="TextRemoving" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextRemoving)">
-                    <Condition Action="show">WixUI_InstallMode = "Remove"</Condition>
-                </Control>
-                <Control Id="TitleRemoving" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleRemoving)">
-                    <Condition Action="show">WixUI_InstallMode = "Remove"</Condition>
-                </Control>
+                <Control Id="TextInstalling" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextInstalling)" ShowCondition="NOT Installed OR (Installed AND (RESUME OR Preselected) AND NOT PATCH)" />
+                <Control Id="TitleInstalling" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleInstalling)" ShowCondition="NOT Installed OR (Installed AND (RESUME OR Preselected) AND NOT PATCH)" />
+                <Control Id="TextChanging" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextChanging)" ShowCondition="WixUI_InstallMode = &quot;Change&quot;" />
+                <Control Id="TitleChanging" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleChanging)" ShowCondition="WixUI_InstallMode = &quot;Change&quot;" />
+                <Control Id="TextRepairing" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextRepairing)" ShowCondition="WixUI_InstallMode = &quot;Repair&quot;" />
+                <Control Id="TitleRepairing" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleRepairing)" ShowCondition="WixUI_InstallMode = &quot;Repair&quot;" />
+                <Control Id="TextRemoving" Type="Text" X="20" Y="65" Width="330" Height="35" Hidden="yes" NoPrefix="yes" Text="!(loc.ProgressDlgTextRemoving)" ShowCondition="WixUI_InstallMode = &quot;Remove&quot;" />
+                <Control Id="TitleRemoving" Type="Text" X="20" Y="15" Width="330" Height="15" Transparent="yes" NoPrefix="yes" Hidden="yes" Text="!(loc.ProgressDlgTitleRemoving)" ShowCondition="WixUI_InstallMode = &quot;Remove&quot;" />
                 <Control Id="ActionText" Type="Text" X="70" Y="100" Width="285" Height="10">
                     <Subscribe Event="ActionText" Attribute="Text" />
                 </Control>
@@ -697,10 +419,10 @@
         <UI>
             <Dialog Id="CMaintenanceWelcomeDlg" Width="370" Height="270" Title="!(loc.MaintenanceWelcomeDlg_Title)">
                 <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)">
-                    <Publish Event="SpawnWaitDialog" Value="WaitForCostingDlg">CostingComplete = 1</Publish>
+                    <Publish Event="SpawnWaitDialog" Value="WaitForCostingDlg" Condition="CostingComplete = 1" />
                 </Control>
                 <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
-                    <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+                    <Publish Event="SpawnDialog" Value="CancelDlg" />
                 </Control>
                 <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="!(loc.MaintenanceWelcomeDlgBitmap)" />
                 <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Disabled="yes" Text="!(loc.WixUIBack)" />
@@ -710,7 +432,7 @@
             </Dialog>
 
             <InstallUISequence>
-                <Show Dialog="CMaintenanceWelcomeDlg" Before="CProgressDlg">Installed AND NOT RESUME AND NOT Preselected</Show>
+                <Show Dialog="CMaintenanceWelcomeDlg" Before="CProgressDlg" Condition="Installed AND NOT RESUME AND NOT Preselected" />
             </InstallUISequence>
         </UI>
     </Fragment>
@@ -719,26 +441,26 @@
     <Fragment>
         <UI>
             <Dialog Id="CResumeDlg" Width="370" Height="270" Title="!(loc.ResumeDlg_Title)">
-                <Control Id="Install" Type="PushButton" ElevationShield="yes" X="212" Y="243" Width="80" Height="17" Default="yes" Text="!(loc.ResumeDlgInstall)" Hidden="yes">
-                    <Publish Event="SpawnWaitDialog" Value="WaitForCostingDlg">CostingComplete = 1</Publish>
-                    <Publish Event="EndDialog" Value="Return"><![CDATA[OutOfDiskSpace <> 1]]></Publish>
-                    <Publish Event="SpawnDialog" Value="OutOfRbDiskDlg">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND (PROMPTROLLBACKCOST="P" OR NOT PROMPTROLLBACKCOST)</Publish>
-                    <Publish Event="EndDialog" Value="Return">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
-                    <Publish Event="EnableRollback" Value="False">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
-                    <Publish Event="SpawnDialog" Value="OutOfDiskDlg">(OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 1) OR (OutOfDiskSpace = 1 AND PROMPTROLLBACKCOST="F")</Publish>
-                    <Condition Action="show">ALLUSERS</Condition>
+                <Control Id="Install" Type="PushButton" ElevationShield="yes" X="212" Y="243" Width="80" Height="17" Default="yes" Text="!(loc.ResumeDlgInstall)" Hidden="yes" ShowCondition="ALLUSERS">
+                    <Publish Event="SpawnWaitDialog" Value="WaitForCostingDlg" Condition="CostingComplete = 1" />
+                    <Publish Event="EndDialog" Value="Return" Condition="OutOfDiskSpace &lt;&gt; 1" />
+                    <Publish Event="SpawnDialog" Value="OutOfRbDiskDlg" Condition="OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND (PROMPTROLLBACKCOST=&quot;P&quot; OR NOT PROMPTROLLBACKCOST)" />
+                    <Publish Event="EndDialog" Value="Return" Condition="OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST=&quot;D&quot;" />
+                    <Publish Event="EnableRollback" Value="False" Condition="OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST=&quot;D&quot;" />
+                    <Publish Event="SpawnDialog" Value="OutOfDiskDlg" Condition="(OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 1) OR (OutOfDiskSpace = 1 AND PROMPTROLLBACKCOST=&quot;F&quot;)" />
+                    
                 </Control>
-                <Control Id="InstallNoShield" Type="PushButton" ElevationShield="no" X="212" Y="243" Width="80" Height="17" Default="yes" Text="!(loc.ResumeDlgInstall)" Hidden="yes">
-                    <Publish Event="SpawnWaitDialog" Value="WaitForCostingDlg">CostingComplete = 1</Publish>
-                    <Publish Event="EndDialog" Value="Return"><![CDATA[OutOfDiskSpace <> 1]]></Publish>
-                    <Publish Event="SpawnDialog" Value="OutOfRbDiskDlg">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND (PROMPTROLLBACKCOST="P" OR NOT PROMPTROLLBACKCOST)</Publish>
-                    <Publish Event="EndDialog" Value="Return">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
-                    <Publish Event="EnableRollback" Value="False">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
-                    <Publish Event="SpawnDialog" Value="OutOfDiskDlg">(OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 1) OR (OutOfDiskSpace = 1 AND PROMPTROLLBACKCOST="F")</Publish>
-                    <Condition Action="show">NOT ALLUSERS</Condition>
+                <Control Id="InstallNoShield" Type="PushButton" ElevationShield="no" X="212" Y="243" Width="80" Height="17" Default="yes" Text="!(loc.ResumeDlgInstall)" Hidden="yes" ShowCondition="NOT ALLUSERS">
+                    <Publish Event="SpawnWaitDialog" Value="WaitForCostingDlg" Condition="CostingComplete = 1" />
+                    <Publish Event="EndDialog" Value="Return" Condition="OutOfDiskSpace &lt;&gt; 1" />
+                    <Publish Event="SpawnDialog" Value="OutOfRbDiskDlg" Condition="OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND (PROMPTROLLBACKCOST=&quot;P&quot; OR NOT PROMPTROLLBACKCOST)" />
+                    <Publish Event="EndDialog" Value="Return" Condition="OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST=&quot;D&quot;" />
+                    <Publish Event="EnableRollback" Value="False" Condition="OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST=&quot;D&quot;" />
+                    <Publish Event="SpawnDialog" Value="OutOfDiskDlg" Condition="(OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 1) OR (OutOfDiskSpace = 1 AND PROMPTROLLBACKCOST=&quot;F&quot;)" />
+                    
                 </Control>
                 <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
-                    <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+                    <Publish Event="SpawnDialog" Value="CancelDlg" />
                 </Control>
                 <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="!(loc.ResumeDlgBitmap)" />
                 <Control Id="Back" Type="PushButton" X="156" Y="243" Width="56" Height="17" Disabled="yes" Text="!(loc.WixUIBack)" />
@@ -748,7 +470,7 @@
             </Dialog>
 
             <InstallUISequence>
-                <Show Dialog="CResumeDlg" Before="CProgressDlg">Installed AND (RESUME OR Preselected)</Show>
+                <Show Dialog="CResumeDlg" Before="CProgressDlg" Condition="Installed AND (RESUME OR Preselected)" />
             </InstallUISequence>
         </UI>
     </Fragment>
@@ -775,34 +497,34 @@
             <DialogRef Id="CResumeDlg" />
             <DialogRef Id="UserExit" />
 
-            <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath" Order="3">1</Publish>
-            <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4"><![CDATA[WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+            <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath_$(sys.BUILDARCHSHORT)" Order="3" />
+            <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4" Condition="WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;" />
 
-            <Publish Dialog="CExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+            <Publish Dialog="CExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
 
-            <Publish Dialog="CWelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg">1</Publish>
+            <Publish Dialog="CWelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" />
 
-            <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="CWelcomeDlg">1</Publish>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath" Order="2">1</Publish>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"><![CDATA[WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ShortcutsAndRegistryDlg" Order="4"><![CDATA[(WIXUI_INSTALLDIR_VALID="1") AND NOT (IS_AUTOUPDATE = 1)]]></Publish>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="5">IS_AUTOUPDATE = 1</Publish>
-            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
-            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="CWelcomeDlg" />
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1" />
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath_$(sys.BUILDARCHSHORT)" Order="2" />
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3" Condition="WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;" />
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ShortcutsAndRegistryDlg" Order="4" Condition="(WIXUI_INSTALLDIR_VALID=&quot;1&quot;) AND NOT (IS_AUTOUPDATE = 1)" />
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="5" Condition="IS_AUTOUPDATE = 1" />
+            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1" />
+            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2" />
 
-            <Publish Dialog="ShortcutsAndRegistryDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg">1</Publish>
-            <Publish Dialog="ShortcutsAndRegistryDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+            <Publish Dialog="ShortcutsAndRegistryDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" />
+            <Publish Dialog="ShortcutsAndRegistryDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />
 
-            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ShortcutsAndRegistryDlg" Order="1">(NOT Installed) AND NOT (IS_AUTOUPDATE = 1)</Publish>
-            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed</Publish>
-            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Order="3">IS_AUTOUPDATE = 1</Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ShortcutsAndRegistryDlg" Order="1" Condition="(NOT Installed) AND NOT (IS_AUTOUPDATE = 1)" />
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed" />
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Order="3" Condition="IS_AUTOUPDATE = 1" />
 
-            <Publish Dialog="CMaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+            <Publish Dialog="CMaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
 
-            <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-            <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-            <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="CMaintenanceWelcomeDlg">1</Publish>
+            <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+            <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+            <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="CMaintenanceWelcomeDlg" />
             <!-- Property Id="ARPNOMODIFY" Value="1" /-->
             <Property Id="ARPNOREPAIR" Value="1" />
         </UI>

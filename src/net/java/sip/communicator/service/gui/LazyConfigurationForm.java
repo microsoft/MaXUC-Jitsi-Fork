@@ -76,19 +76,6 @@ public class LazyConfigurationForm
      * @param formClassLoader the class loader
      * @param iconID the identifier of the form icon
      * @param titleID the identifier of the form title
-     */
-    public LazyConfigurationForm(String formClassName,
-        ClassLoader formClassLoader, String iconID, String titleID)
-    {
-        this(formClassName, formClassLoader, iconID, titleID, -1, false);
-    }
-
-    /**
-     * Creates an instance of <tt>LazyConfigurationForm</tt>.
-     * @param formClassName the class name of the configuration form
-     * @param formClassLoader the class loader
-     * @param iconID the identifier of the form icon
-     * @param titleID the identifier of the form title
      * @param index the index of the form in the parent container
      */
     public LazyConfigurationForm(String formClassName,

@@ -7,7 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -96,60 +96,6 @@ public class OperationSetGenericNotificationsJabberImpl
     }
 
     /**
-     * Generates new event notification.
-     *
-     * @param contact    the contact to receive the notification.
-     * @param eventName  the event name of the notification.
-     * @param eventValue the event value of the notification.
-     */
-    public void notifyForEvent(
-            Contact contact,
-            String eventName,
-            String eventValue)
-    {
-        // if we are not registered do nothing
-        if(!jabberProvider.isRegistered())
-        {
-            logger.trace("provider not registered. "
-                     +"won't send keep alive. acc.id="
-                     + jabberProvider.getAccountID()
-                        .getAccountUniqueID());
-            return;
-        }
-
-        NotificationEventIQ newEvent = new NotificationEventIQ();
-        newEvent.setEventName(eventName);
-        newEvent.setEventValue(eventValue);
-        newEvent.setTo(((ContactJabberImpl) contact).getAddressAsJid());
-        newEvent.setEventSource(jabberProvider.getOurJid().toString());
-
-        try
-        {
-            jabberProvider.getConnection().sendStanza(newEvent);
-        }
-        catch (NotConnectedException | InterruptedException e)
-        {
-            logger.error("Failed to send event notification. " +
-                "Contact: " + contact +
-                "Event: " + eventName + ":" + eventValue, e);        }
-    }
-
-    /**
-     * Generates new generic event notification and send it to the
-     * supplied contact.
-     * @param jid the contact jid which will receive the event notification.
-     * @param eventName the event name of the notification.
-     * @param eventValue the event value of the notification.
-     */
-    public void notifyForEvent(
-            String jid,
-            String eventName,
-            String eventValue)
-    {
-        this.notifyForEvent(jid, eventName, eventValue, null);
-    }
-
-    /**
      * Generates new generic event notification and send it to the
      * supplied contact.
      * @param jid the contact jid which will receive the event notification.
@@ -196,7 +142,7 @@ public class OperationSetGenericNotificationsJabberImpl
         catch (NotConnectedException | InterruptedException | XmppStringprepException  e)
         {
             logger.error("Error sending generic event notification to " +
-                logHasher(jid),  e);
+                sanitiseChatAddress(jid),  e);
         }
     }
 
@@ -246,43 +192,42 @@ public class OperationSetGenericNotificationsJabberImpl
     }
 
     /**
-     * Process the next packet sent to this packet listener.<p>
-     * <p/>
+     * <p>Process the next packet sent to this packet listener.<p/>
      *
      * @param stanza the packet to process.
      */
     public void processStanza(Stanza stanza)
     {
-        if(stanza != null &&  !(stanza instanceof NotificationEventIQ))
-                return;
+        if (!(stanza instanceof NotificationEventIQ))
+            return;
 
         NotificationEventIQ notifyEvent = (NotificationEventIQ)stanza;
 
         logger.debug("Received notificationEvent from "
-                     + notifyEvent.getFrom()
+                     + sanitiseChatAddress(notifyEvent.getFrom())
                      + " msg : "
                      + notifyEvent.toXML());
 
-        //do not notify
+        String fromUserID = notifyEvent.getFrom().asBareJid().toString();
+        Contact sourceContact = opSetPersPresence.findContactByID(fromUserID);
 
-        String fromUserID
-            = notifyEvent.getFrom().asBareJid().toString();
+        // do not process notifications from unknown contacts
+        if (sourceContact == null)
+        {
+            logger.debug("sourceContact is null, ignoring notifications from unknown contacts");
+            return;
+        }
 
-        Contact sender = opSetPersPresence.findContactByID(fromUserID);
-
-        if(sender == null)
-            sender = opSetPersPresence.createVolatileContact(fromUserID);
-
-        if(notifyEvent.getType() == Type.get)
+        if (notifyEvent.getType() == Type.get)
             fireNewEventNotification(
-                            sender,
+                            sourceContact,
                             notifyEvent.getEventName(),
                             notifyEvent.getEventValue(),
                             notifyEvent.getEventSource(),
                             true);
-        else if(notifyEvent.getType() == Type.error)
+        else if (notifyEvent.getType() == Type.error)
             fireNewEventNotification(
-                            sender,
+                            sourceContact,
                             notifyEvent.getEventName(),
                             notifyEvent.getEventValue(),
                             notifyEvent.getEventSource(),
@@ -307,13 +252,15 @@ public class OperationSetGenericNotificationsJabberImpl
             String  source,
             boolean incoming)
     {
-        String sourceUserID
-            = JitsiStringUtils.parseBareAddress(source);
-        Contact sourceContact =
-                opSetPersPresence.findContactByID(sourceUserID);
-        if(sourceContact == null)
-            sourceContact = opSetPersPresence
-                    .createVolatileContact(sourceUserID);
+        String sourceUserID = JitsiStringUtils.parseBareAddress(source);
+        Contact sourceContact = opSetPersPresence.findContactByID(sourceUserID);
+
+        // do not process notifications from unknown contacts
+        if (sourceContact == null)
+        {
+            logger.debug("sourceContact is null, ignoring notifications from unknown contacts");
+            return;
+        }
 
         GenericEvent
             event = new GenericEvent(

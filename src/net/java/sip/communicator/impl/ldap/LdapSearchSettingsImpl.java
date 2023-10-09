@@ -23,11 +23,6 @@ public class LdapSearchSettingsImpl
     private boolean isDelaySet = false;
     private int delay;
 
-    public boolean isMaxResultsSet()
-    {
-        return isMaxResultsSet;
-    }
-
     /**
      * Sets the maximum number of results to fetch from the
      * directory when performing the search query.

@@ -6,15 +6,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
-import org.jivesoftware.smack.SmackException.NoResponseException;
-import org.jivesoftware.smack.SmackException.NotConnectedException;
-import org.jivesoftware.smack.XMPPException.XMPPErrorException;
-import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
-import org.jivesoftware.smackx.disco.packet.DiscoverInfo;
-import org.jivesoftware.smackx.iqregister.AccountManager;
-import org.jxmpp.jid.impl.JidCreate;
-
-import net.java.sip.communicator.service.protocol.OperationFailedException;
 import net.java.sip.communicator.service.protocol.OperationSetChangePassword;
 import net.java.sip.communicator.util.Logger;
 
@@ -47,63 +38,4 @@ public class OperationSetChangePasswordJabberImpl
         this.protocolProvider = protocolProvider;
     }
 
-    /**
-     * Changes the jabber account password of protocolProvider to newPass.
-     * @param newPass the new password.
-     * @throws IllegalStateException if the account is not registered.
-     * @throws OperationFailedException if the server does not support password
-     * changes.
-     */
-    public void changePassword(String newPass)
-            throws IllegalStateException, OperationFailedException
-    {
-        AccountManager accountManager =
-            AccountManager.getInstance(protocolProvider.getConnection());
-
-        try
-        {
-                accountManager.changePassword(newPass);
-        }
-        catch (NoResponseException | NotConnectedException
-            | InterruptedException | XMPPErrorException e)
-        {
-            logger.info("Tried to change jabber password, but the server "
-                        + "does not support inband password changes", e);
-
-            throw new OperationFailedException("In-band password changes not"
-                    + " supported",
-                    OperationFailedException.NOT_SUPPORTED_OPERATION,
-                    e);
-        }
-    }
-
-    /**
-     * Returns true if the server supports password changes. Checks for
-     * XEP-0077 (inband registrations) support via disco#info.
-     *
-     * @return True if the server supports password changes, false otherwise.
-     */
-    public boolean supportsPasswordChange()
-    {
-        try
-        {
-            DiscoverInfo discoverInfo
-                    = ServiceDiscoveryManager.getInstanceFor(protocolProvider.getConnection())
-                        .discoverInfo(
-                                JidCreate.from(protocolProvider.getAccountID().getService()));
-            return discoverInfo.containsFeature(
-                        ProtocolProviderServiceJabberImpl.URN_REGISTER);
-        }
-        catch(Exception e)
-        {
-            logger.info("Exception occurred while trying to find out if" +
-                    " inband registrations are supported. Returning true" +
-                    "anyway.");
-            /* It makes sense to return true if something goes wrong, because
-                failing later on is not fatal, and registrations are very
-                likely to be supported.
-             */
-            return true;
-        }
-    }
 }

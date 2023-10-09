@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.ldap;
 
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
+
 import java.util.*;
 
 import javax.naming.*;
@@ -465,8 +467,8 @@ public class LdapDirectoryImpl
 
         public void run()
         {
-            String searchFilterToLog = mQAMode ? searchFilter : "<redacted>";
-            String initialQueryToLog = mQAMode ? query.toString() : "<redacted>";
+            String searchFilterToLog = mQAMode ? searchFilter : REDACTED;
+            String initialQueryToLog = mQAMode ? query.toString() : REDACTED;
             logger.trace("starting search for " + searchFilterToLog +
                     " (initial query: \"" + initialQueryToLog +
                     "\") on directory \"" + LdapDirectoryImpl.this + "\"");
@@ -1133,7 +1135,7 @@ public class LdapDirectoryImpl
             if (this.pendingSearches.get(query) != null)
             {
                 pendingSearches.get(query).getCaller().ldapEventReceived(event);
-                String queryToLog = mQAMode ? result.getQuery().toString() : "<redacted>";
+                String queryToLog = mQAMode ? result.getQuery().toString() : REDACTED;
                 logger.trace("result event for query \"" + queryToLog + "\" forwarded");
             }
             break;
@@ -1179,27 +1181,6 @@ public class LdapDirectoryImpl
             }
         }
         return false;
-    }
-
-    /**
-     * Overrides attributes name for searching for a specific type (i.e mail,
-     * homePhone, ...).
-     *
-     * @param attribute name
-     * @param names list of attributes name, if null then the underlying
-     *        attribute will be removed
-     */
-    public void overrideAttributesSearch(String attribute, List<String> names)
-    {
-        if (names == null)
-        {
-            logger.debug("Removing entry for " + attribute);
-            attributesMap.remove(attribute);
-        }
-        else
-        {
-            attributesMap.put(attribute, names);
-        }
     }
 
     /**

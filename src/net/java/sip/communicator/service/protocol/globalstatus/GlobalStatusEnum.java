@@ -259,34 +259,6 @@ public class GlobalStatusEnum
     }
 
     /**
-     * Finds the status with appropriate name and return it.
-     * @param name the name we search for.
-     * @return the global status.
-     */
-    public static GlobalStatusEnum getStatusByName(String name)
-    {
-        for(GlobalStatusEnum gs : globalStatusSet)
-        {
-            if(gs.getStatusName().equals(name))
-                return gs;
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns an iterator over all status instances supported by the global
-     * status service
-     *
-     * @return an <tt>Iterator</tt> over all status instances supported by the
-     *         sip provider.
-     */
-    public Iterator<PresenceStatus> getSupportedStatusSet()
-    {
-        return supportedStatusSet.iterator();
-    }
-
-    /**
      * An implementation of <tt>PresenceStatus</tt> that enumerates all states
      * that the global status supports
      */

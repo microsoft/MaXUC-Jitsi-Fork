@@ -163,33 +163,9 @@ public class MockCallPeer
     }
 
     @Override
-    public String getDiversionInfo()
+    public String getDiversionDisplayValue(boolean sendAnalytic)
     {
         return null;
     }
 
-    /**
-     * Adds a specific <tt>SoundLevelListener</tt> to the list
-     * of listeners interested in and notified about changes in conference
-     * members sound level.
-     *
-     * @param listener the <tt>SoundLevelListener</tt> to add
-     */
-    public void addConferenceMembersSoundLevelListener(
-        ConferenceMembersSoundLevelListener listener)
-    {
-    }
-
-    /**
-     * Removes a specific <tt>SoundLevelListener</tt> of the
-     * list of listeners interested in and notified about changes in conference
-     * members sound level.
-     *
-     * @param listener the <tt>SoundLevelListener</tt> to
-     * remove
-     */
-    public void removeConferenceMembersSoundLevelListener(
-        ConferenceMembersSoundLevelListener listener)
-    {
-    }
 }

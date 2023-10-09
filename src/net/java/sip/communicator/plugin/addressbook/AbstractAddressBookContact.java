@@ -123,17 +123,6 @@ public abstract class AbstractAddressBookContact implements Contact
     }
 
     /**
-     * Sets the status that this contact is currently in. The method is to
-     * only be called as a result of a status update received from the server.
-     *
-     * @param status the StatusEnum that this contact is currently in.
-     */
-    void updatePresenceStatus(PresenceStatus status)
-    {
-        // Nothing to do
-    }
-
-    /**
      * Returns a reference to the protocol provider that created the contact.
      * @return a reference to an instance of the ProtocolProviderService
      */
@@ -156,19 +145,6 @@ public abstract class AbstractAddressBookContact implements Contact
     public boolean isPersistent()
     {
         return isPersistent;
-    }
-
-    /**
-     * Specifies whether this contact is to be considered persistent or not. The
-     * method is to be used _only_ when a non-persistent contact has been added
-     * to the contact list and its encapsulated VolatileBuddy has been repalced
-     * with a standard buddy.
-     * @param persistent true if the buddy is to be considered persistent and
-     * false for volatile.
-     */
-    void setPersistent(boolean persistent)
-    {
-        this.isPersistent = persistent;
     }
 
     /**
@@ -339,16 +315,6 @@ public abstract class AbstractAddressBookContact implements Contact
     public void setDetails(List<GenericDetail> contactDetails)
     {
         this.contactDetails = contactDetails;
-    }
-
-    /**
-     * Gets the favourite status of this contact
-     *
-     * @return the favourite status of this contact
-     */
-    public boolean getFavoriteStatus()
-    {
-        return isFavourite;
     }
 
     /**

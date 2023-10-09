@@ -38,12 +38,6 @@ public class DynamicRTPExtensionsRegistry
 
     /**
      * The maximum integer that is allowed for use when mapping extensions using
-     * the one-byte header. Note that 15 is reserved for future use by 5285
-     */
-    public static final int MAX_ONE_BYTE_HEADER_ID = 14;
-
-    /**
-     * The maximum integer that is allowed for use when mapping extensions using
      * the two-byte header.
      */
     public static final int MAX_TWO_BYTE_HEADER_ID = 255;

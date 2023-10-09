@@ -12,8 +12,6 @@ import java.awt.image.*;
 import java.net.*;
 import java.util.*;
 
-import javax.swing.*;
-
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
@@ -301,21 +299,4 @@ public class ImageLoaderServiceImpl
         return dimg;
     }
 
-    /**
-     * Scale the image so if fits the current displays scale
-     * @param imageIcon The image to scale
-     * @return The scaled image
-     */
-    private ImageIcon scaleImage(ImageIcon imageIcon)
-    {
-        if (imageIcon == null)
-        {
-            return null;
-        }
-
-        Image image = imageIcon.getImage();
-        image = scaleImage(image);
-
-        return new ImageIcon(image);
-    }
 }

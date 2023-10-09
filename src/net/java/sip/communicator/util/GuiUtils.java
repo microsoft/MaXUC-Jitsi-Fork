@@ -65,23 +65,6 @@ public class GuiUtils
     public static final long MILLIS_PER_DAY = 24 * MILLIS_PER_HOUR;
 
     /**
-     *  Characters and their replacement in created folder names
-     */
-    private static final String[][] ESCAPE_SEQUENCES = new String[][]
-    {
-        {"&", "&_amp"},
-        {"/", "&_sl"},
-        {"\\\\", "&_bs"},   // the char \
-        {":", "&_co"},
-        {"\\*", "&_as"},    // the char *
-        {"\\?", "&_qm"},    // the char ?
-        {"\"", "&_pa"},     // the char "
-        {"<", "&_lt"},
-        {">", "&_gt"},
-        {"\\|", "&_pp"}     // the char |
-    };
-
-    /**
      * Regex matching HTML hyperlink tag
      */
     private static final Pattern HYPERLINK_TAG_PATTERN  = Pattern.compile("<A[^<;>;]+?>");
@@ -105,58 +88,6 @@ public class GuiUtils
         // backslash needs to be escaped both in the regular expression and in
         // the java string).
         return escapedText.replaceAll("([.()^&$*|])", "\\\\$1");
-    }
-
-    /**
-     * Counts occurrences of the <tt>needle</tt> character in the given
-     * <tt>text</tt>.
-     * @param text the text in which we search
-     * @param needle the character we're looking for
-     * @return the count of occurrences of the <tt>needle</tt> chat in the
-     * given <tt>text</tt>
-     */
-    public static int countOccurrences(String text, char needle)
-    {
-        int count = 0;
-
-        for (char c : text.toCharArray())
-        {
-            if (c == needle)
-               ++count;
-        }
-        return count;
-    }
-
-    /**
-     * Compares the two dates. The comparison is based only on the day, month
-     * and year values. Returns 0 if the two dates are equals, a value < 0 if
-     * the first date is before the second one and > 0 if the first date is after
-     * the second one.
-     * @param date1 the first date to compare
-     * @param date2 the second date to compare with
-     * @return Returns 0 if the two dates are equals, a value < 0 if
-     * the first date is before the second one and > 0 if the first date is after
-     * the second one
-     */
-    public static int compareDates(Date date1, Date date2)
-    {
-        return date1.compareTo(date2);
-    }
-
-    /**
-     * Compares the two dates. The comparison is based only on the day, month
-     * and year values. Returns 0 if the two dates are equals, a value < 0 if
-     * the first date is before the second one and > 0 if the first date is after
-     * the second one.
-     * @param date1 the first date to compare
-     * @param date2 the second date to compare with
-     * @return Returns 0 if the two dates are equals, a value < 0 if
-     * the first date is before the second one and > 0 if the first date is after
-     * the second one
-     */
-    public static int compareDates(long date1, long date2)
-    {
-        return (Long.compare(date1, date2));
     }
 
     /**
@@ -512,26 +443,6 @@ public class GuiUtils
         }
 
         return buf.toString().trim();
-    }
-
-    /**
-     * Replaces the characters that we must escape used for the created
-     * filename.
-     *
-     * @param string the <tt>String</tt> which is to have its characters escaped
-     * @return a <tt>String</tt> derived from the specified <tt>id</tt> by
-     * escaping characters
-     */
-    public static String escapeFileNameSpecialCharacters(String string)
-    {
-        String resultId = string;
-
-        for (int j = 0; j < ESCAPE_SEQUENCES.length; j++)
-        {
-            resultId = resultId.
-                replaceAll(ESCAPE_SEQUENCES[j][0], ESCAPE_SEQUENCES[j][1]);
-        }
-        return resultId;
     }
 
     /**

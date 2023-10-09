@@ -279,15 +279,6 @@ public abstract class AbstractOperationSetMultiUserChat
         }
     }
 
-    @Override
-    public void removeChatRoomCreatedListener(ChatRoomCreatedListener listener)
-    {
-        synchronized (chatRoomCreatedListeners)
-        {
-            chatRoomCreatedListeners.remove(listener);
-        }
-    }
-
     /**
      * Fires a new <code>ChatRoomCreatedEvent</code> to all currently
      * registered <code>ChatRoomCreatedListener</code>s

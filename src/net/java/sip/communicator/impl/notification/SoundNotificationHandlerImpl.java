@@ -467,15 +467,6 @@ public class SoundNotificationHandlerImpl
         }
     }
 
-    @Override
-    public void removeMuteListener(MuteListener listener)
-    {
-        synchronized (muteListeners)
-        {
-            muteListeners.remove(listener);
-        }
-    }
-
     /**
      * Publish the current mute state to all registered listeners
      */

@@ -55,36 +55,6 @@ public interface ImageLoaderService
          = new ImageID("plugin.branding.SPLASH_SCREEN_BACKGROUND");
 
     /**
-     * The background image of a button.
-     */
-    ImageID BUTTON
-        = new ImageID("service.gui.lookandfeel.BUTTON");
-
-    /**
-     * The rollover image of a button.
-     */
-    ImageID BUTTON_ROLLOVER
-        = new ImageID("service.gui.lookandfeel.BUTTON_ROLLOVER");
-
-    /**
-     * The pressed toggle button background image.
-     */
-    ImageID TOGGLE_BUTTON_PRESSED
-        = new ImageID("service.gui.lookandfeel.TOGGLE_BUTTON_PRESSED");
-
-    /**
-     * The image used for a horizontal split.
-     */
-    ImageID SPLITPANE_HORIZONTAL
-        = new ImageID("service.gui.lookandfeel.SPLITPANE_HORIZONTAL");
-
-    /**
-     * The image used for a vertical split.
-     */
-    ImageID SPLITPANE_VERTICAL
-        = new ImageID("service.gui.lookandfeel.SPLITPANE_VERTICAL");
-
-    /**
      * The image used for the "thumb" of a vertical scrollbar.
      */
     ImageID SCROLLBAR_THUMB_VERTICAL
@@ -146,58 +116,16 @@ public interface ImageLoaderService
         = new ImageID("service.gui.LIGHT_BACKGROUND");
 
     /**
-     * The add account icon used in the file menu.
-     */
-    ImageID ADD_ACCOUNT_MENU_ICON
-        = new ImageID("service.gui.icons.ADD_ACCOUNT_MENU_ICON");
-
-    /**
      * A down arrow icon
      */
     ImageID DOWN_ARROW_ICON
         = new ImageID("service.gui.icons.DOWN_ARROW_ICON");
 
     /**
-     * An up arrow icon
-     */
-    ImageID UP_ARROW_ICON
-        = new ImageID("service.gui.icons.UP_ARROW_ICON");
-
-    /**
-     * Closed group icon.
-     */
-    ImageID RIGHT_ARROW_ICON
-        = new ImageID("service.gui.icons.RIGHT_ARROW_ICON");
-
-    /**
-     * The call button image.
-     */
-    ImageID INCOMING_CALL_BUTTON_BG
-        = new ImageID("service.gui.buttons.INCOMING_CALL_BUTTON_BG");
-
-    /**
-     * The call button image.
-     */
-    ImageID INCOMING_CALL_BUTTON_ROLLOVER
-        = new ImageID("service.gui.buttons.INCOMING_CALL_BUTTON_ROLLOVER");
-
-    /**
-     * The call button image.
-     */
-    ImageID INCOMING_CALL_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.INCOMING_CALL_BUTTON_PRESSED");
-
-    /**
      * The merge call button image. The icon shown in the Call Frame panel.
      */
     ImageID MERGE_CALL_BUTTON
         = new ImageID("service.gui.buttons.MERGE_CALL_BUTTON");
-
-    /**
-     * The merge call button image.
-     */
-    ImageID MERGE_CALL_BUTTON_BG
-        = new ImageID("service.gui.buttons.MERGE_CALL_BUTTON_BG");
 
     /**
      * The merge call button image.
@@ -232,12 +160,6 @@ public interface ImageLoaderService
     /**
      * The add participant button image. The icon shown in the Call Frame panel.
      */
-    ImageID ADD_PARTICIPANT_FOCUS
-        = new ImageID("service.gui.buttons.ADD_PARTICIPANT_FOCUS");
-
-    /**
-     * The add participant button image. The icon shown in the Call Frame panel.
-     */
     ImageID ADD_PARTICIPANT_PRESSED
         = new ImageID("service.gui.buttons.ADD_PARTICIPANT_PRESSED");
 
@@ -256,12 +178,6 @@ public interface ImageLoaderService
     /**
      * The add participant button image. The icon shown in the Call Frame panel.
      */
-    ImageID ADD_PARTICIPANT_MULTI_FOCUS
-        = new ImageID("service.gui.buttons.ADD_PARTICIPANT_MULTI_FOCUS");
-
-    /**
-     * The add participant button image. The icon shown in the Call Frame panel.
-     */
     ImageID ADD_PARTICIPANT_MULTI_PRESSED
         = new ImageID("service.gui.buttons.ADD_PARTICIPANT_MULTI_PRESSED");
 
@@ -270,24 +186,6 @@ public interface ImageLoaderService
      */
     ImageID USER_PHOTO_FRAME
         = new ImageID("service.gui.USER_PHOTO_FRAME");
-
-    /**
-     * The video call button image.
-     */
-    ImageID CALL_VIDEO_BUTTON_BG
-        = new ImageID("service.gui.buttons.CALL_VIDEO_BUTTON_BG");
-
-    /**
-     * The video call button image.
-     */
-    ImageID CALL_VIDEO_BUTTON_ROLLOVER
-        = new ImageID("service.gui.buttons.CALL_VIDEO_BUTTON_ROLLOVER");
-
-    /**
-     * The video call button image.
-     */
-    ImageID CALL_VIDEO_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.CALL_VIDEO_BUTTON_PRESSED");
 
     /**
      * The background image for a button in contact list that is shown on the
@@ -316,12 +214,6 @@ public interface ImageLoaderService
      */
     ImageID CONTACT_LIST_ONE_BUTTON_BG
         = new ImageID("service.gui.buttons.CONTACT_LIST_ONE_BUTTON_BG");
-
-    /**
-     * The separator image for the button toolbar in the contact list.
-     */
-    ImageID CONTACT_LIST_BUTTON_SEPARATOR
-        = new ImageID("service.gui.buttons.CONTACT_LIST_BUTTON_SEPARATOR");
 
     /**
      * The call button small image.
@@ -364,24 +256,6 @@ public interface ImageLoaderService
      */
     ImageID CALL_BUTTON_SMALL_MULTI_PRESSED
         = new ImageID("service.gui.buttons.CALL_BUTTON_SMALL_MULTI_PRESSED");
-
-    /**
-     * The invite button small image.
-     */
-    ImageID INVITE_TO_MEETING_BUTTON_SMALL
-        = new ImageID("service.gui.buttons.INVITE_TO_MEETING_BUTTON_SMALL");
-
-    /**
-     * The invite button small pressed image.
-     */
-    ImageID INVITE_TO_MEETING_BUTTON_SMALL_ROLLOVER
-        = new ImageID("service.gui.buttons.INVITE_TO_MEETING_BUTTON_SMALL_ROLLOVER");
-
-    /**
-     * The invite button small pressed image.
-     */
-    ImageID INVITE_TO_MEETING_BUTTON_SMALL_PRESSED
-        = new ImageID("service.gui.buttons.INVITE_TO_MEETING_BUTTON_SMALL_PRESSED");
 
     /**
      * The call button small image.
@@ -453,12 +327,6 @@ public interface ImageLoaderService
         = new ImageID("service.gui.buttons.CHAT_BUTTON_SMALL");
 
     /**
-     * The chat button small image white on transparent version.
-     */
-    ImageID CHAT_BUTTON_SMALL_WHITE
-        = new ImageID("service.gui.buttons.CHAT_BUTTON_SMALL_WHITE");
-
-    /**
      * The chat button small disabled image
      */
     ImageID CHAT_BUTTON_SMALL_DISABLED
@@ -488,9 +356,6 @@ public interface ImageLoaderService
     ImageID NOTIFY_WHEN_AVAILABLE_ON
             = new ImageID("service.gui.icons.NOTIFY_WHEN_AVAILABLE_ON");
 
-    ImageID NOTIFY_WHEN_AVAILABLE_ON_PRESSED
-            = new ImageID("service.gui.icons.NOTIFY_WHEN_AVAILABLE_ON_PRESSED");
-
     ImageID NOTIFY_WHEN_AVAILABLE_ON_ROLLOVER
             = new ImageID("service.gui.icons.NOTIFY_WHEN_AVAILABLE_ON_ROLLOVER");
     ImageID NOTIFY_WHEN_AVAILABLE_PRESSED
@@ -506,24 +371,6 @@ public interface ImageLoaderService
         = new ImageID("service.gui.buttons.CHAT_CALL");
 
     /**
-     * The call history button image.
-     */
-    ImageID CALL_HISTORY_BUTTON
-        = new ImageID("service.gui.buttons.CALL_HISTORY_BUTTON");
-
-    /**
-     * The call history pressed button image.
-     */
-    ImageID CALL_HISTORY_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.CALL_HISTORY_BUTTON_PRESSED");
-
-    /**
-     * The call history button missed call notification image.
-     */
-    ImageID CALL_HISTORY_BUTTON_NOTIFICATION
-        = new ImageID("service.gui.icons.CALL_HISTORY_BUTTON_NOTIFICATION");
-
-    /**
      * The chat button small pressed image.
      */
     ImageID CHAT_BUTTON_SMALL_PRESSED
@@ -534,36 +381,6 @@ public interface ImageLoaderService
      */
     ImageID CHAT_BUTTON_SMALL_ROLLOVER
         = new ImageID("service.gui.buttons.CHAT_BUTTON_SMALL_ROLLOVER");
-
-    /**
-     * The hangup button image.
-     */
-    ImageID HANGUP_BUTTON_BG
-        = new ImageID("service.gui.buttons.HANGUP_BUTTON_BG");
-
-    /**
-     * The hangup button image.
-     */
-    ImageID HANGUP_BUTTON_ROLLOVER
-        = new ImageID("service.gui.buttons.HANGUP_BUTTON_ROLLOVER");
-
-    /**
-     * The hangup button image.
-     */
-    ImageID HANGUP_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.HANGUP_BUTTON_PRESSED");
-
-    /**
-     * The background image for all setting buttons in the call panel.
-     */
-    ImageID CALL_SETTING_BUTTON_BG
-        = new ImageID("service.gui.buttons.CALL_SETTING_BUTTON_BG");
-
-    /**
-     * The background image for all pressed setting buttons in the call panel.
-     */
-    ImageID CALL_SETTING_BUTTON_PRESSED_BG
-        = new ImageID("service.gui.buttons.CALL_SETTING_BUTTON_PRESSED_BG");
 
     /**
      * A dial button icon.
@@ -880,12 +697,6 @@ public interface ImageLoaderService
     /**
      * A dial button icon. The icon shown in the Call Frame panel.
      */
-    ImageID DIAL_BUTTON_ON
-        = new ImageID("service.gui.buttons.DIAL_BUTTON_ON");
-
-    /**
-     * A dial button icon. The icon shown in the Call Frame panel.
-     */
     ImageID DIAL_BUTTON_DISABLED
         = new ImageID("service.gui.buttons.DIAL_BUTTON_DISABLED");
 
@@ -912,12 +723,6 @@ public interface ImageLoaderService
      */
     ImageID END_CALL_PRESSED
         = new ImageID("service.gui.buttons.END_CALL_PRESSED");
-
-    /**
-     * A dial button icon. The icon shown in the Call Frame panel.
-     */
-    ImageID ADD_TO_CALL_BUTTON
-        = new ImageID("service.gui.buttons.ADD_TO_CALL_BUTTON");
 
     /**
      * A put-on/off-hold button icon. The icon shown in the Call Frame
@@ -967,18 +772,6 @@ public interface ImageLoaderService
      */
     ImageID HOLD_BUTTON_ON_FOCUS
         = new ImageID("service.gui.buttons.HOLD_BUTTON_ON_FOCUS");
-
-    /**
-     * The icon shown when the status of the call is "On hold".
-     */
-    ImageID HOLD_STATUS_ICON
-        = new ImageID("service.gui.icons.HOLD_STATUS_ICON");
-
-    /**
-     * The icon shown when the status of the call is "Mute".
-     */
-    ImageID MUTE_STATUS_ICON
-        = new ImageID("service.gui.icons.MUTE_STATUS_ICON");
 
     /**
      * A mute button icon. The icon shown in the Call Frame panel.
@@ -1099,38 +892,6 @@ public interface ImageLoaderService
      */
     ImageID LOCAL_VIDEO_BUTTON_DISABLED
         = new ImageID("service.gui.buttons.LOCAL_VIDEO_BUTTON_DISABLED");
-
-    /**
-     * A show/hide local video button icon. The icon shown in the Call Frame
-     * panel.
-     */
-    ImageID SHOW_LOCAL_VIDEO_BUTTON
-        = new ImageID("service.gui.buttons.SHOW_LOCAL_VIDEO_BUTTON");
-
-    /**
-     * A show/hide local video button pressed icon. The icon shown in the
-     * Call Frame panel.
-     */
-    ImageID SHOW_LOCAL_VIDEO_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.SHOW_LOCAL_VIDEO_BUTTON_PRESSED");
-
-    /**
-     * The resize video button.
-     */
-    ImageID HD_VIDEO_BUTTON
-        = new ImageID("service.gui.buttons.HD_VIDEO_BUTTON");
-
-    /**
-     * The resize video button.
-     */
-    ImageID SD_VIDEO_BUTTON
-        = new ImageID("service.gui.buttons.SD_VIDEO_BUTTON");
-
-    /**
-     * The resize video button.
-     */
-    ImageID LO_VIDEO_BUTTON
-        = new ImageID("service.gui.buttons.LO_VIDEO_BUTTON");
 
     /**
      * The chat button that appears in the call window.
@@ -1309,20 +1070,8 @@ public interface ImageLoaderService
     /**
      * A remove peer button icon. The icon shown in the Call Frame panel.
      */
-    ImageID CLOSE_TAB_BUTTON_FOCUS =
-        new ImageID("service.gui.buttons.CLOSE_TAB_FOCUS");
-
-    /**
-     * A remove peer button icon. The icon shown in the Call Frame panel.
-     */
     ImageID CLOSE_TAB_BUTTON_PRESSED =
         new ImageID("service.gui.buttons.CLOSE_TAB_PRESSED");
-
-    /**
-     * A separator icon that appears between peers in the Call Frame.
-     */
-    ImageID CALL_PEER_SEPARATOR =
-        new ImageID("service.gui.icons.CALL_PEER_SEPARATOR");
 
     /**
      * The secure button on icon. The icon shown in the Call Frame panel.
@@ -1335,63 +1084,6 @@ public interface ImageLoaderService
      */
     ImageID SECURE_BUTTON_OFF =
         new ImageID("service.gui.buttons.SECURE_BUTTON_OFF");
-
-    /**
-     * The conference secure button off icon.
-     */
-    ImageID SECURE_OFF_CONF_CALL =
-        new ImageID("service.gui.buttons.SECURE_OFF_CONF_CALL");
-
-    /**
-     * The secure button on icon. The icon shown in the Call Frame panel.
-     */
-    ImageID SECURE_AUDIO_ON =
-        new ImageID("service.gui.buttons.SECURE_AUDIO_ON");
-
-    /**
-     * The secure button off icon. The icon shown in the Call Frame panel.
-     */
-    ImageID SECURE_AUDIO_OFF =
-        new ImageID("service.gui.buttons.SECURE_AUDIO_OFF");
-
-    /**
-     * The secure button on icon. The icon shown in the Call Frame panel.
-     */
-    ImageID SECURE_VIDEO_ON =
-        new ImageID("service.gui.buttons.SECURE_VIDEO_ON");
-
-    /**
-     * The secure button off icon. The icon shown in the Call Frame panel.
-     */
-    ImageID SECURE_VIDEO_OFF =
-        new ImageID("service.gui.buttons.SECURE_VIDEO_OFF");
-
-    /**
-     * The security button: encrypted and SAS verified, encrypted only,
-     * security off.
-     */
-    ImageID ENCR_VERIFIED
-        = new ImageID("service.gui.buttons.ENCR_VERIFIED");
-
-    /**
-     * The button icon of the Enter Full Screen command. The icon shown in the
-     * Call Frame panel.
-     */
-    ImageID ENTER_FULL_SCREEN_BUTTON =
-        new ImageID("service.gui.buttons.ENTER_FULL_SCREEN_BUTTON");
-
-    /**
-     * The button icon of the Exit Full Screen command. The icon shown in the
-     * Call Frame panel.
-     */
-    ImageID EXIT_FULL_SCREEN_BUTTON =
-        new ImageID("service.gui.buttons.EXIT_FULL_SCREEN_BUTTON");
-
-    /**
-     * The call information button icon used in the call panel.
-     */
-    ImageID CALL_INFO =
-        new ImageID("service.gui.buttons.CALL_INFO");
 
     /**
      * The image used in place of an avatar in the start conference dialog.
@@ -1424,12 +1116,6 @@ public interface ImageLoaderService
      */
     ImageID UNAUTHORIZED_CONTACT_PHOTO
         = new ImageID("service.gui.icons.UNAUTHORIZED_CONTACT_PHOTO");
-
-    /**
-     * The image used, when a contact is unauthorized.
-     */
-    ImageID CONTACT_PHOTO_SURROUND
-        = new ImageID("service.gui.icons.CONTACT_PHOTO_SURROUND");
 
     /**
      * Re-request authorization menu item icon.
@@ -1466,49 +1152,10 @@ public interface ImageLoaderService
         = new ImageID("service.gui.icons.ADD_TO_CHAT_ICON_DISABLED");
 
     /**
-     * The image used for decoration of the "Add group" window.
-     */
-    ImageID ADD_GROUP_ICON
-        = new ImageID("service.gui.icons.ADD_GROUP_ICON");
-
-    /**
      * The image used for decoration of the "Rename contact" window.
      */
     ImageID RENAME_DIALOG_ICON
         = new ImageID("service.gui.icons.RENAME_DIALOG_ICON");
-
-    /**
-     * The image used for decoration of the "Open in browser" item in
-     * the right button click menu in chat window.
-     */
-    ImageID BROWSER_ICON
-        = new ImageID("service.gui.icons.BROWSER_ICON");
-
-    /**
-     * The image used for decoration of all windows concerning the process of
-     * authorization.
-     */
-    ImageID AUTHORIZATION_ICON
-        = new ImageID("service.gui.icons.AUTHORIZATION_ICON");
-
-    /**
-     * The icon used to indicate that the user has chosen to take the chat
-     * account offline.
-     */
-    ImageID CHAT_OFFLINE_USER_ICON
-        = new ImageID("service.gui.icons.CHAT_OFFLINE_USER_ICON");
-
-    /**
-     * The image used in the right button menu for the move contact item.
-     */
-    ImageID MOVE_CONTACT_ICON
-        = new ImageID("service.gui.icons.MOVE_CONTACT");
-
-    /**
-     * The image used in the right button menu for the move to group item.
-     */
-    ImageID MOVE_TO_GROUP_16x16_ICON
-        = new ImageID("service.gui.icons.MOVE_TO_GROUP_16x16_ICON");
 
     /**
      * The image used for error messages in the chat window.
@@ -1529,47 +1176,11 @@ public interface ImageLoaderService
         = new ImageID("service.gui.icons.CLOSED_GROUP");
 
     /**
-     * The image used for chat rooms.
-     */
-    ImageID CHAT_ROOM_16x16_ICON
-        = new ImageID("service.gui.icons.CHAT_ROOM_16x16_ICON");
-
-    /**
-     * The image used for multi user chat servers.
-     */
-    ImageID CHAT_SERVER_16x16_ICON
-        = new ImageID("service.gui.icons.CHAT_SERVER_16x16_ICON");
-
-    /**
      * The image used to indicate in the contact list that a message is received
      * from a certain contact.
      */
     ImageID MESSAGE_RECEIVED_ICON
         = new ImageID("service.gui.icons.MESSAGE_RECEIVED_ICON");
-
-    /**
-     * The image used to set to the chat room "join" right button menu.
-     */
-    ImageID JOIN_ICON
-        = new ImageID("service.gui.icons.JOIN_ICON");
-
-    /**
-     * The image used to set to the chat room "join as" right button menu.
-     */
-    ImageID JOIN_AS_ICON
-        = new ImageID("service.gui.icons.JOIN_AS_ICON");
-
-    /**
-     * The image used to set to the chat room "leave" right button menu.
-     */
-    ImageID LEAVE_ICON
-        = new ImageID("service.gui.icons.LEAVE_ICON");
-
-    /**
-     * The image used to set to the chat room "remove" right button menu.
-     */
-    ImageID REMOVE_CHAT_ICON
-        = new ImageID("service.gui.icons.REMOVE_CHAT_ICON");
 
     /**
      * Background image of the dial button.
@@ -1578,34 +1189,16 @@ public interface ImageLoaderService
         = new ImageID("service.gui.buttons.DIAL_BUTTON_BG");
 
     /**
-     * Main menu background image.
-     */
-    ImageID MENU_BACKGROUND
-        = new ImageID("service.gui.MENU_BACKGROUND");
-
-    /**
      * Title bar background image.
      */
     ImageID WINDOW_TITLE_BAR
         = new ImageID("service.gui.WINDOW_TITLE_BAR");
 
     /**
-     * Title bar background image.
-     */
-    ImageID WINDOW_TITLE_BAR_BG
-        = new ImageID("service.gui.WINDOW_TITLE_BAR_BG");
-
-    /**
      * The default icon used in file transfer ui.
      */
     ImageID DEFAULT_FILE_ICON
         = new ImageID("service.gui.icons.DEFAULT_FILE_ICON");
-
-    /**
-     * The tools icon shown in conference calls.
-     */
-    ImageID CALL_PEER_TOOLS
-        = new ImageID("service.gui.buttons.CALL_PEER_TOOLS");
 
     /**
      * The video call menu item icon.
@@ -1625,72 +1218,6 @@ public interface ImageLoaderService
     ImageID VOLUME_MUTED_BUTTON
         = new ImageID("service.gui.buttons.VOLUME_MUTED");
 
-    /**
-     * The dial button shown in contact list.
-     */
-    ImageID CONTACT_LIST_DIAL_BUTTON
-        = new ImageID("service.gui.buttons.CONTACT_LIST_DIAL_BUTTON");
-
-    /**
-     * The dial button shown in the contact list when pressed
-     */
-    ImageID CONTACT_LIST_DIAL_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.CONTACT_LIST_DIAL_BUTTON_PRESSED");
-
-    /**
-     * The dial button shown in the contact list when rolled over
-     */
-    ImageID CONTACT_LIST_DIAL_BUTTON_ROLLOVER
-        = new ImageID("service.gui.buttons.CONTACT_LIST_DIAL_BUTTON_ROLLOVER");
-
-    /**
-     * The dial button shown in the contact list when on
-     */
-    ImageID CONTACT_LIST_DIAL_BUTTON_ON
-        = new ImageID("service.gui.buttons.CONTACT_LIST_DIAL_BUTTON_ON");
-
-    /**
-     * The dial button shown in the contact list when on and rolled over
-     */
-    ImageID CONTACT_LIST_DIAL_BUTTON_ON_ROLLOVER
-        = new ImageID("service.gui.buttons.CONTACT_LIST_DIAL_BUTTON_ON_ROLLOVER");
-
-    /**
-     * The dial pad call button background.
-     */
-    ImageID DIAL_PAD_CALL_BUTTON_BG
-        = new ImageID("service.gui.buttons.DIAL_PAD_CALL_BUTTON_BG");
-
-    /**
-     * The dial pad call button rollover image.
-     */
-    ImageID DIAL_PAD_CALL_BUTTON_ROLLOVER
-        = new ImageID("service.gui.buttons.DIAL_PAD_CALL_BUTTON_ROLLOVER");
-
-    /**
-     * The dial pad call button pressed image.
-     */
-    ImageID DIAL_PAD_CALL_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.DIAL_PAD_CALL_BUTTON_PRESSED");
-
-    /**
-     * The create new button shown in contact list.
-     */
-    ImageID CONTACT_LIST_CREATE_NEW_BUTTON
-        = new ImageID("service.gui.buttons.CONTACT_LIST_CREATE_NEW_BUTTON");
-
-    /**
-     * The create new button shown in the contact list when pressed
-     */
-    ImageID CONTACT_LIST_CREATE_NEW_BUTTON_PRESSED
-        = new ImageID("service.gui.buttons.CONTACT_LIST_CREATE_NEW_BUTTON_PRESSED");
-
-    /**
-     * The create new button shown in the contact list when rolled over
-     */
-    ImageID CONTACT_LIST_CREATE_NEW_BUTTON_ROLLOVER
-        = new ImageID("service.gui.buttons.CONTACT_LIST_CREATE_NEW_BUTTON_ROLLOVER");
-
     /*
      * =======================================================================
      * ------------------------ EDIT TOOLBAR ICONS ---------------------------
@@ -1705,12 +1232,6 @@ public interface ImageLoaderService
     /**
      * The icon shown in the invite dialog.
      */
-    ImageID INVITE_DIALOG_ICON
-        = new ImageID("service.gui.icons.INVITE_DIALOG_ICON");
-
-    /**
-     * The icon shown in the invite dialog.
-     */
     ImageID CLOSE_VIDEO
         = new ImageID("service.gui.buttons.CLOSE_VIDEO");
 
@@ -1719,12 +1240,6 @@ public interface ImageLoaderService
      * ------------------------ MAIN TOOLBAR ICONS ---------------------------
      * =======================================================================
      */
-    /**
-     * The background image of a button in one of the <tt>ChatWindow</tt>
-     * toolbars.
-     */
-    ImageID CHAT_TOOLBAR_BUTTON_BG
-        = new ImageID("MSG_TOOLBAR_BUTTON_BG");
 
     /**
      * Copy icon.
@@ -1755,18 +1270,6 @@ public interface ImageLoaderService
      */
     ImageID CLOSE_ICON
         = new ImageID("service.gui.icons.CLOSE_ICON");
-
-    /**
-     * Left flash icon.
-     */
-    ImageID PREVIOUS_ICON
-        = new ImageID("service.gui.icons.PREVIOUS_ICON");
-
-    /**
-     * Right flash icon.
-     */
-    ImageID NEXT_ICON
-        = new ImageID("service.gui.icons.NEXT_ICON");
 
     /**
      * History background image.
@@ -1828,18 +1331,6 @@ public interface ImageLoaderService
     ImageID WEB_CONFERENCE_PRESSED
         = new ImageID("service.gui.icons.WEB_CONFERENCE_PRESSED");
 
-    /**
-     * Start web conference disabled image.
-     */
-    ImageID WEB_CONFERENCE_DISABLED
-        = new ImageID("service.gui.icons.WEB_CONFERENCE_DISABLED");
-
-    /**
-     * Font icon.
-     */
-    ImageID FONT_ICON
-        = new ImageID("service.gui.icons.FONT_ICON");
-
     /*
      * =======================================================================
      * ------------------------ CHAT CONTACT ICONS ---------------------------
@@ -1900,28 +1391,10 @@ public interface ImageLoaderService
         = new ImageID("service.gui.icons.ADD_CONTACT_16x16_ICON");
 
     /**
-     * Log out 16x16 image.
-     */
-    ImageID LOG_OUT_16x16_ICON
-        = new ImageID("service.gui.icons.LOG_OUT_16x16_ICON");
-
-    /**
-     * Quit 16x16 image.
-     */
-    ImageID QUIT_16x16_ICON
-        = new ImageID("service.gui.icons.QUIT_16x16_ICON");
-
-    /**
      * Rename 16x16 image.
      */
     ImageID RENAME_16x16_ICON
         = new ImageID("service.gui.icons.RENAME_16x16_ICON");
-
-    /**
-     * Rename 16x16 image.
-     */
-    ImageID CHAT_ROOM_REVOKE_VOICE
-        = new ImageID("service.gui.icons.CHAT_ROOM_REVOKE_VOICE");
 
     /**
      * Toolbar drag area icon.
@@ -1940,12 +1413,6 @@ public interface ImageLoaderService
      */
     ImageID SEARCH_ICON
         = new ImageID("service.gui.icons.SEARCH_ICON");
-
-    /**
-     * The icon used to indicate a search.
-     */
-    ImageID SEARCH_ICON_16x16
-        = new ImageID("service.gui.icons.SEARCH_ICON_16x16");
 
     /*
      * =======================================================================
@@ -2049,44 +1516,8 @@ public interface ImageLoaderService
     ImageID USER_STATUS_UNKNOWN_ICON
         = new ImageID("service.gui.statusicons.USER_STATUS_UNKNOWN_ICON");
 
-    /**
-     * Change room icon.
-     */
-    ImageID CHANGE_ROOM_SUBJECT_ICON_16x16
-        = new ImageID("service.gui.icons.CHANGE_ROOM_SUBJECT_16x16");
-
-    /**
-     * Change nickname icon
-     */
-    ImageID CHANGE_NICKNAME_ICON_16x16
-        = new ImageID("service.gui.icons.CHANGE_NICKNAME_16x16");
-
-    /**
-     * Ban icon.
-     */
-    ImageID BAN_ICON_16x16
-        = new ImageID("service.gui.icons.BAN_16x16");
-
-    /**
-     * Kick icon.
-     */
-    ImageID KICK_ICON_16x16
-        = new ImageID("service.gui.icons.KICK_16x16");
-
     ImageID MICROPHONE
         = new ImageID("service.gui.soundlevel.MICROPHONE");
-
-    ImageID HEADPHONE
-        = new ImageID("service.gui.soundlevel.HEADPHONE");
-
-    ImageID SOUND_SETTING_BUTTON_BG
-        = new ImageID("service.gui.soundlevel.SOUND_SETTING_BUTTON_BG");
-
-    ImageID SOUND_SETTING_BUTTON_PRESSED
-        = new ImageID("service.gui.soundlevel.SOUND_SETTING_BUTTON_PRESSED");
-
-    ImageID AUTO_ANSWER_CHECK
-                = new ImageID("service.gui.icons.AUTO_ANSWER_CHECK");
 
     /**
      * Icon used to indicate that the user is a favorite

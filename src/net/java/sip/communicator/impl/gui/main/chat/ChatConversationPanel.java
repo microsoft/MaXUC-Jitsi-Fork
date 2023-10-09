@@ -675,22 +675,6 @@ public class ChatConversationPanel
     }
 
     /**
-     * Processes the message given by the parameters.
-     *
-     * @param chatMessage the message.
-     * @return the formatted message
-     */
-    public String processMessage(ChatMessage chatMessage,
-                                 ProtocolProviderService protocolProvider,
-                                 String contactAddress)
-    {
-        return processMessage(chatMessage,
-                              null,
-                              protocolProvider,
-                              contactAddress);
-    }
-
-    /**
      * Appends a consecutive message to the document.
      *
      * @param chatMessage the message to append

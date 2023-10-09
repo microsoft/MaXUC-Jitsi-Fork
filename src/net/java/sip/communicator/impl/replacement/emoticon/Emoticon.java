@@ -73,17 +73,6 @@ public class Emoticon
     }
 
     /**
-     * Returns the default String corresponding for this emoticon. For example
-     * ":-)".
-     *
-     * @return the default String corresponding for this emoticon.
-     */
-    public String getDefaultString()
-    {
-        return emoticonStrings.get(0);
-    }
-
-    /**
      * Returns the identifier of the image corresponding to this emoticon.
      *
      * @return the identifier of the image corresponding to this emoticon.

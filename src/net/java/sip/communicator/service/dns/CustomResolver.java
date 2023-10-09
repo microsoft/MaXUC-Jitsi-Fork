@@ -72,13 +72,6 @@ public interface CustomResolver
         = "net.java.sip.communicator.util.dns.DNS_REDEMPTION";
 
     /**
-     * The currently configured number of times that the primary DNS would have
-     * to provide a faster response than the backup resolver before we consider
-     * it safe enough to exit redundant mode.
-     */
-    int currentDnsRedemption = DNS_REDEMPTION;
-
-    /**
      * Resets resolver configuration and populate our default resolver
      * with the newly configured servers.
      */

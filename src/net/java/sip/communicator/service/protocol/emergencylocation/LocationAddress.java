@@ -138,6 +138,6 @@ public class LocationAddress
                 .append("city", city)
                 .append("stateOrProvince", stateOrProvince)
                 .append("postalCode", postalCode)
-                .append("country", country).toString();
+                .append("countryOrRegion", country).toString();
     }
 }

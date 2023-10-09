@@ -33,26 +33,6 @@ public class NoParentType extends BaseXCapError
     }
 
     /**
-     * Creates the XCAP no-parent error with phrase attribute.
-     *
-     * @param phrase the phrase to set.
-     */
-    public NoParentType(String phrase)
-    {
-        super(phrase);
-    }
-
-    /**
-     * Gets the phrase attribute.
-     *
-     * @return User readable error description.
-     */
-    public String getAncestor()
-    {
-        return ancestor;
-    }
-
-    /**
      * Sets the value of the ancestor property.
      *
      * @param ancestor the ancestor to set.

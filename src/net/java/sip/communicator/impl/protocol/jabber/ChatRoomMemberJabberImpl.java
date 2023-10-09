@@ -197,17 +197,6 @@ public class ChatRoomMemberJabberImpl
     }
 
     /**
-     * Returns the current role without trying to query it in the stack.
-     * Mostly used for event creating on member role change.
-     *
-     * @return the current role of this member.
-     */
-    ChatRoomMemberRole getCurrentRole()
-    {
-        return this.role;
-    }
-
-    /**
      * Sets the role of this member.
      * @param role the role to set
      */

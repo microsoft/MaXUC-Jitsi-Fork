@@ -64,16 +64,6 @@ public class NotificationEventTypeEvent
     }
 
     /**
-     * Returns the <tt>eventType</tt>, for which this event is about.
-     *
-     * @return the <tt>eventType</tt>, for which this event is about.
-     */
-    public String getSourceEventType()
-    {
-        return sourceEventType;
-    }
-
-    /**
      * The type of this event. One of EVENT_TYPE_XXX constants declared in this
      * class.
      *

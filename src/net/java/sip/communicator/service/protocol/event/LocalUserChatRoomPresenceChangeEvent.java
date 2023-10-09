@@ -143,18 +143,6 @@ public class LocalUserChatRoomPresenceChangeEvent
     }
 
     /**
-     * Returns the <tt>OperationSetMultiUserChat</tt>, where this event has
-     * occurred.
-     *
-     * @return the <tt>OperationSetMultiUserChat</tt>, where this event has
-     * occurred
-     */
-    public OperationSetMultiUserChat getMultiUserChatOpSet()
-    {
-        return (OperationSetMultiUserChat) getSource();
-    }
-
-    /**
      * Returns the <tt>ChatRoom</tt>, that this event is about.
      *
      * @return the <tt>ChatRoom</tt>, that this event is about

@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 
 import org.jivesoftware.smack.SmackException.NoResponseException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
@@ -140,27 +139,6 @@ public class OperationSetServerStoredAccountInfoJabberImpl
     }
 
     /**
-     * Returns all detail Class-es that the underlying implementation supports
-     * setting. Note that if you call one of the modification methods (add
-     * remove or replace) with a detail not contained by the iterator returned
-     * by this method, an IllegalArgumentException will be thrown.
-     * <p>
-     * @return a java.util.Iterator over all detail classes supported by the
-     * implementation.
-     */
-    public Iterator<Class<? extends GenericDetail>> getSupportedDetailTypes()
-    {
-        List<GenericDetail> details = infoRetreiver.getContactDetails(uin);
-        List<Class<? extends GenericDetail>> result
-            = new Vector<>();
-
-        for (GenericDetail obj : details)
-            result.add(obj.getClass());
-
-        return result.iterator();
-    }
-
-    /**
      * Determines whether a detail class represents a detail supported by the
      * underlying implementation or not. Note that if you call one of the
      * modification methods (add remove or replace) with a detail that this
@@ -276,20 +254,6 @@ public class OperationSetServerStoredAccountInfoJabberImpl
                     e);
             }
         }
-    }
-
-    /**
-     * Removes the specified detail from the list of details stored online for
-     * this account. The method returns a boolean indicating if such a detail
-     * was found (and removed) or not.
-     * <p>
-     * @param detail the detail to remove
-     * @return true if the specified detail existed and was successfully removed
-     * and false otherwise.
-     */
-    public boolean removeDetail(ServerStoredDetails.GenericDetail detail)
-    {
-        return false;
     }
 
     /**

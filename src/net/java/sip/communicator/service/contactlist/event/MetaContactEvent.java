@@ -45,12 +45,6 @@ public class MetaContactEvent
     public static final int META_CONTACT_REMOVED = 2;
 
     /**
-     * Indicates that the MetaContactEvent instance was triggered by moving
-     * an existing MetaContact.
-     */
-    public static final int META_CONTACT_MOVED = 3;
-
-    /**
      * The parent group of the contact.
      */
     private MetaContactGroup  parentGroup = null;

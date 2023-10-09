@@ -3,12 +3,10 @@ package net.java.sip.communicator.impl.callhistory.network;
 
 import static org.jitsi.util.Hasher.logHasher;
 
-import java.beans.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 import net.java.sip.communicator.impl.callhistory.*;
-import net.java.sip.communicator.impl.gui.main.MainFrameTabComponent;
 import net.java.sip.communicator.service.callhistory.*;
 import net.java.sip.communicator.service.commportal.*;
 import net.java.sip.communicator.service.contactsource.*;
@@ -125,26 +123,6 @@ public class NetworkCallHistoryDataHandler implements CPDataGetterCallback, CPCo
             if (event.getType() == ChangeEvent.ADDRESS_UP)
             {
                 sLog.debug("Network listener says network has changed");
-                loadNetworkCallHistory();
-            }
-        }
-    };
-
-    /**
-     * Listener for changes to the tab we are on
-     */
-    private final PropertyChangeListener mConfigListener =
-                                                    new PropertyChangeListener()
-    {
-        @Override
-        public void propertyChange(PropertyChangeEvent evt)
-        {
-            String newValue = evt.getNewValue().toString();
-            sLog.debug("User changed tab to " + newValue);
-
-            if (MainFrameTabComponent.HISTORY_TAB_NAME.equals(newValue))
-            {
-                // It's the history tab, refresh call history
                 loadNetworkCallHistory();
             }
         }
@@ -458,10 +436,6 @@ public class NetworkCallHistoryDataHandler implements CPDataGetterCallback, CPCo
      */
     private synchronized void registerRefreshTriggers()
     {
-        // Config service - for the tab selection changing:
-        mConfigService.user().addPropertyChangeListener(
-            ConfigurationUtils.SELECTED_TAB, mConfigListener);
-
         // Global status - for user no longer being on the phone:
         if (mGlobalStatusService != null)
             mGlobalStatusService.addStatusChangeListener(mStatusChangeListener);
@@ -510,10 +484,6 @@ public class NetworkCallHistoryDataHandler implements CPDataGetterCallback, CPCo
      */
     private synchronized void unregisterRefreshTriggers()
     {
-        // Config service - for the tab selection changing:
-        mConfigService.user().removePropertyChangeListener(ConfigurationUtils.SELECTED_TAB,
-                                                    mConfigListener);
-
         // Global status - for user no longer being on the phone:
         if (mGlobalStatusService != null)
             mGlobalStatusService.removeStatusChangeListener(mStatusChangeListener);

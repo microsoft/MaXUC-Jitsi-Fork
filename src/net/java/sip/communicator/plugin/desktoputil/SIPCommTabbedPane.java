@@ -85,37 +85,6 @@ public class SIPCommTabbedPane
     }
 
     /**
-     * Returns the index of the last tab on which the mouse did an action.
-     *
-     * @return
-     */
-    public int getOverTabIndex()
-    {
-        return overTabIndex;
-    }
-
-    /**
-     * Returns <code>true</code> if the close icon is enabled.
-     *
-     * @return
-     */
-    public boolean isCloseEnabled()
-    {
-        SIPCommTabbedPaneUI ui = (SIPCommTabbedPaneUI) this.getUI();
-        return ui.isCloseEnabled();
-    }
-
-    /**
-     * Returns <code>true</code> if the max/detach icon is enabled.
-     *
-     * @return
-     */
-    public boolean isMaxEnabled()
-    {
-        return ((SIPCommTabbedPaneUI) getUI()).isMaxEnabled();
-    }
-
-    /**
      * Override JTabbedPane method. Does nothing.
      * @param tabLayoutPolicy The tab layout policy.
      */
@@ -244,105 +213,6 @@ public class SIPCommTabbedPane
     }
 
     /**
-     * Adds a <code>CloseListener</code> to the tabbedPane.
-     *
-     * @param l the <code>CloseListener</code> to add
-     * @see #fireCloseTabEvent
-     * @see #removeCloseListener
-     */
-    public synchronized void addCloseListener(CloseListener l)
-    {
-        listenerList.add(CloseListener.class, l);
-    }
-
-    /**
-     * Adds a <code>MaxListener</code> to the tabbedPane.
-     *
-     * @param l the <code>MaxListener</code> to add
-     * @see #fireMaxTabEvent
-     * @see #removeMaxListener
-     */
-    public synchronized void addMaxListener(MaxListener l)
-    {
-        listenerList.add(MaxListener.class, l);
-    }
-
-    /**
-     * Adds a <code>DoubleClickListener</code> to the tabbedPane.
-     *
-     * @param l the <code>DoubleClickListener</code> to add
-     * @see #fireDoubleClickTabEvent
-     * @see #removeDoubleClickListener
-     */
-    public synchronized void addDoubleClickListener(DoubleClickListener l)
-    {
-        listenerList.add(DoubleClickListener.class, l);
-    }
-
-    /**
-     * Adds a <code>PopupOutsideListener</code> to the tabbedPane.
-     *
-     * @param l the <code>PopupOutsideListener</code> to add
-     * @see #firePopupOutsideTabEvent
-     * @see #removePopupOutsideListener
-     */
-    public synchronized void addPopupOutsideListener(PopupOutsideListener l)
-    {
-        listenerList.add(PopupOutsideListener.class, l);
-    }
-
-    /**
-     * Removes a <code>CloseListener</code> from this tabbedPane.
-     *
-     * @param l the <code>CloseListener</code> to remove
-     * @see #fireCloseTabEvent
-     * @see #addCloseListener
-     */
-    public synchronized void removeCloseListener(CloseListener l)
-    {
-        listenerList.remove(CloseListener.class, l);
-    }
-
-    /**
-     * Removes a <code>MaxListener</code> from this tabbedPane.
-     *
-     * @param l the <code>MaxListener</code> to remove
-     * @see #fireMaxTabEvent
-     * @see #addMaxListener
-     */
-    public synchronized void removeMaxListener(MaxListener l)
-    {
-        listenerList.remove(MaxListener.class, l);
-    }
-
-    /**
-     * Removes a <code>DoubleClickListener</code> from this tabbedPane.
-     *
-     * @param l
-     *            the <code>DoubleClickListener</code> to remove
-     * @see #fireDoubleClickTabEvent
-     * @see #addDoubleClickListener
-     */
-    public synchronized void removeDoubleClickListener(DoubleClickListener l)
-    {
-        listenerList.remove(DoubleClickListener.class, l);
-    }
-
-    /**
-     * Removes a <code>PopupOutsideListener</code> from this tabbedPane.
-     *
-     * @param l
-     *            the <code>PopupOutsideListener</code> to remove
-     * @see #firePopupOutsideTabEvent
-     * @see #addPopupOutsideListener
-     */
-    public synchronized void removePopupOutsideListener(
-                                        PopupOutsideListener l)
-    {
-        listenerList.remove(PopupOutsideListener.class, l);
-    }
-
-    /**
      * Sends a <code>MouseEvent</code>, whose source is this tabbedpane, to
      * every <code>CloseListener</code>. The method also updates the
      * <code>overTabIndex</code> of the tabbedPane with a value coming from
@@ -460,23 +330,6 @@ public class SIPCommTabbedPane
             ui.tabRemoveHighlight(tabIndex);
         }
         super.setSelectedIndex(tabIndex);
-    }
-
-    /**
-     * Highlights the tab with the given index.
-     *
-     * @param tabIndex The tab index.
-     */
-    public void highlightTab(int tabIndex)
-    {
-        SIPCommTabbedPaneEnhancedUI ui
-            = (SIPCommTabbedPaneEnhancedUI) this.getUI();
-
-        if (!ui.isTabHighlighted(tabIndex)
-                && this.getSelectedIndex() != tabIndex)
-            ui.tabAddHightlight(tabIndex);
-
-        this.repaint();
     }
 
     @Override

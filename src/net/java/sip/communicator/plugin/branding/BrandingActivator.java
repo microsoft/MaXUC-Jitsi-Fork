@@ -10,8 +10,6 @@ package net.java.sip.communicator.plugin.branding;
 import java.lang.reflect.*;
 import java.util.*;
 
-import javax.swing.*;
-
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.resources.*;
 import org.osgi.framework.*;
@@ -31,14 +29,6 @@ public class BrandingActivator
 {
     private final Logger logger = Logger.getLogger(BrandingActivator.class);
 
-    /**
-     * The name of the boolean property which indicates whether the splash
-     * screen (i.e. <code>WelcomeWindow</code>) is to be shown or to not be
-     * utilized for the sake of better memory consumption and faster startup.
-     */
-    private static final String PNAME_SHOW_SPLASH_SCREEN
-        = "net.java.sip.communicator.plugin.branding.SHOW_SPLASH_SCREEN";
-
     private static BundleContext bundleContext;
 
     private static ResourceManagementService resourcesService;
@@ -57,50 +47,10 @@ public class BrandingActivator
      */
     public static String electronCommitHash;
 
-    /**
-     * The welcome window.
-     */
-    private WelcomeWindow welcomeWindow;
-
     public void start(BundleContext bc) throws Exception
     {
         super.start(bc);
         logger.info("Starting branding activator");
-
-        ConfigurationService config = getConfigurationService();
-        boolean showSplashScreen
-            = (config == null)
-                ? true /*
-                        * Having no ConfigurationService reference is not good
-                        * for the application so we are better off with the
-                        * splash screen to actually see which bundles get loaded
-                        * and maybe be able to debug the problem.
-                        */
-                : config.global().getBoolean(PNAME_SHOW_SPLASH_SCREEN, false) &&
-                  config.global().getBoolean("plugin.wispa.SHOW_MAIN_UI", false);
-
-        /*
-         * WelcomeWindow is huge because it has a large image spread all over it
-         * so, given it's only necessary before the UIService gets activated, we
-         * certainly don't want to keep it around (e.g. as an instance field or
-         * as a final variable used inside a BundleListener which never gets
-         * removed).
-         */
-        if (showSplashScreen)
-        {
-            SwingUtilities.invokeAndWait(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    welcomeWindow = new WelcomeWindow();
-                    welcomeWindow.pack();
-                    welcomeWindow.setVisible(true);
-                }
-            });
-        }
-        else
-            welcomeWindow = null;
 
         if (getResources().getSettingsString(
                 "service.gui.APPLICATION_NAME").equals("SIP Communicator"))
@@ -117,21 +67,6 @@ public class BrandingActivator
      */
     public synchronized void bundleChanged(BundleEvent evt)
     {
-        if (welcomeWindow != null
-            && welcomeWindow.isShowing()
-            && (evt.getType() == BundleEvent.STARTED))
-        {
-            /*
-             * The IBM JRE on GNU/Linux reports the Bundle-Name as null while
-             * the SUN JRE reports it as non-null. Just prevent the throwing of
-             * a NullPointerException because displaying the Bundle-Name isn't
-             * vital anyway.
-             */
-            Object bundleName = evt.getBundle().getHeaders().get("Bundle-Name");
-
-            welcomeWindow.setBundle(
-                (bundleName == null) ? null : bundleName.toString());
-        }
     }
 
     /**
@@ -179,15 +114,6 @@ public class BrandingActivator
                                       new AboutWindow(null),
                                       new Hashtable<>());
 
-        if (welcomeWindow != null)
-        {
-            synchronized(this)
-            {
-                logger.info("Closing welcome window");
-                welcomeWindow.close();
-                welcomeWindow = null;
-            }
-        }
         javaCommitHash = NightlyBuildID.JAVA_COMMIT_ID;
         logger.info("The Java git commit hash for this build is " + javaCommitHash);
 

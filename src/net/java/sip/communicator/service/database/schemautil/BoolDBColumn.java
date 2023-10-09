@@ -14,13 +14,6 @@ public class BoolDBColumn extends DBColumn
         mDefault = false;
     }
 
-    public BoolDBColumn(String name, boolean defaultVal)
-    {
-        super(name);
-        mHasDefault = true;
-        mDefault = defaultVal;
-    }
-
     @Override
     protected String getTypeString()
     {

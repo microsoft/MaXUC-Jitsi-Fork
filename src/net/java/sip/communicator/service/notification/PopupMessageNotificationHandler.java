@@ -7,10 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.notification;
 
-import net.java.sip.communicator.service.systray.event.*;
-
-import org.jitsi.service.resources.*;
-
 /**
  * The <tt>PopupMessageNotificationHandler</tt> interface is meant to be
  * implemented by the notification bundle in order to provide handling of
@@ -36,25 +32,5 @@ public interface PopupMessageNotificationHandler
     void popupMessage(
             PopupMessageNotificationAction action,
             String title,
-            String message,
-            BufferedImageFuture icon,
-            Object tag,
-            boolean isError);
-
-    /**
-     * Adds a listener for <tt>SystrayPopupMessageEvent</tt>s posted when user
-     * clicks on the system tray popup message.
-     *
-     * @param listener the listener to add
-     */
-    void addPopupMessageListener(SystrayPopupMessageListener listener);
-
-    /**
-     * Removes a listener previously added with
-     * <tt>addPopupMessageListener</tt>.
-     *
-     * @param listener the listener to remove
-     */
-    void removePopupMessageListener(
-            SystrayPopupMessageListener listener);
+            String message);
 }

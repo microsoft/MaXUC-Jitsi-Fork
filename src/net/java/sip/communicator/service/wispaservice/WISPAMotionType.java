@@ -11,4 +11,6 @@ public enum WISPAMotionType
     UPDATE_INFO,
     UPDATE_PROGRESS_INFO,
     ERROR,
+    REFRESH_SSO_TOKEN,
+    SHOW_LOGGING_IN,
 }

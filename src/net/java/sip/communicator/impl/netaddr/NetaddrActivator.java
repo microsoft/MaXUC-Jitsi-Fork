@@ -150,29 +150,6 @@ public class NetaddrActivator
     }
 
     /**
-     * Returns a reference to the <tt>PacketLoggingService</tt> implementation
-     * currently registered in the bundle context or null if no such
-     * implementation was found.
-     *
-     * @return a reference to a <tt>PacketLoggingService</tt> implementation
-     * currently registered in the bundle context or null if no such
-     * implementation was found.
-     */
-    public static PacketLoggingService getPacketLogging()
-    {
-        if (packetLoggingService == null)
-        {
-            ServiceReference<?> plReference
-                = bundleContext.getServiceReference(
-                        PacketLoggingService.class.getName());
-
-            packetLoggingService
-                = (PacketLoggingService)bundleContext.getService(plReference);
-        }
-        return packetLoggingService;
-    }
-
-    /**
      * @return the <tt>ThreadingService</tt> obtained from the bundle context
      */
     public static ThreadingService getThreadingService()

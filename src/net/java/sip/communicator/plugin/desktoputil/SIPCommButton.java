@@ -335,16 +335,6 @@ public class SIPCommButton
     }
 
     /**
-     * Returns the background image of this button.
-     *
-     * @return the background image of this button.
-     */
-    public BufferedImageFuture getBackgroundImage()
-    {
-        return bgImage;
-    }
-
-    /**
      * Sets the background image of this button.
      *
      * @param bgImage the background image of this button.

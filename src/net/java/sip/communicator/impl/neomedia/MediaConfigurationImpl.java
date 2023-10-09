@@ -35,8 +35,8 @@ import net.java.sip.communicator.plugin.desktoputil.SoundLevelIndicator;
 import net.java.sip.communicator.plugin.desktoputil.StyledHTMLEditorPane;
 import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
 import net.java.sip.communicator.plugin.desktoputil.volumecontrol.VolumeSlider;
+import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.gui.ConfigurationContainer;
-import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService.HeadsetResponseState;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
@@ -226,7 +226,7 @@ public class MediaConfigurationImpl
 
     /**
      * The thread which updates the capture device as selected by the user. This
-     * prevent the UI to lock while changing the device.
+     * prevents the UI locking while changing the device.
      */
     private AudioLevelListenerThread audioLevelListenerThread = null;
 
@@ -241,24 +241,19 @@ public class MediaConfigurationImpl
     private VolumeSlider notifySlider;
 
     /**
-     * The combo box used to selected the microphone device.
+     * The combo box used to select the microphone device.
      */
     private JComboBox<Object> captureCombo;
 
     /**
-     * The combo box used to selected the notification device.
+     * The combo box used to select the notification device.
      */
     private JComboBox<Object> playbackCombo;
 
     /**
-     * The combo box used to selected the notification device.
+     * The combo box used to select the notification device.
      */
     private JComboBox<Object> notifyCombo;
-
-    /**
-     * The combo box used to select when we respond to heasdset button presses
-     */
-    private JComboBox<String> headsetResponseCombo;
 
     /**
      * The button used to play a sound in order to test playback device.
@@ -389,7 +384,7 @@ public class MediaConfigurationImpl
         if (featureNotifyAndPlaybackDevices)
         {
             // Set the section header to match the available function (where 'calls' is
-            // considered to cover both telephony and meetings.
+            // considered to cover both telephony and meetings).
             String audioOutSectionHeading = "impl.media.configform.AUDIO_OUT_MEETINGS";
             if (ConfigurationUtils.isCallingEnabled())
             {
@@ -692,9 +687,6 @@ public class MediaConfigurationImpl
      */
     private void addHeadsetResponseComponents()
     {
-        boolean unsupportedMacVersion = OSUtils.IS_MAC &&
-            !NeomediaActivator.getHeadsetManager().headsetIntegrationSupported();
-
         JPanel headsetResponseComboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         headsetResponseComboPanel.setOpaque(false);
         JTextArea headsetResponseTitle = new JTextArea();
@@ -706,7 +698,7 @@ public class MediaConfigurationImpl
         headsetResponseTitle.setOpaque(false);
         headsetResponseTitle.setBorder(HEADSET_RESPONSE_TITLE_BORDER);
 
-        headsetResponseCombo = new JComboBox<>();
+        JComboBox<String> headsetResponseCombo = new JComboBox<>();
         ScaleUtils.scaleFontAsDefault(headsetResponseCombo);
         headsetResponseCombo.setEditable(false);
 
@@ -742,22 +734,9 @@ public class MediaConfigurationImpl
 
         headsetResponseCombo.setMaximumSize(HEADSET_RESPONSE_COMBOBOX_DIMENSION);
 
-        if (!unsupportedMacVersion)
-        {
-            String selectedItem = ConfigurationUtils.getHeadsetResponse();
-            headsetResponseCombo.setSelectedItem(selectedItem);
-            headsetResponseCombo.addItemListener(new HeadsetResponseComboListener());
-        }
-        else
-        {
-            // If the user is using a Mac that is an unsupported version:
-            // - headset response combo should be disabled
-            // - headset response combo should be set to the response state to
-            //   use when an unsupported OS is used.
-            headsetResponseCombo.setEnabled(false);
-            headsetResponseCombo.setSelectedItem(HeadsetManagerService.
-                UNSUPPORTED_OS_HEADSET_RESPONSE.toString());
-        }
+        String selectedItem = ConfigurationUtils.getHeadsetResponse();
+        headsetResponseCombo.setSelectedItem(selectedItem);
+        headsetResponseCombo.addItemListener(new HeadsetResponseComboListener());
 
         headsetResponseComboPanel.add(headsetResponseTitle);
         headsetResponseComboPanel.add(headsetResponseCombo);
@@ -765,12 +744,7 @@ public class MediaConfigurationImpl
 
         StyledHTMLEditorPane headsetHintText = new StyledHTMLEditorPane();
 
-        // If the user is using a Mac that is an unsupported version,
-        // hint text should show explanation that the Mac version is not
-        // supported
-        String headsetHintResource = unsupportedMacVersion ?
-                "impl.media.configform.RESPOND_TO_BUTTON_PRESSES_HINT_UNSUPPORTED_MAC" :
-                "impl.media.configform.RESPOND_TO_BUTTON_PRESSES_HINT";
+        String headsetHintResource = "impl.media.configform.RESPOND_TO_BUTTON_PRESSES_HINT";
         headsetHintText.setText(NeomediaActivator.getResources().getI18NString(headsetHintResource));
 
         headsetHintText.setForeground(HINT_TEXT_COLOR);
@@ -810,7 +784,7 @@ public class MediaConfigurationImpl
      * @param deviceAndPreviewPanel the <tt>JComponent</tt> into which the UI controls which
      * are to control the details of the specified <tt>VideoSystem</tt> are to
      * be added
-     * @param devicePanel
+     * @param devicePanel panel
      * @return The JComboBox for selecting a video device.
      */
     private JComboBox<Object> createVideoSystemControls(
@@ -1091,7 +1065,7 @@ public class MediaConfigurationImpl
      */
     private Component createAudioPreview(Dimension prefSize)
     {
-        JComponent preview = null;
+        JComponent preview;
 
         AudioSystem audioSystem =
                 mediaService.getDeviceConfiguration().getAudioSystem();
@@ -1151,8 +1125,12 @@ public class MediaConfigurationImpl
         // If we are in a video call, do not attempt to show the video
         // preview because it will fail while we are already displaying
         // video for the call.
-        if ((!NeomediaActivator.getConferenceService().isConferenceJoined()) &&
-            (NeomediaActivator.getUIService().getInProgressVideoCalls().size() == 0))
+        ConferenceService mConferenceService =
+            NeomediaActivator.getConferenceService();
+        if ((mConferenceService == null
+            || !mConferenceService.isConferenceJoined())
+            && (NeomediaActivator.getUIService().getInProgressVideoCalls()
+                .size() == 0))
         {
             Object selectedItem = deviceComboBox.getSelectedItem();
             CaptureDeviceInfo device = null;
@@ -1309,7 +1287,7 @@ public class MediaConfigurationImpl
         private SoundLevelIndicator soundLevelIndicator;
 
         /**
-         *  Provides an handler which reads the stream into the
+         *  Provides a handler which reads the stream into the
          *  "transferHandlerBuffer".
          */
         private final BufferTransferHandler transferHandler

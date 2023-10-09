@@ -47,27 +47,12 @@ public abstract class AccountRegistrationWizard
     public abstract BufferedImageFuture getIcon();
 
     /**
-     * Returns the image that will be shown on the left of the wizard pages.
-     * @return the image that will be shown on the left of the wizard pages
-     */
-    public abstract BufferedImageFuture getPageImage();
-
-    /**
      * Returns the protocol display name that will be shown in the list,
      * where user will choose the protocol to register to.
      *
      * @return the protocol name.
      */
     public abstract String getProtocolName();
-
-    /**
-     * Returns a short description of the protocol that will be shown on the
-     * right of the protocol name in the list, where user will choose the
-     * protocol to register to.
-     *
-     * @return a short description of the protocol.
-     */
-    public abstract String getProtocolDescription();
 
     /**
      * Returns an example string, which should indicate to the user how the
@@ -85,24 +70,6 @@ public abstract class AccountRegistrationWizard
      * wizard.
      */
     public abstract Iterator<WizardPage> getPages();
-
-    /**
-     * Returns the identifier of the first account registration wizard page.
-     * This method is meant to be used by the wizard container to determine,
-     * which is the first page to show to the user.
-     *
-     * @return the identifier of the first account registration wizard page
-     */
-    public abstract Object getFirstPageIdentifier();
-
-    /**
-     * Returns the identifier of the last account registration wizard page. This
-     * method is meant to be used by the wizard container to determine which is
-     * the page to show before the summary page (of course if there's a summary).
-     *
-     * @return the identifier of the last account registration wizard page
-     */
-    public abstract Object getLastPageIdentifier();
 
     /**
      * Returns a set of key-value pairs that will represent the summary for
@@ -165,26 +132,6 @@ public abstract class AccountRegistrationWizard
     public void webSignup() throws UnsupportedOperationException {}
 
     /**
-     * Returns the forgot password link name.
-     *
-     * @return the forgot password link name
-     */
-    public String getForgotPasswordLinkName()
-    {
-        return null;
-    }
-
-    /**
-     * Returns the forgot password link if one exists.
-     *
-     * @return the forgot password link
-     */
-    public String getForgotPasswordLink()
-    {
-        return null;
-    }
-
-    /**
      * Returns a simple account registration form that would be the first form
      * shown to the user. Only if the user needs more settings she'll choose
      * to open the advanced wizard, consisted by all pages.
@@ -194,20 +141,6 @@ public abstract class AccountRegistrationWizard
      * @return a simple account registration form
      */
     public abstract Object getSimpleForm(boolean isCreateAccount);
-
-    /**
-     * Indicates whether this wizard enables the simple "sign in" form shown
-     * when the user opens the application for the first time. The simple
-     * "sign in" form allows user to configure her account in one click, just
-     * specifying her username and password and leaving any other configuration
-     * as by default.
-     * @return <code>true</code> if the simple "Sign in" form is enabled or
-     * <code>false</code> otherwise.
-     */
-    public boolean isSimpleFormEnabled()
-    {
-        return true;
-    }
 
     /**
      * Returns the wizard container, where all pages are added.

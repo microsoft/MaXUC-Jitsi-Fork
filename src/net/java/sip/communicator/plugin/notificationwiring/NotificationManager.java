@@ -946,6 +946,15 @@ public class NotificationManager
         }
     }
 
+    private boolean isCallOrConferenceInProgress()
+    {
+        UIService uiService = NotificationWiringActivator.getUIService();
+        ConferenceService confService =
+            NotificationWiringActivator.getConfService();
+        return !uiService.getInProgressCalls().isEmpty()
+            || (confService != null && confService.isConferenceJoined());
+    }
+
     /**
      * Implements CallListener.incomingCallReceived. When a call is received
      * plays the ring phone sound to the user and gathers caller information
@@ -977,13 +986,9 @@ public class NotificationManager
                  * there is an existing active call (or meeting).  If there is,
                  * we use the call waiting notification type.
                  */
-                UIService uiService = NotificationWiringActivator.getUIService();
-                ConferenceService confService =
-                    NotificationWiringActivator.getConfService();
                 String notificationType;
 
-                if (uiService.getInProgressCalls().isEmpty() &&
-                    !confService.isConferenceJoined())
+                if (!isCallOrConferenceInProgress())
                 {
                     logger.debug("No existing call - use incoming_call sound");
                     notificationType = INCOMING_CALL;
@@ -1242,15 +1247,10 @@ public class NotificationManager
                 if (notification != null)
                     stopSound(notification);
 
-                UIService uiService = NotificationWiringActivator.getUIService();
-                ConferenceService confService =
-                    NotificationWiringActivator.getConfService();
-
                 // If there is a call/conference in progress, then need to
                 // convert any incoming call ringing notifications to call
                 // waiting ones.
-                if (!uiService.getInProgressCalls().isEmpty() ||
-                    confService.isConferenceJoined())
+                if (isCallOrConferenceInProgress())
                 {
                     logger.debug("There is a call in progress. Converting all"
                         + " the incoming call ring tones to call waiting "

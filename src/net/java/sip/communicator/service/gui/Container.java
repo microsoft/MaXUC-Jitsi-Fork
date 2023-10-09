@@ -29,27 +29,11 @@ public class Container
     public static final Container CONTAINER_TOOLS_MENU
         = new Container("CONTAINER_TOOLS_MENU");
     /**
-     * Main application window "view menu" container.
-     */
-    public static final Container CONTAINER_VIEW_MENU
-        = new Container("CONTAINER_VIEW_MENU");
-    /**
      * Main application window "help menu" container.
      */
     public static final Container CONTAINER_HELP_MENU
         = new Container("CONTAINER_HELP_MENU");
-    /**
-     * Main application window "settings menu" container.
-     */
-    public static final Container CONTAINER_SETTINGS_MENU
-          = new Container("CONTAINER_SETTINGS_MENU");
 
-    /**
-     * The container added on the south of the account panel above the
-     * contact list.
-     */
-    public static final Container CONTAINER_ACCOUNT_SOUTH
-        = new Container("CONTAINER_ACCOUNT_SOUTH");
     /**
      * The container added to the east of the search box
      */
@@ -62,11 +46,6 @@ public class Container
     public static final Container CONTAINER_MAIN_TABBED_PANE
             = new Container("CONTAINER_MAIN_TABBED_PANE");
 
-    /**
-     * Container for call status
-     */
-    public static final Container CONTAINER_ACCOUNT_STATUS_SOUTH
-             = new Container("CONTAINER_ACCOUNT_STATUS_SOUTH");
     /**
      * Chat window toolbar container.
      */
@@ -88,27 +67,6 @@ public class Container
      */
     public static final Container CONTAINER_GROUP_RIGHT_BUTTON_MENU
             = new Container("CONTAINER_GROUP_RIGHT_BUTTON_MENU");
-
-    /**
-     * Chat window "menu bar" container.
-     */
-    public static final Container CONTAINER_CHAT_MENU_BAR
-            = new Container("CONTAINER_CHAT_MENU_BAR");
-    /**
-     * Chat window "file menu" container.
-     */
-    public static final Container CONTAINER_CHAT_FILE_MENU
-            = new Container("CONTAINER_CHAT_FILE_MENU");
-    /**
-     * Chat window "edit menu" container.
-     */
-    public static final Container CONTAINER_CHAT_EDIT_MENU
-            = new Container("CONTAINER_CHAT_EDIT_MENU");
-    /**
-     * Chat window "settings menu" container.
-     */
-    public static final Container CONTAINER_CHAT_SETTINGS_MENU
-            = new Container("CONTAINER_CHAT_SETTINGS_MENU");
 
     /**
      * Chat window "help menu" container.
@@ -138,24 +96,6 @@ public class Container
      */
     public static final Container CONTAINER_CALL_HISTORY
             = new Container("CONTAINER_CALL_HISTORY");
-
-    /**
-     * Call dialog container.
-     */
-    public static final Container CONTAINER_CALL_DIALOG
-            = new Container("CONTAINER_CALL_DIALOG");
-
-    /**
-     * Call panel container.
-     */
-    public static final Container CONTAINER_CALL_BUTTONS_PANEL
-            = new Container("CONTAINER_CALL_BUTTONS_PANEL");
-
-    /**
-     * Status bar container.
-     */
-    public static final Container CONTAINER_STATUS_BAR
-            = new Container("CONTAINER_STATUS_BAR");
 
     /**
      * Status bar container.

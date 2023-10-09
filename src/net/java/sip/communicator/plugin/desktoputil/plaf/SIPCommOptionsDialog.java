@@ -10,7 +10,6 @@ import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.util.*;
 
 /**
  * A utility class for showing a pop-up with a list of options for the user to
@@ -46,11 +45,7 @@ public class SIPCommOptionsDialog extends SIPCommDialog
         // Set up the dialog
         setLocation(owner.getLocation());
         setModal(true);
-
-        if(ConfigurationUtils.isCallAlwaysOnTop())
-        {
-            setAlwaysOnTop(true);
-        }
+        setAlwaysOnTop(true);
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setTitle(res.getI18NString(titleRes));

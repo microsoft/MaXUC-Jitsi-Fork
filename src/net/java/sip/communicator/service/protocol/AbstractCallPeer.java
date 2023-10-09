@@ -9,7 +9,6 @@ package net.java.sip.communicator.service.protocol;
 
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
-import java.net.*;
 import java.util.*;
 
 import org.jitsi.service.protocol.event.*;
@@ -135,12 +134,6 @@ public abstract class AbstractCallPeer<T extends Call,
      * performing CRM lookups).
      */
     protected boolean mCanUseCrmLookupDisplayName;
-
-    /** Whether a CRM lookup of this peer's DN has been completed. */
-    protected boolean mCrmLookupCompleted;
-
-    /** Stores whether the CRM lookup for this call peer was successful. */
-    protected boolean mCrmLookupSuccessful;
 
     /**
      * Initializes a new <tt>AbstractCallPeer</tt> instance.
@@ -617,37 +610,6 @@ public abstract class AbstractCallPeer<T extends Call,
     public abstract T getCall();
 
     /**
-     * Gets the time at which this <tt>CallPeer</tt> transitioned into a state
-     * (likely {@link CallPeerState#CONNECTED}) marking the start of the
-     * duration of the participation in a <tt>Call</tt>.
-     *
-     * @return the time at which this <tt>CallPeer</tt> transitioned into a
-     * state marking the start of the duration of the participation in a
-     * <tt>Call</tt> or {@link CallPeer#CALL_DURATION_START_TIME_UNKNOWN} if
-     * such a transition has not been performed
-     */
-    public long getCallDurationStartTime()
-    {
-        return callDurationStartTime;
-    }
-
-    /**
-     * Returns a URL pointing ta a location with call control information for
-     * this peer or <tt>null</tt> if no such URL is available for this call
-     * peer.
-     *
-     * @return a URL link to a location with call information or a call control
-     * web interface related to this peer or <tt>null</tt> if no such URL is
-     * available.
-     */
-    public URL getCallInfoURL()
-    {
-        //if signaling protocols (such as SIP) know where to get this URL from
-        //they should override this method
-        return null;
-    }
-
-    /**
      * {@inheritDoc}
      */
     public int getConferenceMemberCount()
@@ -938,23 +900,6 @@ public abstract class AbstractCallPeer<T extends Call,
                 newState,
                 reason,
                 reasonCode);
-    }
-
-    /**
-     * @return whether a CRM lookup of this peer's DN has been completed.
-     */
-    @Override
-    public boolean isCrmLookupCompleted()
-    {
-        return mCrmLookupCompleted;
-    }
-
-    /**
-     * @return Whether the CRM lookup was successful.
-     */
-    public boolean isCrmLookupSuccessful()
-    {
-        return mCrmLookupSuccessful;
     }
 
     /**

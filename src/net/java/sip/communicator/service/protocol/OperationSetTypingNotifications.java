@@ -20,7 +20,7 @@ import net.java.sip.communicator.service.protocol.event.*;
 public interface OperationSetTypingNotifications
     extends OperationSet
 {
-    public enum TypingState
+    enum TypingState
     {
         /**
          * Indicates that the typing state of a source contact is not currently

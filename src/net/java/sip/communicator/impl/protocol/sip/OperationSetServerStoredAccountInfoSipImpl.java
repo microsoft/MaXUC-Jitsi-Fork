@@ -158,27 +158,6 @@ public class OperationSetServerStoredAccountInfoSipImpl
     }
 
     /**
-     * Returns all detail Class-es that the underlying implementation supports
-     * setting.
-     *
-     * @return a java.util.Iterator over all detail classes supported by the
-     *         implementation.
-     */
-    public Iterator<Class<? extends GenericDetail>> getSupportedDetailTypes()
-    {
-        List<Class<? extends GenericDetail>> result =
-                new Vector<>();
-        if (isImageDetailSupported())
-        {
-            result.add(ImageDetail.class);
-        }
-
-        result.add(DisplayNameDetail.class);
-
-        return result.iterator();
-    }
-
-    /**
      * Determines whether a detail class represents a detail supported by the
      * underlying implementation or not.
      *
@@ -306,22 +285,6 @@ public class OperationSetServerStoredAccountInfoSipImpl
                     ServerStoredDetailsChangeEvent.DETAIL_ADDED,
                     null,
                     detail);
-    }
-
-    /**
-     * Removes the specified detail from the list of details stored online for
-     * this account.
-     *
-     * @param detail the detail to remove
-     * @return true if the specified detail existed and was successfully removed
-     *         and false otherwise.
-     * @throws OperationFailedException with code Network Failure if removing
-     *                                  the detail from the server has failed
-     */
-    public boolean removeDetail(GenericDetail detail)
-            throws OperationFailedException
-    {
-        return removeDetail(detail, true);
     }
 
     /**

@@ -9,10 +9,6 @@ package net.java.sip.communicator.service.protocol;
 
 import java.util.regex.*;
 
-import org.jitsi.service.configuration.*;
-
-import net.java.sip.communicator.util.*;
-
 /**
  * Implements <tt>PhoneNumberI18nService</tt> which aids the parsing, formatting
  * and validating of international phone numbers.
@@ -22,14 +18,6 @@ import net.java.sip.communicator.util.*;
  */
 public abstract class PhoneNumberI18nService
 {
-    private static final Logger logger =
-        Logger.getLogger(PhoneNumberI18nService.class);
-
-    /**
-     * The configuration service.
-     */
-    private static ConfigurationService configService
-        = ProtocolProviderActivator.getConfigurationService();
 
     /**
      * Characters which have to be removed from a phone number in order to
@@ -44,14 +32,6 @@ public abstract class PhoneNumberI18nService
      */
     private static final Pattern removedCharactersToNormalizedIdentifier
         = Pattern.compile("[\\(\\) ]");
-
-    /**
-     * Pattern to identify characters which indicate a pause in a phone number
-     * (and all subsequent characters) so they can be stripped as this is not
-     * currently supported.
-     */
-    private static final Pattern pauseCharactersPattern
-        = Pattern.compile("[pP,].*");
 
     /**
      * The list of characters corresponding to the number 2 in a phone dial pad.

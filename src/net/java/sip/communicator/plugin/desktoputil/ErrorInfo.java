@@ -58,4 +58,9 @@ public class ErrorInfo
     {
         return icon;
     }
+
+    public Runnable getAction()
+    {
+        return null;
+    }
 }

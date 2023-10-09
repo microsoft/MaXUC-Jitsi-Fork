@@ -27,7 +27,6 @@ public abstract class AnalyticsParameter
     public static final String NAME_TIMEZONE = "tz";
     public static final String NAME_BG_NAME = "bg";
 
-    public static final String NAME_CALLID = "cid";
     public static final String NAME_CALL_LENGTH = "len";
     public static final String NAME_DIRECTION = "dir";
     public static final String NAME_CODEC_STRUCT = "cdc";
@@ -58,7 +57,6 @@ public abstract class AnalyticsParameter
     public static final String NAME_JITTER_NOMINAL = "nm";
     public static final String NAME_JITTER_MAX_SIZE = "mx";
     public static final String NAME_JITTER_ABS_MAX_SIZE = "am";
-    public static final String NAME_DROPPED = "dropped";
     public static final String NAME_RTT_SEQ = "rtprtt";
     public static final String NAME_FAILED_ERR = "err";
     public static final String NAME_FAILED_SIP = "sip";
@@ -67,14 +65,12 @@ public abstract class AnalyticsParameter
     public static final String VALUE_OUTBOUND = "out";
     public static final String VALUE_WIFI = "wifi";
     public static final String VALUE_WIRED = "wired";
-    public static final String VALUE_DROPPED_YES = "1";
     public static final String VALUE_AD = "AccessionDesktop";
     public static final String VALUE_OS_WINDOWS = "Windows";
     public static final String VALUE_OS_MAC = "OSX";
     public static final String VALUE_FAILED_SIP = "SIP";
     public static final String VALUE_FAILED_CONFIG = "Bad config";
 
-    public static final String NAME_GROUP_IM_ID = "Grp ID";
     public static final String NAME_COUNT_GROUP_IMS = "Grp Count";
 
     public static final String NAME_TIME_TO_FIRST_SENT_PACKET = "ttSend";
@@ -121,6 +117,9 @@ public abstract class AnalyticsParameter
     public static final String VALUE_MOUSE = "Mouse";
     public static final String VALUE_KEYBOARD = "Keyboard";
     public static final String VALUE_HEADSET = "Headset";
+    public static final String CALL_TYPE = "Call type";
+    public static final String VALUE_INCOMING = "Incoming";
+    public static final String VALUE_ONGOING = "Ongoing";
 
     // Constants for users manually changing their avatar
     public static final String NAME_CHANGE_AVATAR = "ChangeType";
@@ -134,9 +133,6 @@ public abstract class AnalyticsParameter
     public static final String SERVICE_CATEGORY_LAUNCHED = "Category";
 
     public static final String SERVICE_PROVIDER_IDENTIFIED = "Service provider identified";
-
-    // WebSocket server parameters
-    public static final String WEBSOCKET_CONNECTION_CLOSED_REASON = "Reason for closing WebSocket connection";
 
     // Calls
     public static final String NAME_CALL_RATING = "Rating";
@@ -160,34 +156,28 @@ public abstract class AnalyticsParameter
             "Emergency locations with BSSID count";
     public static final String PARAM_DOWNLOAD_EMERGENCY_LOCATIONS_IP_ADDRESS_COUNT =
             "Emergency locations with IP_ADDRESS count";
-    // public static final String PARAM_DOWNLOAD_EMERGENCY_LOCATIONS_TIME = "Download time";
-    public static final String PARAM_COMMON_EMERGENCY_LOCATIONS_REASON = "Reason";
-    public static final String PARAM_CHECK_EMERGENCY_LOCATIONS_MATCH_FOUND = "Location match";
-    public static final String PARAM_LOCATION_SETTINGS_CHANGED = "Setting changed";
     public static final String PARAM_EMERGENCY_CALL_LOCATION_SENT = "Location sent";
-    public static final String PARAM_EMERGENCY_CALL_FIRST_ATTEMPT_RESULT = "First attempt result";
-    public static final String VALUE_CHECK_EMERGENCY_LOCATIONS_REASON_PERMISSION_GRANTED =
-        "Location permission granted";
-    public static final String VALUE_CHECK_EMERGENCY_LOCATIONS_REASON_DOWNLOADED_LOCATIONS =
-        "Downloaded emergency locations";
-    public static final String VALUE_CHECK_EMERGENCY_LOCATIONS_REASON_WIFI_CONNECTED = "Wi-Fi connected";
-    public static final String VALUE_CHECK_EMERGENCY_LOCATIONS_REASON_BSSID_CHANGE = "BSSID change detected";
-    public static final String VALUE_LOCATION_SETTINGS_CHANGED_LOCATION_PERMISSION = "Location permission";
-    public static final String VALUE_LOCATION_SETTINGS_CHANGED_NONE = "None";
-    public static final String VALUE_LOCATION_SETTINGS_CHANGED_ALLOWED_ONCE = "Allowed once";
-    public static final String VALUE_LOCATION_SETTINGS_CHANGED_ALLOWED_FOREGROUND = "Allowed in foreground";
-    public static final String VALUE_CLEAR_EMERGENCY_LOCATION_NO_BSSID = "No BSSID match";
-    public static final String VALUE_CLEAR_EMERGENCY_LOCATION_DISCONNECTED_FROM_WIFI = "Disconnected from Wi-Fi";
-    public static final String VALUE_CLEAR_EMERGENCY_LOCATION_PERMISSION_DENIED = "Permission denied";
-    public static final String VALUE_CLEAR_EMERGENCY_LOCATION_FEATURE_DISABLED = "Feature disabled";
 
     public static final String PARAM_USING_HTTPS = "Using HTTPS";
     public static final String PARAM_USING_LDAPS = "Using LDAPS";
+
+    public static final String PARAM_TLS_CONNECTION = "Connection";
+    public static final String PARAM_TLS_PROTOCOL_VERSION = "TLS version";
+    public static final String PARAM_TLS_CIPHER = "Cipher";
 
     public static final String PARAM_DIVERSION_NAME = "Diversion Name";
     public static final String VALUE_SIGNALLED = "SIGNALLED";
     public static final String VALUE_CONTACT_MATCH = "CONTACT_MATCH";
     public static final String VALUE_NO_MATCH = "NO_MATCH";
+
+    public static final String PARAM_AUTH_RESPONSE = "Response";
+    public static final String PARAM_AUTH_RESPONSE_REASON = "Reason";
+    public static final String PARAM_EXTERNAL_CONTACT = "External Contact";
+
+    // Update client params
+    public static final String VERSION_UPDATE_VERSION = "Update Version";
+    public static final String VERSION_UPDATE_EXCEPTION_MESSAGE = "Exception message";
+    public static final String VERSION_UPDATE_DOWNLOAD_LINK = "Update Download Link";
 
     /**
      * The maximum length of a single analytics event (as supported by our

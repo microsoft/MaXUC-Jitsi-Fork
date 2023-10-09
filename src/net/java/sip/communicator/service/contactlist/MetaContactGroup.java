@@ -96,20 +96,6 @@ public interface MetaContactGroup
     boolean contains(MetaContactGroup group);
 
     /**
-     * Returns a contact group encapsulated by this meta contact group, having
-     * the specified groupName and coming from the indicated ownerProvider.
-     *
-     * @param groupName the name of the contact group who we're looking for.
-     * @param ownerProvider a reference to the ProtocolProviderService that
-     * the contact we're looking for belongs to.
-     * @return a reference to a <tt>ContactGroup</tt>, encapsulated by this
-     * MetaContactGroup, carrying the specified name and originating from the
-     * specified ownerProvider.
-     */
-    ContactGroup getContactGroup(String groupName,
-                                 ProtocolProviderService ownerProvider);
-
-    /**
      * Returns a <tt>java.util.Iterator</tt> over the <tt>MetaContact</tt>s
      * contained in this <tt>MetaContactGroup</tt>.
      * <p>
@@ -255,18 +241,6 @@ public interface MetaContactGroup
      * if no such group exists.
      */
     MetaContactGroup getMetaContactSubgroup(String groupName);
-
-    /**
-     * Returns the <tt>MetaContactGroup</tt> with the specified index.
-     * <p>
-     * @param index the index of the group to return.
-     * @return the <tt>MetaContactGroup</tt> with the specified index.
-     * <p>
-     * @throws java.lang.IndexOutOfBoundsException if <tt>index</tt> is not
-     * a valid index.
-     */
-    MetaContactGroup getMetaContactSubgroup(int index)
-        throws IndexOutOfBoundsException;
 
     /**
      * Returns the MetaContactGroup currently containing this group or null if

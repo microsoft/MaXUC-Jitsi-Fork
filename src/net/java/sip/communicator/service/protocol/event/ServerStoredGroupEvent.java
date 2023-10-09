@@ -44,11 +44,6 @@ public class ServerStoredGroupEvent
      */
     public static final int GROUP_RESOLVED_EVENT = 4;
 
-    /**
-     * Indicates that we have failed to create a group.
-     */
-    public static final int GROUP_CREATION_FAILED_EVENT = 5;
-
     private int eventID = -1;
     private ProtocolProviderService sourceProvider = null;
     private OperationSetPersistentPresence parentOperationSet = null;
@@ -105,16 +100,6 @@ public class ServerStoredGroupEvent
     public ProtocolProviderService getSourceProvider()
     {
         return this.sourceProvider;
-    }
-
-    /**
-     * Returns a reference to the operation set that generated the event
-     * @return a reference to an OperationSetPersistentPresence instance,
-     * responsible for generating the event.
-     */
-    public OperationSetPersistentPresence getSourceOperationSet()
-    {
-        return this.parentOperationSet;
     }
 
     /**

@@ -25,6 +25,7 @@ import net.java.sip.communicator.service.globaldisplaydetails.GlobalDisplayDetai
 import net.java.sip.communicator.service.gui.ContactSyncBarService;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.imageloader.ImageLoaderService;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
@@ -35,6 +36,7 @@ import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.globalstatus.GlobalStatusService;
 import net.java.sip.communicator.service.resources.ResourceManagementServiceUtils;
 import net.java.sip.communicator.service.threading.ThreadingService;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ServiceUtils;
 import org.jitsi.service.configuration.ConfigurationService;
 import org.jitsi.service.fileaccess.FileAccessService;
@@ -167,6 +169,8 @@ public class JabberActivator implements BundleActivator
      */
     private static AnalyticsService analyticsService;
 
+    private static InsightService insightService;
+
     /**
      * The threading service
      */
@@ -191,6 +195,11 @@ public class JabberActivator implements BundleActivator
      * The certificate service
      */
     private static CertificateService certificateService;
+
+    /**
+     * The WISPA service
+     */
+    private static WISPAService wispaService;
 
     /**
      * Regular expression to match 'special' messages that are used to pass on
@@ -707,6 +716,16 @@ public class JabberActivator implements BundleActivator
         return analyticsService;
     }
 
+    public static InsightService getInsightService()
+    {
+        if (insightService == null)
+        {
+            insightService =
+                 ServiceUtils.getService(bundleContext, InsightService.class);
+        }
+        return insightService;
+    }
+
     /**
      * Returns the <tt>ThreadingService</tt> obtained from the bundle context
      *
@@ -784,5 +803,20 @@ public class JabberActivator implements BundleActivator
                     ServiceUtils.getService(bundleContext, CertificateService.class);
         }
         return certificateService;
+    }
+
+    /**
+     * Returns the <tt>WISPAService</tt> obtained from the bundle context
+     *
+     * @return the <tt>WISPAService</tt> obtained from the bundle context
+     */
+    public static WISPAService getWispaService()
+    {
+        if (wispaService == null)
+        {
+            wispaService =
+                    ServiceUtils.getService(bundleContext, WISPAService.class);
+        }
+        return wispaService;
     }
 }

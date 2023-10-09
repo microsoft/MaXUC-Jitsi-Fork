@@ -18,15 +18,6 @@ import net.java.sip.communicator.service.contactlist.*;
  */
 public interface FileHistoryService
 {
-    /**
-     * Returns all the file transfers made after the given date
-     *
-     * @param contact MetaContact the receiver or sender of the file
-     * @param startDate Date the start date of the transfers
-     * @return Collection of FileRecords
-     */
-    Collection<FileRecord> findByStartDate(
-            MetaContact contact, Date startDate);
 
     /**
      * Returns all the file transfers made before the given date

@@ -8,8 +8,6 @@ import java.awt.Dimension;
 
 import javax.swing.JTextArea;
 
-import org.jitsi.util.*;
-
 import net.java.sip.communicator.util.ConfigurationUtils;
 
 /**

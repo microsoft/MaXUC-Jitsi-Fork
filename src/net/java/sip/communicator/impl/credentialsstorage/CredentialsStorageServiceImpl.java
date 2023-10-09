@@ -98,7 +98,7 @@ public class CredentialsStorageServiceImpl
 
             sLog.debug("Storing " + key + " in the user config");
             mUser.storePassword(key, value);
-            passwordMap.remove(key, value);
         }
+        passwordMap.clear();
     }
 }

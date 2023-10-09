@@ -15,21 +15,6 @@ package net.java.sip.communicator.service.gui;
  */
 public interface AlertUIService
 {
-    /**
-     * Indicates that the OK button is pressed.
-     */
-    int OK_RETURN_CODE = 0;
-
-    /**
-     * Indicates that the Cancel button is pressed.
-     */
-    int CANCEL_RETURN_CODE = 1;
-
-    /**
-     * Indicates that the OK button is pressed and the Don't ask check box is
-     * checked.
-     */
-    int OK_DONT_ASK_CODE = 2;
 
     /**
      * Shows an alert dialog with the given title and message.

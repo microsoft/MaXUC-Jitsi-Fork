@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.netaddr.WifiInformation;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.sun.jna.Structure;
+import com.sun.jna.Structure.FieldOrder;
 import com.sun.jna.platform.win32.WinDef.ULONG;
 
 /**
@@ -12,6 +10,16 @@ import com.sun.jna.platform.win32.WinDef.ULONG;
  *
  * https://docs.microsoft.com/en-us/windows/win32/api/wlanapi/ns-wlanapi-wlan_association_attributes
  */
+@FieldOrder({
+        "dot11Ssid",
+        "dot11BssType",
+        "dot11Bssid",
+        "dot11PhyType",
+        "uDot11PhyIndex",
+        "wlanSignalQuality",
+        "ulRxRate",
+        "ulTxRate"
+})
 public class WlanAssociationAttributes extends Structure
 {
     // The length in bytes of the binary representation of a MAC address.
@@ -26,21 +34,6 @@ public class WlanAssociationAttributes extends Structure
     public ULONG wlanSignalQuality;
     public ULONG ulRxRate;
     public ULONG ulTxRate;
-
-    @Override
-    protected List<String> getFieldOrder()
-    {
-        return Arrays.asList(new String[] {
-                "dot11Ssid",
-                "dot11BssType",
-                "dot11Bssid",
-                "dot11PhyType",
-                "uDot11PhyIndex",
-                "wlanSignalQuality",
-                "ulRxRate",
-                "ulTxRate"
-        });
-    }
 
     /**
      * @return String representation of a BSSID, formatted as a MAC address,

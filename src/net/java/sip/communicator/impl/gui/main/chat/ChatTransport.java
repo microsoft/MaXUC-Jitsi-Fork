@@ -8,11 +8,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
-import java.io.*;
-
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications.TypingState;
-import net.java.sip.communicator.service.protocol.event.*;
 
 /**
  * The <tt>ChatTransport</tt> is an abstraction of the transport method used

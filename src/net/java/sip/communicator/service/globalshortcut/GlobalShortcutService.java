@@ -40,22 +40,6 @@ public interface GlobalShortcutService
                             AWTKeyStroke keyStroke);
 
     /**
-     * Enable or disable special key detection.
-     *
-     * @param enable enable or not special key detection.
-     * @param callback object to be notified
-     */
-    void setSpecialKeyDetection(boolean enable,
-                                GlobalShortcutListener callback);
-
-    /**
-     * Get special keystroke or null if not supported or user cancels.
-     *
-     * @return special keystroke or null if not supported or user cancels
-     */
-    AWTKeyStroke getSpecialKey();
-
-    /**
      * Reload global shortcuts.
      */
     void reloadGlobalShortcuts();

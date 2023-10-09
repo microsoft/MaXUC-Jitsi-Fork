@@ -1,12 +1,22 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util.launchutils;
 
+import static net.java.sip.communicator.util.launchutils.LaunchArgHandler.sanitiseArgument;
+import static org.jitsi.util.Hasher.logHasher;
+
 import net.java.sip.communicator.util.Logger;
+
+import java.util.concurrent.Flow;
+import java.util.concurrent.SubmissionPublisher;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.common.annotations.VisibleForTesting;
+
+import org.jitsi.util.StringUtils;
 
 public final class ProvisioningParams
 {
@@ -23,7 +33,7 @@ public final class ProvisioningParams
 
     // The valid parameters in a login URI that we should attempt to parse for.
     private static final String PARAM_CDAP_ID_KEY = "cdapid";
-    private static final String PARAM_SUSBCRIBER_KEY = "subscriber";
+    private static final String PARAM_SUBSCRIBER_KEY = "subscriber";
     private static final String PARAM_PASSWORD_KEY = "password";
 
     // Store the params from the most recent login URI we've received. These are
@@ -34,6 +44,9 @@ public final class ProvisioningParams
     private static volatile String sCdapID;
     private static volatile String sSubscriber;
     private static volatile String sPassword;
+
+    @VisibleForTesting
+    static SubmissionPublisher<Boolean> publisher = new SubmissionPublisher<>();
 
     /**
      * Suppress the constructor so that we can only use this class via the
@@ -48,7 +61,7 @@ public final class ProvisioningParams
      */
     public static void parseProvisioningLink(String uri)
     {
-        sLog.info("Attempt to parse URI: " + uri);
+        sLog.info("Attempt to parse URI: " + sanitiseArgument(uri));
 
         // We shouldn't ever be passed a null URI to parse but if we are then
         // we should handle it gracefully and just refuse to parse it.
@@ -88,7 +101,7 @@ public final class ProvisioningParams
             Matcher matcher = pattern.matcher(query);
 
             // Go through the regex and find add all the matches to the hash
-            // map so that we can retreive them after.
+            // map so that we can retrieve them after.
             while (matcher.find())
             {
                 // Convert parameter name to lowercase before we put it in the
@@ -98,10 +111,14 @@ public final class ProvisioningParams
                 String value = matcher.group(2);
 
                 // Log out the parameters we've found. We're careful here to not
-                // print the user's password.
+                // print the user's password or subscriber DN unless sanitized
                 if (PARAM_PASSWORD_KEY.equals(name))
                 {
                     sLog.debug("Received '" + name + "' parameter in URI.");
+                }
+                else if (PARAM_SUBSCRIBER_KEY.equals(name))
+                {
+                    sLog.debug("Received '" + name + "' parameter with value '" + logHasher(value) + "' in URI.");
                 }
                 else
                 {
@@ -115,16 +132,9 @@ public final class ProvisioningParams
                 {
                     sLog.debug("Attempt to URL decode password parameter.");
 
-                    try
-                    {
-                        // Try and update the value to reflect that is has been
-                        // URL decoded.
-                        value = java.net.URLDecoder.decode(value, "UTF-8");
-                    }
-                    catch (UnsupportedEncodingException e)
-                    {
-                        sLog.error("Unsupported encoding exception while attempting to decode password in URI: " + e);
-                    }
+                    // Try and update the value to reflect that it has been
+                    // URL decoded.
+                    value = java.net.URLDecoder.decode(value, StandardCharsets.UTF_8);
                 }
 
                 // Add the name/value pair to the hash map.
@@ -136,8 +146,24 @@ public final class ProvisioningParams
             // Update the most recent stored URI parameters by reading the
             // parameters that we just parsed into the hash map.
             sCdapID = params.get(PARAM_CDAP_ID_KEY);
-            sSubscriber = params.get(PARAM_SUSBCRIBER_KEY);
+            sSubscriber = params.get(PARAM_SUBSCRIBER_KEY);
             sPassword = params.get(PARAM_PASSWORD_KEY);
+
+            // We don't care about empty values.
+            if (StringUtils.isNullOrEmpty(sCdapID))
+            {
+                sCdapID = null;
+            }
+            if (StringUtils.isNullOrEmpty(sSubscriber))
+            {
+                sSubscriber = null;
+            }
+            if (StringUtils.isNullOrEmpty(sPassword))
+            {
+                sPassword = null;
+            }
+
+            publisher.submit(true);
         }
     }
 
@@ -190,5 +216,27 @@ public final class ProvisioningParams
         sCdapID = null;
         sSubscriber = null;
         sPassword = null;
+    }
+
+    /**
+     * Returns true if cdapID, username and password were provided via link.
+     */
+    public static boolean shouldAutomaticallyLoginViaLink() {
+        return sCdapID != null && sSubscriber != null && sPassword != null;
+    }
+
+    /**
+     * Attaches the subscriber to the publisher, so it receives new events
+     * pushed by the publisher.
+     */
+    public static void observeLoginLinkClicks(Flow.Subscriber<Boolean> subscriber) {
+        publisher.subscribe(subscriber);
+    }
+
+    /**
+     * Unsubscribes all subscribers from the publisher, and closes the publisher.
+     */
+    public static void unsubscribe() {
+        publisher.close();
     }
 }

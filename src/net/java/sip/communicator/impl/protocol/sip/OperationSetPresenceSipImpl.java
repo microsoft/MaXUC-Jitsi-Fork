@@ -21,7 +21,6 @@ import javax.sip.message.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.service.protocol.sipconstants.*;
 import net.java.sip.communicator.util.*;
 
 import org.jitsi.util.xml.XMLUtils;

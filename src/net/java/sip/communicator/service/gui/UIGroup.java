@@ -57,16 +57,6 @@ public abstract class UIGroup
     }
 
     /**
-     * Sets the display details of this group.
-     *
-     * @return the display details of this group
-     */
-    public void setDisplayDetails(String displayDetails)
-    {
-        this.displayDetails = displayDetails;
-    }
-
-    /**
      * Returns the index of this group in its source. In other words this is
      * the descriptor index.
      *
@@ -125,17 +115,6 @@ public abstract class UIGroup
     public int getPreferredHeight()
     {
         return preferredGroupHeight;
-    }
-
-    /**
-     * Sets the preferred height of this group in the contact list.
-     *
-     * @param preferredHeight the preferred height of this group in the contact
-     * list
-     */
-    public void setPreferredHeight(int preferredHeight)
-    {
-        this.preferredGroupHeight = preferredHeight;
     }
 
     /**

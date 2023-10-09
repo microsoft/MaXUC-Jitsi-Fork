@@ -32,12 +32,6 @@ public class ConfigFormListCellRenderer
 {
     private static final long serialVersionUID = 0L;
 
-    /**
-     * The size of the gradient used for painting the selected background of
-     * some components.
-     */
-    public static final int SELECTED_GRADIENT_SIZE = 5;
-
     private final JLabel textLabel = new EmphasizedLabel("");
 
     private final JLabel iconLabel = new JLabel();

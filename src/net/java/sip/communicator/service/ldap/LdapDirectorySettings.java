@@ -184,13 +184,6 @@ public interface LdapDirectorySettings
     List<String> getMailSearchFields();
 
     /**
-     * Set mail fields that we will lookup.
-     *
-     * @param list of mail fields that we will lookup
-     */
-    void setMailSearchFields(List<String> list);
-
-    /**
      * Returns mail suffix.
      *
      * @return mail suffix
@@ -212,13 +205,6 @@ public interface LdapDirectorySettings
     List<String> getWorkPhoneSearchFields();
 
     /**
-     * Set work phone fields that we will lookup.
-     *
-     * @param list of work phone fields that we will lookup
-     */
-    void setWorkPhoneSearchFields(List<String> list);
-
-    /**
      * Returns mobile phone fields that we will lookup.
      *
      * @return mobile phone fields that we will lookup
@@ -226,25 +212,11 @@ public interface LdapDirectorySettings
     List<String> getMobilePhoneSearchFields();
 
     /**
-     * Set mobile phone fields that we will lookup.
-     *
-     * @param list of mobile phone fields that we will lookup
-     */
-    void setMobilePhoneSearchFields(List<String> list);
-
-    /**
      * Returns home phone fields that we will lookup.
      *
      * @return home phone fields that we will lookup
      */
     List<String> getHomePhoneSearchFields();
-
-    /**
-     * Set home phone fields that we will lookup.
-     *
-     * @param list of home phone fields that we will lookup
-     */
-    void setHomePhoneSearchFields(List<String> list);
 
     /**
      * Returns the global prefix to be used when calling phones from this ldap
@@ -272,25 +244,11 @@ public interface LdapDirectorySettings
     List<String> getTitleSearchFields();
 
     /**
-     * Set title fields that we will lookup.
-     *
-     * @param list of title fields that we will lookup
-     */
-    void setTitleSearchFields(List<String> list);
-
-    /**
      * Returns display name fields that we will lookup.
      *
      * @return display name fields that we will lookup
      */
     List<String> getDisplayNameSearchFields();
-
-    /**
-     * Set display name fields that we will lookup.
-     *
-     * @param list of display name fields that we will lookup
-     */
-    void setDisplayNameSearchFields(List<String> list);
 
     /**
      * Returns first name fields that we will lookup.
@@ -300,25 +258,11 @@ public interface LdapDirectorySettings
     List<String> getFirstNameSearchFields();
 
     /**
-     * Set first name fields that we will lookup.
-     *
-     * @param list of first name fields that we will lookup
-     */
-    void setFirstNameSearchFields(List<String> list);
-
-    /**
      * Returns last name fields that we will lookup.
      *
      * @return last name fields that we will lookup
      */
     List<String> getLastNameSearchFields();
-
-    /**
-     * Set last name fields that we will lookup.
-     *
-     * @param list of last name fields that we will lookup
-     */
-    void setLastNameSearchFields(List<String> list);
 
     /**
      * Returns organization fields that we will lookup.
@@ -328,13 +272,6 @@ public interface LdapDirectorySettings
     List<String> getOrganizationSearchFields();
 
     /**
-     * Set organization fields that we will lookup.
-     *
-     * @param list of organization fields that we will lookup
-     */
-    void setOrganizationSearchFields(List<String> list);
-
-    /**
      * Returns department fields that we will lookup.
      *
      * @return department fields that we will lookup
@@ -342,25 +279,11 @@ public interface LdapDirectorySettings
     List<String> getDepartmentSearchFields();
 
     /**
-     * Set department fields that we will lookup.
-     *
-     * @param list of department fields that we will lookup
-     */
-    void setDepartmentSearchFields(List<String> list);
-
-    /**
      * Returns location fields that we will lookup.
      *
      * @return location fields that we will lookup
      */
     List<String> getLocationSearchFields();
-
-    /**
-     * Set location fields that we will lookup.
-     *
-     * @param list of location fields that we will lookup
-     */
-    void setLocationSearchFields(List<String> list);
 
     /**
      * Returns other (i.e. not work/home/mobile) phone fields that we will
@@ -371,13 +294,6 @@ public interface LdapDirectorySettings
     List<String> getOtherPhoneSearchFields();
 
     /**
-     * Set other (i.e. not work/home/mobile) phone fields that we will lookup.
-     *
-     * @param list of other phone fields that we will lookup
-     */
-    void setOtherPhoneSearchFields(List<String> list);
-
-    /**
      * Returns Jabber IM fields that we will lookup.
      *
      * @return Jabber IM fields that we will lookup
@@ -385,18 +301,11 @@ public interface LdapDirectorySettings
     List<String> getJabberSearchFields();
 
     /**
-     * Set Jabber IM fields that we will lookup.
-     *
-     * @param list of Jabber IM fields that we will lookup
-     */
-    void setJabberSearchFields(List<String> list);
-
-    /**
      * Validate settings to ensure LDAP service can safely run.
      *
      * @exception IllegalArgumentException if a settings issue is found.
      */
-    public void validateSettings();
+    void validateSettings();
 
     /**
      * Loads the settings from the config files into the LdapDirectorySetting.

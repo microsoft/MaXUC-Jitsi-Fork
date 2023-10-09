@@ -10,15 +10,11 @@ package net.java.sip.communicator.service.protocol;
 import java.util.*;
 
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.AddressDetail;
-import net.java.sip.communicator.service.protocol.ServerStoredDetails.BirthDateDetail;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.DisplayNameDetail;
-import net.java.sip.communicator.service.protocol.ServerStoredDetails.EmailAddressDetail;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.FirstNameDetail;
-import net.java.sip.communicator.service.protocol.ServerStoredDetails.GenderDetail;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.GenericDetail;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.ImageDetail;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.LastNameDetail;
-import net.java.sip.communicator.service.protocol.ServerStoredDetails.WorkAddressDetail;
 
 import org.jitsi.service.resources.*;
 
@@ -132,56 +128,6 @@ public class AccountInfoUtils
     }
 
     /**
-     * Returns the birth date of the account, to which the given
-     * accountInfoOpSet belongs.
-     *
-     * @param accountInfoOpSet The account info operation set corresponding to
-     * the searched account.
-     * @return the birth date of the account, to which the given
-     * accountInfoOpSet belongs.
-     */
-    public static Calendar getBirthDate(
-            OperationSetServerStoredAccountInfo accountInfoOpSet)
-    {
-        BirthDateDetail date = null;
-        Iterator<GenericDetail> dateDetails
-            =  accountInfoOpSet.getDetails(BirthDateDetail.class);
-
-        if (dateDetails.hasNext())
-            date = (BirthDateDetail) dateDetails.next();
-
-        if(date == null)
-            return null;
-
-        return date.getCalendar();
-    }
-
-    /**
-     * Returns the gender of the account, to which the given
-     * accountInfoOpSet belongs.
-     *
-     * @param accountInfoOpSet The account info operation set corresponding to
-     * the searched account.
-     * @return the gender of the account, to which the given
-     * accountInfoOpSet belongs.
-     */
-    public static String getGender(
-            OperationSetServerStoredAccountInfo accountInfoOpSet)
-    {
-        GenderDetail gender = null;
-        Iterator<GenericDetail> genderDetails
-            =  accountInfoOpSet.getDetails(GenderDetail.class);
-
-        if (genderDetails.hasNext())
-            gender = (GenderDetail) genderDetails.next();
-
-        if(gender == null)
-            return null;
-
-        return gender.getGender();
-    }
-
-    /**
      * Returns the address of the account, to which the given
      * accountInfoOpSet belongs.
      *
@@ -204,55 +150,5 @@ public class AccountInfoUtils
             return null;
 
         return address.getAddress();
-    }
-
-    /**
-     * Returns the work address of the account, to which the given
-     * accountInfoOpSet belongs.
-     *
-     * @param accountInfoOpSet The account info operation set corresponding to
-     * the searched account.
-     * @return the work address of the account, to which the given
-     * accountInfoOpSet belongs.
-     */
-    public static String getWorkAddress(
-            OperationSetServerStoredAccountInfo accountInfoOpSet)
-    {
-        WorkAddressDetail address = null;
-        Iterator<GenericDetail> addressDetails
-            =  accountInfoOpSet.getDetails(WorkAddressDetail.class);
-
-        if (addressDetails.hasNext())
-            address = (WorkAddressDetail) addressDetails.next();
-
-        if(address == null)
-            return null;
-
-        return address.getAddress();
-    }
-
-    /**
-     * Returns the email address of the account, to which the given
-     * accountInfoOpSet belongs.
-     *
-     * @param accountInfoOpSet The account info operation set corresponding to
-     * the searched account.
-     * @return the email address of the account, to which the given
-     * accountInfoOpSet belongs.
-     */
-    public static String getEmailAddress(
-            OperationSetServerStoredAccountInfo accountInfoOpSet)
-    {
-        EmailAddressDetail address = null;
-        Iterator<GenericDetail> addressDetails
-            =  accountInfoOpSet.getDetails(EmailAddressDetail.class);
-
-        if (addressDetails.hasNext())
-            address = (EmailAddressDetail) addressDetails.next();
-
-        if(address == null)
-            return null;
-
-        return address.getEMailAddress();
     }
 }

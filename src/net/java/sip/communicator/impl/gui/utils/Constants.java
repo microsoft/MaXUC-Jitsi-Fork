@@ -8,9 +8,7 @@
 package net.java.sip.communicator.impl.gui.utils;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -54,14 +52,6 @@ public class Constants
     public static Color SELECTED_COLOR
         = new Color(GuiActivator.getResources().
             getColor("service.gui.LIGHT_HIGHLIGHT"));
-
-    /**
-     * The end color used to paint a gradient selected background of some
-     * components.
-     */
-    public static Color SELECTED_GRADIENT_COLOR
-        = new Color(GuiActivator.getResources()
-            .getColor("service.gui.LIGHT_HIGHLIGHT_GRADIENT"));
 
     /**
      * The start color used to paint a gradient mouse over background of some
@@ -151,42 +141,12 @@ public class Constants
      * ------------------------ OTHER CONSTANTS ------------------------------
      * ======================================================================
      */
-    /**
-     * The default path, where chat window styles could be found.
-     */
-    public static final String DEFAULT_STYLE_PATH
-        = "resources/styles";
 
     /*
      * ======================================================================
      * ------------------------ SPECIAL CHARS LIST --------------------------
      * ======================================================================
      */
-    /**
-     * A list of all special chars that should be escaped for some reasons.
-     */
-    private static final int[] specialChars = new int[]
-    {
-        KeyEvent.VK_PLUS,
-        KeyEvent.VK_MINUS,
-        KeyEvent.VK_SPACE,
-        KeyEvent.VK_ENTER,
-        KeyEvent.VK_LEFT,
-        KeyEvent.VK_RIGHT
-    };
-
-    /**
-     * Checks if the given char is in the list of application special chars.
-     *
-     * @param charCode The char code.
-     */
-    public static boolean isSpecialChar(int charCode) {
-        for (int specialChar : specialChars) {
-            if (specialChar == charCode)
-                return true;
-        }
-        return false;
-    }
 
     /**
      * Returns the image corresponding to the given presence status.
@@ -291,15 +251,6 @@ public class Constants
             return imageLoaderService
                 .getImage(ImageLoaderService.USER_OFFLINE_ICON);
         }
-    }
-
-    /**
-     * Loads a chat window style.
-     */
-    public static void loadAdiumStyle(){
-
-        new File(Constants.class.getClassLoader()
-            .getResource(DEFAULT_STYLE_PATH + "/TotallyClear").toString());
     }
 
     /**

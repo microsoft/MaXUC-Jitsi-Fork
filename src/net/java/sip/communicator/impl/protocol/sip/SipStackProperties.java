@@ -342,7 +342,7 @@ public class SipStackProperties
                 .global().getString(NSPNAME_TLS_CLIENT_PROTOCOLS);
             if (StringUtils.isNullOrEmpty(enabledSslProtocols, true))
             {
-                try (final SSLSocket temp = (SSLSocket) SSLSocketFactory.getDefault().createSocket()) // lgtm[java/unsafe-cert-trust] Used for getting SSL protocols, no data transferring
+                try (SSLSocket temp = (SSLSocket) SSLSocketFactory.getDefault().createSocket()) // lgtm[java/unsafe-cert-trust] Used for getting SSL protocols, no data transferring
                 {
                     final String[] enabledDefaultProtocols = temp.getEnabledProtocols();
                     final StringBuilder enabledSslProtocolsBuilder = new StringBuilder();

@@ -13,7 +13,6 @@ import java.net.*;
 import java.util.*;
 
 import net.java.sip.communicator.impl.protocol.sip.*;
-import net.java.sip.communicator.service.dns.*;
 
 /**
  * Abstract class for the determining the address for the SIP proxy.

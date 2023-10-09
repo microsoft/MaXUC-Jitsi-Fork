@@ -105,18 +105,6 @@ public class ResourceManagementServiceImpl
     }
 
     /**
-     * Repaints the whole UI when a skin pack has changed.
-     */
-    protected void onSkinPackChanged()
-    {
-        UIService serv = getUIService();
-        if (serv != null)
-        {
-            serv.repaintUI();
-        }
-    }
-
-    /**
      * Returns the int representation of the color corresponding to the
      * given key.
      *
@@ -257,28 +245,6 @@ public class ResourceManagementServiceImpl
     }
 
     /**
-     * Returns the <tt>InputStream</tt> of the image corresponding to the given
-     * key.
-     *
-     * @param streamKey The identifier of the image in the resource properties
-     * file.
-     * @return the <tt>InputStream</tt> of the image corresponding to the given
-     * key.
-     */
-    public InputStream getImageInputStream(String streamKey)
-    {
-        String path = getImagePath(streamKey);
-
-        if (path == null || path.length() == 0)
-        {
-            logger.warn("Missing resource for key: " + streamKey);
-            return null;
-        }
-
-        return getImageInputStreamForPath(path);
-    }
-
-    /**
      * Returns the <tt>URL</tt> of the image corresponding to the given key.
      *
      * @param urlKey The identifier of the image in the resource properties file.
@@ -355,25 +321,6 @@ public class ResourceManagementServiceImpl
             }
         }
         return directoryFilenames;
-    }
-
-    /**
-     * Returns the <tt>URL</tt> of the sound corresponding to the given
-     * property key.
-     *
-     * @return the <tt>URL</tt> of the sound corresponding to the given
-     * property key.
-     */
-    public URL getSoundURL(String urlKey)
-    {
-        String path = getSoundPath(urlKey);
-
-        if (path == null || path.length() == 0)
-        {
-            logger.warn("Missing resource for key: " + urlKey);
-            return null;
-        }
-        return getSoundURLForPath(path);
     }
 
     /**

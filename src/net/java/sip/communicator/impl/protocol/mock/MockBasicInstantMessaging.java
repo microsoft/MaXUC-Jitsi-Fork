@@ -80,21 +80,6 @@ public class MockBasicInstantMessaging
         return true;
     }
 
-    /**
-     * Methods for manipulating mock operation set as deliver(receive) messageop
-     *
-     * @param to the address of the contact whom we are to deliver the message.
-     * @param msg the message that we are to deliver.
-     */
-    public void deliverMessage(String to, ImMessage msg)
-    {
-        Contact sourceContact = opSetPersPresence.findContactByID(to);
-
-        fireMessageEvent(
-            new MessageReceivedEvent(
-                    msg, sourceContact, new Date()));
-    }
-
     @Override
     public boolean isContactImCapable(Contact contact)
     {

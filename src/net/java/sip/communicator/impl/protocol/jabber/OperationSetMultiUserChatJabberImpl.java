@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.jivesoftware.smack.SmackException.NoResponseException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
@@ -32,11 +31,9 @@ import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.xdata.form.FillableForm;
 import org.jivesoftware.smackx.delay.DelayInformationManager;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
-import org.jivesoftware.smackx.muc.HostedRoom;
 import org.jivesoftware.smackx.muc.InvitationListener;
 import org.jivesoftware.smackx.muc.InvitationRejectionListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.muc.MultiUserChatException.NotAMucServiceException;
 import org.jivesoftware.smackx.muc.MultiUserChatManager;
 import org.jivesoftware.smackx.muc.packet.MUCUser.Decline;
 import org.jivesoftware.smackx.muc.packet.MUCUser.Invite;
@@ -52,13 +49,10 @@ import net.java.sip.communicator.impl.protocol.jabber.JabberActivator.GroupMembe
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.protocol.AbstractOperationSetMultiUserChat;
 import net.java.sip.communicator.service.protocol.ChatRoom;
-import net.java.sip.communicator.service.protocol.ChatRoomInvitation;
-import net.java.sip.communicator.service.protocol.ChatRoomMember;
 import net.java.sip.communicator.service.protocol.ChatRoomMemberRole;
 import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.OperationFailedException;
 import net.java.sip.communicator.service.protocol.OperationNotSupportedException;
-import net.java.sip.communicator.service.protocol.OperationSetMultiUserChat;
 import net.java.sip.communicator.service.protocol.OperationSetPersistentPresence;
 import net.java.sip.communicator.service.protocol.RegistrationState;
 import net.java.sip.communicator.service.protocol.event.ChatRoomCreatedEvent;
@@ -593,7 +587,7 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
             ServiceDiscoveryManager.getInstanceFor(connection).
                 discoverInfo(canonicalRoomName);
 
-            MultiUserChat muc = MultiUserChatManager.getInstanceFor(getXmppConnection())
+            MultiUserChat muc = MultiUserChatManager.getInstanceFor(connection)
                 .getMultiUserChat(canonicalRoomName);
 
             room = new ChatRoomJabberImpl(muc, jabberProvider);
@@ -645,105 +639,6 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
         return activeChatRooms.get();
     }
 
-    /**
-     * Returns the <tt>List</tt> of <tt>String</tt>s indicating chat rooms
-     * currently available on the server that this protocol provider is
-     * connected to.
-     *
-     * @return a <tt>java.util.List</tt> of the name <tt>String</tt>s for chat
-     * rooms that are currently available on the server that this protocol
-     * provider is connected to.
-     *
-     * @throws OperationFailedException if we faile retrieving this list from
-     * the server.
-     * @throws OperationNotSupportedException if the server does not support
-     * multi user chat
-     */
-    public List<String> getExistingChatRooms()
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        assertSupportedAndConnected();
-
-        List<String> list = new LinkedList<>();
-
-        //first retrieve all conference service names available on this server
-        Iterator<DomainBareJid> serviceNames = null;
-        try
-        {
-            serviceNames = MultiUserChatManager.getInstanceFor(getXmppConnection())
-                    .getMucServiceDomains().iterator();
-        }
-        catch (XMPPErrorException ex )
-        {
-            XMPPErrorConvertor.reThrowAsOperationFailedException(
-                "Failed to retrieve Jabber conference service names", ex);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException ex)
-        {
-            throw new OperationFailedException(
-                "Failed to retrieve Jabber conference service names"
-                , OperationFailedException.GENERAL_ERROR
-                , ex);
-        }
-
-        //now retrieve all chat rooms currently available for every service name
-        while(serviceNames.hasNext())
-        {
-            DomainBareJid serviceName = serviceNames.next();
-            List<HostedRoom> roomsOnThisService = new LinkedList<>();
-
-            try
-            {
-                Map<EntityBareJid, HostedRoom> roomsHostedBy =
-                        MultiUserChatManager.getInstanceFor(getXmppConnection())
-                                .getRoomsHostedBy(serviceName);
-                roomsOnThisService
-                    .addAll(roomsHostedBy.values());
-            }
-            catch (XMPPErrorException | NotAMucServiceException | NoResponseException |
-                NotConnectedException | InterruptedException ex)
-            {
-                sLog.error("Failed to retrieve rooms for serviceName="
-                             + serviceName, ex);
-                //continue bravely with other service names
-                continue;
-            }
-
-            //now go through all rooms available on this service
-            Iterator<HostedRoom> serviceRoomsIter = roomsOnThisService.iterator();
-
-            //add the room name to the list of names we are returning
-            while(serviceRoomsIter.hasNext())
-                list.add(
-                    serviceRoomsIter.next().getJid().toString());
-        }
-
-        /** @todo maybe we should add a check here and fail if retrieving chat
-         * rooms failed for all service names*/
-
-        return list;
-    }
-
-    /**
-     * Returns true if <tt>contact</tt> supports multi user chat sessions.
-     *
-     * @param contact reference to the contact whose support for chat rooms
-     *   we are currently querying.
-     * @return a boolean indicating whether <tt>contact</tt> supports
-     *   chatrooms.
-     * @todo Implement this
-     *   net.java.sip.communicator.service.protocol.OperationSetMultiUserChat
-     *   method
-     */
-    public boolean isMultiChatSupportedByContact(Contact contact)
-    {
-        if(contact.getProtocolProvider()
-            .getOperationSet(OperationSetMultiUserChat.class) != null)
-            return true;
-
-        return false;
-    }
-
     @Override
     public boolean isMultiChatSupported()
     {
@@ -790,30 +685,6 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
     }
 
     /**
-     * Informs the sender of an invitation that we decline their invitation.
-     *
-     * @param invitation the connection to use for sending the rejection.
-     * @param rejectReason the reason to reject the given invitation
-     */
-    public void rejectInvitation(ChatRoomInvitation invitation,
-        String rejectReason)
-    {
-        try
-        {
-            MultiUserChatManager.getInstanceFor(getXmppConnection())
-                    .decline(
-                            invitation.getTargetChatRoom().getIdentifier(),
-                            JidCreate.entityBareFrom(invitation.getInviter()),
-                            rejectReason);
-        }
-        catch (NotConnectedException | XmppStringprepException | InterruptedException ex)
-        {
-            sLog.error("Failed to reject invitation to chat room " +
-                       sanitiseChatRoom(invitation.getTargetChatRoom().getIdentifier()), ex);
-        }
-    }
-
-     /**
      * @return the XMPPConnection currently in use by the jabber provider or
      * null if jabber provider has yet to be initialized.
      */
@@ -831,13 +702,11 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
      * @throws OperationFailedException if the provider is not registered or
      * the xmpp connection not connected.
      */
-    private void assertSupportedAndConnected()
-        throws OperationFailedException, OperationNotSupportedException
-    {
+    private void assertSupportedAndConnected() throws OperationFailedException {
         XMPPConnection connection = getXmppConnection();
         //throw an exception if the provider is not registered or the xmpp
         //connection not connected.
-        if (!jabberProvider.isRegistered() || !connection.isConnected())
+        if (!jabberProvider.isRegistered() || connection == null || !connection.isConnected())
         {
             throw new OperationFailedException(
                 "Provider not connected to jabber server"
@@ -960,52 +829,6 @@ public class OperationSetMultiUserChatJabberImpl extends AbstractOperationSetMul
     public void removeChatRoom(ChatRoomJabberImpl chatRoom)
     {
         chatRoomCache.remove(chatRoom.getIdentifier());
-    }
-
-    /**
-     * Returns the list of currently joined chat rooms for
-     * <tt>chatRoomMember</tt>.
-     * @param chatRoomMember the member we're looking for
-     * @return a list of all currently joined chat rooms
-     * @throws OperationFailedException if the operation fails
-     * @throws OperationNotSupportedException if the operation is not supported
-     */
-    public List<String> getCurrentlyJoinedChatRooms(ChatRoomMember chatRoomMember)
-        throws OperationFailedException, OperationNotSupportedException
-    {
-        assertSupportedAndConnected();
-
-        List<String> joinedRooms = new ArrayList<>();
-
-        try
-        {
-            List<EntityBareJid> joinedRoomsList =
-                    MultiUserChatManager.getInstanceFor(getXmppConnection())
-                            .getJoinedRooms(
-                                    JidCreate.entityFullFrom(
-                                            chatRoomMember.getContactAddressAsString()));
-            joinedRooms = joinedRoomsList.stream()
-                                         .map(x -> x.toString())
-                                         .collect(Collectors.toList());
-
-        }
-        catch (XMPPErrorException ex)
-        {
-            String errTxt = "Failed to get currently joined chatrooms.";
-            sLog.error(errTxt, ex);
-            XMPPErrorConvertor.reThrowAsOperationFailedException(errTxt, ex);
-        }
-        catch (NoResponseException | NotConnectedException | XmppStringprepException |
-            InterruptedException ex)
-        {
-            String errTxt = "Failed to get currently joined chatrooms.";
-            sLog.error(errTxt, ex);
-            throw new OperationFailedException(
-                errTxt,
-                OperationFailedException.GENERAL_ERROR,
-                ex);
-        }
-        return joinedRooms;
     }
 
     /**

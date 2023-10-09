@@ -8,6 +8,7 @@
 package net.java.sip.communicator.impl.callhistory;
 
 import static org.jitsi.util.Hasher.logHasher;
+import static org.jitsi.util.SanitiseUtils.sanitiseValuesInList;
 
 import java.sql.*;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import net.java.sip.communicator.service.database.util.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+import org.jitsi.util.Hasher;
 
 /**
  * The Call History Service stores info about the calls made.
@@ -72,7 +74,7 @@ public class CallHistoryServiceImpl
      * Map which stores CallRecord transactions and whether they are being
      * added/removed when not immediately dispatched in an event.
      */
-    private HashMap<CallRecord, Boolean> mDatabaseTransactions = new HashMap<CallRecord, Boolean>();
+    private HashMap<CallRecord, Boolean> mDatabaseTransactions = new HashMap<>();
 
     /**
      * The network call history handler
@@ -277,7 +279,7 @@ public class CallHistoryServiceImpl
      * callPeerIds.
      *
      * @param startDate Date the start/end date of the calls.
-     * @param callPeerIds IDs of the call peers.
+     * @param callPeerIds comma separated IDs of the call peers.
      * @return Collection of CallRecords with CallPeerRecord.
      */
     public Collection<CallRecord> findZeroLengthCallAtTimeForParticipant(
@@ -285,7 +287,8 @@ public class CallHistoryServiceImpl
             String callPeerIds)
     {
         sLog.debug("startDate: " + startDate.getTime() +
-                   ", callPeerIds: " + callPeerIds);
+                   ", callPeerIds: " +
+                   sanitiseValuesInList(Arrays.asList(callPeerIds.split(DELIM)), Hasher::logHasher));
 
         DatabaseConnection connection = null;
         ResultSet rs = null;
@@ -829,8 +832,7 @@ public class CallHistoryServiceImpl
         StringBuilder callPeerEndTime = new StringBuilder();
         StringBuilder callPeerStates = new StringBuilder();
 
-        for (CallPeerRecord item : callRecord
-            .getPeerRecords())
+        for (CallPeerRecord item : callRecord.getPeerRecords())
         {
             if (callPeerIDs.length() > 0)
             {
@@ -872,14 +874,14 @@ public class CallHistoryServiceImpl
         PreparedStatement preparedStatement = null;
 
         CallHistoryTable.DIRECTION callDirection =
-            callRecord.getDirection() == CallRecord.OUT ?
+                CallRecord.OUT.equals(callRecord.getDirection()) ?
                 CallHistoryTable.DIRECTION.OUT : CallHistoryTable.DIRECTION.IN;
         try
         {
             // A workaround for the CFS taking a while to update the Duration
             // field. It first sends us a call event with 0 duration, and then
             // after the call finishes it returns a new one with proper
-            // duration,so here we remove the duplicate one with 0 duration.
+            // duration, so here we remove the duplicate one with 0 duration.
             findZeroLengthCallAtTimeForParticipant(callRecord.getStartTime(), callPeerIDs.toString())
                     .forEach(record -> removeRecord(record, shouldDispatchEvent));
 
@@ -1253,7 +1255,7 @@ public class CallHistoryServiceImpl
      */
     private void handleNewCall(Call sourceCall, String direction)
     {
-        // if call exist. its not new
+        // if call exist. it's not new
         for (CallRecordImpl currentCallRecord : mCurrentCallRecords)
         {
             if (currentCallRecord.getSourceCall().equals(sourceCall))
@@ -1270,7 +1272,7 @@ public class CallHistoryServiceImpl
 
         mCurrentCallRecords.add(newRecord);
 
-        // if has already perticipants Dispatch them
+        // if it already has participants Dispatch them
         Iterator<? extends CallPeer> iter = sourceCall.getCallPeers();
         while (iter.hasNext())
         {
@@ -1310,7 +1312,7 @@ public class CallHistoryServiceImpl
          * The CallHistoryService listens to active call state changes so that
          * it can rapidly populate the history without having to wait for the server
          * call history (which may not happen for a while if the call was answered
-         * elsewhere.  It is also where we 1st know of missed historical calls, so
+         * elsewhere).  It is also where we 1st know of missed historical calls, so
          * it is where we mark them as needing attention.
          *
          * @param evt the <tt>CallChangeEvent</tt> instance containing the source
@@ -1388,7 +1390,7 @@ public class CallHistoryServiceImpl
                 // This is the point that attention is set to true for new missed calls:
                 // by writing a temporary record that will be combined with the network
                 // call history once that arrives.
-                if (missedCall && callRecord.getDirection() == CallRecord.IN)
+                if (missedCall && CallRecord.IN.equals(callRecord.getDirection()))
                 {
                     callRecord.setAttention(true);
                 }
@@ -1474,7 +1476,7 @@ public class CallHistoryServiceImpl
         {
             fireCallHistoryChangeEvent(mDatabaseTransactions);
         }
-        mDatabaseTransactions = new HashMap<CallRecord, Boolean>();
+        mDatabaseTransactions = new HashMap<>();
     }
 
     /**
@@ -1485,7 +1487,7 @@ public class CallHistoryServiceImpl
      */
     public void fireCallHistoryChangeEvent(CallRecord record, Boolean addedOrChanged)
     {
-        HashMap<CallRecord, Boolean> transaction = new HashMap<CallRecord, Boolean>();
+        HashMap<CallRecord, Boolean> transaction = new HashMap<>();
         transaction.put(record, addedOrChanged);
         fireCallHistoryChangeEvent(transaction);
     }

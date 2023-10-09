@@ -130,26 +130,6 @@ public class CallEvent
     }
 
     /**
-     * Return the media directions map
-     * @return the supported media direction map of current call.
-     */
-    public Map<MediaType, MediaDirection> getMediaDirections()
-    {
-        return mediaDirections;
-    }
-
-    /**
-     * Return the media types supported by this call, if information is
-     * available. It can be empty list if information wasn't provided for this
-     * event and call.
-     * @return the supported media types of current call.
-     */
-    public List<MediaType> getMediaTypes()
-    {
-        return new ArrayList<>(mediaDirections.keySet());
-    }
-
-    /**
      * Returns the <tt>Call</tt> that triggered this event.
      *
      * @return the <tt>Call</tt> that triggered this event.
@@ -167,21 +147,6 @@ public class CallEvent
     public CallConference getCallConference()
     {
         return this.conference;
-    }
-
-    /**
-     * Returns whether or not the call is a video call.
-     *
-     * @return true if the call is a video call, false otherwise
-     */
-    public boolean isVideoCall()
-    {
-        MediaDirection direction = mediaDirections.get(MediaType.VIDEO);
-
-        return
-            (direction == null)
-                ? false
-                : (direction == MediaDirection.SENDRECV);
     }
 
     /**

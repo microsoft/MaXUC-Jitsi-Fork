@@ -94,16 +94,6 @@ public class XCapHttpResponse
     }
 
     /**
-     * Gets HTTP ETag.
-     *
-     * @return the HTTP ETag.
-     */
-    public String getETag()
-    {
-        return eTag;
-    }
-
-    /**
      * Sets HTTP ETag.
      *
      * @param eTag the HTTP ETag.

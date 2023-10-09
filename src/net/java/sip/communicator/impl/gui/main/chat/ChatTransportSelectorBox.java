@@ -284,21 +284,6 @@ public class ChatTransportSelectorBox
      * @param chatTransport The chat transport for which to create the image.
      * @return The indexed status image.
      */
-    public BufferedImageFuture createTransportStatusImage(ChatTransport chatTransport)
-    {
-        return
-            GuiActivator.getImageLoaderService().getIndexedProtocolImage(
-                chatTransport.getStatus().getStatusIcon(),
-                chatTransport.getProtocolProvider());
-    }
-
-    /**
-     * Obtains the status icon for the given chat transport and
-     * adds to it the account index information.
-     *
-     * @param chatTransport The chat transport for which to create the image.
-     * @return The indexed status image.
-     */
     public BufferedImageFuture createTransportSelectorImage(ChatTransport chatTransport)
     {
         ImageID iconResource = (chatTransport instanceof SMSChatTransport) ?

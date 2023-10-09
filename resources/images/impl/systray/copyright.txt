@@ -1,3 +1,0 @@
-This copyright statement applies to the files in this directory:
-
-Portions (c) Microsoft Corporation. All rights reserved.

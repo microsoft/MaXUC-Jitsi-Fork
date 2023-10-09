@@ -158,24 +158,6 @@ public class EmoticonReplacementService implements ChatPartReplacementService
     }
 
     /**
-     * Returns the Smilies pack to use in the user interface.
-     *
-     * @return a collection of all Smilies available
-     */
-    public Collection<Emoticon> getSmiliesPack()
-    {
-        return EmoticonResources.getDefaultEmoticonPack();
-    }
-
-    /**
-     * Reloads all emoticons.
-     */
-    public void reloadSmiliesPack()
-    {
-        EmoticonResources.reloadResources();
-    }
-
-    /**
      * Returns an array corresponding to the message with emoticon strings
      * (e.g. :\ ) replaced by the corresponding PictureMessageParts
      *

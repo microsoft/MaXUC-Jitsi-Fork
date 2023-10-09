@@ -136,16 +136,6 @@ public class IconSelectorBox
     }
 
     /**
-     * Returns TRUE if the selector box is opened, otherwise returns FALSE.
-     *
-     * @return TRUE if the selector box is opened, otherwise returns FALSE
-     */
-    public boolean isMenuSelected()
-    {
-        return isPopupMenuVisible();
-    }
-
-    /**
      * A custom menu item, which paints round border over selection.
      */
     private static class IconMenuItem

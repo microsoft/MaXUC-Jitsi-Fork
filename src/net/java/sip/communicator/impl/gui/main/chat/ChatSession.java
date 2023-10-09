@@ -178,35 +178,6 @@ public abstract class ChatSession implements  MetaContactListListener,
     public abstract Collection<Object> getHistory(int count);
 
     /**
-     * Returns the start date of the history of this chat session.
-     *
-     * @return the start date of the history of this chat session.
-     */
-    public abstract Date getHistoryStartDate();
-
-    /**
-     * Returns the end date of the history of this chat session.
-     *
-     * @return the end date of the history of this chat session.
-     */
-    public abstract Date getHistoryEndDate();
-
-    /**
-     * Returns the default mobile number used to send sms-es in this session.
-     *
-     * @return the default mobile number used to send sms-es in this session.
-     */
-    public abstract String getDefaultSmsNumber();
-
-    /**
-     * Sets the default mobile number used to send sms-es in this session.
-     *
-     * @param smsPhoneNumber The default mobile number used to send sms-es in
-     * this session.
-     */
-    public abstract void setDefaultSmsNumber(String smsPhoneNumber);
-
-    /**
      * Disposes this chat session.
      */
     public abstract void dispose();
@@ -532,18 +503,6 @@ public abstract class ChatSession implements  MetaContactListListener,
      * @return the avatar icon of this chat session.
      */
     public abstract BufferedImageFuture getChatAvatar();
-
-    /**
-     * Gets the indicator which determines whether a contact list of (multiple)
-     * participants is supported by this <code>ChatSession</code>. For example,
-     * UI implementations may use the indicator to determine whether UI elements
-     * should be created for the user to represent the contact list of the
-     * participants in this <code>ChatSession</code>.
-     *
-     * @return <tt>true</tt> if this <code>ChatSession</code> supports a contact
-     *         list of (multiple) participants; otherwise, <tt>false</tt>
-     */
-    public abstract boolean isContactListSupported();
 
     /**
      * Adds the given {@link ChatSessionChangeListener} to this

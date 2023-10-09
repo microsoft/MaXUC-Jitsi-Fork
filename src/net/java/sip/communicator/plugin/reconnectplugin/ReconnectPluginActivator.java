@@ -167,11 +167,6 @@ public class ReconnectPluginActivator
     private static final int MAX_RECONNECT_DELAY = 60; // sec
 
     /**
-     * Network notifications event type.
-     */
-    public static final String NETWORK_NOTIFICATIONS = "NetworkNotifications";
-
-    /**
      *
      */
     public static final String ATLEAST_ONE_CONNECTION_PROP =

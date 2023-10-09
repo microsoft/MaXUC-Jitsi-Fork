@@ -69,16 +69,6 @@ public class DynamicPayloadTypeRegistry
     private Map<MediaFormat, Byte> mediaMappings = null;
 
     /**
-     * Sets the override payload type numbers.
-     *
-     * @param mappings the override payload-type mappings.
-     */
-    public void setLocalPayloadTypePreferences(Map<Byte, String> mappings)
-    {
-        localPayloadTypePreferences = mappings;
-    }
-
-    /**
      * Returns the dynamic payload type that has been allocated for
      * <tt>format</tt>. A mapping for the specified <tt>format</tt> would be
      * created even if it did not previously exist. The method is meant for use

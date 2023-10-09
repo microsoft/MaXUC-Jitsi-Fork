@@ -9,12 +9,12 @@ package net.java.sip.communicator.service.protocol;
 /**
  * Instances of this interface are used by the protocol provider in order to
  * make the user act upon requests coming from contacts that would like to
- * add us to their contact list or simply track oour presence status, or
+ * add us to their contact list or simply track our presence status, or
  * whenever a subscription request has failed for a particular contact because
  * we need to first generate an authorization request demanding permission to
- * subscibe.
+ * subscribe.
  * <p>
- * The <tt>AuthorizationHandler</tt> is to be implmented by the User Interface
+ * The <tt>AuthorizationHandler</tt> is to be implemented by the User Interface
  * as all its methods would require user intervention.
  *<p>
  * Note that some protocols do not support authorizations or allow them to be
@@ -39,12 +39,13 @@ public interface AuthorizationHandler
      * <p>
      * @param req the authorization request that we should act upon.
      * @param sourceContact a reference to the Contact demanding authorization
+     * @param isSameBGContact if the contact is in the same BG
      * @return a new authorization response instance indicating whether
      * or not the request has been accepted and (if applicable) a reason for
      * turning it down.
      */
     AuthorizationResponse processAuthorisationRequest(
-            AuthorizationRequest req, Contact sourceContact);
+            AuthorizationRequest req, Contact sourceContact, boolean isSameBGContact);
     /**
      * Called by the protocol provider, this method should be implemented by the
      * user interface. The method will be called any time when the user has

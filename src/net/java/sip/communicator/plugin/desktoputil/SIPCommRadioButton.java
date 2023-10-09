@@ -20,21 +20,9 @@ public class SIPCommRadioButton
 
     private static final boolean setContentAreaFilled = (OSUtils.IS_WINDOWS);
 
-    public SIPCommRadioButton()
-    {
-        init();
-    }
-
     public SIPCommRadioButton(String text)
     {
         super(text);
-
-        init();
-    }
-
-    public SIPCommRadioButton(String text, boolean selected)
-    {
-        super(text, selected);
 
         init();
     }

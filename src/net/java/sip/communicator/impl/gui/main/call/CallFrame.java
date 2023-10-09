@@ -2,25 +2,31 @@
 package net.java.sip.communicator.impl.gui.main.call;
 
 import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.*;
-import java.util.concurrent.*;
-
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.accessibility.AccessibleContext;
 import javax.accessibility.AccessibleRole;
 import javax.swing.*;
-import javax.swing.Timer;
-import javax.swing.border.*;
-
-import org.jitsi.service.resources.*;
-import org.jitsi.util.*;
-import org.jitsi.util.event.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.impl.gui.main.call.DTMFHandler.*;
 import net.java.sip.communicator.impl.gui.main.call.volumecontrol.*;
+import net.java.sip.communicator.impl.gui.utils.IOKitLibrary;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.imageloader.*;
@@ -32,6 +38,11 @@ import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.GuiUtils;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.service.resources.ImageIconFuture;
+import org.jitsi.service.resources.ResourceManagementService;
+import org.jitsi.util.OSUtils;
+import org.jitsi.util.StringUtils;
+import org.jitsi.util.event.VideoEvent;
 
 /**
  * The Call Frame is the UI representation of a call or conference
@@ -164,6 +175,12 @@ public class CallFrame extends SIPCommFrame implements ActionListener
      * The diameter of the add peer image label
      */
     public static final int ADD_PEER_IMAGE_LABEL_DIAMETER = ScaleUtils.scaleInt(46);
+
+    /**
+     * If true, we are configured to display the Java in-call UI (alongside Electron).
+     */
+    private final boolean showFullJavaCallFrame = GuiActivator.getConfigurationService().
+            global().getBoolean("plugin.wispa.SHOW_CALL_FRAME", true);
 
     /**
      * The timer used to show/hide the DTMF label
@@ -417,9 +434,15 @@ public class CallFrame extends SIPCommFrame implements ActionListener
 
     /**
      * The timer that is responsible for performing some action to prevent the
-     * OS from entering the screensaver mode (turn off display, sleep, etc)
+     * Windows from entering the screensaver mode (turn off display, sleep, etc)
      */
     private Timer screensaverBlockTimer = new Timer(60000, this);
+
+    /**
+     * On macOS to prevent system going to sleep in idle state
+     * an assertion must be created when a call starts and released when the call ends.
+     */
+    private int idlePreventionAssertionId = -1;
 
     /**
      * Create a new call frame.
@@ -497,9 +520,19 @@ public class CallFrame extends SIPCommFrame implements ActionListener
             this.validateTimer.start();
         }
 
-        // Initialize the screensaver blocker timer
-        screensaverBlockTimer.setRepeats(true);
-        screensaverBlockTimer.start();
+        // Preventing system going idle during a call
+        if (OSUtils.IS_WINDOWS)
+        {
+            // Initialize the screensaver blocker timer
+            screensaverBlockTimer.setRepeats(true);
+            screensaverBlockTimer.start();
+        }
+        else if (OSUtils.IS_MAC)
+        {
+            // Create IOKit assertion to prevent going to idle state
+            idlePreventionAssertionId = IOKitLibrary.disableSleepWhenIdle("Active call");
+            logger.info("Prevented system going to sleep when idle during a call, assertion ID = " + idlePreventionAssertionId);
+        }
 
         actionButtonsPane.requestFocus();
     }
@@ -510,9 +543,7 @@ public class CallFrame extends SIPCommFrame implements ActionListener
     private void initializeCallFrame()
     {
         logger.debug("Initialize Call Frame: " + System.currentTimeMillis());
-        if (ConfigurationUtils.isCallAlwaysOnTop())
-            setAlwaysOnTop(true);
-
+        setAlwaysOnTop(true);
         setIconImage(GuiActivator.getImageLoaderService().getImage(ImageLoaderService.SIP_COMMUNICATOR_LOGO).resolve());
 
         setBounds(0, 0, audioSize.width, audioSize.height);
@@ -547,6 +578,12 @@ public class CallFrame extends SIPCommFrame implements ActionListener
         endCallPane.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         endCallPane.setBackground(PANE_COLOR);
         buttonsPane.add(endCallPane, BorderLayout.EAST);
+
+        // Electron uses the Java video call UI when video is being displayed in
+        // a call. However, all the buttons to interact with the call are still
+        // in the Electron UI, so we hide the buttonsPane unless we are configured
+        // to also show the full Java in-call UI.
+        buttonsPane.setVisible(showFullJavaCallFrame);
 
         // Create all buttons to display in the buttons pane that is at the
         // bottom of the call frame.
@@ -1500,6 +1537,14 @@ public class CallFrame extends SIPCommFrame implements ActionListener
             screensaverBlockTimer.stop();
         }
 
+        if (OSUtils.IS_MAC && idlePreventionAssertionId != -1)
+        {
+            IOKitLibrary.enableSleepWhenIdle(idlePreventionAssertionId);
+            logger.info("Stopped preventing system going to sleep when idle, assertion ID = " + idlePreventionAssertionId);
+
+            idlePreventionAssertionId = -1;
+        }
+
         // Don't show the rating window for really short calls, or if there is
         // still a call in progress (e.g. if the call was merged)
         if (!callReportSent &&
@@ -1672,8 +1717,12 @@ public class CallFrame extends SIPCommFrame implements ActionListener
 
         if (remoteVideoComponent == null && localVideoComponent == null)
         {
-            // We have reverted to an audio only call so we need to reinstate
-            // the Peer Panel and set the video button as unselected.
+            // We have reverted to an audio only call so we need to hide the call
+            // frame as Electron is responsible for audio call UI, unless we are
+            // configured to also show the Java in-call UI.  In any case we
+            // reinstate the Peer Panel and set the video button as unselected
+            // to ensure the code remains in a consistent state.
+            setVisible(showFullJavaCallFrame);
             callPeers.values().iterator().next().setVisible(true);
             audioWarningComponent.setEnabled(true);
             setMinimumSize(audioSize);
@@ -1939,6 +1988,10 @@ public class CallFrame extends SIPCommFrame implements ActionListener
             {
                 addRemoteVideoComponent(videoComponent);
             }
+
+            // Finally, make the UI visible, as by default, the Java in-call UI
+            // is invisible unless we're displaying video.
+            setVisible(true);
         }
         else if (eventType == VideoEvent.VIDEO_REMOVED)
         {

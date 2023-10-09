@@ -77,15 +77,6 @@ public abstract class AbstractChatRoomMessageEvent extends MessageEvent
     }
 
     /**
-     * Is current event for history message.
-     * @return is current event for history message.
-     */
-    public boolean isHistoryMessage()
-    {
-        return historyMessage;
-    }
-
-    /**
      * Changes property, whether this event is for a history message.
      *
      * @param historyMessage whether its event for history message.

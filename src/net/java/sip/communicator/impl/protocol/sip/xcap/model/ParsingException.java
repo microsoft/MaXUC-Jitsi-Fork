@@ -20,15 +20,6 @@ public class ParsingException extends Exception
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates a new <code>XCapException</code> instance
-     * which does not give a human-readable explanation why the operation is
-     * not supported.
-     */
-    public ParsingException()
-    {
-    }
-
-    /**
      * Creates a new <code>XCapException</code> instance whith human-readable
      * explanation.
      *
@@ -39,20 +30,6 @@ public class ParsingException extends Exception
     public ParsingException(String message)
     {
         super(message);
-    }
-
-    /**
-     * Creates a new <code>XCapException</code> instance with human-readable
-     * explanation and the original cause of the problem.
-     *
-     * @param message the detailed message explaining any particular details as
-     *                to why is not the specified operation supported or null if
-     *                no particular details exist.
-     * @param cause   the original cause of the problem.
-     */
-    public ParsingException(String message, Throwable cause)
-    {
-        super(message, cause);
     }
 
     /**

@@ -29,14 +29,6 @@ public class KeepAliveEvent extends IQ
     public static final String NAMESPACE = "urn:xmpp:ping";
 
     /**
-     * Constructs empty packet
-     */
-    public KeepAliveEvent()
-    {
-        super(ELEMENT_NAME, NAMESPACE);
-    }
-
-    /**
      * Construct packet for sending.
      *
      * @param from the address of the contact that the packet coming from.

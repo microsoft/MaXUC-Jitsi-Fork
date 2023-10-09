@@ -30,6 +30,11 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.metaswitch.maxanalytics.event.AnalyticsResult;
+import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
+import com.metaswitch.maxanalytics.event.CommonKt;
+import com.metaswitch.maxanalytics.event.ImKt;
+import com.metaswitch.maxanalytics.event.ImType;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.SmackException.NoResponseException;
@@ -69,6 +74,7 @@ import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.analytics.AnalyticsParameterSimple;
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.protocol.ChatRoom;
 import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
@@ -264,12 +270,13 @@ public class ChatRoomJabberImpl implements ChatRoom
     private Date invitedDate = null;
 
     /**
-     * Creates an instance of a chat room that has been.
+     * Creates an instance of a chat room.
      *
      * @param multiUserChat MultiUserChat
      * @param provider a reference to the currently valid jabber protocol
      * provider.
-     * @throws OperationFailedException
+     * @throws OperationFailedException if either the provider is not registered
+     *                                  or the user's jid is invalid.
      */
     public ChatRoomJabberImpl(MultiUserChat multiUserChat,
                               ProtocolProviderServiceJabberImpl provider)
@@ -299,8 +306,24 @@ public class ChatRoomJabberImpl implements ChatRoom
         multiUserChat.addParticipantStatusListener(memberListener);
         multiUserChat.addUserStatusListener(userListener);
 
-        this.provider.getConnection().addStanzaListener(
-            invitationRejectionListeners, StanzaTypeFilter.MESSAGE);
+        try
+        {
+            this.provider.getConnection().addStanzaListener(
+                    invitationRejectionListeners, StanzaTypeFilter.MESSAGE);
+        }
+        catch (NullPointerException ex)
+        {
+            // If the connection to the server is flaky, we risk hitting NPEs here.
+            // We need to make sure we catch this to prevent the calling thread
+            // from being killed and instead throw an OperationFailedException
+            // that will be handled correctly by the calling code.
+            String errorText = "Hit NPE trying to get provider connection: " + this.provider;
+            logger.error(errorText, ex);
+            throw new OperationFailedException(
+                      errorText,
+                      OperationFailedException.PROVIDER_NOT_REGISTERED,
+                      ex);
+        }
 
         // Set the mute state of the chat room
         String mutedConfig = ConfigurationUtils.getChatRoomProperty(
@@ -1672,6 +1695,7 @@ public class ChatRoomJabberImpl implements ChatRoom
 
                  fireMessageEvent(msgDeliveredEvt);
              }
+             sendTelemetryImSendMessage(true, message.getSize());
          }
          catch (NotConnectedException | InterruptedException ex)
          {
@@ -1689,6 +1713,7 @@ public class ChatRoomJabberImpl implements ChatRoom
                          false,
                          MessageEvent.GROUP_MESSAGE);
                  msgDeliveredEvt.setFailed(true);
+                 sendTelemetryImSendMessage(false, message.getSize());
                  fireMessageEvent(msgDeliveredEvt);
              }
 
@@ -1697,6 +1722,26 @@ public class ChatRoomJabberImpl implements ChatRoom
                  OperationFailedException.GENERAL_ERROR,
                  ex);
          }
+    }
+
+    /**
+     * Sends an IM_SEND_MESSAGE telemetry event to Azure
+     */
+    private void sendTelemetryImSendMessage(boolean delivered, int contentLength)
+    {
+        JabberActivator.getInsightService().logEvent(
+                new InsightEvent(
+                        ImKt.EVENT_IM_SEND_MESSAGE,
+                        Map.of(CommonKt.PARAM_TYPE,
+                               ImType.GROUP_CHAT.getValue$maxanalytics(),
+                               AnalyticsResultKt.PARAM_RESULT,
+                               delivered ?
+                                AnalyticsResult.Success.INSTANCE.getValue():
+                                AnalyticsResult.FailureUnknown.INSTANCE.getValue()
+                        ),
+                        Map.of(ImKt.PARAM_IM_LENGTH, (double) contentLength)
+                )
+        );
     }
 
     /**
@@ -2240,65 +2285,6 @@ public class ChatRoomJabberImpl implements ChatRoom
     }
 
     /**
-     * Kicks a participant from the room.
-     *
-     * @param chatRoomMember the <tt>ChatRoomMember</tt> to kick from the room
-     * @param reason the reason why the participant is being kicked from the
-     * room
-     * @throws OperationFailedException if an error occurs while kicking the
-     * participant. In particular, an error can occur if a moderator or a user
-     * with an affiliation of "owner" or "admin" was intended to be kicked; or
-     * if the participant that intended to kick another participant does not
-     * have kicking privileges;
-     */
-    public void kickParticipant(ChatRoomMember chatRoomMember, String reason)
-        throws OperationFailedException
-    {
-        try
-        {
-            Resourcepart memberName = Resourcepart.from(chatRoomMember.getName());
-            multiUserChat.kickParticipant(memberName, reason);
-        }
-        catch (XMPPErrorException | NotConnectedException | InterruptedException |
-            NoResponseException | XmppStringprepException ex)
-        {
-            logger.error("Failed to kick participant.", ex);
-
-            if (ex instanceof XMPPErrorException)
-            {
-                StanzaError stanzaError = ((XMPPErrorException)ex).getStanzaError();
-
-                // If a moderator or a user with an affiliation of "owner" or "admin"
-                // was intended to be kicked.
-                if ((stanzaError != null) &&
-                    (stanzaError.getCondition() == StanzaError.Condition.not_allowed))
-                {
-                    throw new OperationFailedException(
-                        "Kicking an admin user or a chat room owner is a forbidden "
-                        + "operation.",
-                        OperationFailedException.FORBIDDEN);
-                }
-                // If a participant that intended to kick another participant does
-                // not have kicking privileges.
-                if ((stanzaError != null) &&
-                    (stanzaError.getCondition() == StanzaError.Condition.forbidden))
-                {
-                    throw new OperationFailedException(
-                        "The user that intended to kick another participant does" +
-                        " not have enough privileges to do that.",
-                        OperationFailedException.NOT_ENOUGH_PRIVILEGES);
-                }
-            }
-            else
-            {
-                throw new OperationFailedException(
-                    "An error occurred while trying to kick the participant.",
-                    OperationFailedException.GENERAL_ERROR);
-            }
-        }
-    }
-
-    /**
      * Creates the corresponding ChatRoomMemberPresenceChangeEvent and notifies
      * all <tt>ChatRoomMemberPresenceListener</tt>s that a ChatRoomMember has
      * joined or left this <tt>ChatRoom</tt>.
@@ -2680,8 +2666,13 @@ public class ChatRoomJabberImpl implements ChatRoom
                 {
                     msgResource = GroupMembershipAction.left.toString();
 
-                    // No need to remove the participant from the UI, as this
-                    // is handled by their ownership being revoked.
+                    // NOTE:
+                    //  There is a certain race condition due to the participants leaving sequence and WISPA.
+                    //  Removing the participant here makes sure that the list updates before WISPA gets to it.
+                    //  This is merely a patch. The race condition still exists, and it cannot be fixed
+                    //  with existing synchronous mechanisms without significant performance impact in
+                    //  the current design.
+                    memberListener.participantPermanentlyLeft(msgFrom.asEntityFullJidIfPossible());
                 }
                 else if (GroupMembershipAction.banned.toString().equals(msgBody))
                 {
@@ -2914,21 +2905,6 @@ public class ChatRoomJabberImpl implements ChatRoom
      */
     private class UserListener implements UserStatusListener
     {
-        /**
-         * Called when a moderator kicked your user from the room. This
-         * means that you are no longer participating in the room.
-         *
-         * @param actor the moderator that kicked your user from the room
-         * (e.g. user@host.org).
-         * @param reason the reason provided by the actor to kick you from
-         * the room.
-         */
-        public void kicked(String actor, String reason)
-        {
-            logger.info("Kicked from " + sanitiseChatRoom(getIdentifier()) +
-                        " by " + logHasher(actor) + ". Reason: " + reason);
-            leave(LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_KICKED, reason);
-        }
 
         /**
          * Called when a moderator grants voice to your user. This means that
@@ -3196,194 +3172,6 @@ public class ChatRoomJabberImpl implements ChatRoom
     }
 
     /**
-    * Grants administrator privileges to another user. Room owners may grant
-    * administrator privileges to a member or un-affiliated user. An
-    * administrator is allowed to perform administrative functions such as
-    * banning users and edit moderator list.
-    *
-    * @param jid the bare XMPP user ID of the user to grant administrator
-    * privileges (e.g. "user@host.org").
-    */
-    public void grantAdmin(Jid jid)
-    {
-        try
-        {
-            multiUserChat.grantAdmin(jid);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occured granting administrator " +
-                "privileges to a user.", ex);
-        }
-    }
-
-   /**
-    * Grants membership to a user. Only administrators are able to grant
-    * membership. A user that becomes a room member will be able to enter a room
-    * of type Members-Only (i.e. a room that a user cannot enter without being
-    * on the member list).
-    *
-    * @param jid the bare XMPP user ID of the user to grant membership
-    * privileges (e.g. "user@host.org").
-    */
-    public void grantMembership(Jid jid)
-    {
-        try
-        {
-            multiUserChat.grantMembership(jid);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occured granting membership to a user", ex);
-        }
-    }
-
-   /**
-    * Grants moderator privileges to a participant or visitor. Room
-    * administrators may grant moderator privileges. A moderator is allowed to
-    * kick users, grant and revoke voice, invite other users, modify room's
-    * subject plus all the partcipants privileges.
-    *
-    * @param nickname the nickname of the occupant to grant moderator
-    * privileges.
-    */
-    public void grantModerator(Resourcepart nickname)
-    {
-        try
-        {
-            multiUserChat.grantModerator(nickname);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occurred granting moderator " +
-                         "privileges to user " + sanitisePeerId(nickname.toString()), ex);
-        }
-    }
-
-   /**
-    * Grants ownership privileges to another user. Room owners may grant
-    * ownership privileges. Some room implementations will not allow to grant
-    * ownership privileges to other users. An owner is allowed to change
-    * defining room features as well as perform all administrative functions.
-    *
-    * @param jid the bare XMPP user ID of the user to grant ownership
-    * privileges (e.g. "user@host.org").
-    */
-    public void grantOwnership(Jid jid)
-    {
-        try
-        {
-            multiUserChat.grantOwnership(jid);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occured granting ownership " +
-                "privileges to a user", ex);
-        }
-    }
-
-   /**
-    * Grants voice to a visitor in the room. In a moderated room, a moderator
-    * may want to manage who does and does not have "voice" in the room. To have
-    * voice means that a room occupant is able to send messages to the room
-    * occupants.
-    *
-    * @param nickname the nickname of the visitor to grant voice in the room
-    * (e.g. "john").
-    *
-    * XMPPException if an error occurs granting voice to a visitor. In
-    * particular, a 403 error can occur if the occupant that intended to grant
-    * voice is not a moderator in this room (i.e. Forbidden error); or a 400
-    * error can occur if the provided nickname is not present in the room.
- * @throws XmppStringprepException
-    */
-    public void grantVoice(Resourcepart nickname)
-    {
-        try
-        {
-            multiUserChat.grantVoice(nickname);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occurred granting voice to a visitor", ex);
-        }
-    }
-
-   /**
-    * Revokes administrator privileges from a user. The occupant that loses
-    * administrator privileges will become a member. Room owners may revoke
-    * administrator privileges from a member or unaffiliated user.
-    *
-    * @param jid the bare XMPP user ID of the user to grant administrator
-    * privileges (e.g. "user@host.org").
-    */
-    public void revokeAdmin(Jid jid)
-    {
-        try
-        {
-            multiUserChat.revokeAdmin(jid.asEntityJidOrThrow());
-        }
-        catch (IllegalStateException | NoResponseException | NotConnectedException |
-            InterruptedException | XMPPErrorException ex)
-        {
-            logger.error("An error occured revoking administrator " +
-                "privileges to a user", ex);
-        }
-    }
-
-   /**
-    * Revokes a user's membership. Only administrators are able to revoke
-    * membership. A user that becomes a room member will be able to enter a room
-    * of type Members-Only (i.e. a room that a user cannot enter without being
-    * on the member list). If the user is in the room and the room is of type
-    * members-only then the user will be removed from the room.
-    *
-    * @param jid the bare XMPP user ID of the user to revoke membership
-    * (e.g. "user@host.org").
-    */
-    public void revokeMembership(Jid jid)
-    {
-        try
-        {
-            multiUserChat.revokeMembership(jid);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occurred revoking membership to a user", ex);
-        }
-    }
-
-    /**
-    * Revokes moderator privileges from another user. The occupant that loses
-    * moderator privileges will become a participant. Room administrators may
-    * revoke moderator privileges only to occupants whose affiliation is member
-    * or none. This means that an administrator is not allowed to revoke
-    * moderator privileges from other room administrators or owners.
-    *
-    * @param nickname the nickname of the occupant to revoke moderator
-    * privileges.
-    */
-    public void revokeModerator(Resourcepart nickname)
-    {
-        try
-        {
-            multiUserChat.revokeModerator(nickname);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.error("An error occurred revoking moderator " +
-                "privileges from a user", ex);
-        }
-    }
-
-    /**
     * Revokes ownership privileges from another user. The occupant that loses
     * ownership privileges will become an administrator. Room owners may revoke
     * ownership privileges. Some room implementations will not allow to grant
@@ -3410,33 +3198,6 @@ public class ChatRoomJabberImpl implements ChatRoom
             throw new OperationFailedException(
                 errorString,
                 OperationFailedException.GENERAL_ERROR);
-        }
-    }
-
-    /**
-    * Revokes voice from a participant in the room. In a moderated room, a
-    * moderator may want to revoke an occupant's privileges to speak. To have
-    * voice means that a room occupant is able to send messages to the room
-    * occupants.
-    * @param nickname the nickname of the participant to revoke voice
-    * (e.g. "john").
-    *
-    * XMPPException if an error occurs revoking voice from a participant.
-    * In particular, a 405 error can occur if a moderator or a user
-    * with an affiliation of "owner" or "admin" was tried to revoke his voice
-    * (i.e. Not Allowed error); or a 400 error can occur if the provided
-    * nickname is not present in the room.
-    */
-    public void revokeVoice(Resourcepart nickname)
-    {
-        try
-        {
-            multiUserChat.revokeVoice(nickname);
-        }
-        catch (NoResponseException | NotConnectedException | InterruptedException |
-            XMPPErrorException ex)
-        {
-            logger.info("An error occurred while revoking voice from a participant", ex);
         }
     }
 
@@ -3567,18 +3328,6 @@ public class ChatRoomJabberImpl implements ChatRoom
     public boolean isActive()
     {
         return isActive ;
-    }
-
-    @Override
-    public void setHistoryNotificationDisplayed(boolean displayed)
-    {
-        historyNotificationDisplayed.set(displayed);
-    }
-
-    @Override
-    public boolean historyNotificationDisplayed()
-    {
-        return historyNotificationDisplayed.get();
     }
 
     @Override

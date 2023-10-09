@@ -632,17 +632,6 @@ public class JabberStatusEnum
     }
 
     /**
-     * Get all status name as array.
-     *
-     * @return array of <tt>String</tt> representing the different status name
-     */
-    public static String[] getStatusNames()
-    {
-        return new String[]
-        { OFFLINE, DO_NOT_DISTURB, AWAY, AVAILABLE, FREE_FOR_CHAT, ON_THE_PHONE };
-    }
-
-    /**
      * An implementation of <tt>PresenceStatus</tt> that enumerates all states
      * that a Jabber contact can currently have.
      */

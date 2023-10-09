@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil.lookandfeel;
 
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
+
 import java.awt.event.*;
 import java.util.*;
 
@@ -173,22 +175,6 @@ public class SearchField
     }
 
     /**
-     * Enables/disables the call button in the search field.
-     *
-     * @param buttonEnabled indicates if the call button will be enabled
-     */
-    public void setDialPadButtonEnabled(boolean buttonEnabled)
-    {
-        sLog.debug("setDialPadButtonEnabled: " + buttonEnabled);
-
-        if(getUI() instanceof SearchFieldUI)
-        {
-            SearchFieldUI searchFieldUI = (SearchFieldUI)getUI();
-            searchFieldUI.setButtonsEnabled(buttonEnabled);
-        }
-    }
-
-    /**
      * Handles the change when a char has been inserted in the field.
      */
     public void textInserted()
@@ -198,7 +184,7 @@ public class SearchField
         // Should explicitly check if there's a text, because the default text
         // triggers also an insertUpdate event.
         String filterString = getText();
-        String filterStringToLog = mQAMode ? filterString : "<redacted>";
+        String filterStringToLog = mQAMode ? filterString : REDACTED;
         sLog.info("Text inserted - user searching for string " + filterStringToLog);
 
         if (filterString == null || filterString.length() <= 0)

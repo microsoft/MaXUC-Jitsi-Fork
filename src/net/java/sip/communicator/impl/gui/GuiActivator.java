@@ -26,8 +26,6 @@ import org.osgi.framework.ServiceReference;
 
 import net.java.sip.communicator.impl.gui.main.AbstractMainFrame;
 import net.java.sip.communicator.impl.gui.main.CallPullButton;
-import net.java.sip.communicator.impl.gui.main.ContactSyncBarImpl;
-import net.java.sip.communicator.impl.gui.main.account.Account;
 import net.java.sip.communicator.impl.gui.main.call.CallManager;
 import net.java.sip.communicator.impl.gui.main.contactlist.AddContactDialog;
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
@@ -40,7 +38,6 @@ import net.java.sip.communicator.service.browserlauncher.BrowserLauncherService;
 import net.java.sip.communicator.service.browserpanel.BrowserPanelService;
 import net.java.sip.communicator.service.callhistory.CallHistoryService;
 import net.java.sip.communicator.service.calljump.CallJumpService;
-import net.java.sip.communicator.service.commportal.CPCallManagerService;
 import net.java.sip.communicator.service.commportal.CPCos;
 import net.java.sip.communicator.service.commportal.CPCosGetterCallback;
 import net.java.sip.communicator.service.commportal.ClassOfServiceService;
@@ -56,15 +53,14 @@ import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsServiceRegistrar;
 import net.java.sip.communicator.service.diagnostics.StateDumper;
 import net.java.sip.communicator.service.globaldisplaydetails.GlobalDisplayDetailsService;
-import net.java.sip.communicator.service.gui.AccountRegistrationWizard;
 import net.java.sip.communicator.service.gui.AlertUIService;
 import net.java.sip.communicator.service.gui.ContactChooserService;
-import net.java.sip.communicator.service.gui.ContactSyncBarService;
 import net.java.sip.communicator.service.gui.Container;
 import net.java.sip.communicator.service.gui.PluginComponent;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService;
 import net.java.sip.communicator.service.imageloader.ImageLoaderService;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.managecontact.ManageContactService;
 import net.java.sip.communicator.service.managecontact.ManageContactWindow;
 import net.java.sip.communicator.service.managecontact.ViewContactService;
@@ -86,9 +82,7 @@ import net.java.sip.communicator.service.replacement.ChatPartReplacementService;
 import net.java.sip.communicator.service.replacement.TabbedImagesSelectorService;
 import net.java.sip.communicator.service.reset.ResetService;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
-import net.java.sip.communicator.service.systray.SystrayService;
 import net.java.sip.communicator.service.threading.ThreadingService;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiCrmService;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
@@ -137,8 +131,6 @@ public class GuiActivator implements BundleActivator, StateDumper
 
     private static BrowserLauncherService browserLauncherService;
 
-    private static SystrayService systrayService;
-
     private static ResourceManagementService resourcesService;
 
     private static FileAccessService fileAccessService;
@@ -159,6 +151,8 @@ public class GuiActivator implements BundleActivator, StateDumper
 
     private static AnalyticsService analyticsService;
 
+    private static InsightService insightService;
+
     private static ResetService resetService;
 
     private static Boolean enterDialsNumber = null;
@@ -175,8 +169,6 @@ public class GuiActivator implements BundleActivator, StateDumper
 
     private static ClassOfServiceService cosService;
 
-    private static CPCallManagerService callManagerService;
-
     private static MessageHistoryService messageHistoryService;
 
     private static ThreadingService threadingService;
@@ -190,8 +182,6 @@ public class GuiActivator implements BundleActivator, StateDumper
     private static BrowserPanelService browserPanelService;
 
     private static CommPortalService commPortalService;
-
-    private static WebSocketApiCrmService webSocketApiCrmService;
 
     private static WISPAService wispaService;
 
@@ -243,11 +233,6 @@ public class GuiActivator implements BundleActivator, StateDumper
             // Registers an implementation of the Contact chooser service.
             bundleContext.registerService(ContactChooserService.class.getName(),
                                           new ContactChooserServiceImpl(),
-                                          null);
-
-            // Registers an implementation of the contact sync bar service.
-            bundleContext.registerService(ContactSyncBarService.class.getName(),
-                                          new ContactSyncBarImpl(),
                                           null);
 
             GuiActivator.bundleContext.registerService(SelectAvatarService.class.getName(),
@@ -700,21 +685,6 @@ public class GuiActivator implements BundleActivator, StateDumper
     }
 
     /**
-     * Returns the <tt>SystrayService</tt> obtained from the bundle context.
-     *
-     * @return the <tt>SystrayService</tt> obtained from the bundle context
-     */
-    public static SystrayService getSystrayService()
-    {
-        if (systrayService == null)
-        {
-            systrayService
-                = ServiceUtils.getService(bundleContext, SystrayService.class);
-        }
-        return systrayService;
-    }
-
-    /**
      * Returns the <tt>ResourceManagementService</tt>, through which we will
      * access all resources.
      *
@@ -797,6 +767,17 @@ public class GuiActivator implements BundleActivator, StateDumper
         }
 
         return analyticsService;
+    }
+
+    public static InsightService getInsightService()
+    {
+        if (insightService == null)
+        {
+            insightService =
+                    ServiceUtils.getService(bundleContext, InsightService.class);
+        }
+
+        return insightService;
     }
 
     /**
@@ -1095,95 +1076,6 @@ public class GuiActivator implements BundleActivator, StateDumper
     }
 
     /**
-     * Returns the list of wrapped protocol providers.
-     *
-     * @param providers the list of protocol providers
-     * @return an array of wrapped protocol providers
-     */
-    public static Account[] getAccounts(List<ProtocolProviderService> providers)
-    {
-        Iterator<ProtocolProviderService> accountsIter = providers.iterator();
-        List<Account> accounts = new ArrayList<>();
-
-        while (accountsIter.hasNext())
-            accounts.add(new Account(accountsIter.next()));
-
-        return accounts.toArray(new Account[accounts.size()]);
-    }
-
-    /**
-     * Returns the preferred account if there's one.
-     *
-     * @return the <tt>ProtocolProviderService</tt> corresponding to the
-     * preferred account
-     */
-    public static ProtocolProviderService getPreferredAccount()
-    {
-        // check for preferred wizard
-        String prefWName = GuiActivator.getResources().
-            getSettingsString("impl.gui.PREFERRED_ACCOUNT_WIZARD");
-        if(prefWName == null || prefWName.length() <= 0)
-            return null;
-
-        ServiceReference<?>[] accountWizardRefs;
-        try
-        {
-            accountWizardRefs = GuiActivator.bundleContext
-                .getServiceReferences(AccountRegistrationWizard.class.getName(),
-                                      null);
-        }
-        catch (InvalidSyntaxException ex)
-        {
-            // this shouldn't happen since we're providing no parameter string
-            // but let's log just in case.
-            logger.error(
-                "Error while retrieving service refs", ex);
-            return null;
-        }
-
-        // in case we found any, add them in this container.
-        if (accountWizardRefs != null)
-        {
-            logger.debug("Found "
-                     + accountWizardRefs.length
-                     + " already installed providers.");
-
-            for (ServiceReference<?> accountWizardRef : accountWizardRefs)
-            {
-                AccountRegistrationWizard wizard = (AccountRegistrationWizard)
-                        GuiActivator.bundleContext.getService(accountWizardRef);
-
-                // is it the preferred protocol ?
-                if (wizard.getClass().getName().equals(prefWName))
-                {
-                    for (ProtocolProviderFactory providerFactory :
-                            GuiActivator.getProtocolProviderFactories().values())
-                    {
-                        for (AccountID accountID
-                                : providerFactory.getRegisteredAccounts())
-                        {
-                            ServiceReference<?> serRef =
-                                    providerFactory.getProviderForAccount(accountID);
-
-                            ProtocolProviderService protocolProvider =
-                                    (ProtocolProviderService)
-                                    GuiActivator.bundleContext.getService(serRef);
-
-                            if (protocolProvider.getAccountID()
-                                    .getProtocolDisplayName()
-                                    .equals(wizard.getProtocolName()))
-                            {
-                                return protocolProvider;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
      * Returns whether pressing 'enter' when typing in the search bar
      * should start a call to that number.
      *
@@ -1319,18 +1211,6 @@ public class GuiActivator implements BundleActivator, StateDumper
     }
 
     /**
-     * @return a reference to the registered call manager service
-     */
-    public static CPCallManagerService getCallManagerService()
-    {
-        if (callManagerService == null)
-            callManagerService = ServiceUtils.getService(bundleContext,
-                                                    CPCallManagerService.class);
-
-        return callManagerService;
-    }
-
-    /**
      * @return a reference to the registered threading service
      */
     public static ThreadingService getThreadingService()
@@ -1380,21 +1260,6 @@ public class GuiActivator implements BundleActivator, StateDumper
         }
 
         return browserPanelService;
-    }
-
-    /**
-     * @return a reference to the WebSocket API CRM integration service
-     */
-    public static WebSocketApiCrmService getWebSocketApiCrmService()
-    {
-        if (webSocketApiCrmService == null)
-        {
-            webSocketApiCrmService = ServiceUtils.getService(
-                    bundleContext,
-                    WebSocketApiCrmService.class);
-        }
-
-        return webSocketApiCrmService;
     }
 
     /**

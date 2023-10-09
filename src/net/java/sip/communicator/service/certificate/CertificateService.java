@@ -78,21 +78,6 @@ public interface CertificateService
     // ------------------------------------------------------------------------
     // constants
     // ------------------------------------------------------------------------
-    /**
-     * Result of user interaction. User does not trust this certificate.
-     */
-    int DO_NOT_TRUST = 0;
-
-    /**
-     * Result of user interaction. User will always trust this certificate.
-     */
-    int TRUST_ALWAYS = 1;
-
-    /**
-     * Result of user interaction. User will trust this certificate
-     * only for the current session.
-     */
-    int TRUST_THIS_SESSION_ONLY = 2;
 
     // ------------------------------------------------------------------------
     // Client authentication configuration
@@ -103,23 +88,6 @@ public interface CertificateService
      * @return List of the saved authentication configurations.
      */
     List<CertificateConfigEntry> getClientAuthCertificateConfigs();
-
-    /**
-     * Deletes a saved {@link CertificateConfigEntry}.
-     *
-     * @param id The ID ({@link CertificateConfigEntry#getId()}) of the entry to
-     *            delete.
-     */
-    void removeClientAuthCertificateConfig(String id);
-
-    /**
-     * Saves or updates the passed {@link CertificateConfigEntry} to the config.
-     * If {@link CertificateConfigEntry#getId()} returns null, a new entry is
-     * created.
-     *
-     * @param entry The @see CertificateConfigEntry to save or update.
-     */
-    void setClientAuthCertificateConfig(CertificateConfigEntry entry);
 
     /**
      * Gets a list of all supported KeyStore types.
@@ -283,4 +251,12 @@ public interface CertificateService
      * @return The WISPA server store format
      */
     String getWispaStoreFormat();
+
+    /**
+     * Notifies about a new established TLS connection for the specified protocol.
+     *
+     * @param connection the connection for e.g. STRP or XMPP
+     * @param session secure session containing parameters of the connection
+     */
+    void notifySecureConnectionEstablished(String connection, SSLSession session);
 }

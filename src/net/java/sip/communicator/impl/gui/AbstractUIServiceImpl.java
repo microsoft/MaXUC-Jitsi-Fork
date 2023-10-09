@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui;
 
-import static net.java.sip.communicator.util.PrivacyUtils.*;
-
 import java.awt.*;
 import java.awt.desktop.QuitResponse;
 import java.awt.event.ActionEvent;
@@ -45,6 +43,7 @@ import net.java.sip.communicator.impl.gui.main.login.LoginRendererSwingImpl;
 import net.java.sip.communicator.impl.gui.utils.Constants;
 import net.java.sip.communicator.plugin.desktoputil.ComponentUtils;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommSnakeButton;
 import net.java.sip.communicator.plugin.desktoputil.UIAction;
 import net.java.sip.communicator.plugin.desktoputil.WindowStacker;
@@ -67,8 +66,8 @@ import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.gui.UrlCreatorEnum;
 import net.java.sip.communicator.service.gui.WindowID;
 import net.java.sip.communicator.service.gui.WizardContainer;
-import net.java.sip.communicator.service.gui.event.ChatListener;
 import net.java.sip.communicator.service.protocol.Call;
+import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.service.protocol.ChatRoom;
 import net.java.sip.communicator.service.protocol.ChatRoomMember;
 import net.java.sip.communicator.service.protocol.Contact;
@@ -102,30 +101,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
      */
     public static final ConfigurationService sConfigService =
             GuiActivator.getConfigurationService();
-
-    /**
-     * Name of the provisioning username in the configuration service.
-     */
-    private static final String PROPERTY_PROVISIONING_USERNAME
-            = "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
-
-    /**
-     * Name of the provisioning password in the configuration service (HTTP
-     * authentication).
-     */
-    private static final String PROPERTY_PROVISIONING_PASSWORD
-            = "net.java.sip.communicator.plugin.provisioning.auth";
-
-    /**
-     * Name of the active user being used by configuration.
-     */
-    private static final String PROPERTY_ACTIVE_USER
-            = "net.java.sip.communicator.plugin.provisioning.auth.ACTIVE_USER";
-
-    /**
-     * Suffix for the ENCRYPTED_PASSWORD property that shouldn't be left lying around after logout.
-     */
-    public static final String ENCRYPTED_PASSWORD = "ENCRYPTED_PASSWORD";
 
     protected AbstractMainFrame mainFrame;
 
@@ -318,6 +293,13 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
             }
         }
 
+        // If we are in the pre-login state, the Java might be blocked waiting
+        // for Electron response in a few places/bundles. In order to allow
+        // them to be stopped and the app destroyed, we need to unblock it
+        // first and then proceed to stop the bundles, so once all bundles
+        // are stopped the Java process is killed as well.
+        PreLoginUtils.invokeShutdown();
+
         // Check whether we need to quit the Meeting client before shutting
         // this client down.
         ConferenceService confService = GuiActivator.getConferenceService();
@@ -391,18 +373,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
         if (logOut)
         {
             logger.debug("Logging out - remove active user");
-            sConfigService.global().removeProperty(PROPERTY_ACTIVE_USER);
-            sConfigService.global().removeProperty(PROPERTY_PROVISIONING_USERNAME);
-            sConfigService.user().removeProperty(PROPERTY_PROVISIONING_PASSWORD);
-
-            // Remove the PAT, encrypted passwords and PII.
-            sConfigService.user().removePropertyBySuffix(ENCRYPTED_PASSWORD);
-            sConfigService.user().removePropertyBySuffix(CUSTOM_STATUS);
-            sConfigService.user().removePropertyBySuffix(CHAT_SUBJECT);
-
-            // Flush the config so that the .bak file doesn't contain a copy of the now
-            // deleted credentials.
-            sConfigService.user().storePendingConfigurationNow(true);
+            ConfigurationUtils.forgetUserCredentials(true);
         }
 
         // If the user has asked to log out, restart the client to load the login screen.  If not, simply shut down.
@@ -436,10 +407,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
 
         try
         {
-            // Disable the system tray service as it can cause a hang on
-            // shutdown.
-            GuiActivator.getSystrayService().uninitializeService();
-
             if (mainFrame != null)
             {
                 if (!SwingUtilities.isEventDispatchThread())
@@ -1312,24 +1279,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
 
     /**
      * Alerts that an event has occurred (e.g. a message has been received or
-     * a call has been missed) in the exported window specified by the
-     * parameter, using a platform-dependent visual clue such as flashing it
-     * in the task bar on Windows and Linux.
-     *
-     * @param windowID The ID of the exported window to alert.
-     */
-    @Override
-    public void alertExportedWindow(WindowID windowID)
-    {
-        ExportedWindow win = getExportedWindow(windowID);
-        if (win == null)
-            return;
-
-        alertWindow((Window) win.getSource());
-    }
-
-    /**
-     * Alerts that an event has occurred (e.g. a message has been received or
      * a call has been missed) in the window specified by the parameter, using
      * a platform-dependent visual clue such as flashing it in the task bar on
      * Windows and Linux.
@@ -1561,17 +1510,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
         }
     }
 
-    /**
-     * Removes the given <tt>WindowListener</tt> from the main application
-     * window.
-     * @param l the <tt>WindowListener</tt> to remove
-     */
-    @Override
-    public void removeWindowListener(WindowListener l)
-    {
-        mainFrame.removeWindowListener(l);
-    }
-
     @Override
     public void showStackableAlertWindow(final Window window)
     {
@@ -1713,12 +1651,6 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
     }
 
     @Override
-    public String getCurrentPhoneNumber()
-    {
-        return null;
-    }
-
-    @Override
     public void setCurrentPhoneNumber(String phoneNumber)
     {
     }
@@ -1742,22 +1674,17 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
     }
 
     @Override
-    public void addChatListener(ChatListener listener)
-    {
-    }
-
-    @Override
-    public void removeChatListener(ChatListener listener)
-    {
-    }
-
-    @Override
     public void createCall(Reformatting reformatNeeded, String... participants)
     {
     }
 
     @Override
     public void hangupCall(Call call)
+    {
+    }
+
+    @Override
+    public void focusCall(Call call)
     {
     }
 
@@ -1841,31 +1768,11 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
     }
 
     @Override
-    public SIPCommSnakeButton getAccessionCrmLaunchButton(String searchName,
-                                                          String searchNumber)
+    public SIPCommSnakeButton getCrmLaunchButton(String searchName,
+                                                 String searchNumber)
     {
         return null;
     }
-
-    @Override
-    public SIPCommSnakeButton getWebSocketCrmLaunchButton(
-            @Nullable String searchNumber)
-    {
-        return null;
-    }
-
-    @Override
-    public JLabel getCrmLookupInProgressIndicator()
-    {
-        return null;
-    }
-
-    @Override
-    public JLabel getCrmLookupFailedIndicator()
-    {
-        return null;
-    }
-
     @Override
     public boolean isCrmAutoLaunchAlways()
     {
@@ -1910,7 +1817,33 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
     }
 
     @Override
+    public void showAddCallPeerWindow(Call call)
+    {
+    }
+
+    @Override
+    public void showTransferCallWindow(CallPeer peer)
+    {
+    }
+
+    @Override
     public void showBrowserService(UrlCreatorEnum mOption)
+    {
+    }
+
+    @Override
+    public boolean isLocalVideoEnabled(Call call)
+    {
+        return false;
+    }
+
+    @Override
+    public void enableLocalVideo(Call call, boolean enable)
+    {
+    }
+
+    @Override
+    public void playDTMF(Call call, String toneValue) throws InterruptedException
     {
     }
 

@@ -458,56 +458,6 @@ public class ContactGroupJabberImpl
     }
 
     /**
-     * Resolve this contact group against the specified group
-     * @param source the server stored group
-     */
-    void setResolved(RosterGroup source)
-    {
-        if(isResolved)
-            return;
-
-        this.isResolved = true;
-
-        this.id = source.getName();
-
-        for (RosterEntry item : source.getEntries())
-        {
-            ContactJabberImpl contact =
-                ssclCallback.findContactById(item.getJid());
-
-            // some services automatically adds contacts from an addressbook
-            // to our roster and this contacts are with subscription none.
-            // if such already exist, remove it. This is typically our
-            // own contact
-            if(!ServerStoredContactListJabberImpl.isEntryDisplayable(item))
-            {
-                if(contact != null)
-                {
-                    removeContact(contact);
-                    ssclCallback.fireContactRemoved(this, contact);
-                }
-
-                continue;
-            }
-
-            if(contact != null)
-            {
-                contact.setResolved(item);
-
-                ssclCallback.fireContactResolved(this, contact);
-            }
-            else
-            {
-                ContactJabberImpl newContact =
-                    new ContactJabberImpl(item, ssclCallback, true, true);
-                addContact(newContact);
-
-                ssclCallback.fireContactAdded(this, newContact);
-            }
-        }
-    }
-
-    /**
      * Returns a <tt>String</tt> that uniquely represents the group. In this we
      * use the name of the group as an identifier. This may cause problems
      * though, in case the name is changed by some other application between

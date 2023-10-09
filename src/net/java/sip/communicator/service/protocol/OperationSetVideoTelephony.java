@@ -153,19 +153,6 @@ public interface OperationSetVideoTelephony
         throws OperationFailedException;
 
     /**
-     * Gets the indicator which determines whether the receiving of remote video
-     * in a specific <tt>Call</tt> is allowed. The setting does not reflect
-     * the availability of actual video capture devices, it just expresses the
-     * desire of the user to receive the remote video stream in the case the
-     * system is actually able to do so.
-     *
-     * @param call the <tt>Call</tt> to get the indicator of
-     *
-     * @return whether remote video streaming is allowed.
-     */
-    boolean isRemoteVideoAllowed(Call call);
-
-    /**
      * Adds a specific <tt>PropertyChangeListener</tt> to the list of
      * listeners which get notified when the properties (e.g.
      * {@link #LOCAL_VIDEO_STREAMING}) associated with a specific
@@ -281,31 +268,4 @@ public interface OperationSetVideoTelephony
      */
     void answerVideoCallPeer(CallPeer peer)
         throws OperationFailedException;
-
-    /**
-     * Returns the quality control for video calls if any. It can be null if we
-     * were able to successfully determine that other party does not support it.
-     * @param peer the peer which this control operates on.
-     * @return the implemented quality control.
-     */
-    QualityControl getQualityControl(CallPeer peer);
-
-    /**
-     * Determines the <tt>ConferenceMember</tt> which is participating in a
-     * telephony conference with a specific <tt>CallPeer</tt> as its focus and
-     * which is sending a video content/RTP stream displayed in a specific
-     * visual <tt>Component</tt>.
-     *
-     * @param peer the <tt>CallPeer</tt> which is the conference focus of the
-     * telephony conference to be examined in order to locate the
-     * <tt>ConferenceMember</tt> which is sending the video content/RTP stream
-     * displayed in the specified <tt>visualComponent</tt>
-     * @param visualComponent the visual <tt>Component</tt> which displays the
-     * video content/RTP stream of the <tt>ConferenceMember</tt> to be located
-     * @return the <tt>ConferenceMember</tt>, if any, which is sending the video
-     * content/RTP stream displayed in the specific <tt>visualComponent</tt>
-     */
-    ConferenceMember getConferenceMember(
-            CallPeer peer,
-            Component visualComponent);
 }

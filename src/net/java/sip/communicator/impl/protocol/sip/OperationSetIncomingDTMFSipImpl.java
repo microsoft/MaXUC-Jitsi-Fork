@@ -7,7 +7,6 @@
 package net.java.sip.communicator.impl.protocol.sip;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 
 /**
  * An <tt>OperationSet</tt> that allows us to receive DMF tones through
@@ -34,23 +33,4 @@ public class OperationSetIncomingDTMFSipImpl
         this.opsetDTMFSip = opsetDTMFSip;
     }
 
-    /**
-     * Registers the specified DTMFListener with this provider so that it could
-     * be notified when incoming DTMF tone is received.
-     * @param listener the listener to register with this provider.
-     *
-     */
-    public void addDTMFListener(DTMFListener listener)
-    {
-        this.opsetDTMFSip.getDtmfModeInfo().addDTMFListener(listener);
-    }
-
-    /**
-     * Removes the specified listener from the list of DTMF listeners.
-     * @param listener the listener to unregister.
-     */
-    public void removeDTMFListener(DTMFListener listener)
-    {
-        this.opsetDTMFSip.getDtmfModeInfo().removeDTMFListener(listener);
-    }
 }

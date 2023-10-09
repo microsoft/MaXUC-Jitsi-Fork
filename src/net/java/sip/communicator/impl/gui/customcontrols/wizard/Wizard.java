@@ -185,27 +185,6 @@ public class Wizard
     }
 
     /**
-     * Adds the given WizardPage in this wizard. Each WizardPage is identified
-     * by a unique Object-based identifier (often a String), which can be used
-     * by the setCurrentPanel() method to display the panel at runtime.
-     *
-     * @param id An Object-based identifier used to identify the WizardPage
-     *            object
-     * @param page The WizardPage object to register in this wizard
-     */
-    public void registerWizardPage(Object id, WizardPage page)
-    {
-        // Add the incoming panel to our JPanel display that is managed by
-        // the CardLayout layout manager.
-        Object wizardForm = page.getWizardForm();
-        if (wizardForm instanceof Component)
-            cardPanel.add((Component) wizardForm, id);
-
-        // Place a reference to it in the model.
-        wizardModel.registerPage(id, page);
-    }
-
-    /**
      * Removes from the wizard the <tt>WizardPage</tt> corresponding to the
      * given identifier.
      *
@@ -221,18 +200,6 @@ public class Wizard
 
             wizardModel.unregisterPage(id);
         }
-    }
-
-    /**
-     * Checks whether a page with the given id exists in the wizard.
-     *
-     * @param id the identifier of the searched page
-     * @return TRUE if the page with the given id exists in the wizard, FALSE
-     *         otherwise.
-     */
-    public boolean containsPage(Object id)
-    {
-        return (wizardModel.getWizardPage(id) != null);
     }
 
     /**
@@ -324,16 +291,6 @@ public class Wizard
     /**
      * Mirrors the WizardModel method of the same name.
      *
-     * @return A boolean indicating if the button is enabled.
-     */
-    public boolean isBackButtonEnabled()
-    {
-        return wizardModel.getBackButtonEnabled();
-    }
-
-    /**
-     * Mirrors the WizardModel method of the same name.
-     *
      * @param newValue The new enabled status of the button.
      */
     public void setBackButtonEnabled(boolean newValue)
@@ -345,31 +302,11 @@ public class Wizard
     /**
      * Mirrors the WizardModel method of the same name.
      *
-     * @return A boolean indicating if the button is enabled.
-     */
-    public boolean isNextFinishButtonEnabled()
-    {
-        return wizardModel.getNextFinishButtonEnabled();
-    }
-
-    /**
-     * Mirrors the WizardModel method of the same name.
-     *
      * @param newValue The new enabled status of the button.
      */
     public void setNextFinishButtonEnabled(boolean newValue)
     {
         wizardModel.setNextFinishButtonEnabled(newValue);
-    }
-
-    /**
-     * Mirrors the WizardModel method of the same name.
-     *
-     * @return A boolean indicating if the button is enabled.
-     */
-    public boolean isCancelButtonEnabled()
-    {
-        return wizardModel.getCancelButtonEnabled();
     }
 
     /**
@@ -495,39 +432,10 @@ public class Wizard
         this.close(Wizard.CANCEL_RETURN_CODE);
     }
 
-    public void setWizzardIcon(BufferedImageFuture wizardIcon)
-    {
-        wizardIconLabel = new JLabel();
-        wizardIconLabel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(20, 20, 20, 20), BorderFactory
-                .createTitledBorder("")));
-
-        wizardIcon.getImageIcon().addToLabel(wizardIconLabel);
-        this.wizardIconPanel.removeAll();
-        this.wizardIconPanel.add(wizardIconLabel);
-    }
-
     public void removeWizzardIcon()
     {
         if (wizardIconLabel != null)
             this.wizardIconPanel.remove(wizardIconLabel);
-    }
-
-    public void addWizardListener(WizardListener l)
-    {
-        synchronized (wizardListeners)
-        {
-            if (!wizardListeners.contains(l))
-                wizardListeners.add(l);
-        }
-    }
-
-    public void removeWizardListener(WizardListener l)
-    {
-        synchronized (wizardListeners)
-        {
-            wizardListeners.remove(l);
-        }
     }
 
     private void fireWizardEvent(int eventCode)
@@ -568,26 +476,6 @@ public class Wizard
     public void windowOpened(WindowEvent e) {}
 
     /**
-     * Returns the next wizard button.
-     *
-     * @return the next wizard button
-     */
-    public JButton getNextButton()
-    {
-        return this.nextButton;
-    }
-
-    /**
-     * Returns the back wizard button.
-     *
-     * @return the back wizard button
-     */
-    public JButton getBackButton()
-    {
-        return this.backButton;
-    }
-
-    /**
      * Refreshes this wizard dialog.
      */
     public void refresh()
@@ -607,16 +495,6 @@ public class Wizard
     }
 
     /**
-     * Sets the back button default text.
-     *
-     * @param backButtonDefaultText the text to set
-     */
-    void setBackButtonDefaultText(String backButtonDefaultText)
-    {
-        this.backButtonDefaultText = backButtonDefaultText;
-    }
-
-    /**
      * Returns the default text of the next wizard button.
      *
      * @return the default text of the next wizard button.
@@ -624,16 +502,6 @@ public class Wizard
     public String getNextButtonDefaultText()
     {
         return nextButtonDefaultText;
-    }
-
-    /**
-     * Sets the next button default text.
-     *
-     * @param nextButtonDefaultText the text to set
-     */
-    void setNextButtonDefaultText(String nextButtonDefaultText)
-    {
-        this.nextButtonDefaultText = nextButtonDefaultText;
     }
 
     /**
@@ -664,16 +532,6 @@ public class Wizard
     public String getCancelButtonDefaultText()
     {
         return cancelButtonDefaultText;
-    }
-
-    /**
-     * Sets the cancel button default text.
-     *
-     * @param cancelButtonDefaultText the text to set
-     */
-    void setCancelButtonDefaultText(String cancelButtonDefaultText)
-    {
-        this.cancelButtonDefaultText = cancelButtonDefaultText;
     }
 
     /**

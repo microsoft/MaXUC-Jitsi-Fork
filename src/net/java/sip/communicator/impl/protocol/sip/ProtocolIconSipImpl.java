@@ -47,16 +47,6 @@ public class ProtocolIconSipImpl
     }
 
     /**
-     * Implements the <tt>ProtocolIcon.getSupportedSizes()</tt> method. Returns
-     * an iterator to a set containing the supported icon sizes.
-     * @return an iterator to a set containing the supported icon sizes
-     */
-    public Iterator<String> getSupportedSizes()
-    {
-        return getIconsTable().keySet().iterator();
-    }
-
-    /**
      * Returns <code>true</code> if an icon with the given size is supported,
      * <code>false</code> - otherwise.
      *
@@ -114,16 +104,6 @@ public class ProtocolIconSipImpl
         if (iconsTable == null)
             loadIconsFromIconPath();
         return iconsTable;
-    }
-
-    /**
-     * Returns the icon image used to represent the protocol connecting state.
-     *
-     * @return the icon image used to represent the protocol connecting state.
-     */
-    public BufferedImageFuture getConnectingIcon()
-    {
-        return loadIcon(iconPath + "/sip-connecting.gif");
     }
 
     /**

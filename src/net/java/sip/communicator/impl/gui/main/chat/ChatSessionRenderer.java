@@ -7,8 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.chat;
 
-import java.util.*;
-
 /**
  * The <tt>ChatSessionRenderer</tt> is the connector between the
  * <tt>ChatSession</tt> and the <tt>ChatPanel</tt>, which represents the UI

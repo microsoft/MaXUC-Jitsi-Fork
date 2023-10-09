@@ -35,15 +35,6 @@ public interface IncomingFileTransferRequest
     String getFileName();
 
     /**
-     * Returns a String that represents the description of the file that is
-     * being received.
-     * If there is no description available, returns null.
-     *
-     * @return a String that represents the description of the file
-     */
-    String getFileDescription();
-
-    /**
      * Returns a long that represents the size of the file that is being
      * received.
      * If there is no file size available, returns null.

@@ -141,11 +141,6 @@ public class WizardModel
         return panelHashmap.get(id);
     }
 
-    Iterator<Map.Entry<Object, WizardPage>> getAllPages()
-    {
-        return panelHashmap.entrySet().iterator();
-    }
-
     /**
      * Sets the current panel to that identified by the Object passed in.
      * @param id Object-based panel identifier
@@ -235,74 +230,6 @@ public class WizardModel
         if (!newText.equals(oldText)) {
             buttonTextHashmap.put(CANCEL_BUTTON_TEXT_PROPERTY, newText);
             firePropertyChange(CANCEL_BUTTON_TEXT_PROPERTY, oldText, newText);
-        }
-    }
-
-    /**
-     * Returns the icon for the Back button.
-     * @return the icon for the Back button.
-     */
-    Icon getBackButtonIcon()
-    {
-        return buttonIconHashmap.get(BACK_BUTTON_ICON_PROPERTY);
-    }
-
-    /**
-     * Sets the icon for the Back button.
-     * @param newIcon The new icon to set.
-     */
-    void setBackButtonIcon(Icon newIcon)
-    {
-        Object oldIcon = getBackButtonIcon();
-        if (!newIcon.equals(oldIcon))
-        {
-            buttonIconHashmap.put(BACK_BUTTON_ICON_PROPERTY, newIcon);
-            firePropertyChange(BACK_BUTTON_ICON_PROPERTY, oldIcon, newIcon);
-        }
-    }
-
-    /**
-     * Returns the icon for the Next/Finish button.
-     * @return the icon for the Next/Finish button.
-     */
-    Icon getNextFinishButtonIcon()
-    {
-        return buttonIconHashmap.get(NEXT_FINISH_BUTTON_ICON_PROPERTY);
-    }
-
-    /**
-     * Sets the icon for the Next/Finish button.
-     * @param newIcon The new icon to set.
-     */
-    public void setNextFinishButtonIcon(Icon newIcon)
-    {
-        Object oldIcon = getNextFinishButtonIcon();
-        if (!newIcon.equals(oldIcon)) {
-            buttonIconHashmap.put(NEXT_FINISH_BUTTON_ICON_PROPERTY, newIcon);
-            firePropertyChange(NEXT_FINISH_BUTTON_ICON_PROPERTY,
-                    oldIcon, newIcon);
-        }
-    }
-
-    /**
-     * Returns the icon for the Cancel button.
-     * @return the icon for the Cancel button.
-     */
-    Icon getCancelButtonIcon()
-    {
-        return buttonIconHashmap.get(CANCEL_BUTTON_ICON_PROPERTY);
-    }
-
-    /**
-     * Sets the icon for the Cancel button.
-     * @param newIcon The new icon to set.
-     */
-    void setCancelButtonIcon(Icon newIcon)
-    {
-        Icon oldIcon = getCancelButtonIcon();
-        if (!newIcon.equals(oldIcon)) {
-            buttonIconHashmap.put(CANCEL_BUTTON_ICON_PROPERTY, newIcon);
-            firePropertyChange(CANCEL_BUTTON_ICON_PROPERTY, oldIcon, newIcon);
         }
     }
 

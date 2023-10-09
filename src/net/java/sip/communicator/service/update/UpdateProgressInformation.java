@@ -10,12 +10,16 @@ public class UpdateProgressInformation
     private long size;
     private long transferredSize;
     private UpdateDownloadState updateDownloadState;
+    private UpdateState updateState;
 
-    public UpdateProgressInformation(long size, long transferredSize, UpdateDownloadState updateDownloadState)
+    public UpdateProgressInformation(long size, long transferredSize,
+                                     UpdateDownloadState updateDownloadState,
+                                     UpdateState updateState)
     {
         this.size = size;
         this.transferredSize = transferredSize;
         this.updateDownloadState = updateDownloadState;
+        this.updateState = updateState;
     }
 
     public long getSize()
@@ -33,8 +37,15 @@ public class UpdateProgressInformation
         return updateDownloadState;
     }
 
+    public UpdateState getUpdateState()
+    {
+        return updateState;
+    }
+
     public String toString()
     {
-        return "Size: " + getSize() + ", Transferred Size: " + getTransferredSize() + ", Update Download State: " + getUpdateDownloadState();
+        return "Size: " + getSize() + ", Transferred Size: " + getTransferredSize() +
+               ", Update Download State: " + getUpdateDownloadState() +
+               ", Update State: " + getUpdateState();
     }
 }

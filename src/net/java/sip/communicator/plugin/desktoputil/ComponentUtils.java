@@ -87,24 +87,6 @@ public class ComponentUtils
     }
 
     /**
-     * Returns the index of the given component in the given container.
-     *
-     * @param c the Component to look for
-     * @param container the parent container, where this component is added
-     * @return the index of the component in the container or -1 if no such
-     * component is contained in the container
-     */
-    public static int getComponentIndex(Component c, Container container)
-    {
-        for (int i = 0, count = container.getComponentCount(); i < count; i++)
-        {
-            if (container.getComponent(i).equals(c))
-                return i;
-        }
-        return -1;
-    }
-
-    /**
      * Simulates a mouse click on the given component, for use when the UI was
      * written assuming mouse operation only, but perhaps we need to allow for
      * keyboard operation as well.

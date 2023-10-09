@@ -2,6 +2,7 @@
 package net.java.sip.communicator.impl.database.migration;
 
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
 
 import java.io.*;
 import java.sql.*;
@@ -198,7 +199,7 @@ public abstract class DatabaseMigration
             Document doc = mBuilder.parse(xmlFile.getPath());
             NodeList nodes = doc.getElementsByTagName("record");
             sLog.info("Migrate " + nodes.getLength() + " records from: " +
-                sanitiseXmlFilePath(xmlFile.toString()) + ", " +
+                sanitiseFilePath(xmlFile.toString()) + ", " +
                 sanitiseChatAddress(localJid) + ", " + sanitiseChatAddress(remoteJid));
 
             for (int i = 0; i < nodes.getLength(); i++)
@@ -248,9 +249,7 @@ public abstract class DatabaseMigration
      */
     protected List<File> getXmlFilesToProcess(File histDir)
     {
-        // The file will be in $HOME/users/USER_DN/...
-        // Both $HOME and USER_DN can contain PII, so we remove this from the path.
-        String sanitisedHistDir = sanitiseXmlFilePath(histDir.getPath());
+        String sanitisedHistDir = sanitiseFilePath(histDir.getPath());
 
         sLog.info("From: " + sanitisedHistDir);
 
@@ -275,7 +274,7 @@ public abstract class DatabaseMigration
 
                         if (filename.endsWith(SUPPORTED_FILETYPE))
                         {
-                            sLog.info("Found xml file: " + sanitiseXmlFilePath(directory.getPath()) + ", " + filename);
+                            sLog.info("Found xml file: " + sanitiseFilePath(directory.getPath()) + ", " + filename);
                             listOfXmlFiles.add(file);
                         }
                     }
@@ -453,18 +452,4 @@ public abstract class DatabaseMigration
 
         return outputString;
     }
-
-    /**
-     * Removes PII from directory output due to be written to log files by
-     * suppressing details relating to $HOME and the DN of the user. Treats both
-     * macOS (/) and Windows (\) delimeters.
-     * @param pathToSanitise The filepath to be treated.
-     * @return A filepath with the relevant PII removed, leaving only a generic
-     *         directory structure common to all MaX UC installations.
-     */
-    protected String sanitiseXmlFilePath(String pathToSanitise)
-    {
-        return pathToSanitise.replaceAll(".+users(\\\\|/)[0-9]+(\\\\|/)", "");
-    }
-
 }

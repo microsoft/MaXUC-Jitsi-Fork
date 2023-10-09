@@ -175,17 +175,6 @@ public class ProtocolContactSourceServiceImpl
             this.contactCount = contactCount;
         }
 
-        /**
-         * {@inheritDoc}
-         *
-         * Always returns <tt>false</tt>.
-         */
-        @Override
-        protected boolean phoneNumberMatches(String phoneNumber)
-        {
-            return false;
-        }
-
         public void run()
         {
             Iterator<MetaContact> contactListIter

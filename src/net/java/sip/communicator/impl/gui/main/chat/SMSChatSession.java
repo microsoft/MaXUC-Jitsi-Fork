@@ -18,7 +18,6 @@ import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactlist.event.*;
 import net.java.sip.communicator.service.msghistory.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -107,93 +106,6 @@ public class SMSChatSession extends ChatSession
         return new ArrayList<>(messageHistory.findLast(mSmsNumber, count));
     }
 
-    /**
-     * Returns the start date of the history of this chat session.
-     *
-     * @return the start date of the history of this chat session.
-     */
-    @Override
-    public Date getHistoryStartDate()
-    {
-        Date startHistoryDate = new Date(0);
-
-        MessageHistoryService messageHistory
-            = GuiActivator.getMessageHistoryService();
-
-        // If the MessageHistoryService is not registered we have nothing to do
-        // here. The history could be "disabled" from the user
-        // through one of the configuration forms.
-        if (messageHistory == null)
-            return startHistoryDate;
-
-        Collection<MessageEvent> firstMessage =
-            messageHistory.findFirstMessagesAfter(mSmsNumber, new Date(0), 1);
-
-        if (firstMessage.size() > 0)
-        {
-            Iterator<MessageEvent> i = firstMessage.iterator();
-
-            MessageEvent evt = i.next();
-
-            startHistoryDate = evt.getTimestamp();
-        }
-
-        return startHistoryDate;
-    }
-
-    /**
-     * Returns the end date of the history of this chat session.
-     *
-     * @return the end date of the history of this chat session.
-     */
-    @Override
-    public Date getHistoryEndDate()
-    {
-        Date endHistoryDate = new Date(0);
-
-        MessageHistoryService messageHistory
-            = GuiActivator.getMessageHistoryService();
-
-        // If the MessageHistoryService is not registered we have nothing to do
-        // here. The history could be "disabled" by the user via one of the
-        // configuration forms.
-        if (messageHistory == null)
-            return endHistoryDate;
-
-        Collection<MessageEvent> lastMessage =
-            messageHistory.findLastMessagesBefore(
-                                       mSmsNumber, new Date(Long.MAX_VALUE), 1);
-
-        if (lastMessage.size() > 0)
-        {
-            Iterator<MessageEvent> i = lastMessage.iterator();
-
-            MessageEvent evt = i.next();
-
-            endHistoryDate = evt.getTimestamp();
-        }
-
-        return endHistoryDate;
-    }
-
-    /**
-     * @return null as this session doesn't support sending SMS via the SMS OpSet.
-     */
-    @Override
-    public String getDefaultSmsNumber()
-    {
-        return null;
-    }
-
-    /**
-     * Just returns without doing anything as this session doesn't support
-     * sending SMS via the SMS OpSet.
-     */
-    @Override
-    public void setDefaultSmsNumber(String smsPhoneNumber)
-    {
-    }
-
     @Override
     public ChatTransport getCurrentChatTransport()
     {
@@ -246,12 +158,6 @@ public class SMSChatSession extends ChatSession
     public BufferedImageFuture getChatAvatar()
     {
         return null;
-    }
-
-    @Override
-    public boolean isContactListSupported()
-    {
-        return false;
     }
 
     @Override

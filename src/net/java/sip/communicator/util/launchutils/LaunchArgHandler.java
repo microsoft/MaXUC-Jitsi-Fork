@@ -8,7 +8,8 @@
 package net.java.sip.communicator.util.launchutils;
 
 import static java.util.stream.Collectors.joining;
-import static org.jitsi.util.SanitiseUtils.sanitise;
+import static net.java.sip.communicator.util.PrivacyUtils.REDACTED;
+import static org.jitsi.util.SanitiseUtils.sanitiseFirstPatternMatch;
 
 import java.io.File;
 import java.io.IOException;
@@ -89,13 +90,6 @@ public class LaunchArgHandler
     public static final int ERROR_CODE_UNKNOWN_ARG = 1;
 
     /**
-     * The error code returned when we try to launch SIP Communicator while
-     * there is already a running instance and there were no arguments that we
-     * forward to that instance.
-     */
-    public static final int ERROR_CODE_ALREADY_STARTED = 2;
-
-    /**
      * The error code that we return when we fail to create a directory that has
      * been specified with the -c|--config option.
      */
@@ -105,6 +99,16 @@ public class LaunchArgHandler
      * Pattern to redact id param in URI
      */
     public static final Pattern ID_PARAM_PATTERN = Pattern.compile("(?<=id=)([^&]+)");
+
+    /**
+     * Pattern to redact subscriber param in URI
+     */
+    public static final Pattern SUBSCRIBER_PARAM_PATTERN = Pattern.compile("(?<=subscriber=)([^&]+)", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Pattern to redact password param in URI
+     */
+    public static final Pattern PASSWORD_PARAM_PATTERN = Pattern.compile("(?<=password=)([^&]+)", Pattern.CASE_INSENSITIVE);
 
     /**
      * Pattern to redact parameters of protocol handler e.g. "sip: 123456789".
@@ -185,17 +189,6 @@ public class LaunchArgHandler
         {
             logger.trace("Couldn't open version.properties");
         }
-
-        // Start url handler for Mac OS X.
-        /*
-         * XXX The detection of the operating systems is the responsibility of
-         * OSUtils. It used to reside in the util.jar which is in the classpath
-         * but it is now in libjitsi.jar which is not in the classpath.
-         */
-        String osName = System.getProperty("os.name");
-
-        if ((osName != null) && osName.startsWith("Mac"))
-            new AEGetURLEventHandler(this);
     }
 
     /**
@@ -623,9 +616,16 @@ public class LaunchArgHandler
      * Sanitises application launch argument.
      * If it is protocol URI, it hashes the destination parameter.
      * If it is Meeting URI, it hashes "id" parameter value.
+     * If it is login URI, it hashes "subscriber" and redacts "password".
      */
     public static String sanitiseArgument(String value)
     {
-        return sanitise(value, List.of(PROTOCOL_PATTERN, ID_PARAM_PATTERN), Hasher::logHasher);
+        final String hashed = sanitiseFirstPatternMatch(value,
+                                       List.of(PROTOCOL_PATTERN, ID_PARAM_PATTERN, SUBSCRIBER_PARAM_PATTERN),
+                                       Hasher::logHasher);
+
+        return sanitiseFirstPatternMatch(hashed,
+                List.of(PASSWORD_PARAM_PATTERN),
+                (password) -> REDACTED);
     }
 }

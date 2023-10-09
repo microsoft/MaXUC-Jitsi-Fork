@@ -475,29 +475,6 @@ public class LoginManager
     }
 
     /**
-     * Returns <tt>true</tt> to indicate the jitsi has been manually
-     * disconnected, <tt>false</tt> - otherwise.
-     *
-     * @return <tt>true</tt> to indicate the jitsi has been manually
-     * disconnected, <tt>false</tt> - otherwise
-     */
-    public boolean isManuallyDisconnected()
-    {
-        return manuallyDisconnected;
-    }
-
-    /**
-     * Sets the manually disconnected property.
-     *
-     * @param manuallyDisconnected <tt>true</tt> to indicate the jitsi has been
-     * manually disconnected, <tt>false</tt> - otherwise
-     */
-    public void setManuallyDisconnected(boolean manuallyDisconnected)
-    {
-        this.manuallyDisconnected = manuallyDisconnected;
-    }
-
-    /**
      * Registers a protocol provider in a separate thread.
      */
     private class RegisterProvider

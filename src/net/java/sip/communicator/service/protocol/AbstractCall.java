@@ -9,7 +9,7 @@ package net.java.sip.communicator.service.protocol;
 import java.beans.*;
 import java.util.*;
 
-import net.java.sip.communicator.service.protocol.event.*;
+import net.java.sip.communicator.service.protocol.event.CallPeerEvent;
 
 /**
  * Provides implementations for some of the methods in the <tt>Call</tt>

@@ -23,13 +23,6 @@ public class MessageCorrectionExtension
     public static final String NAMESPACE = "urn:xmpp:message-correct:0";
 
     /**
-     * The XMPP namespace that Swift IM use to send message corrections.
-     * Temporary until they start using the standard one.
-     */
-    public static final String SWIFT_NAMESPACE =
-            "http://swift.im/protocol/replace";
-
-    /**
      * The XML element name of this extension.
      */
     public static final String ELEMENT_NAME = "replace";

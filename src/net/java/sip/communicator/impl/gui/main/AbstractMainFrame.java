@@ -4,30 +4,18 @@ package net.java.sip.communicator.impl.gui.main;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.KeyboardFocusManager;
-import java.awt.Toolkit;
-import java.awt.Window;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Timer;
-import java.util.TimerTask;
 
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.jitsi.service.configuration.ConfigurationService;
-import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.OSUtils;
 
 import net.java.sip.communicator.impl.gui.GuiActivator;
-import net.java.sip.communicator.impl.gui.customcontrols.MessageDialog;
 import net.java.sip.communicator.impl.gui.main.contactlist.ContactListPane;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommFrame;
-import net.java.sip.communicator.plugin.desktoputil.lookandfeel.LookAndFeelManager;
-import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.gui.ExportedWindow;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.gui.WindowID;
@@ -47,13 +35,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
     private static final long serialVersionUID = 0L;
 
     /**
-     * The delay after the last resize or drag before we save size and location
-     * to config. We delay doing this so as to avoid saving the values every
-     * time we receive a drag or resize event.
-     */
-    protected static final int SAVE_SIZE_AND_LOCATION_DELAY_MS = 500;
-
-    /**
      * The word 'Close', or the translated equivalent.
      */
     protected static final String CLOSE =
@@ -71,22 +52,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
      * The logger.
      */
     private final Logger logger = Logger.getLogger(AbstractMainFrame.class);
-
-    /**
-     * The keyboard focus manager.
-     */
-    protected KeyboardFocusManager keyManager;
-
-    /**
-     * The timer which schedules when next to save size and location to config.
-     */
-    protected ResettableTimer saveSizeAndLocationTimer;
-
-    /**
-     * The dialog that warns the user that the app is only hidden, rather than
-     * closed, when the main frame is closed.
-     */
-    protected MessageDialog windowHiddenDialog = null;
 
     /**
      * The configuration service
@@ -110,32 +75,14 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
      * @param isEnabled <tt>true</tt> to enable the "unknown contact" view,
      * <tt>false</tt> - otherwise.
      */
-    public abstract void enableUnknownContactView(boolean isEnabled);
+    public void enableUnknownContactView(boolean isEnabled) {};
 
     /**
      * Select the tab with the given tab name
      *
      * @param tabName the name of the tab to select
      */
-    public abstract void selectTab(String tabName);
-
-    /**
-     * Select the sub-tab with the given tab name
-     *
-     * @param tabName the name of the sub-tab to select
-     */
-    public abstract void selectSubTab(String tabName);
-
-    /**
-     * Sets or unsets the notification icon that indicates whether there are
-     * new events in this sub tab that the user has not acknowledged.
-     *
-     * @param tabName the name of the sub tab to set or clear the notification
-     * icon on.
-     * @param notificationsActive if true, there are active notifications on
-     * this tab so the icon should be visible.
-     */
-    public abstract void setSubTabNotification(String tabName, boolean notificationsActive);
+    public void selectTab(String tabName) {};
 
     /**
      * Adds a protocol provider.
@@ -177,24 +124,11 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
         ProtocolProviderService protocolProvider);
 
     /**
-     * Initializes the contact list panel.
-     *
-     * @param contactListService The <tt>MetaContactListService</tt> containing
-     * the contact list data.
-     */
-    public abstract void setContactList(MetaContactListService contactListService);
-
-    /**
      * Returns the index of the given protocol provider.
      * @param protocolProvider the protocol provider to search for
      * @return the index of the given protocol provider
      */
     public abstract int getProviderIndex(ProtocolProviderService protocolProvider);
-
-    /**
-     * Adds all native plugins to this container.
-     */
-    public abstract void addNativePlugins();
 
     /**
      * Gets the frame's minimum bounds size
@@ -236,43 +170,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
 
         new CallParkAvailabilityObserver().observeCallParkAvailability();
 
-        this.initTitleFont();
-
-        ResourceManagementService resources = GuiActivator.getResources();
-        String applicationName
-            = resources.getSettingsString("service.gui.APPLICATION_NAME");
-
-        this.setTitle(applicationName);
-
-        // sets the title to application name
-        // fix for some window managers(gnome3)
-        try
-        {
-            Toolkit xToolkit = Toolkit.getDefaultToolkit();
-            java.lang.reflect.Field awtAppClassNameField =
-            xToolkit.getClass().getDeclaredField("awtAppClassName");
-            awtAppClassNameField.setAccessible(true);
-            awtAppClassNameField.set(xToolkit, applicationName);
-        }
-        catch(Throwable t)
-        {
-            logger.error("Unable to set the application name: " + t);
-        }
-
-        keyManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-
-        Runnable saveSizeAndLocationTask = new Runnable()
-        {
-            public void run()
-            {
-                SIPCommFrame.saveSizeAndLocation(
-                    AbstractMainFrame.this, this.getClass().getName());
-            }
-        };
-
-        saveSizeAndLocationTimer = new ResettableTimer(saveSizeAndLocationTask,
-                                               SAVE_SIZE_AND_LOCATION_DELAY_MS);
-
         /*
          * If the application is configured to quit when this frame is closed,
          * do so.
@@ -293,25 +190,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
             public void windowOpened(WindowEvent e)
             {
 
-            }
-        });
-
-        /*
-         * Ensure that we update the stored config each time the window is
-         * moved or resized. There are times where we reset the window to the
-         * location stored in the config so it must stay up to date.
-         *
-         */
-        this.addComponentListener(new ComponentAdapter()
-        {
-            public void componentResized(ComponentEvent e)
-            {
-                saveSizeAndLocationTimer.reset();
-            }
-
-            public void componentMoved(ComponentEvent e)
-            {
-                saveSizeAndLocationTimer.reset();
             }
         });
     }
@@ -421,47 +299,12 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
      */
     public void setFrameVisible(final boolean makeVisible)
     {
-        logger.debug("Request to set main frame visibility to: " + makeVisible);
+        logger.debug("Request to set main frame visibility to: " + makeVisible + " (ignored)");
 
-        boolean showMainFrameConfig = configService.global()
-            .getBoolean("plugin.wispa.SHOW_MAIN_UI", false);
+        ConfigurationUtils.setApplicationVisible(false);
 
-        logger.debug("Config allows showing main frame:" + showMainFrameConfig);
-
-        boolean isVisible = makeVisible && showMainFrameConfig;
-
-        ConfigurationUtils.setApplicationVisible(isVisible);
-
-        SwingUtilities.invokeLater(new Runnable(){
-            public void run()
-            {
-                if(isVisible)
-                {
-                    AbstractMainFrame.this.addNativePlugins();
-
-                    Window focusedWindow = keyManager.getFocusedWindow();
-
-                    // If there's another currently focused window we prevent
-                    // this frame from stealing the focus. This happens for
-                    // example in the case of a Master Password window which is
-                    // opened before the contact list window.
-                    if (focusedWindow != null)
-                        setFocusableWindowState(false);
-
-                    AbstractMainFrame.super.setVisible(isVisible);
-
-                    if (focusedWindow != null)
-                        setFocusableWindowState(true);
-
-                    AbstractMainFrame.super.setExtendedState(MainFrame.NORMAL);
-                    AbstractMainFrame.super.toFront();
-                }
-                else
-                {
-                    AbstractMainFrame.super.setVisible(isVisible);
-                }
-            }
-        });
+        SwingUtilities
+            .invokeLater(() -> AbstractMainFrame.super.setVisible(false));
     }
 
     /**
@@ -493,81 +336,6 @@ public abstract class AbstractMainFrame extends SIPCommFrame implements Exported
             && !OSUtils.IS_MAC)
         {
             ConfigurationUtils.setApplicationVisible(false);
-        }
-    }
-
-    /**
-     * Initialize main window font.
-     */
-    private void initTitleFont()
-    {
-        JComponent layeredPane = this.getLayeredPane();
-        Font font = LookAndFeelManager.getScaledDefaultFont(Font.BOLD);
-        logger.info("Setting title font to " + font);
-
-        for (int i = 0, componentCount = layeredPane.getComponentCount();
-                i < componentCount;
-                i++)
-            layeredPane.getComponent(i).setFont(font);
-    }
-
-    /**
-     * Implementation of Timer which maintains a single task with a fixed delay,
-     * and can be kicked to reset the delay countdown.
-     */
-    private static class ResettableTimer extends Timer
-    {
-        /**
-         * The task to be executed whenever the delay interval has passed
-         * without a reset() call.
-         */
-        private final Runnable task;
-
-        /**
-         * The delay between the task being scheduled and the task being
-         * executed (assuming reset() is not re-called during that time).
-         */
-        private final long delay;
-
-        /**
-         * The <tt>TimerTask</tt> tracking when next to execute 'task'.
-         */
-        private TimerTask timerTask;
-
-        /**
-         * Construct a ResettableTimer that executes the given task after
-         * the specified delay. The timer does not start until 'reset' is
-         * called.
-         *
-         * @param task The task which this timer will execute.
-         * @param delay The delay for which 'task' will be scheduled after
-         * calls to reset(), in ms.
-         */
-        public ResettableTimer(Runnable task, long delay)
-        {
-            this.task = task;
-            this.delay = delay;
-        }
-
-        /**
-         * Reschedule the task to be executed after 'delay' milliseconds.
-         */
-        public void reset()
-        {
-            // Abort any pending task.
-            if (timerTask != null)
-                timerTask.cancel();
-
-            // Reschedule the task for 'delay' ms.
-            timerTask = new TimerTask()
-            {
-                public void run()
-                {
-                    task.run();
-                }
-            };
-
-            schedule(timerTask, delay);
         }
     }
 

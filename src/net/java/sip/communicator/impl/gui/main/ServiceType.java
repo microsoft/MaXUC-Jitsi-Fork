@@ -427,20 +427,6 @@ public enum ServiceType
     }
 
     /**
-     * Returns a prefix to the string used in the config to identify the
-     * different services for each service type
-     *
-     * @param serviceIndex The index identifying the service.
-     *
-     * @return a string in the form:
-     * net.java.sip.communicator.impl.gui.main.urlservices.ServiceType.serviceIndex
-     */
-    public String getPrefix(int serviceIndex)
-    {
-        return UrlServiceTools.CONFIG_PREFIX + "." + getConfigName() + "." + serviceIndex;
-    }
-
-    /**
      * Process the number to use in the CRM lookup - a simple check that it
      * matches a proper DN is all that is required at present.
      *
@@ -484,15 +470,5 @@ public enum ServiceType
         }
 
         return name;
-    }
-
-    boolean shouldAppearInConfigPanel(String shortConfigName)
-    {
-        if(!shortConfigName.equals("CRM")) {
-            return false;
-        }
-        else {
-            return true;
-        }
     }
 }

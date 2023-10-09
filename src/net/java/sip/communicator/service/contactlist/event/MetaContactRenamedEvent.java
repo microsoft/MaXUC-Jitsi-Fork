@@ -42,14 +42,4 @@ public class MetaContactRenamedEvent
     {
         return (String)getNewValue();
     }
-
-    /**
-     * Returns the display name of the source meta contact as it was now, before
-     * the change.
-     * @return the meta contact name as it was before the change.
-     */
-    public String getOldDisplayName()
-    {
-        return (String)getOldValue();
-    }
 }

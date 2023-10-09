@@ -258,7 +258,13 @@ public abstract class AccountID
      */
     public String getLoggableAccountID()
     {
-        return accountUID != null ? accountUID.replace(getUserID(), sanitisePeerId(getUserID())) : "null";
+        String rc = "null";
+        if (accountUID != null)
+        {
+            final String userID = getUserID();
+            rc = accountUID.replace(userID, sanitisePeerId(userID));
+        }
+        return rc;
     }
 
     /**

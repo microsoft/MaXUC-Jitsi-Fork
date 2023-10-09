@@ -324,30 +324,12 @@ public class ConnectionPanel
     }
 
     /**
-     * Sets the server port.
-     * @param serverPort the server port
-     */
-    void setServerPort(String serverPort)
-    {
-        portField.setText(serverPort);
-    }
-
-    /**
      * Returns the resource.
      * @return the resource
      */
     String getResource()
     {
         return resourceField.getText();
-    }
-
-    /**
-     * Sets the resource field value.
-     * @param resource the resource to set
-     */
-    void setResource(String resource)
-    {
-        resourceField.setText(resource);
     }
 
     /**
@@ -360,15 +342,6 @@ public class ConnectionPanel
     }
 
     /**
-     * Sets the priority field value.
-     * @param priority the priority field value
-     */
-    void setPriority(String priority)
-    {
-        priorityField.setText(priority);
-    }
-
-    /**
      * Returns <tt>true</tt> if the "send keep alive" check box is selected,
      * otherwise returns <tt>false</tt>.
      * @return <tt>true</tt> if the "send keep alive" check box is selected,
@@ -377,17 +350,6 @@ public class ConnectionPanel
     boolean isSendKeepAlive()
     {
         return sendKeepAliveBox.isSelected();
-    }
-
-    /**
-     * Selects/unselects the "send keep alive" check box according to the given
-     * <tt>isSendKeepAlive</tt> property.
-     * @param isSendKeepAlive indicates if the "send keep alive" check box
-     * should be selected or not
-     */
-    void setSendKeepAlive(boolean isSendKeepAlive)
-    {
-        sendKeepAliveBox.setSelected(isSendKeepAlive);
     }
 
     /**
@@ -419,16 +381,6 @@ public class ConnectionPanel
     public boolean isValidated()
     {
         return true;
-    }
-
-    /**
-     * Set auto generate resource value.
-     * Set checkbox state.
-     * @param value the new value.
-     */
-    void setAutogenerateResource(boolean value)
-    {
-        autoGenerateResource.setSelected(value);
     }
 
     /**
@@ -472,38 +424,6 @@ public class ConnectionPanel
     }
 
     /**
-     * Sets the DTMF method.
-     * @param dtmfMethod the DTMF method
-     */
-    void setDTMFMethod(String dtmfMethod)
-    {
-        if(dtmfMethod == null)
-        {
-            dtmfMethodBox.setSelectedItem(0);
-        }
-        else
-        {
-            String selString;
-            if(dtmfMethod.equals("RTP_DTMF"))
-            {
-                selString =
-                    Resources.getString("plugin.sipaccregwizz.DTMF_RTP");
-            }
-            else if(dtmfMethod.equals("INBAND_DTMF"))
-            {
-                selString =
-                    Resources.getString("plugin.sipaccregwizz.DTMF_INBAND");
-            }
-            else
-            {
-                selString =
-                    Resources.getString("plugin.jabberaccregwizz.DTMF_AUTO");
-            }
-            dtmfMethodBox.setSelectedItem(selString);
-        }
-    }
-
-    /**
      * Returns the minimal DTMF tone duration.
      *
      * @return The minimal DTMF tone duration.
@@ -511,27 +431,6 @@ public class ConnectionPanel
     String getDtmfMinimalToneDuration()
     {
         return dtmfMinimalToneDurationValue.getText();
-    }
-
-    /**
-     * Sets the minimal DTMF tone duration
-     *
-     * @param dtmfMinimalToneDuration
-     */
-    void setDtmfMinimalToneDuration(String dtmfMinimalToneDuration)
-    {
-        dtmfMinimalToneDurationValue.setText(dtmfMinimalToneDuration);
-    }
-
-    /**
-     * Sets the <tt>serverOverridden</tt> property.
-     * @param isServerOverridden <tt>true</tt> to indicate that the server is
-     * overridden, <tt>false</tt> - otherwise
-     */
-    void setServerOverridden(boolean isServerOverridden)
-    {
-        this.serverAutoCheckBox.setSelected(isServerOverridden);
-        enablesServerAutoConfigure(serverAutoCheckBox.isSelected());
     }
 
     /**
@@ -554,16 +453,6 @@ public class ConnectionPanel
         serverField.setEnabled(isEnable);
         portField.setEnabled(isEnable);
         parentForm.reValidateInput();
-    }
-
-    /**
-     * Sets the client TLS certificate ID.
-     * @param certificateId The ID of the TLS certificate to use or
-     * <tt>null</tt> if none should be selected.
-     */
-    public void setClientTlsCertificateId(String certificateId)
-    {
-        initCertificateAliases(certificateId);
     }
 
     /**

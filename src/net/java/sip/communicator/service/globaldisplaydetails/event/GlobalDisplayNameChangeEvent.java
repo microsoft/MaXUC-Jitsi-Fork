@@ -22,11 +22,6 @@ public class GlobalDisplayNameChangeEvent
     private static final long serialVersionUID = 1L;
 
     /**
-     * The display name this event is about.
-     */
-    private String displayName;
-
-    /**
      * Creates an instance of <tt>GlobalDisplayDetailsEvent</tt>
      *
      * @param source the source of this event
@@ -37,16 +32,5 @@ public class GlobalDisplayNameChangeEvent
     {
         super(source);
 
-        this.displayName = newDisplayName;
-    }
-
-    /**
-     * Returns the new global display name.
-     *
-     * @return a string representing the new global display name
-     */
-    public String getNewDisplayName()
-    {
-        return displayName;
     }
 }

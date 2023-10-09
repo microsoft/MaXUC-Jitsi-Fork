@@ -68,24 +68,6 @@ public class GenericEvent
     }
 
     /**
-     * The event name.
-     * @return the event name.
-     */
-    public String getEventName()
-    {
-        return eventName;
-    }
-
-    /**
-     * The event value.
-     * @return the event value.
-     */
-    public String getEventValue()
-    {
-        return eventValue;
-    }
-
-    /**
      * The contact which is the source of this event.
      * @return the contact which is the source of this event.
      */

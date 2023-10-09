@@ -25,7 +25,8 @@ public enum WISPANamespace
     TELEPHONY("/telephony"),
     SETTINGS("/settings"),
     VOICEMAILS("/voicemails"),
-    USER("/user");
+    USER("/user"),
+    BRANDING("/branding");
     // Add more here as new protocols are re-implemented.
 
     /**

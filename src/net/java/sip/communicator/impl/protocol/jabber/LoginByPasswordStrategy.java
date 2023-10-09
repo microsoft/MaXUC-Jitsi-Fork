@@ -20,6 +20,7 @@ import org.jxmpp.jid.parts.Resourcepart;
 import org.jxmpp.stringprep.XmppStringprepException;
 
 import net.java.sip.communicator.impl.credentialsstorage.ScopedCredentialsStorageServiceImpl;
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
 import net.java.sip.communicator.service.certificate.CertificateService;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.protocol.AbstractProtocolProviderService;
@@ -154,13 +155,21 @@ public class LoginByPasswordStrategy
 
         if (isCommPortalIM)
         {
-            String CPAccountPasswordPrefix = "net.java.sip.communicator.plugin.provisioning.auth";
+            if (PreLoginUtils.isLoggedInViaSSO())
+            {
+                password = PreLoginUtils.refreshSSOToken();
+                logger.info("Using SSO token for Jabber account");
+            }
+            else
+            {
+                String cpAccountPasswordPrefix = "net.java.sip.communicator.plugin.provisioning.auth";
 
-            CredentialsStorageService credentialsStorage =
-                JabberActivator.getCredentialsStorageService();
-            password = credentialsStorage.user().loadPassword(CPAccountPasswordPrefix);
+                CredentialsStorageService credentialsStorage =
+                        JabberActivator.getCredentialsStorageService();
+                password = credentialsStorage.user().loadPassword(cpAccountPasswordPrefix);
 
-            logger.debug("Using stored CommPortal password for Jabber account");
+                logger.info("Using stored CommPortal password for Jabber account");
+            }
         }
         else if (reasonCode != SecurityAuthority.WRONG_PASSWORD)
         {

@@ -58,6 +58,7 @@ import net.java.sip.communicator.service.protocol.RegistrationState;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
 import net.java.sip.communicator.service.threading.CancellableRunnable;
 import net.java.sip.communicator.service.threading.ThreadingService;
+import net.java.sip.communicator.service.threading.ThreadingService.RunAfterSleep;
 import net.java.sip.communicator.util.Logger;
 
 /**
@@ -91,27 +92,19 @@ public class SipRegistrarConnection
     */
     private String registrarName = null;
 
-    /**
-     * The name of the property under which the user may specify the number of
-     * seconds that registrations take to expire.
-     */
-    private static final String REGISTRATION_EXPIRATION =
-        "net.java.sip.communicator.impl.protocol.sip.REGISTRATION_EXPIRATION";
-
     private final ThreadingService mThreadingService;
 
     /**
-    * The default amount of time (in seconds) that registration take to
-    * expire or otherwise put - the number of seconds we wait before re-
-    * registering.
+    * The amount of time (in seconds) that registration take to expire or otherwise put - the number
+    * of seconds we wait before re-registering.
+    *
+    * This was previously configurable (via the EPP) but a long-standing bug meant we weren't
+    * reading the configured value, and instead were always using the default value of 600s.
+    * Fixing that bug would result in an unexpected change of behaviour over upgrade, potentially
+    * causing loss of registration and thus call service. Instead we just make this non-configurable
+    * and hardcode it to 600s.
     */
-    private static final int DEFAULT_REGISTRATION_EXPIRATION = 600;
-
-    /**
-    * The amount of time (in seconds) that registration take to expire or
-    * otherwise put - the number of seconds we wait before re-registering.
-    */
-    private int registrationsExpiration = DEFAULT_REGISTRATION_EXPIRATION;
+    private int registrationsExpiration = 600;
 
     /**
     * Keeps our current registration state.
@@ -162,13 +155,6 @@ public class SipRegistrarConnection
     * Default value for keep-alive method - register
     */
     private static final int KEEP_ALIVE_INTERVAL_DEFAULT_VALUE = 25;
-
-    /**
-    * Specifies whether or not we should be using a route header in register
-    * requests. This field is specified by the REGISTERS_USE_ROUTE account
-    * property.
-    */
-    private boolean useRouteHeader = false;
 
     /**
     * The sip address that we're currently behind (the one that corresponds to
@@ -257,12 +243,6 @@ public class SipRegistrarConnection
         this.sipProvider = sipProviderCallback;
 
         mThreadingService = SipActivator.getThreadingService();
-
-        //init expiration timeout
-        this.registrationsExpiration =
-            SipActivator.getConfigurationService().global().getInt(
-                REGISTRATION_EXPIRATION,
-                DEFAULT_REGISTRATION_EXPIRATION);
 
         //init our address of record to save time later
         getAddressOfRecord();
@@ -988,21 +968,14 @@ public class SipRegistrarConnection
                 }
 
                 logger.debug("Schedule re-registration in " + expires + " ms");
-                mThreadingService.schedule("SIP re-registration", reRegisterTask, expires);
+                // No need to run this if the device has just woken up from sleep, that's handled separately
+                mThreadingService.schedule("SIP re-registration", reRegisterTask, expires, RunAfterSleep.NO);
             }
             else
             {
                 logger.info("Not scheduling re-registration as state is: " + currentState);
             }
         }
-    }
-
-    /**
-     * Force a re-register to be sent now, rather than when the timer pops.
-     */
-    public synchronized void reRegisterNow()
-    {
-        reRegister(1);
     }
 
     /**
@@ -1434,23 +1407,6 @@ public class SipRegistrarConnection
     }
 
     /**
-    * Determines whether Register requests should be using a route header. The
-    * return value of this method is specified by the REGISTERS_USE_ROUTE
-    * account property.
-    *
-    * Jeroen van Bemmel: The reason this may needed, is that standards-
-    * compliant registrars check the domain in the request URI. If it contains
-    * an IP address, some registrars are unable to match/process it (they may
-    * forward instead, and get into a forwarding loop)
-    *
-    * @return true if we should be using a route header.
-    */
-    public boolean isRouteHeaderEnabled()
-    {
-        return useRouteHeader;
-    }
-
-    /**
     * Returns true if this is a fake connection that is not actually using
     * a registrar. This method should be overridden in
     * <tt>SipRegistrarlessConnection</tt> and return <tt>true</tt> in there.
@@ -1604,7 +1560,10 @@ public class SipRegistrarConnection
                 InetSocketAddress inetAddress = proxyConnection.getAddress();
                 String transport = proxyConnection.getTransport();
                 int port = inetAddress.getPort();
-                String host = inetAddress.getAddress().getHostName();
+
+                // use already resolved host IP address to avoid DNS resolving.
+                String host = inetAddress.getAddress().getHostAddress();
+
                 // It appears that AD always does loose routing and there's no
                 // configuration option covering it so set it as default.
                 String proxy = "<sip:" + host + ":" + port + ";transport=" + transport + ";lr>";

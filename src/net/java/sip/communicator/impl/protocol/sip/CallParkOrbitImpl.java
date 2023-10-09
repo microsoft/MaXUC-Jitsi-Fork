@@ -15,7 +15,11 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.OperationSetCallPark.CallParkOrbit;
 import net.java.sip.communicator.service.protocol.OperationSetCallPark.CallParkOrbitState;
 import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.service.systray.*;
+import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPANamespace;
+import net.java.sip.communicator.service.wispaservice.WISPANotion;
+import net.java.sip.communicator.service.wispaservice.WISPANotionType;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -198,16 +202,7 @@ public class CallParkOrbitImpl implements CallParkOrbit
             // Display a notification toast, and let the SIP code handle sending
             // any necessary further messages.
             logger.info("Call park successful (orbit " + orbitCode + ")");
-
-            ResourceManagementService resources = SipActivator.getResources();
-            String title = resources.getI18NString(
-                "impl.protocol.sip.CALL_PARK_SUCCEEDED_TITLE");
-            String message = resources.getI18NString(
-                   "impl.protocol.sip.CALL_PARK_SUCCEEDED_TEXT", new String[] {friendlyName});
-
-            SystrayService systray = SipActivator.getSystrayService();
-            systray.showPopupMessage(new PopupMessage(title, message));
-
+            showSuccessPopup();
             break;
 
         case Response.BUSY_HERE:
@@ -243,6 +238,25 @@ public class CallParkOrbitImpl implements CallParkOrbit
         }
 
         return handled;
+    }
+
+    private void showSuccessPopup()
+    {
+        ResourceManagementService resources = SipActivator.getResources();
+        String title = resources
+            .getI18NString("impl.protocol.sip.CALL_PARK_SUCCEEDED_TITLE");
+        String message = resources.getI18NString(
+            "impl.protocol.sip.CALL_PARK_SUCCEEDED_TEXT", new String[]
+            { friendlyName });
+
+        WISPAService wispaService = SipActivator.getWispaService();
+        if (wispaService != null)
+        {
+            Object notification = new WISPANotion(WISPANotionType.NOTIFICATION,
+                new NotificationInfo(title, message));
+            wispaService.notify(WISPANamespace.EVENTS, WISPAAction.NOTION,
+                notification);
+        }
     }
 
     /**
@@ -465,7 +479,7 @@ public class CallParkOrbitImpl implements CallParkOrbit
                             logger.error("Timer popped when in incorrect state: " + state);
                         }
 
-                        CallParkOrbitState newState = OperationSetCallPark.CallParkOrbitState.BUSY;
+                        CallParkOrbitState newState = CallParkOrbitState.BUSY;
                         updateOrbitState(newState);
 
                         // Now the task has finished running.

@@ -143,17 +143,6 @@ public class GlobalDisplayDetailsImpl
     }
 
     /**
-     * Sets the global local user display name.
-     *
-     * @param displayName the string representing the display name to set as
-     * a global display name
-     */
-    public void setGlobalDisplayName(String displayName)
-    {
-        globalDisplayName = displayName;
-    }
-
-    /**
      * Returns the global avatar for the local user.
      *
      * @return a byte array containing the global avatar for the local user

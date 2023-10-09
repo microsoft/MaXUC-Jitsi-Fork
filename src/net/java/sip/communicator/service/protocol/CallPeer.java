@@ -8,7 +8,6 @@
 package net.java.sip.communicator.service.protocol;
 
 import java.beans.*;
-import java.net.*;
 import java.util.*;
 
 import net.java.sip.communicator.service.contactlist.*;
@@ -79,16 +78,6 @@ public interface CallPeer
             CallPeerSecurityListener listener);
 
     /**
-     * Adds a specific <tt>SoundLevelListener</tt> to the list
-     * of listeners interested in and notified about changes in conference
-     * members sound level.
-     *
-     * @param listener the <tt>SoundLevelListener</tt> to add
-     */
-    void addConferenceMembersSoundLevelListener(
-            ConferenceMembersSoundLevelListener listener);
-
-    /**
      * Allows the user interface to register a listener interested in property
      * changes.
      * @param listener a property change listener instance to register with this
@@ -123,29 +112,6 @@ public interface CallPeer
      * @return a reference to the call containing this peer.
      */
     Call getCall();
-
-    /**
-     * Gets the time at which this <tt>CallPeer</tt> transitioned
-     * into a state (likely {@link CallPeerState#CONNECTED}) marking the
-     * start of the duration of the participation in a <tt>Call</tt>.
-     *
-     * @return the time at which this <tt>CallPeer</tt> transitioned
-     *         into a state marking the start of the duration of the
-     *         participation in a <tt>Call</tt> or
-     *         {@link #CALL_DURATION_START_TIME_UNKNOWN} if such a transition
-     *         has not been performed
-     */
-    long getCallDurationStartTime();
-
-    /**
-     * Returns a URL pointing to a location with call control information or
-     * null if such an URL is not available for the current call peer.
-     *
-     * @return a URL link to a location with call information or a call control
-     * web interface related to this peer or <tt>null</tt> if no such URL
-     * is available.
-     */
-    URL getCallInfoURL();
 
     /**
      * Gets the number of <tt>ConferenceMember</tt>s currently known to this
@@ -311,17 +277,6 @@ public interface CallPeer
             CallPeerSecurityListener listener);
 
     /**
-     * Removes a specific <tt>SoundLevelListener</tt> of the
-     * list of listeners interested in and notified about changes in conference
-     * members sound level.
-     *
-     * @param listener the <tt>SoundLevelListener</tt> to
-     * remove
-     */
-    void removeConferenceMembersSoundLevelListener(
-            ConferenceMembersSoundLevelListener listener);
-
-    /**
      * Unregisters the specified property change listener.
      *
      * @param listener the property change listener to unregister.
@@ -338,16 +293,6 @@ public interface CallPeer
     void removeStreamSoundLevelListener(SoundLevelListener listener);
 
     /**
-     * @return whether a CRM lookup of this peer's DN has been completed.
-     */
-    boolean isCrmLookupCompleted();
-
-    /**
-     * @return Whether the CRM lookup was successful.
-     */
-    boolean isCrmLookupSuccessful();
-
-    /**
      * Returns a string representation of the peer in the form of
      * <br>
      * Display Name &lt;address&gt;;status=CallPeerStatus
@@ -357,7 +302,11 @@ public interface CallPeer
     String toString();
 
     /**
-     * @return Any diversion info, so we can display this in the UI.
+     * Get the diversion information if present and format in a way that is
+     * suitable to be shown in the UI. Optionally send an analytic, which
+     * is currently sent once per incoming call.
+     *
+     * @return The diversion info to be displayed in the UI.
      */
-    String getDiversionInfo();
+    String getDiversionDisplayValue(boolean sendAnalytic);
 }

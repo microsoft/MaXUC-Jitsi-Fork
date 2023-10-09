@@ -271,30 +271,6 @@ public class MacAddressBookDataHandler
         }
 
         /**
-         * Returns a string representation of the array of objects supplied.
-         * The array may be multi-layered.
-         *
-         * @param values the array of objects to convert to a string
-         * @return a string representation of the array of objects supplied
-         */
-        private String getValuesAsString(Object[] values)
-        {
-            String strVals = "";
-            for (Object value : values)
-            {
-                if (value instanceof String)
-                {
-                    strVals = strVals + ", " + (String) value;
-                }
-                else if (value instanceof Object[])
-                {
-                    strVals = strVals + getValuesAsString((Object[]) value);
-                }
-            }
-            return strVals;
-        }
-
-        /**
          * Adds a new notification. Avoids previous notification for the given
          * contact.
          *

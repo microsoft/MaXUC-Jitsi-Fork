@@ -19,8 +19,6 @@ import net.java.sip.communicator.util.*;
  */
 public class ChatRoomWrapper
 {
-    private static final Logger sLog = Logger.getLogger(ChatRoomWrapper.class);
-
     /**
      * The protocol provider to which the corresponding chat room belongs.
      */

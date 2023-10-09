@@ -15,6 +15,7 @@ import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
@@ -36,6 +37,8 @@ public class ContactlistActivator
     private static AccountManager accountManager;
 
     private static BundleContext bundleContext;
+
+    private static InsightService insightService;
 
     /**
      * A reference to the ConfigurationService implementation instance that
@@ -206,5 +209,16 @@ public class ContactlistActivator
     public static MetaContactListService getContactListService()
     {
         return mclServiceImpl;
+    }
+
+    public static InsightService getInsightService()
+    {
+        if (insightService == null)
+        {
+            insightService = ServiceUtils.getService(bundleContext,
+                                                    InsightService.class);
+        }
+
+        return insightService;
     }
 }

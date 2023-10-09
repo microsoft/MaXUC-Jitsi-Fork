@@ -219,8 +219,7 @@ public class BGIMContactManager implements RegistrationStateChangeListener,
             public void run()
             {
                 retryFailedContactUpdates();
-                if ("CommPortal".equals(ConfigurationUtils.getImProvSource()) &&
-                    ConfigurationUtils.autoPopulateIMEnabled())
+                if ("CommPortal".equals(ConfigurationUtils.getImProvSource()))
                 {
                     sContactLogger.info("Adding Missing IM contacts");
                     addMissingIMContacts();
@@ -241,25 +240,14 @@ public class BGIMContactManager implements RegistrationStateChangeListener,
      */
     public boolean isBGAutoCreatedIMContact(Contact imContact)
     {
-        boolean isBGAutoCreated = false;
-
-        // This must be false if auto-populating IM is turned off by the branding.
-        if (ConfigurationUtils.autoPopulateIMEnabled())
-        {
-            // Otherwise, see if we can find a BG contact corresponding to the IM contact's work number.
-            // The work number will be null if we're not using CommPortal-provisioned IM.
-            String workNumber =  getWorkNumberFromIMContact(imContact);
-            isBGAutoCreated = (workNumber == null) ? false : mBgNumbers.containsKey(workNumber);
-        }
-
-        return isBGAutoCreated;
+        // Work number will be null if we're not using CommPortal-provisioned
+        // IM.
+        String workNumber =  getWorkNumberFromIMContact(imContact, true);
+        return (workNumber == null) ? false : mBgNumbers.containsKey(workNumber);
     }
 
     /**
      * Returns the corresponding BG contact (if any) for the given IM contact.
-     *
-     * Note that this method will try to match both manually-added and, if
-     * enabled in the branding, automatically provisioned IM contacts.
      *
      * @param imContact The IM contact.
      * @return The corresponding BG contact, or null if none exists.
@@ -267,7 +255,7 @@ public class BGIMContactManager implements RegistrationStateChangeListener,
     public Contact getBGContactForIMContact(Contact imContact)
     {
         // Work number will be null if we're not using CommPortal-provisioned IM.
-        String workNumber = getWorkNumberFromIMContact(imContact);
+        String workNumber = getWorkNumberFromIMContact(imContact, false);
         return (workNumber == null) ? null : mBgNumbers.get(workNumber);
     }
 
@@ -485,40 +473,63 @@ public class BGIMContactManager implements RegistrationStateChangeListener,
                 else
                 {
                     mBgNumbers.remove(workNumber);
+                    handleIMSubscriptionForBGContact(updatedContact, false);
                 }
             }
+        }
+    }
 
-            if (ConfigurationUtils.isImEnabled())
+    /**
+     * If the client is using CommPortal IM, it adds or deletes a
+     * corresponding IM contact.
+     *
+     * @param conact The BG contact that has been added or deleted.
+     * @param add If true, the contact's work number will be added to the list
+     * and a corresponding IM contact will be added.  Otherwise, they will be
+     * removed.
+     */
+    private void handleIMSubscriptionForBGContact(Contact contact, boolean add) {
+        sContactLogger.debug(
+            "Handling subscribing to: " + contact + ", " + add);
+
+        String workNumber = getWorkNumberFromBGContact(contact);
+
+        // If IM is enabled and CommPortal provisioned then assemble
+        // the imAddress and send a buddy request to it.
+        if (ConfigurationUtils.isImEnabled())
+        {
+            if ("CommPortal".equals(ConfigurationUtils.getImProvSource()))
             {
-                if ("CommPortal".equals(ConfigurationUtils.getImProvSource()) &&
-                    ConfigurationUtils.autoPopulateIMEnabled())
+                String imDomain = sConfig.user().getString(
+                                  "net.java.sip.communicator.im.IM_DOMAIN");
+
+                String imAddress = workNumber + "@" + imDomain;
+                String loggableImAddress = logHasher(imAddress);
+
+                synchronized (this)
                 {
-                    String imDomain = sConfig.user().getString(
-                                      "net.java.sip.communicator.im.IM_DOMAIN");
-
-                    String imAddress = workNumber + "@" + imDomain;
-                    String loggableImAddress = logHasher(imAddress);
-
-                    synchronized (this)
+                    if (mAccountRegistered)
                     {
-                        if (mAccountRegistered)
-                        {
-                            sContactLogger.debug("Account registered. " +
-                                                 "Update: " +
-                                                 loggableImAddress + ", " + add);
-                            updateIMContact(imAddress, add);
-                        }
-                        else
-                        {
-                            sContactLogger.debug("Account not registered. " +
-                                                 "Pending update: " +
-                                                 loggableImAddress + ", " + add);
-                            mContactsToUpdate.put(imAddress, add);
-                        }
+                        sContactLogger.debug("Account registered. " +
+                                             "Update: " +
+                                             loggableImAddress + ", " + add);
+                        updateIMContact(imAddress, add);
+                    }
+                    else
+                    {
+                        sContactLogger.debug("Account not registered. " +
+                                             "Pending update: " +
+                                             loggableImAddress + ", " + add);
+                        mContactsToUpdate.put(imAddress, add);
                     }
                 }
             }
         }
+    }
+
+    public void subscribeToIMContact(Contact contact)
+    {
+        handleIMSubscriptionForBGContact(contact, true);
     }
 
     /**
@@ -676,22 +687,25 @@ public class BGIMContactManager implements RegistrationStateChangeListener,
     }
 
     /**
-     * Gets the work number from an IM Contact, if we're using
-     * CommPortal-provisioned IM.
+     * Gets the work number from an IM Contact.  Legacy behaviour only does
+     * this, if we're using CommPortal-provisioned IM.  New behaviour
+     * extracts work number regardless.
      *
      * @param imContact The IM Contact.
-     * @return The IM Contact's work number, or null if we're not using
-     *         CommPortal-provisioned IM.
+     * @param checkProvType Use legacy behaviour
+     * @return The IM Contact's work number, or null.
      */
-    private String getWorkNumberFromIMContact(Contact imContact)
+    private String getWorkNumberFromIMContact(Contact imContact, boolean checkProvType)
     {
         String workNumber = null;
 
         if (imContact != null)
         {
             // The first part of the contact's IM address will only map to a work
-            // number of a BG contact if CommPortal IM is enabled.
-            if ("CommPortal".equals(ConfigurationUtils.getImProvSource()))
+            // number of a BG contact if CommPortal IM is enabled...
+            // unless manual IM prov was used for AMS scale reasons.
+            if (!checkProvType ||
+                ("CommPortal".equals(ConfigurationUtils.getImProvSource())))
             {
                 String imContactAddress = imContact.getAddress();
 

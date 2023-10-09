@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
 <!--
   Jitsi, the OpenSource Java VoIP and Instant Messaging client.
 
@@ -16,50 +15,20 @@
     We used to set some registry keys in HKLM, but have now migrated them to
     HKCU. So remove those keys so avoid conflict with the new keys.
   -->
-  <Component
-      Id="Component_RemoveOldRegistry"
-      Directory="TARGETDIR"
-      Guid="4feed9ba-ec38-474f-8fdc-967ef1b084cd">
-    <RemoveRegistryKey 
-    	Id="RemoveOldRegistry" 
-     	Key="SOFTWARE\@@PRODUCT_NAME_ASCII@@" 
-     	Root="HKLM"
-        Action="removeOnInstall"/>
+  <Component Id="Component_RemoveOldRegistry" Directory="TARGETDIR" Guid="4feed9ba-ec38-474f-8fdc-967ef1b084cd">
+    <RemoveRegistryKey Id="RemoveOldRegistry" Key="SOFTWARE\@@PRODUCT_NAME_ASCII@@" Root="HKLM" Action="removeOnInstall" />
   </Component>
   
-  <Component
-      Id="Component_InstallPath"
-      Directory="TARGETDIR"
-      Guid="615F7548-35FA-42C4-8EAF-7B3A90F9EA8F">
-    <RegistryKey 
-    	Key="SOFTWARE\@@PRODUCT_NAME_ASCII@@" 
-    	Root="HKCU"
-    	ForceDeleteOnUninstall="yes"
-        >
-      <RegistryValue
-          Name="app-path"
-          KeyPath="yes"
-          Type="string"
-          Value="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" />
-      <RegistryValue
-          Name="icon-path"
-          Type="string"
-          Value="[INSTALLDIR]sc-logo.ico" />
-      <RegistryValue
-          Key="Capabilities"
-          Name="ApplicationDescription"
-          Type="string"
-          Value='@@PRODUCT_NAME_ASCII@@' />
-      <RegistryKey 
-      	  Key="Capabilities\UrlAssociations" 
-      	  ForceCreateOnInstall="yes"/>
+  <Component Id="Component_InstallPath" Directory="TARGETDIR" Guid="615F7548-35FA-42C4-8EAF-7B3A90F9EA8F">
+    <RegistryKey Key="SOFTWARE\@@PRODUCT_NAME_ASCII@@" Root="HKCU" ForceDeleteOnUninstall="yes">
+      <RegistryValue Name="app-path" KeyPath="yes" Type="string" Value="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" />
+      <RegistryValue Name="icon-path" Type="string" Value="[INSTALLDIR]sc-logo.ico" />
+      <RegistryValue Key="Capabilities" Name="ApplicationDescription" Type="string" Value="@@PRODUCT_NAME_ASCII@@" />
+      <RegistryKey Key="Capabilities\UrlAssociations" ForceCreateOnInstall="yes" />
     </RegistryKey>
   </Component>
 
-  <Component
-      Id="Component_SipApplRegistryEntries"
-      Directory="TARGETDIR"
-      Guid="6E3E1BA4-F17F-48fb-A15A-6D67272F2AFD">
+  <Component Id="Component_SipApplRegistryEntries" Directory="TARGETDIR" Guid="6E3E1BA4-F17F-48fb-A15A-6D67272F2AFD">
     <!--
       Install our own, application specific info which is what
       'Default Programs' can use if the user chooses to
@@ -81,32 +50,17 @@
     <RegistryKey Key="Software\Classes\@@PRODUCT_NAME_ASCII@@.Url.tel" Root="HKLM">
       <RegistryValue Type="string" Value="URL: TEL Protocol handler" />
       <RegistryValue Name="URL Protocol" Type="string" Value="" />
-      <RegistryValue
-          Key="DefaultIcon"
-          Type="string"
-          Value="[INSTALLDIR]sc-logo.ico" />
-      <RegistryValue
-          Key="shell\open\command"
-          Type="string"
-          Value='"[INSTALLDIR]@APP_LAUNCHER_NAME@.exe" "%1"' />
+      <RegistryValue Key="DefaultIcon" Type="string" Value="[INSTALLDIR]sc-logo.ico" />
+      <RegistryValue Key="shell\open\command" Type="string" Value="&quot;[INSTALLDIR]@APP_LAUNCHER_NAME@.exe&quot; &quot;%1&quot;" />
     </RegistryKey>
   </Component>
 
-  <Component
-      Id="Component_MaXUCCallRegistryEntry"
-      Directory="TARGETDIR"
-      Guid="*">
-    <RegistryKey Key="Software\Classes\maxuccall" Root="HKCU" Action="createAndRemoveOnUninstall">
+  <Component Id="Component_MaXUCCallRegistryEntry" Directory="TARGETDIR" Guid="3e4b39ad-144e-5d9c-8a1e-746541f23269">
+    <RegistryKey Key="Software\Classes\maxuccall" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
           <RegistryValue Type="string" Value="URL: MaX UC Call Protocol handler" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" />
-          <RegistryValue
-              Key="DefaultIcon"
-              Type="string"
-              Value="[INSTALLDIR]sc-logo.ico" />
-          <RegistryValue
-              Key="shell\open\command"
-              Type="string"
-              Value='"[INSTALLDIR]@APP_LAUNCHER_NAME@.exe" "%1"' />
+          <RegistryValue Key="DefaultIcon" Type="string" Value="[INSTALLDIR]sc-logo.ico" />
+          <RegistryValue Key="shell\open\command" Type="string" Value="&quot;[INSTALLDIR]@APP_LAUNCHER_NAME@.exe&quot; &quot;%1&quot;" />
         </RegistryKey>
   </Component>
 
@@ -114,201 +68,66 @@
   <!-- See here for more details: https://docs.microsoft.com/en-us/office365/troubleshoot/administration/enable-disable-hyperlink-warning -->
   <!-- Note that, at time of implementation, we only expect this URI to be call from MaX Connector for Teams, -->
   <!-- but we are adding these keys now so that we can expand its usage in future without having to make code changes. -->
-  <Component
-      Id="Component_MaXUCCallSafeLink12RegistryEntry"
-      Directory="TARGETDIR"
-      Guid="481403c8-3785-402f-8c4f-c0add269bae9">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\12.0\Common\Security\Trusted Protocols\All Applications\maxuccall:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_MaXUCCallSafeLink12RegistryEntry" Directory="TARGETDIR" Guid="481403c8-3785-402f-8c4f-c0add269bae9">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\12.0\Common\Security\Trusted Protocols\All Applications\maxuccall:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
-  <Component
-      Id="Component_MaXUCCallSafeLink14RegistryEntry"
-      Directory="TARGETDIR"
-      Guid="448ce28c-610b-4dbd-add0-00d0ec832d4b">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\14.0\Common\Security\Trusted Protocols\All Applications\maxuccall:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_MaXUCCallSafeLink14RegistryEntry" Directory="TARGETDIR" Guid="448ce28c-610b-4dbd-add0-00d0ec832d4b">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\14.0\Common\Security\Trusted Protocols\All Applications\maxuccall:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
-  <Component
-        Id="Component_MaXUCCallSafeLink15RegistryEntry"
-        Directory="TARGETDIR"
-        Guid="4f6de6cb-099c-4421-82f4-d7eeb990e7cf">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\15.0\Common\Security\Trusted Protocols\All Applications\maxuccall:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_MaXUCCallSafeLink15RegistryEntry" Directory="TARGETDIR" Guid="4f6de6cb-099c-4421-82f4-d7eeb990e7cf">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\15.0\Common\Security\Trusted Protocols\All Applications\maxuccall:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
-  <Component
-        Id="Component_MaXUCCallSafeLink16RegistryEntry"
-        Directory="TARGETDIR"
-        Guid="421540e4-b2f7-4192-98ee-21614d5e3fe6">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\16.0\Common\Security\Trusted Protocols\All Applications\maxuccall:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_MaXUCCallSafeLink16RegistryEntry" Directory="TARGETDIR" Guid="421540e4-b2f7-4192-98ee-21614d5e3fe6">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\16.0\Common\Security\Trusted Protocols\All Applications\maxuccall:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
 
-  <Component
-      Id="Component_AccessionLoginRegistryEntry"
-      Directory="TARGETDIR"
-      Guid="*">
-    <RegistryKey Key="Software\Classes\accessionlogin" Root="HKCU" Action="createAndRemoveOnUninstall">
+  <Component Id="Component_AccessionLoginRegistryEntry" Directory="TARGETDIR" Guid="673f379c-6c53-50c1-ad56-26efa714231e">
+    <RegistryKey Key="Software\Classes\accessionlogin" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
           <RegistryValue Type="string" Value="URL: Accession Login Protocol handler" />
           <RegistryValue Name="URL Protocol" Type="string" Value="" />
-          <RegistryValue
-              Key="DefaultIcon"
-              Type="string"
-              Value="[INSTALLDIR]sc-logo.ico" />
-          <RegistryValue
-              Key="shell\open\command"
-              Type="string"
-              Value='"[INSTALLDIR]@APP_LAUNCHER_NAME@.exe" "%1"' />
+          <RegistryValue Key="DefaultIcon" Type="string" Value="[INSTALLDIR]sc-logo.ico" />
+          <RegistryValue Key="shell\open\command" Type="string" Value="&quot;[INSTALLDIR]@APP_LAUNCHER_NAME@.exe&quot; &quot;%1&quot;" />
         </RegistryKey>
   </Component>
 
   <!-- Write the necessary keys so that clicking a login URI does not give a warning when clicking on it from an Office product. -->
   <!-- See here for more details: https://docs.microsoft.com/en-us/office365/troubleshoot/administration/enable-disable-hyperlink-warning -->
-  <Component
-      Id="Component_AccessionLoginSafeLink12RegistryEntry"
-      Directory="TARGETDIR"
-      Guid="DFE8CFFB-DA4D-4855-9F8D-FA0CFCBF895F">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\12.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_AccessionLoginSafeLink12RegistryEntry" Directory="TARGETDIR" Guid="DFE8CFFB-DA4D-4855-9F8D-FA0CFCBF895F">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\12.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
-  <Component
-      Id="Component_AccessionLoginSafeLink14RegistryEntry"
-      Directory="TARGETDIR"
-      Guid="A24EB971-0988-449A-96A2-8F2F2FB3D80E">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\14.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_AccessionLoginSafeLink14RegistryEntry" Directory="TARGETDIR" Guid="A24EB971-0988-449A-96A2-8F2F2FB3D80E">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\14.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
-  <Component
-        Id="Component_AccessionLoginSafeLink15RegistryEntry"
-        Directory="TARGETDIR"
-        Guid="2E82C9EB-3F0C-4F5A-A7F1-44B510577CFA">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\15.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_AccessionLoginSafeLink15RegistryEntry" Directory="TARGETDIR" Guid="2E82C9EB-3F0C-4F5A-A7F1-44B510577CFA">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\15.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
-  <Component
-        Id="Component_AccessionLoginSafeLink16RegistryEntry"
-        Directory="TARGETDIR"
-        Guid="604FC8DD-541B-4994-B883-F8B4C8FFCADC">
-    <RegistryKey
-        Key="Software\Policies\Microsoft\Office\16.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:"
-        Root="HKCU"
-        Action="createAndRemoveOnUninstall">
-        <RegistryValue Type="string" Value="Default Value"/>
+  <Component Id="Component_AccessionLoginSafeLink16RegistryEntry" Directory="TARGETDIR" Guid="604FC8DD-541B-4994-B883-F8B4C8FFCADC">
+    <RegistryKey Key="Software\Policies\Microsoft\Office\16.0\Common\Security\Trusted Protocols\All Applications\accessionlogin:" Root="HKCU" ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="string" Value="Default Value" />
     </RegistryKey>
   </Component>
 
   @ACCESSION_MEETING_REGISTRY_COMPONENT@
 
-  <Component
-      Id="Component_StartupRegistryEntries"
-      Directory="TARGETDIR"
-      Guid="64F3D56F-62D3-420D-B5A3-C448EB169708">
-    <Condition><![CDATA[HAS_STARTUP_REGISTRY]]></Condition>
-    <RegistryKey
-        Key="Software\Microsoft\Windows\CurrentVersion\Run"
-        Root="HKCU">
-      <RegistryValue
-          KeyPath="yes"
-          Name="@@PRODUCT_NAME_ASCII@@"
-          Type="string"
-          Value="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" />
+  <Component Id="Component_StartupRegistryEntries" Directory="TARGETDIR" Guid="64F3D56F-62D3-420D-B5A3-C448EB169708" Condition="HAS_STARTUP_REGISTRY">
+    <RegistryKey Key="Software\Microsoft\Windows\CurrentVersion\Run" Root="HKCU">
+      <RegistryValue KeyPath="yes" Name="@@PRODUCT_NAME_ASCII@@" Type="string" Value="[INSTALLDIR]ui\@@PRODUCT_NAME_ASCII@@.exe" />
     </RegistryKey>
   </Component>
-
-  <Component
-      Id="Component_MsOfficeCommRegistryEntries_X86"
-      Directory="TARGETDIR"
-      Guid="88725b1d-dbb3-418a-8253-41ade81bf1ff"
-      Win64="no">
-    <Condition><![CDATA[CREATE_MSOFFICECOMM_REGISTRY_ENTRIES = 1]]></Condition>
-    <RegistryKey
-        Key="SOFTWARE\Microsoft\Office\Outlook\Call Integration"
-        Root="HKLM" Action="createAndRemoveOnUninstall">
-      <RegistryValue
-          KeyPath="yes"
-          Name="IMApplication"
-          Type="string"
-          Value="@APP_LAUNCHER_NAME@.exe" />
-    </RegistryKey>
-    <RegistryKey
-        Key="SOFTWARE\IM Providers\@@PRODUCT_NAME_ASCII@@"
-        Root="HKLM" Action="createAndRemoveOnUninstall">
-      <RegistryValue
-          Name="FriendlyName"
-          Type="string"
-          Value="@@PRODUCT_NAME_ASCII@@" />
-      <RegistryValue
-          Name="GUID"
-          Type="string"
-          Value="{8885370D-B33E-44B7-875D-28E403CF9270}" />
-      <RegistryValue
-          Name="ProcessName"
-          Type="string"
-          Value="@APP_LAUNCHER_NAME@.exe" />
-    </RegistryKey>
-  </Component>
-
-<?if $(var.Platform) = x64 ?>
-  <Component
-      Id="Component_MsOfficeCommRegistryEntries_X64"
-      Directory="TARGETDIR"
-      Guid="ce3c9a0f-1876-470e-823c-a29d7b7fcb26"
-      Win64="yes">
-    <Condition><![CDATA[CREATE_MSOFFICECOMM_REGISTRY_ENTRIES = 1]]></Condition>
-    <RegistryKey
-        Key="SOFTWARE\Microsoft\Office\Outlook\Call Integration"
-        Root="HKLM" Action="createAndRemoveOnUninstall">
-      <RegistryValue
-          KeyPath="yes"
-          Name="IMApplication"
-          Type="string"
-          Value="@APP_LAUNCHER_NAME@.exe" />
-    </RegistryKey>
-    <RegistryKey
-        Key="SOFTWARE\IM Providers\@@PRODUCT_NAME_ASCII@@"
-        Root="HKLM" Action="createAndRemoveOnUninstall">
-        <RegistryValue
-          Name="FriendlyName"
-          Type="string"
-          Value="@@PRODUCT_NAME_ASCII@@" />
-      <RegistryValue
-          Name="GUID"
-          Type="string"
-          Value="{8885370D-B33E-44B7-875D-28E403CF9270}" />
-      <RegistryValue
-          Name="ProcessName"
-          Type="string"
-          Value="@APP_LAUNCHER_NAME@.exe" />
-    </RegistryKey>
-  </Component>
-<?endif ?>
 
 </ComponentGroup>
 </Fragment>

@@ -8,6 +8,7 @@ package net.java.sip.communicator.impl.certificate;
 
 import java.security.GeneralSecurityException;
 
+import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.service.certificate.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.util.*;
@@ -43,6 +44,11 @@ public class CertificateVerificationActivator
      * The service to store and access passwords.
      */
     private static CredentialsStorageService credService;
+
+    /**
+     * The message analytics service
+     */
+    private static AnalyticsService analyticsService;
 
     /**
      * Called when this bundle is started.
@@ -133,5 +139,23 @@ public class CertificateVerificationActivator
                         CredentialsStorageService.class);
         }
         return credService;
+    }
+
+    /**
+     * Returns the <tt>AnalyticsService</tt> through which we will send analytics.
+     *
+     * @return the <tt>AnalyticsService</tt> through which we will send analytics.
+     */
+    public static AnalyticsService getAnalyticsService()
+    {
+        if (analyticsService == null)
+        {
+            analyticsService =
+                    ServiceUtils.getService(
+                            bundleContext,
+                            AnalyticsService.class);
+        }
+
+        return analyticsService;
     }
 }

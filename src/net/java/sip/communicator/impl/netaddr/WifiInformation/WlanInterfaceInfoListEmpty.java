@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.netaddr.WifiInformation;
-import java.util.*;
 
 import com.sun.jna.*;
+import com.sun.jna.Structure.FieldOrder;
 
 /**
  * A Java representation of the native structure WLAN_INTERFACE_INFO_LIST, with
@@ -11,6 +11,7 @@ import com.sun.jna.*;
  *
  * https://docs.microsoft.com/en-us/windows/win32/api/wlanapi/ns-wlanapi-wlan_interface_info_list
  */
+@FieldOrder({"dwNumberOfItems", "dwIndex"})
 public class WlanInterfaceInfoListEmpty
     extends Structure
 {
@@ -33,10 +34,4 @@ public class WlanInterfaceInfoListEmpty
     // Once we have determined that we have a non-zero number of interfaces,
     // we can create a WlanInterfaceInfoList structure, which does have an
     // "InterfaceInfo" field.
-
-    @Override
-    protected List<String> getFieldOrder()
-    {
-        return Arrays.asList(new String[] {"dwNumberOfItems", "dwIndex"});
-    }
 }

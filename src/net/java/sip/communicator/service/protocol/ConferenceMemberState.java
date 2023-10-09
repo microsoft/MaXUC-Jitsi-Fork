@@ -47,19 +47,6 @@ public enum ConferenceMemberState
     DISCONNECTED("Disconnected"),
 
     /**
-     * Focus is in the process of disconnecting the endpoint (e.g., in SIP a
-     * DISCONNECT or BYE was sent to the endpoint).
-     */
-    DISCONNECTING("Disconnecting"),
-
-    /**
-     * Active signaling dialog exists between an endpoint and a focus and the
-     * endpoint can "listen" to the conference, but the endpoint's media is not
-     * being mixed into the conference.
-     */
-    MUTED_VIA_FOCUS("Muted via focus"),
-
-    /**
      * Active signaling dialog exists between an endpoint and a focus, but
      * endpoint is "on-hold" for this conference, i.e., he/she is neither
      * "hearing" the conference mix nor is his/her media being mixed in the

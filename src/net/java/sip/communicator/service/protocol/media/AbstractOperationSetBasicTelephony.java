@@ -10,8 +10,13 @@ package net.java.sip.communicator.service.protocol.media;
 import java.text.*;
 import java.util.*;
 
+import com.metaswitch.maxanalytics.event.CallKt;
+import com.metaswitch.maxanalytics.event.CallType;
+import com.metaswitch.maxanalytics.event.CommonKt;
+
 import org.jitsi.service.neomedia.*;
 
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.emergencylocation.EmergencyCallContext;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -240,7 +245,22 @@ public abstract class AbstractOperationSetBasicTelephony
     public void setMute(Call call, boolean mute)
     {
         if (call instanceof MediaAwareCall)
+        {
             ((MediaAwareCall<?,?,?>) call).setMute(mute);
+            boolean isVideoStreaming = ((MediaAwareCall<?, ?, ?>) call).isLocalVideoStreaming();
+
+            ProtocolMediaActivator.getInsightService().logEvent(
+                    new InsightEvent(
+                            CallKt.EVENT_CALL_MUTE,
+                            Map.of(
+                                    CommonKt.PARAM_TYPE,
+                                    isVideoStreaming ? CallType.VIDEO.getValue$maxanalytics() :
+                                            CallType.AUDIO.getValue$maxanalytics(),
+                                    CommonKt.PARAM_MUTE, String.valueOf(mute)
+                            )
+                    )
+            );
+        }
         else
         {
             /*

@@ -115,20 +115,6 @@ public class ConfigurationFrame
     private final AbstractMainFrame mainFrame;
 
     /**
-     * Indicates if the account config form should be shown.
-     */
-    public static final String SHOW_ACCOUNT_CONFIG_PROPERTY
-        = "net.java.sip.communicator.impl.gui.main."
-            + "configforms.SHOW_ACCOUNT_CONFIG";
-
-    /**
-     * Indicates if the configuration window should be shown.
-     */
-    public static final String SHOW_OPTIONS_WINDOW_PROPERTY
-        = "net.java.sip.communicator.impl.gui.main."
-            + "configforms.SHOW_OPTIONS_WINDOW";
-
-    /**
      * Indicates if IM functionality is enabled in the client.
      */
     private static final String IM_ENABLED_PROPERTY
@@ -485,7 +471,7 @@ public class ConfigurationFrame
         boolean videoCallsEnabled = !mConfigService.user()
             .getBoolean(DISABLE_VIDEO_UI_PROPERTY, false);
 
-        boolean meetingEnabled = mConferenceService.isJoinEnabled();
+        boolean meetingEnabled = mConferenceService != null && mConferenceService.isJoinEnabled();
 
         logger.debug("Show video config form: " +
             " video calls enabled: " + videoCallsEnabled +
@@ -635,9 +621,10 @@ public class ConfigurationFrame
      */
     private synchronized void setConfFormVisibility()
     {
-        if (mConferenceService.isFullServiceEnabled() ||
-            (mConferenceService.isJoinEnabled() &&
-                 mConferenceService.isConfAppInstalled()))
+        if (mConferenceService != null
+            && (mConferenceService.isFullServiceEnabled()
+                || (mConferenceService.isJoinEnabled()
+                    && mConferenceService.isConfAppInstalled())))
         {
             logger.debug("Conference service enabled");
             if (!isConfFormVisible)
@@ -809,31 +796,6 @@ public class ConfigurationFrame
         }
 
         configList.setSelected(title);
-    }
-
-    /**
-     * Validates the currently selected configuration form. This method is meant
-     * to be used by configuration forms the re-validate when a new component
-     * has been added or size has changed.
-     */
-    public void validateCurrentForm()
-    {
-        centerPanel.revalidate();
-
-        centerPanel.setPreferredSize(null);
-
-        validate();
-
-        // Set the height of the center panel to be equal to the height of the
-        // currently contained panel + all borders.
-        centerPanel.setPreferredSize(
-            new Dimension(ScaleUtils.scaleInt(550), centerPanel.getHeight()));
-
-        pack();
-
-        getContentPane().repaint();
-
-        updateCentralPanelSize();
     }
 
     /**

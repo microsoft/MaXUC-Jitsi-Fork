@@ -10,11 +10,8 @@ package net.java.sip.communicator.impl.gui.main.chat;
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseDirectoryNumber;
 import static org.jitsi.util.Hasher.logHasher;
 
-import java.io.*;
-
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications.TypingState;
-import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.account.*;
@@ -140,14 +137,6 @@ public class SMSChatTransport implements ChatTransport
      * @return false as SMS doesn't allow typing notifications.
      */
     public boolean allowsTypingNotifications()
-    {
-        return false;
-    }
-
-    /**
-     * @return false as SMS doesn't allow file transfer
-     */
-    public boolean allowsFileTransfer()
     {
         return false;
     }

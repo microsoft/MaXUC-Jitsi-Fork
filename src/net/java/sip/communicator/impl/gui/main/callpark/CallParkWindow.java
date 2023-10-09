@@ -703,12 +703,6 @@ public class CallParkWindow extends SIPCommFrame implements CallParkListener,
         }
     }
 
-    @Override
-    public void repaintWindow()
-    {
-        repaint();
-    }
-
     /*
      * None of the ContactListContainer methods need to be implemented, as
      * CallParkWindow has no search field.  However, it must still implement

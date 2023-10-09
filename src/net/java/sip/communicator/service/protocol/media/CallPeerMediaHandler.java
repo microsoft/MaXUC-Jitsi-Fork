@@ -1295,19 +1295,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     }
 
     /**
-     * Gets the SRTP control type used for a given media type.
-     *
-     * @param mediaType the <tt>MediaType</tt> to get the SRTP control type for
-     * @return the SRTP control type (MIKEY, SDES, ZRTP) used for the given
-     * media type or <tt>null</tt> if SRTP is not enabled for the given media
-     * type
-     */
-    public SrtpControl getEncryptionMethod(MediaType mediaType)
-    {
-        return mediaHandler.getEncryptionMethod(this, mediaType);
-    }
-
-    /**
      * Returns a (possibly empty) <tt>List</tt> of <tt>RTPExtension</tt>s
      * supported by the device that this media handler uses to handle media of
      * the specified <tt>type</tt>.
@@ -1322,172 +1309,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     protected List<RTPExtension> getExtensionsForType(MediaType type)
     {
         return getDefaultDevice(type).getSupportedExtensions();
-    }
-
-    /**
-     * Returns the harvesting time (in ms) for the harvester given in parameter.
-     *
-     * @param harvesterName The class name if the harvester.
-     *
-     * @return The harvesting time (in ms) for the harvester given in parameter.
-     * 0 if this harvester does not exists, if the ICE agent is null, or if the
-     * agent has never harvested with this harvester.
-     */
-    public long getHarvestingTime(String harvesterName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getHarvestingTime(harvesterName);
-    }
-
-    /**
-     * Returns the extended type of the candidate selected if this transport
-     * manager is using ICE.
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return The extended type of the candidate selected if this transport
-     * manager is using ICE. Otherwise, returns null.
-     */
-    public String getICECandidateExtendedType(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICECandidateExtendedType(streamName);
-    }
-
-    /**
-     * Returns the ICE local host address.
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return the ICE local host address if this transport
-     * manager is using ICE. Otherwise, returns null.
-     */
-    public InetSocketAddress getICELocalHostAddress(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICELocalHostAddress(streamName);
-    }
-
-    /**
-     * Returns the ICE local reflexive address (server or peer reflexive).
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return the ICE local reflexive address. May be null if this transport
-     * manager is not using ICE or if there is no reflexive address for the
-     * local candidate used.
-     */
-    public InetSocketAddress getICELocalReflexiveAddress(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICELocalReflexiveAddress(streamName);
-    }
-
-    /**
-     * Returns the ICE local relayed address (server or peer relayed).
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return the ICE local relayed address. May be null if this transport
-     * manager is not using ICE or if there is no relayed address for the
-     * local candidate used.
-     */
-    public InetSocketAddress getICELocalRelayedAddress(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICELocalRelayedAddress(streamName);
-    }
-
-    /**
-     * Returns the ICE remote host address.
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return the ICE remote host address if this transport
-     * manager is using ICE. Otherwise, returns null.
-     */
-    public InetSocketAddress getICERemoteHostAddress(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICERemoteHostAddress(streamName);
-    }
-
-    /**
-     * Returns the ICE remote reflexive address (server or peer reflexive).
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return the ICE remote reflexive address. May be null if this transport
-     * manager is not using ICE or if there is no reflexive address for the
-     * remote candidate used.
-     */
-    public InetSocketAddress getICERemoteReflexiveAddress(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICERemoteReflexiveAddress(streamName);
-    }
-
-    /**
-     * Returns the ICE remote relayed address (server or peer relayed).
-     *
-     * @param streamName The stream name (AUDIO, VIDEO);
-     *
-     * @return the ICE remote relayed address. May be null if this transport
-     * manager is not using ICE or if there is no relayed address for the
-     * remote candidate used.
-     */
-    public InetSocketAddress getICERemoteRelayedAddress(String streamName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICERemoteRelayedAddress(streamName);
-    }
-
-    /**
-     * Returns the current state of ICE processing.
-     *
-     * @return the current state of ICE processing if this transport
-     * manager is using ICE. Otherwise, returns null.
-     */
-    public String getICEState()
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getICEState();
     }
 
     /**
@@ -1574,40 +1395,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     }
 
     /**
-     * Returns the number of harvesting for this agent.
-     *
-     * @return The number of harvesting for this agent.
-     */
-    public int getNbHarvesting()
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getNbHarvesting();
-    }
-
-    /**
-     * Returns the number of harvesting time for the harvester given in
-     * parameter.
-     *
-     * @param harvesterName The class name if the harvester.
-     *
-     * @return The number of harvesting time for the harvester given in
-     * parameter.
-     */
-    public int getNbHarvesting(String harvesterName)
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getNbHarvesting(harvesterName);
-    }
-
-    /**
      * Returns the peer that is this media handler's "raison d'etre".
      *
      * @return the {@link MediaAwareCallPeer} that this handler is servicing.
@@ -1675,22 +1462,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         default:
             throw new IllegalArgumentException("mediaType");
         }
-    }
-
-    /**
-     * Returns the total harvesting time (in ms) for all harvesters.
-     *
-     * @return The total harvesting time (in ms) for all the harvesters. 0 if
-     * the ICE agent is null, or if the agent has nevers harvested.
-     */
-    public long getTotalHarvestingTime()
-    {
-        TransportManager<?> transportManager = getTransportManager();
-
-        return
-            (transportManager == null)
-                ? null
-                : transportManager.getTotalHarvestingTime();
     }
 
     /**
@@ -1878,20 +1649,20 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     }
 
     /**
-     * Compares a list of <tt>MediaFormat</tt>s offered by a remote party
-     * to the list of locally supported <tt>RTPExtension</tt>s as returned
-     * by one of our local <tt>MediaDevice</tt>s and returns a third
-     * <tt>List</tt> that contains their intersection.
+     * Compares a list of <tt>MediaFormat</tt>s offered by a remote party to the list of locally
+     * supported <tt>RTPExtension</tt>s in preferred order (as returned by one of our local
+     *  <tt>MediaDevice</tt>s) and returns a list of formats to include in an SDP response.
      *
-     * Note that it also treats telephone-event as a special case and puts it
-     * to the end of the intersection, if there is any intersection.
+     * The returned list will contain our most preferred codec supported by the remote, and also the
+     * telephone-event format if supported by us and remote.
      *
      * @param remoteFormats remote <tt>MediaFormat</tt> found in the
      * SDP message
-     * @param localFormats local supported <tt>MediaFormat</tt> of our device
-     * @return intersection between our local and remote <tt>MediaFormat</tt>
+     * @param localFormats local supported <tt>MediaFormat</tt> of our device in order of
+     * preference
+     * @return Formats to include in SDP response.
      */
-    protected List<MediaFormat> intersectFormats(
+    protected List<MediaFormat> getFormatsForSdpResponse(
                                             List<MediaFormat> remoteFormats,
                                             List<MediaFormat> localFormats)
     {
@@ -1899,14 +1670,14 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                              remoteFormats + "\nLocal  Formats: " + localFormats);
 
         List<MediaFormat> ret = new ArrayList<>();
-        MediaFormat telephoneEvents = null;
+        MediaFormat telephoneEventFormat = null;
 
-        for(MediaFormat remoteFormat : remoteFormats)
+        for (MediaFormat localFormat : localFormats)
         {
-            MediaFormat localFormat
-                = findMediaFormat(localFormats, remoteFormat);
+            MediaFormat matchingRemoteFormat
+                = findMediaFormat(remoteFormats, localFormat);
 
-            if (localFormat != null)
+            if (matchingRemoteFormat != null)
             {
                 // We ignore telephone-event here as it's not a real media
                 // format.  Therefore we don't want to decide to use it as
@@ -1916,12 +1687,12 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                 // Note if there are multiple telephone-event formats, we'll
                 // lose all but the last one.  That's fine because it's
                 // meaningless to have multiple repeated formats.
-                if (Constants.TELEPHONE_EVENT.equals(localFormat.getEncoding()))
+                if (Constants.TELEPHONE_EVENT.equals(matchingRemoteFormat.getEncoding()))
                 {
                     logger.debug(
-                            "Matched local telephone event so continuing: [" +
-                                         localFormat + "]");
-                    telephoneEvents = localFormat;
+                            "Matched remote telephone event so continuing: [" +
+                                         matchingRemoteFormat + "]");
+                    telephoneEventFormat = matchingRemoteFormat;
                     continue;
                 }
 
@@ -1929,8 +1700,10 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                 // match if we haven't added any already.
                 if (ret.isEmpty())
                 {
-                    logger.debug("Found matching format: " + localFormat);
-                    ret.add(localFormat);
+                    logger.debug(
+                        "Found highest priority matching format: [" +
+                                     matchingRemoteFormat + "]");
+                    ret.add(matchingRemoteFormat);
                 }
             }
         }
@@ -1939,10 +1712,9 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         // in to the end of the list if we removed it above.  If we didn't
         // find any compatible formats, we don't want to add telephone-event
         // as the only entry in the list because there'd be no media.
-        if ((!ret.isEmpty()) && (telephoneEvents != null))
+        if ((!ret.isEmpty()) && (telephoneEventFormat != null))
         {
-            logger.debug("Adding telephone events to intersect formats");
-            ret.add(telephoneEvents);
+            ret.add(telephoneEventFormat);
         }
 
         logger.info("Returning formats: " + ret);
@@ -2179,43 +1951,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     }
 
     /**
-     * Determines whether RTP translation is enabled for the <tt>CallPeer</tt>
-     * represented by this <tt>CallPeerMediaHandler</tt> and for a specific
-     * <tt>MediaType</tt>.
-     *
-     * @param mediaType the <tt>MediaType</tt> for which it is to be determined
-     * whether RTP translation is enabled for the <tT>CallPeeer</tt> represented
-     * by this <tt>CallPeerMediaHandler</tt>
-     * @return <tt>true</tt> if RTP translation is enabled for the
-     * <tt>CallPeer</tt> represented by this <tt>CallPeerMediaHandler</tt> and
-     * for the specified <tt>mediaType; otherwise, <tt>false</tt>
-     */
-    public boolean isRTPTranslationEnabled(MediaType mediaType)
-    {
-        T peer = getPeer();
-        MediaAwareCall<?,?,?> call = peer.getCall();
-
-        if ((call != null)
-                && call.isConferenceFocus()
-                && !call.isLocalVideoStreaming())
-        {
-            Iterator<?> callPeerIt = call.getCallPeers();
-
-            while (callPeerIt.hasNext())
-            {
-                MediaAwareCallPeer<?,?,?> callPeer
-                    = (MediaAwareCallPeer<?,?,?>) callPeerIt.next();
-                MediaStream stream
-                    = callPeer.getMediaHandler().getStream(mediaType);
-
-                if (stream != null)
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Returns the secure state of the call. If both audio and video is secured.
      *
      * @return the call secure state
@@ -2328,19 +2063,6 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                 }
             }
         }
-    }
-
-    /**
-     * Specifies whether this media handler should be allowed to transmit
-     * local audio.
-     *
-     * @param enabled  <tt>true</tt> if the media handler should transmit local
-     * audio and <tt>false</tt> otherwise.
-     */
-    public void setLocalAudioTransmissionEnabled(boolean enabled)
-    {
-        audioDirectionUserPreference
-            = enabled ? MediaDirection.SENDRECV : MediaDirection.RECVONLY;
     }
 
     /**

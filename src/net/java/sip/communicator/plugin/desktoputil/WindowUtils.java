@@ -137,22 +137,6 @@ public class WindowUtils
     }
 
     /**
-     * Removes a {@link Window} into window list
-     *
-     * @param w {@link Window} to be removed.
-     */
-    public static void removeWindow(Window w)
-    {
-        if (WINDOW_LIST != null)
-        {
-            synchronized (WINDOW_LIST)
-            {
-                WINDOW_LIST.remove(w);
-            }
-        }
-    }
-
-    /**
      * Set the default icons for a window.
      *
      * @param window the window

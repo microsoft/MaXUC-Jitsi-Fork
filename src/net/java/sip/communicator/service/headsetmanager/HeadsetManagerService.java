@@ -25,14 +25,6 @@ public interface HeadsetManagerService
     void addHeadsetManagerListener(HeadsetManagerListener listener);
 
     /**
-     * Remove a registered listener for headset changes from the list of
-     * registered listeners
-     *
-     * @param listener The HeadsetManagerListener to add
-     */
-    void removeHeadsetManagerListener(HeadsetManagerListener listener);
-
-    /**
      * Informs the headset of a microphone mute state change
      *
      * @param mute is the new microphone mute state.
@@ -175,14 +167,6 @@ public interface HeadsetManagerService
     void lockStateChanged(boolean locked);
 
     /**
-     * Returns whether headset integration is supported on this version of the
-     * OS.
-     *
-     * @return whether headset integration is supported.
-     */
-    boolean headsetIntegrationSupported();
-
-    /**
      *  An enum representing the different headset response states the user
      *  can choose in the audio configuration panel.
      */
@@ -257,6 +241,14 @@ public interface HeadsetManagerService
         public void setRingingState(boolean ringingState)
         {
             this.mRingingState = ringingState;
+        }
+
+        @Override
+        public String toString()
+        {
+            return (mInCallState ? "" : "not ") + "in call" +
+                   (mRingingState ? ", ringing" : "") +
+                   (mMuteState ? ", muted" : ", unmuted");
         }
     }
 }

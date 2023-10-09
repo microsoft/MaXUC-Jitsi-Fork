@@ -10,6 +10,7 @@ package net.java.sip.communicator.impl.gui.main.contactlist;
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.util.*;
+import net.java.sip.communicator.service.conference.ConferenceService;
 
 /**
  * The right click menu on a group contact in the main contacts list.
@@ -26,8 +27,10 @@ public class GroupContactRightButtonMenu extends MetaContactRightButtonMenu
     @Override
     protected void init()
     {
+        ConferenceService mConferenceService = GuiActivator.getConferenceService();
         boolean messageSupported = ConfigurationUtils.isMultiUserChatEnabled();
-        boolean meetingSupported = GuiActivator.getConferenceService().isFullServiceEnabled();
+        boolean meetingSupported = mConferenceService != null
+            && mConferenceService.isFullServiceEnabled();
 
         if (messageSupported)
         {

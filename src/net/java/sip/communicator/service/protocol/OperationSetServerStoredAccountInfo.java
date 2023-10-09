@@ -89,17 +89,6 @@ public interface OperationSetServerStoredAccountInfo
     Iterator<GenericDetail> getAllAvailableDetails();
 
     /**
-     * Returns all detail Class-es that the underlying implementation supports
-     * setting. Note that if you call one of the modification methods (add
-     * remove or replace) with a detail not contained by the iterator returned
-     * by this method, an IllegalArgumentException will be thrown.
-     * <p>
-     * @return a java.util.Iterator over all detail classes supported by the
-     * implementation.
-     */
-    Iterator<Class<? extends GenericDetail>> getSupportedDetailTypes();
-
-    /**
      * Determines whether a detail class represents a detail supported by the
      * underlying implementation or not. Note that if you call one of the
      * modification methods (add remove or replace) with a detail that this
@@ -152,20 +141,6 @@ public interface OperationSetServerStoredAccountInfo
         throws IllegalArgumentException,
                OperationFailedException,
                ArrayIndexOutOfBoundsException;
-
-    /**
-     * Removes the specified detail from the list of details stored online for
-     * this account. The method returns a boolean indicating if such a detail
-     * was found (and removed) or not.
-     * <p>
-     * @param detail the detail to remove
-     * @return true if the specified detail existed and was successfully removed
-     * and false otherwise.
-     * @throws OperationFailedException with code Network Failure if removing the
-     * detail from the server has failed
-     */
-    boolean removeDetail(ServerStoredDetails.GenericDetail detail)
-        throws OperationFailedException;
 
     /**
      * Replaces the currentDetailValue detail with newDetailValue and returns

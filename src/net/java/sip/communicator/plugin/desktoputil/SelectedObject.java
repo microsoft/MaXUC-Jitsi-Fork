@@ -25,21 +25,6 @@ public class SelectedObject
     private Object object;
 
     /**
-     * Creates an instance of <tt>SelectedObject</tt> by specifying the text,
-     * icon and object associated with it.
-     *
-     * @param text The text.
-     * @param icon The icon.
-     * @param object The object.
-     */
-    public SelectedObject(String text, ImageIconFuture icon, Object object)
-    {
-        this.text = text;
-        this.icon = icon;
-        this.object = object;
-    }
-
-    /**
      * Creates an instance of <tt>SelectedObject</tt> by specifying the
      * icon and object associated with it.
      *

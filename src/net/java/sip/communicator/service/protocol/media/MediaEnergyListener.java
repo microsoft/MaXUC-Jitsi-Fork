@@ -12,32 +12,9 @@ public class MediaEnergyListener implements SoundLevelListener
     private static final Logger logger =
         Logger.getLogger(MediaEnergyListener.class);
 
-    public int getMinimumEnergy()
-    {
-        return mMinimumEnergy;
-    }
-
-    public int getMaximumEnergy()
-    {
-        return mMaximumEnergy;
-    }
-
     public long getStartTime()
     {
         return mStartTime;
-    }
-
-    public float getAverageEnergy()
-    {
-        if (mStartTime == 0)
-        {
-            return 0.0f;
-        }
-
-        long currentTime = updateTotalEnergy();
-        long runningTime = currentTime - mStartTime;
-
-        return (float)mTotalEnergy / runningTime;
     }
 
     /**

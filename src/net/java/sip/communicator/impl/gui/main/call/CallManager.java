@@ -10,6 +10,7 @@ package net.java.sip.communicator.impl.gui.main.call;
 import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
 import java.text.*;
 import java.util.*;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 import javax.swing.*;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.metaswitch.maxanalytics.event.CallKt;
 
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.neomedia.*;
@@ -35,6 +37,7 @@ import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.UIService.*;
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.emergencylocation.EmergencyCallContext;
@@ -172,7 +175,11 @@ public class CallManager
 
                 incomingCalls.put(sourceCall.getCallID(), receivedCallDialog);
 
-                receivedCallDialog.show();
+                ConfigurationService cfg = GuiActivator.getConfigurationService();
+                if (cfg.global().getBoolean("plugin.wispa.SHOW_INCOMING_CALL_FRAME", false))
+                {
+                    receivedCallDialog.show();
+                }
 
                 headsetManagerService.incoming(sourceCall.getCallID());
             }
@@ -232,7 +239,7 @@ public class CallManager
                         openCallContainerIfNecessary(call);
 
                         headsetManagerService.incomingAnswered(callID);
-                        incomingCalls.remove(call);
+                        incomingCalls.remove(callID);
 
                         // Set the global presence status to 'on the phone'.
                         // This is done here, rather than at the start of
@@ -268,7 +275,7 @@ public class CallManager
 
                         headsetManagerService.ended(callID);
                         call.removeCallChangeListener(this);
-                        incomingCalls.remove(call);
+                        incomingCalls.remove(callID);
                     }
                 }
             });
@@ -620,22 +627,6 @@ public class CallManager
     }
 
     /**
-     * Answers the given call in an existing call. It will end up with a
-     * conference call.
-     *
-     * @param call the call to answer
-     */
-    public static void answerCallInFirstExistingCall(Call call)
-    {
-        // Find the first existing call.
-        Iterator<Call> existingCallIter = getInProgressCalls().iterator();
-        Call existingCall
-            = existingCallIter.hasNext() ? existingCallIter.next() : null;
-
-        answerCall(call, existingCall, false /* without video */);
-    }
-
-    /**
      * Merges specific existing <tt>Call</tt>s into a specific telephony
      * conference.
      *
@@ -651,13 +642,39 @@ public class CallManager
     }
 
     /**
-     * Answers the given call with video.
+     * Bring the call window to the front and take keyboard focus
+     * Do nothing if no call window exists
      *
-     * @param call the call to answer
+     * @param call the call to focus
      */
-    public static void answerVideoCall(Call call)
+    public static void focusCall(Call call)
     {
-        answerCall(call, null, true /* with video */);
+        CallConference conference = call.getConference();
+        CallFrame callFrame = findCallFrame(conference);
+        if (callFrame != null) {
+            activateApplication();
+            callFrame.setState(Frame.NORMAL);
+            callFrame.setVisible(true, false);
+        }
+    }
+
+    /**
+     * Java windows cannot take focus on Mac if the application is not active
+     */
+    private static void activateApplication()
+    {
+        try
+        {
+            String uri = ConfigurationUtils.getDesktopUriScheme();
+            if (uri != null)
+            {
+                Runtime.getRuntime().exec("open " + uri + ":///");
+            }
+        }
+        catch (IOException e)
+        {
+            logger.error("Exception hit when trying to activate application: " + e);
+        }
     }
 
     /**
@@ -842,25 +859,6 @@ public class CallManager
     }
 
     /**
-     * Creates a video call to the contact represented by the given string.
-     *
-     * @param protocolProvider the protocol provider to which this call belongs.
-     * @param contact the contact to call to
-     */
-    public static void createVideoCall(ProtocolProviderService protocolProvider,
-                                        String contact,
-                                        Reformatting reformatNeeded)
-    {
-        new CreateCallThread(protocolProvider,
-                             null,
-                             null,
-                             contact,
-                             null,
-                             VIDEO,
-                             reformatNeeded).start();
-    }
-
-    /**
      * Creates a video call to the contact represented by the given string, and
      * associates the call with the given contact
      *
@@ -894,9 +892,17 @@ public class CallManager
      */
     public static void enableLocalVideo(Call call, boolean enable)
     {
-        AnalyticsService analytics = GuiActivator.getAnalyticsService();
+        if (enable)
+        {
+            AnalyticsService analytics = GuiActivator.getAnalyticsService();
+            analytics.onEventWithIncrementingCount(AnalyticsEventType.ENABLE_VIDEO, new ArrayList<>());
+        }
 
-        analytics.onEventWithIncrementingCount(AnalyticsEventType.ENABLE_VIDEO, new ArrayList<>());
+        GuiActivator.getInsightService().logEvent(
+                new InsightEvent(CallKt.EVENT_CALL_SEND_VIDEO,
+                                 CallKt.PARAM_CALL_SEND_VIDEO,
+                                 String.valueOf(enable))
+        );
 
         new EnableLocalVideoThread(call, enable).start();
     }
@@ -1197,7 +1203,14 @@ public class CallManager
                     callFrame = new CallFrame(callPeer, conference);
                     windowStacker.addWindow(callFrame);
 
-                    callFrame.setVisible(true);
+                    ConfigurationService cfg = GuiActivator.getConfigurationService();
+                    if (cfg.global().getBoolean("plugin.wispa.SHOW_CALL_FRAME", true))
+                    {
+                        // Activate the application before setting the window to be visible and
+                        // requesting focus, otherwise the window fails to take focus.
+                        activateApplication();
+                        callFrame.setVisible(true);
+                    }
 
                     callFrames.put(conference, callFrame);
                 }
@@ -1274,20 +1287,6 @@ public class CallManager
         }
 
         return providers;
-    }
-
-    /**
-     * Returns a list of all currently registered telephony providers supporting
-     * conferencing.
-     *
-     * @return a list of all currently registered telephony providers supporting
-     * conferencing
-     */
-    public static List<ProtocolProviderService>
-                                            getTelephonyConferencingProviders()
-    {
-        return AccountUtils
-            .getRegisteredProviders(OperationSetTelephonyConferencing.class);
     }
 
     /**
@@ -1439,230 +1438,6 @@ public class CallManager
         {
             call.removeCallChangeListener(callChangeListener);
         }
-    }
-
-    /**
-     * Checks whether the <tt>callPeer</tt> supports setting video
-     * quality presets. If quality controls is null, its not supported.
-     * @param callPeer the peer, which video quality we're checking
-     * @return whether call peer supports setting quality preset.
-     */
-    public static boolean isVideoQualityPresetSupported(CallPeer callPeer)
-    {
-        ProtocolProviderService provider = callPeer.getProtocolProvider();
-        OperationSetVideoTelephony videoOpSet
-            = provider.getOperationSet(OperationSetVideoTelephony.class);
-
-        if (videoOpSet == null)
-            return false;
-
-        return videoOpSet.getQualityControl(callPeer) != null;
-    }
-
-    /**
-     * Sets the given quality preset for the video of the given call peer.
-     *
-     * @param callPeer the peer, which video quality we're setting
-     * @param qualityPreset the new quality settings
-     */
-    public static void setVideoQualityPreset(final CallPeer callPeer,
-                                            final QualityPreset qualityPreset)
-    {
-        ProtocolProviderService provider = callPeer.getProtocolProvider();
-        final OperationSetVideoTelephony videoOpSet
-            = provider.getOperationSet(OperationSetVideoTelephony.class);
-
-        if (videoOpSet == null)
-            return;
-
-        final QualityControl qualityControl =
-                    videoOpSet.getQualityControl(callPeer);
-
-        if (qualityControl != null)
-        {
-            new Thread(new Runnable()
-            {
-                public void run()
-                {
-                    try
-                    {
-                        qualityControl.setPreferredRemoteSendMaxPreset(
-                                qualityPreset);
-                    }
-                    catch(org.jitsi.service.protocol.OperationFailedException e)
-                    {
-                        logger.info("Unable to change video quality.", e);
-
-                        new ErrorDialog(
-                            resources.getI18NString("service.gui.WARNING"),
-                            resources.getI18NString(
-                                "service.gui.UNABLE_TO_CHANGE_VIDEO_QUALITY"))
-                            .showDialog();
-                    }
-                }
-            }).start();
-        }
-    }
-
-    /**
-     * Indicates if we have video streams to show in this interface.
-     *
-     * @param call the call to check for video streaming
-     * @return <tt>true</tt> if we have video streams to show in this interface;
-     * otherwise, <tt>false</tt>
-     */
-    public static boolean isVideoStreaming(Call call)
-    {
-        return isVideoStreaming(call.getConference());
-    }
-
-    /**
-     * Indicates if we have video streams to show in this interface.
-     *
-     * @param conference the conference we check for video streaming
-     * @return <tt>true</tt> if we have video streams to show in this interface;
-     * otherwise, <tt>false</tt>
-     */
-    public static boolean isVideoStreaming(CallConference conference)
-    {
-        for (Call call : conference.getCalls())
-        {
-            OperationSetVideoTelephony videoTelephony
-                = call.getProtocolProvider().getOperationSet(
-                        OperationSetVideoTelephony.class);
-
-            if (videoTelephony == null)
-                continue;
-
-            if (videoTelephony.isLocalVideoStreaming(call))
-                return true;
-
-            Iterator<? extends CallPeer> callPeers = call.getCallPeers();
-
-            while (callPeers.hasNext())
-            {
-                List<Component> remoteVideos
-                    = videoTelephony.getVisualComponents(callPeers.next());
-
-                if ((remoteVideos != null) && (remoteVideos.size() > 0))
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Determines whether two specific addresses refer to one and the same
-     * peer/resource/contact.
-     * <p>
-     * <b>Warning</b>: Use the functionality sparingly because it assumes that
-     * an unspecified service is equal to any service.
-     * </p>
-     *
-     * @param a one of the addresses to be compared
-     * @param b the other address to be compared to <tt>a</tt>
-     * @return <tt>true</tt> if <tt>a</tt> and <tt>b</tt> name one and the same
-     * peer/resource/contact; <tt>false</tt>, otherwise
-     */
-    public static boolean addressesAreEqual(String a, String b)
-    {
-        if (a.equals(b))
-            return true;
-
-        int aProtocolIndex = a.indexOf(':');
-        if(aProtocolIndex != -1)
-            a = a.substring(aProtocolIndex + 1);
-
-        int bProtocolIndex = b.indexOf(':');
-        if(bProtocolIndex != -1)
-            b = b.substring(bProtocolIndex + 1);
-
-        if (a.equals(b))
-            return true;
-
-        int aServiceBegin = a.indexOf('@', aProtocolIndex);
-        String aUserID;
-        String aService;
-
-        if (aServiceBegin != -1)
-        {
-            aUserID = a.substring(0, aServiceBegin);
-            ++aServiceBegin;
-
-            int aResourceBegin = a.indexOf('/', aServiceBegin);
-            if (aResourceBegin != -1)
-                aService = a.substring(aServiceBegin, aResourceBegin);
-            else
-                aService = a.substring(aServiceBegin);
-        }
-        else
-        {
-            aUserID = a;
-            aService = null;
-        }
-
-        int bServiceBegin = b.indexOf('@', bProtocolIndex);
-        String bUserID;
-        String bService;
-
-        if (bServiceBegin != -1)
-        {
-            bUserID = b.substring(0, bServiceBegin);
-            ++bServiceBegin;
-
-            int bResourceBegin = b.indexOf('/', bServiceBegin);
-            if (bResourceBegin != -1)
-                bService = b.substring(bServiceBegin, bResourceBegin);
-            else
-                bService = b.substring(bServiceBegin);
-        }
-        else
-        {
-            bUserID = b;
-            bService = null;
-        }
-
-        boolean userIDsAreEqual;
-
-        if ((aUserID == null) || (aUserID.length() < 1))
-            userIDsAreEqual = ((bUserID == null) || (bUserID.length() < 1));
-        else
-            userIDsAreEqual = aUserID.equals(bUserID);
-        if (!userIDsAreEqual)
-            return false;
-
-        boolean servicesAreEqual;
-
-        /*
-         * It's probably a veeery long shot but it's assumed here that an
-         * unspecified service is equal to any service. Such a case is, for
-         * example, RegistrarLess SIP.
-         */
-        if (((aService == null) || (aService.length() < 1))
-                || ((bService == null) || (bService.length() < 1)))
-            servicesAreEqual = true;
-        else
-            servicesAreEqual = aService.equals(bService);
-
-        return servicesAreEqual;
-    }
-
-    /**
-     * Indicates if the given <tt>ConferenceMember</tt> corresponds to the local
-     * user.
-     *
-     * @param conferenceMember the conference member to check
-     * @return <tt>true</tt> if the given <tt>conferenceMember</tt> is the local
-     * user, <tt>false</tt> - otherwise
-     */
-    public static boolean isLocalUser(ConferenceMember conferenceMember)
-    {
-        String localUserAddress
-            = conferenceMember.getConferenceFocusCallPeer()
-                .getProtocolProvider().getAccountID().getAccountAddress();
-
-        return CallManager.addressesAreEqual(
-            conferenceMember.getAddress(), localUserAddress);
     }
 
     /**
@@ -1980,13 +1755,7 @@ public class CallManager
                     }
                     else if (displayName != null && !(displayName.isEmpty()))
                     {
-                        // Checking isCrmLookupSuccessful to ensure that the
-                        // display name set by the CRM is not overridden
-                        // unless the lookup failed
-                        if (!(callPeer.isCrmLookupSuccessful()))
-                        {
-                            callPeer.setDisplayName(displayName);
-                        }
+                        callPeer.setDisplayName(displayName);
                     }
                 }
             }
@@ -2714,7 +2483,9 @@ public class CallManager
             // If the operation didn't succeeded for some reason, make sure the
             // video button doesn't remain selected.
             if (enable && !enableSucceeded)
+            {
                 getActiveCallContainer(call).setVideoButtonSelected(false);
+            }
         }
     }
 

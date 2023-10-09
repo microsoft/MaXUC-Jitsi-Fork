@@ -10,6 +10,8 @@ package net.java.sip.communicator.impl.contactlist;
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseDirectoryNumber;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import javax.xml.parsers.*;
@@ -634,7 +636,7 @@ public class MclStorageManager
             File dest = new File(contactlistFile.getAbsolutePath() + ".copy");
             try
             {
-                FileUtils.copyFile(contactlistFile, dest);
+                Files.copy(contactlistFile.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             catch (IOException e)
             {

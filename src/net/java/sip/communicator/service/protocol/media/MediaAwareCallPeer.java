@@ -144,37 +144,6 @@ public abstract class MediaAwareCallPeer
     }
 
     /**
-     * Adds a specific <tt>ConferenceMembersSoundLevelListener</tt> to the list
-     * of listeners interested in and notified about changes in conference
-     * members sound level.
-     *
-     * @param listener the <tt>ConferenceMembersSoundLevelListener</tt> to add
-     * @throws NullPointerException if <tt>listener</tt> is <tt>null</tt>
-     */
-    public void addConferenceMembersSoundLevelListener(
-            ConferenceMembersSoundLevelListener listener)
-    {
-        /*
-         * XXX The uses of the method at the time of this writing rely on being
-         * able to add a null listener so make it a no-op here.
-         */
-        if (listener == null)
-            return;
-
-        synchronized (conferenceMembersSoundLevelListeners)
-        {
-            if (conferenceMembersSoundLevelListeners.size() == 0)
-            {
-                // if this is the first listener that's being registered with
-                // us, we also need to register ourselves as a CSRC audio level
-                // listener with the media handler.
-                getMediaHandler().setCsrcAudioLevelListener(this);
-            }
-            conferenceMembersSoundLevelListeners.add(listener);
-        }
-    }
-
-    /**
      * Adds a specific <tt>SoundLevelListener</tt> to the list of listeners
      * interested in and notified about changes in the sound level of the audio
      * sent by the remote party. When the first listener is being registered
@@ -724,31 +693,6 @@ public abstract class MediaAwareCallPeer
     }
 
     /**
-     * Removes a specific <tt>ConferenceMembersSoundLevelListener</tt> of the
-     * list of listeners interested in and notified about changes in conference
-     * members sound level.
-     *
-     * @param listener the <tt>ConferenceMembersSoundLevelListener</tt> to
-     * remove
-     */
-    public void removeConferenceMembersSoundLevelListener(
-            ConferenceMembersSoundLevelListener listener)
-    {
-        synchronized (conferenceMembersSoundLevelListeners)
-        {
-            if (conferenceMembersSoundLevelListeners.remove(listener)
-                    && (conferenceMembersSoundLevelListeners.size() == 0))
-            {
-                // if this was the last listener then we also remove ourselves
-                // as a CSRC audio level listener from the handler so that we
-                // don't have to create new events and maps for something no one
-                // is interested in.
-                getMediaHandler().setCsrcAudioLevelListener(null);
-            }
-        }
-    }
-
-    /**
      * Removes a specific <tt>SoundLevelListener</tt> of the list of
      * listeners interested in and notified about changes in stream sound level
      * related information.
@@ -995,16 +939,6 @@ public abstract class MediaAwareCallPeer
     {
         getMediaHandler().setMute(newMuteValue);
         super.setMute(newMuteValue);
-    }
-
-    /**
-     * Sets the String that serves as a unique identifier of this
-     * CallPeer.
-     * @param peerID the ID of this call peer.
-     */
-    public void setPeerID(String peerID)
-    {
-        this.peerID = peerID;
     }
 
     /**

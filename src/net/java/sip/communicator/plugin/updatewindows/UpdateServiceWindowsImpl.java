@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.updatewindows;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.awt.*;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -22,6 +24,9 @@ import java.util.Properties;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.httputil.HTTPResponseResult;
 import net.java.sip.communicator.service.httputil.HttpUtils;
@@ -45,7 +50,6 @@ import org.jitsi.util.StringUtils;
 
 /**
  * Implements checking for software updates, downloading and applying them (on Windows)
- *
  * Relies on using an exe wrapped msi installer.
  *
  * @author Damian Minkov
@@ -60,51 +64,43 @@ public class UpdateServiceWindowsImpl
     private static final Logger logger = Logger.getLogger(UpdateServiceWindowsImpl.class);
 
     /**
-     * The name of the property which specifies the update link in the
-     * configuration file.
+     * The name of the property which specifies the update link in the configuration file.
      */
     private static final String PROP_UPDATE_LINK
-        = "net.java.sip.communicator.UPDATE_LINK";
+            = "net.java.sip.communicator.UPDATE_LINK";
 
     /**
      * Name of the encrypted password in the configuration service.
      */
     private static final String PROPERTY_ENCRYPTED_PASSWORD
-        = "net.java.sip.communicator.plugin.provisioning.auth";
+            = "net.java.sip.communicator.plugin.provisioning.auth";
 
     /**
      * Name of the username in the configuration service.
      */
     private static final String PROPERTY_USERNAME
-        = "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
-
-    /**
-     * The link pointing to the ChangeLog of the update.
-     */
-    private static String changesLink;
+            = "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
 
     /**
      * The link pointing at the download of the update.
      */
-    private static String sDownloadLink;
+    private String sDownloadLink;
 
     /**
-     * The latest version of the software found at the configured update
-     * location.
+     * The latest version of the software found at the configured update location.
      */
-    private static String latestVersion;
+    private String latestVersion;
 
     /**
      * The flag which indicates whether an update is a forced update
      */
-    private static boolean forceUpdate;
+    private boolean forceUpdate;
 
     /**
-     * The flag which indicates whether an update has been canceled.
-     * Volatile due to potential caching via threads when an update download job
-     * is run
+     * The flag which indicates whether an update has been canceled. Volatile due to potential caching via threads when
+     * an update download job is run
      */
-    private static volatile boolean updateDownloadCanceled;
+    private volatile boolean updateDownloadCanceled;
 
     @Override
     public synchronized void checkForUpdates(
@@ -154,66 +150,67 @@ public class UpdateServiceWindowsImpl
         // confirm they are happy to proceed.  That is unless we have
         // been asked to force upgrade, in which case we simply shut
         // down, as the user has no choice.
-        UpdateServiceWindowsImpl.forceUpdate = forceUpdate;
+        this.forceUpdate = forceUpdate;
         String currentVersion = getCurrentVersion().toString();
 
         try
+        {
+            if (isLatestVersion())
+            {
+                if (forceUpdate)
                 {
-                    if (isLatestVersion())
-                    {
-                        if (forceUpdate)
-                        {
-                            // We were asked to force the user to upgrade but
-                            // we are already up to date - reset the minimum
-                            // version flag.
-                            logger.error(
-                                    "Asked to force update but no new version");
-                            UpdateWindowsActivator.getConfiguration().user().removeProperty(
-                                       "net.java.sip.communicator.MIN_VERSION");
-                        }
-
-                        if (isUserTriggered)
-                        {
-                            logger.info("Notifying user that there aren't any" +
-                                        " new updates");
-                            notifyUpdateInfo(latestVersion,
-                                             currentVersion,
-                                             UpdateState.UP_TO_DATE);
-                        }
-                    }
-                    else
-                    {
-                        logger.info("Notifying user about new update: " +
-                                    " Forced: " + forceUpdate);
-                        notifyUpdateInfo(latestVersion,
-                                         currentVersion,
-                                         forceUpdate ? UpdateState.UPDATE_FORCED : UpdateState.UPDATE_OPTIONAL);
-                    }
+                    // We were asked to force the user to upgrade but
+                    // we are already up to date - reset the minimum
+                    // version flag.
+                    logger.error(
+                            "Asked to force update but no new version");
+                    UpdateWindowsActivator.getConfiguration().user().removeProperty(
+                            "net.java.sip.communicator.MIN_VERSION");
                 }
-                catch (IOException e)
-                {
-                    logger.warn("Error connecting to update server: " +
-                                e.getMessage());
 
-                    // Could not communicate properly with the update server.
-                    // Only show feedback to the user in case the check for
-                    // update action was manually triggered.
-                    if (isUserTriggered)
-                    {
-                        logger.warn("Notifying that the connection is down");
-                        notifyUpdateInfo(latestVersion,
-                                         currentVersion,
-                                         forceUpdate ? UpdateState.ERROR_FORCED : UpdateState.ERROR_OPTIONAL);
-                    }
+                if (isUserTriggered)
+                {
+                    logger.info("Notifying user that there aren't any" +
+                                " new updates");
+                    notifyUpdateInfo(latestVersion,
+                                     currentVersion,
+                                     UpdateState.UP_TO_DATE);
                 }
             }
+            else
+            {
+                logger.info("Notifying user about new update: " +
+                            " Forced: " + forceUpdate);
+                notifyUpdateInfo(latestVersion,
+                                 currentVersion,
+                                 getUpdateState());
+            }
+        }
+        catch (IOException e)
+        {
+            logger.warn("Error connecting to update server: " +
+                        e.getMessage());
+
+            // Could not communicate properly with the update server.
+            // Only show feedback to the user in case the check for
+            // update action was manually triggered.
+            if (isUserTriggered)
+            {
+                logger.warn("Notifying that the connection is down");
+                notifyUpdateInfo(latestVersion == null ? "" : latestVersion,
+                                 currentVersion,
+                                 forceUpdate ? UpdateState.ERROR_FORCED : UpdateState.ERROR_OPTIONAL);
+            }
+        }
+    }
 
     /**
      * Sends update information to be rendered on the Electron side
-     * @param latestVersion string of the latest version of the client
+     *
+     * @param latestVersion  string of the latest version of the client
      * @param currentVersion string of the current version of the client
      */
-    private static void notifyUpdateInfo(String latestVersion, String currentVersion, UpdateState updateState)
+    private void notifyUpdateInfo(String latestVersion, String currentVersion, UpdateState updateState)
     {
         UpdateInfo updateInfo = new UpdateInfo(latestVersion, currentVersion, updateState);
         WISPAMotion wispaMotion = new WISPAMotion(WISPAMotionType.UPDATE_INFO, updateInfo);
@@ -223,45 +220,47 @@ public class UpdateServiceWindowsImpl
 
     /**
      * Sends update progress bar information to be rendered on the Electron side
-     * @param size size of the update
-     * @param transferredSize size of the update transferred so far
+     *
+     * @param size                size of the update
+     * @param transferredSize     size of the update transferred so far
      * @param updateDownloadState indicates if updates is in-progress, failed or cancelled by user action
      */
-    private static void notifyUpdateInstallationProgress(long size, long transferredSize, UpdateDownloadState updateDownloadState)
+    private void notifyUpdateInstallationProgress(long size,
+                                                         long transferredSize,
+                                                         UpdateDownloadState updateDownloadState,
+                                                         UpdateState updateState)
     {
-        UpdateProgressInformation updateProgressInformation = new UpdateProgressInformation(size, transferredSize, updateDownloadState);
+        UpdateProgressInformation updateProgressInformation = new UpdateProgressInformation(
+                size, transferredSize, updateDownloadState, updateState);
         WISPAMotion wispaMotion = new WISPAMotion(WISPAMotionType.UPDATE_PROGRESS_INFO, updateProgressInformation);
         WISPAService wispaService = UpdateWindowsActivator.getWISPAService();
         wispaService.notify(WISPANamespace.EVENTS, WISPAAction.MOTION, wispaMotion);
     }
 
     /**
-     * Tries to create a new <tt>FileOutputStream</tt> for a temporary file into
-     * which the setup is to be downloaded. Because temporary files generally
-     * have random characters in their names and the name of the setup may be
-     * shown to the user, first tries to use the name of the URL to be
-     * downloaded because it likely is prettier.
-     * NOTE, by default, this creates a temporary .exe file, so will fail if trying to
-     * install from an .msi!
+     * Tries to create a new <tt>FileOutputStream</tt> for a temporary file into which the setup is to be downloaded.
+     * Because temporary files generally have random characters in their names and the name of the setup may be shown to
+     * the user, first tries to use the name of the URL to be downloaded because it likely is prettier. NOTE, by
+     * default, this creates a temporary .exe file, so will fail if trying to install from an .msi!
      *
-     * @param url the <tt>URL</tt> of the file to be downloaded
+     * @param url       the <tt>URL</tt> of the file to be downloaded
      * @param extension the extension of the <tt>File</tt> to be created or
-     * <tt>null</tt> for the default (which may be derived from <tt>url</tt>)
-     * @param dryRun <tt>true</tt> to generate a <tt>File</tt> in
-     * <tt>tempFile</tt> and not open it or <tt>false</tt> to generate a
-     * <tt>File</tt> in <tt>tempFile</tt> and open it
-     * @param tempFile a <tt>File</tt> array of at least one element which is to
-     * receive the created <tt>File</tt> instance at index zero (if successful)
+     *                  <tt>null</tt> for the default (which may be derived from <tt>url</tt>)
+     * @param dryRun    <tt>true</tt> to generate a <tt>File</tt> in
+     *                  <tt>tempFile</tt> and not open it or <tt>false</tt> to generate a
+     *                  <tt>File</tt> in <tt>tempFile</tt> and open it
+     * @param tempFile  a <tt>File</tt> array of at least one element which is to receive the created <tt>File</tt>
+     *                  instance at index zero (if successful)
      * @return the newly created <tt>FileOutputStream</tt>
      * @throws IOException if anything goes wrong while creating the new
-     * <tt>FileOutputStream</tt>
+     *                     <tt>FileOutputStream</tt>
      */
     private static FileOutputStream createTempFileOutputStream(
             URL url,
             String extension,
             boolean dryRun,
             File[] tempFile)
-        throws IOException
+            throws IOException
     {
         /*
          * Try to use the name from the URL because it isn't a "randomly"
@@ -344,31 +343,31 @@ public class UpdateServiceWindowsImpl
      * Downloads a remote file specified by its URL into a local file.
      *
      * @param url the URL of the remote file to download
-     * @return the local <tt>File</tt> into which <tt>url</tt> has been
-     * downloaded or <tt>null</tt> if there was no response from the
+     * @return the local <tt>File</tt> into which <tt>url</tt> has been downloaded or <tt>null</tt> if there was no
+     * response from the
      * <tt>url</tt>
      * @throws IOException if an I/O error occurs during the download
      */
-    private static File download(String url)
-        throws Exception
+    private File download(String url)
+            throws Exception
     {
         final File[] tempFile = new File[1];
-        FileOutputStream tempFileOutputStream = null;
+        FileOutputStream tempFileOutputStream;
         boolean deleteTempFile = true;
         updateDownloadCanceled = false;
 
         tempFileOutputStream
-            = createTempFileOutputStream(
-                    new URL(url),
-                    /*
-                     * The default extension, possibly derived from url, is
-                     * fine. Besides, we do not really have information about
-                     * any preference.
-                     */
-                    null,
-                    /* Do create a FileOutputStream. */
-                    false,
-                    tempFile);
+                = createTempFileOutputStream(
+                new URL(url),
+                /*
+                 * The default extension, possibly derived from url, is
+                 * fine. Besides, we do not really have information about
+                 * any preference.
+                 */
+                null,
+                /* Do create a FileOutputStream. */
+                false,
+                tempFile);
         try
         {
             HTTPResponseResult res = HttpUtils.openURLConnection(url);
@@ -429,38 +428,38 @@ public class UpdateServiceWindowsImpl
                         {
                             attempts = 0;
                             logger.debug("Read " +
-                                                 bytesRead + " / " +
-                                                 totalSize +
-                                                 " in " + totalAttempts +
-                                                 " reads");
+                                         bytesRead + " / " +
+                                         totalSize +
+                                         " in " + totalAttempts +
+                                         " reads");
                         }
 
                         // Send progress bar updates every 250 ms
-                        if (System.currentTimeMillis() - lastProgressTime >= 250) {
+                        if (System.currentTimeMillis() - lastProgressTime >= 250)
+                        {
                             lastProgressTime = System.currentTimeMillis();
-                            notifyUpdateInstallationProgress(totalSize, bytesRead, UpdateDownloadState.UPDATE_DOWNLOAD_IN_PROGRESS);
+                            notifyUpdateInstallationProgress(
+                                    totalSize,
+                                    bytesRead,
+                                    UpdateDownloadState.UPDATE_DOWNLOAD_IN_PROGRESS,
+                                    getUpdateState());
                         }
 
                         output.write(buff, 0, read);
                     }
                 }
-                catch (IOException e)
-                {
-                    notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
-                    logger.error(e);
-                    throw e;
-                }
                 finally
                 {
                     logger.debug("Finished reading " +
-                                         bytesRead + " / " + totalSize +
-                                         " in " + totalAttempts + " reads");
+                                 bytesRead + " / " + totalSize +
+                                 " in " + totalAttempts + " reads");
 
                     tempFileOutputStream = null;
                 }
 
                 // notify Electron client that the update was canceled with whether it's mandatory or optional
-                if (!updateDownloadCanceled) {
+                if (!updateDownloadCanceled)
+                {
                     deleteTempFile = false;
                 }
             }
@@ -471,8 +470,10 @@ public class UpdateServiceWindowsImpl
         }
         catch (Exception e)
         {
-            notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
-            logger.error(e);
+            notifyUpdateInstallationProgress(0, 0,
+                                             UpdateDownloadState.UPDATE_DOWNLOAD_FAILED,
+                                             getUpdateState());
+            logger.error("Error downloading update", e);
             throw e;
         }
         finally
@@ -507,15 +508,27 @@ public class UpdateServiceWindowsImpl
     @Override
     public boolean isLatestVersion() throws IOException
     {
+        return fetchUpdateConfig(true);
+    }
+
+    /**
+     * This method will try to fetch update config using POST or GET depending
+     * on executePost param. If the executePost is true, and the fetch fails,
+     * it will fall back to GET. The fallback is done via recursion, this
+     * method is first called passing true as executePost param, and then it
+     * recursively calls itself again passing false as executePost param.
+     */
+    private boolean fetchUpdateConfig(boolean executePost) throws IOException
+    {
         String updateLink
-            = UpdateWindowsActivator.getConfiguration().user().getString(
-                    PROP_UPDATE_LINK);
+                = UpdateWindowsActivator.getConfiguration().user().getString(
+                PROP_UPDATE_LINK);
         logger.info("Got update link: " + updateLink);
 
-        if(updateLink == null)
+        if (updateLink == null)
         {
             updateLink
-                = Resources.getUpdateConfigurationString("update_link");
+                    = Resources.getUpdateConfigurationString("update_link");
         }
 
         if (updateLink == null)
@@ -526,8 +539,18 @@ public class UpdateServiceWindowsImpl
         {
             updateLink = processUpdateLink(updateLink);
 
-            HTTPResponseResult res
-                = HttpUtils.openURLConnection(updateLink);
+            HTTPResponseResult res;
+
+            if (executePost)
+            {
+                logger.info("Fetching update config using POST");
+                res = HttpUtils.executePostExtractingParams(updateLink);
+            }
+            else
+            {
+                logger.info("Fetching update config using GET");
+                res = HttpUtils.openURLConnection(updateLink);
+            }
 
             if (res != null)
             {
@@ -535,6 +558,15 @@ public class UpdateServiceWindowsImpl
                 try (InputStream in = res.getContent())
                 {
                     props.load(in);
+                }
+                catch (Exception e)
+                {
+                    logger.warn("Failed fetching update config using " + (executePost ? "POST" : "GET"));
+                    if (executePost)
+                    {
+                        logger.info("Fetching using GET instead");
+                        return fetchUpdateConfig(false);
+                    }
                 }
 
                 latestVersion = props.getProperty("last_version");
@@ -546,35 +578,40 @@ public class UpdateServiceWindowsImpl
                 // server, we must consider the current version the latest.
                 if (StringUtils.isNullOrEmpty(latestVersion))
                 {
-                    logger.warn("Latest version not supplied");
+                    logger.warn("Latest version not supplied using " + (executePost ? "POST" : "GET"));
                     latestVersion = getCurrentVersion().toString(true);
+                    if (executePost)
+                    {
+                        logger.info("Fetching using GET instead");
+                        return fetchUpdateConfig(false);
+                    }
                     return true;
                 }
 
-                changesLink
-                    = updateLink.substring(
-                            0,
-                            updateLink.lastIndexOf("/") + 1)
-                        + props.getProperty("changes_html");
+                // The link pointing to the ChangeLog of the update.
+                String changesLink = updateLink.substring(
+                        0,
+                        updateLink.lastIndexOf("/") + 1)
+                                     + props.getProperty("changes_html");
                 logger.debug("Got changes link: " + changesLink);
 
                 try
                 {
                     Version latestVersionObj =
-                        UpdateWindowsActivator.getVersionService().parseVersionString(latestVersion);
+                            UpdateWindowsActivator.getVersionService().parseVersionString(latestVersion);
 
-                    if(latestVersionObj != null)
+                    if (latestVersionObj != null)
                     {
                         return latestVersionObj.compareTo(
-                                    getCurrentVersion()) <= 0;
+                                getCurrentVersion()) <= 0;
                     }
                     else
                     {
                         logger.error("Version obj not parsed("
-                                            + latestVersion + ")");
+                                     + latestVersion + ")");
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     logger.error("Error parsing version string", e);
                 }
@@ -582,7 +619,12 @@ public class UpdateServiceWindowsImpl
                 // Fallback to a lexicographically comparison
                 // of version strings in case of an error
                 return latestVersion.compareTo(
-                            getCurrentVersion().toString()) <= 0;
+                        getCurrentVersion().toString()) <= 0;
+            }
+            else if (executePost)
+            {
+                logger.warn("Fetching update config failed using POST, fallback to GET");
+                return fetchUpdateConfig(false);
             }
             else
             {
@@ -599,15 +641,20 @@ public class UpdateServiceWindowsImpl
     }
 
     /**
-     * Process the update link that we've been passed, replacing the username
-     * and password parameters with the correct values
+     * Process the update link that we've been passed, replacing the username and password parameters with the correct
+     * values
      *
      * @param updateLink The update link to process
      * @return The processed update link
      */
     @SuppressWarnings("deprecation")
-    private static String processUpdateLink(String updateLink)
+    private String processUpdateLink(String updateLink)
     {
+        if (PreLoginUtils.isLoggedInViaSSO())
+        {
+            return PreLoginUtils.prepareUpdateLinkForSSO(updateLink);
+        }
+
         if (updateLink.contains("${password}"))
         {
             CredentialsStorageService creds = UpdateWindowsActivator.getCredsService();
@@ -648,7 +695,7 @@ public class UpdateServiceWindowsImpl
     {
         try
         {
-            if (!isLatestVersion() && (sDownloadLink != null))
+            if (!isLatestVersion() && sDownloadLink != null)
             {
                 windowsUpdateInNewThread();
             }
@@ -659,32 +706,30 @@ public class UpdateServiceWindowsImpl
         }
         catch (IOException e)
         {
-            notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
+            notifyUpdateInstallationProgress(0, 0,
+                                             UpdateDownloadState.UPDATE_DOWNLOAD_FAILED,
+                                             getUpdateState());
             logger.warn("Error updating", e);
         }
     }
 
-    private static void windowsUpdateInNewThread()
+    private void windowsUpdateInNewThread()
     {
-        Runnable update = () -> {
-                windowsUpdate();
-        };
-
+        Runnable update = this::windowsUpdate;
         UpdateWindowsActivator.getThreadingService().submit("Client update - Windows", update);
     }
 
     /**
-     * Implements the very update procedure on Windows which includes without
-     * being limited to:
+     * Implements the very update procedure on Windows which includes without being limited to:
      * <ol>
      * <li>Downloads the setup in a temporary directory.</li>
      * <li>Warns that the update procedure will shut down the application.</li>
      * <li>Executes the setup in a separate process and shuts down the
      * application.</li>
      * </ol>
-     *
      */
-    private static void windowsUpdate()
+    @VisibleForTesting
+    void windowsUpdate()
     {
         logger.info("Update client");
 
@@ -699,6 +744,24 @@ public class UpdateServiceWindowsImpl
 
             if (msi != null)
             {
+                try
+                {
+                    // Verify installer signature
+                    SignatureVerificationUtil.verifyFileSignature(msi.getCanonicalPath());
+                    logger.info("Update file is verified");
+
+                    UpdateWindowsActivator.getAnalyticsService().onEvent(AnalyticsEventType.VERSION_UPDATE_VERIFY_SUCCESS,
+                                                                         AnalyticsParameter.VERSION_UPDATE_VERSION,
+                                                                         latestVersion);
+                }
+                catch (Throwable t)
+                {
+                    notifyUpdateInstallationProgress(0, 0,
+                                                     UpdateDownloadState.UPDATE_VERIFICATION_FAILED,
+                                                     getUpdateState());
+                    throw t;
+                }
+
                 ResourceManagementService resources = Resources.getResources();
 
                 // Now build a command to execute the installer in a new process
@@ -720,13 +783,13 @@ public class UpdateServiceWindowsImpl
                 // AD without asking the user anything.
                 command.add(
                         "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR=\""
-                            + System.getProperty("user.dir")
-                            + "\"");
+                        + System.getProperty("user.dir")
+                        + "\"");
 
                 String asciiAppName = resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") != null ?
-                                      resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") : "";
+                        resources.getSettingsString("service.gui.APPLICATION_NAME_ASCII") : "";
                 command.add("SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME=\""
-                                                     + asciiAppName + "\"");
+                            + asciiAppName + "\"");
 
                 deleteMsi = false;
 
@@ -734,19 +797,23 @@ public class UpdateServiceWindowsImpl
                  * The setup has been downloaded. Now start it and shut
                  * down.
                  */
-                logger.info("Running command: " + command);
+                logger.info("Running command: " + sanitiseFilePath(command.toString()));
                 new ProcessBuilder(command).start();
 
                 logger.info("Closing app to install update. Installer properties:"
-                    + "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR=" + System.getProperty("user.dir")
-                    + ", SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME=" + asciiAppName);
+                        + "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR="
+                        + sanitiseFilePath(System.getProperty("user.dir"))
+                        + ", SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME="
+                        + asciiAppName);
                 ServiceUtils.shutdownAll(UpdateWindowsActivator.bundleContext);
             }
         }
-        catch (Exception exception)
+        catch (Throwable exception)
         {
-            notifyUpdateInstallationProgress(0, 0, forceUpdate ? UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_MANDATORY : UpdateDownloadState.UPDATE_DOWNLOAD_FAILED_OPTIONAL);
-            logger.error("Error downloading update", exception);
+            UpdateWindowsActivator.getAnalyticsService().onEvent(AnalyticsEventType.VERSION_UPDATE_ERROR,
+                AnalyticsParameter.VERSION_UPDATE_EXCEPTION_MESSAGE, exception.getMessage(),
+                AnalyticsParameter.VERSION_UPDATE_VERSION, latestVersion,
+                AnalyticsParameter.VERSION_UPDATE_DOWNLOAD_LINK, sDownloadLink);
         }
         finally
         {
@@ -756,8 +823,10 @@ public class UpdateServiceWindowsImpl
              */
             if (deleteMsi && (msi != null))
             {
-                msi.delete();
-                msi = null;
+                if (!msi.delete())
+                {
+                    logger.error("Failed to delete downloaded update file.");
+                }
             }
         }
     }
@@ -765,11 +834,18 @@ public class UpdateServiceWindowsImpl
     @Override
     public void cancelUpdateDownload()
     {
-        notifyUpdateInstallationProgress(0, 0, UpdateDownloadState.UPDATE_DOWNLOAD_CANCELLED);
+        notifyUpdateInstallationProgress(0, 0,
+                                         UpdateDownloadState.UPDATE_DOWNLOAD_CANCELLED,
+                                         getUpdateState());
         if (forceUpdate)
         {
             checkForUpdates(true);
         }
         updateDownloadCanceled = true;
+    }
+
+    private UpdateState getUpdateState()
+    {
+        return forceUpdate ? UpdateState.UPDATE_FORCED : UpdateState.UPDATE_OPTIONAL;
     }
 }

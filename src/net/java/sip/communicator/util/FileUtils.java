@@ -86,61 +86,6 @@ public class FileUtils
     }
 
     /**
-     * Copies a specified file to the given destination. This is available
-     * natively in Java 7, but was provided here to maintain Java 6
-     * compatibility.
-     *
-     * @param src The file to be copied.
-     * @param dest The location to be copied to.
-     * @throws IOException
-     */
-    public static void copyFile(File src, File dest) throws IOException
-    {
-        logger.debug("Attempting to copy file");
-        InputStream in = new FileInputStream(src);
-        OutputStream out = null;
-        try
-        {
-            out = new FileOutputStream(dest);
-            byte[] buffer = new byte[1024];
-            int len;
-
-            while ((len = in.read(buffer)) > 0)
-            {
-                out.write(buffer, 0, len);
-            }
-        }
-        finally
-        {
-            try
-            {
-                in.close();
-            }
-            finally
-            {
-                if (out != null)
-                    out.close();
-            }
-        }
-        logger.debug("Copy of file successful.");
-    }
-
-    /**
-     * Moves a specified file to the given destination, deleting the original.
-     * This is available natively in Java 7, but is provided here to maintain
-     * Java 6 compatibility.
-     *
-     * @param src The file to be moved.
-     * @param dest The location to which the file will be moved.
-     * @throws IOException
-     */
-    public static void moveFile(File src, File dest) throws IOException
-    {
-        copyFile(src, dest);
-        src.delete();
-    }
-
-    /**
      * Opens the specified file or folder using the OS's native handler.
      *
      * @param path The file or folder to be opened.

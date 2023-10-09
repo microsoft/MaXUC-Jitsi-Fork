@@ -16,6 +16,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
@@ -372,7 +373,7 @@ public class SparkleActivator
     /**
      * Update the downloaded updates link
      */
-    private static void updateLink()
+    public static void updateLink()
     {
         // Synchronized so that we don't attempt to update the link at the same
         // time as initializing Sparkle, or update the link twice at the same
@@ -393,6 +394,11 @@ public class SparkleActivator
     {
         String updateLink = getConfigurationService().user()
                 .getString(PROP_UPDATE_LINK);
+
+        if (PreLoginUtils.isLoggedInViaSSO())
+        {
+            return PreLoginUtils.prepareUpdateLinkForSSO(updateLink);
+        }
 
         if (updateLink.contains("${password}"))
         {

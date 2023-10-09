@@ -151,13 +151,6 @@ public interface LdapPersonFound
     Set<String> getMail();
 
     /**
-     * Returns telephone numbers from this person
-     *
-     * @return telephone numbers from this person
-     */
-    Set<String> getAllPhone();
-
-    /**
      * Adds a work telephone number to this person
      *
      * @param telephoneNumber the work telephone number

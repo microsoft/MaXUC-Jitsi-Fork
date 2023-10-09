@@ -158,19 +158,6 @@ public class ConferenceChatSession
     }
 
     /**
-     * Returns the configuration form corresponding to the chat room.
-     *
-     * @return the configuration form corresponding to the chat room.
-     * @throws OperationFailedException if no configuration form is available
-     * for the chat room.
-     */
-    public ChatRoomConfigurationForm getChatConfigurationForm()
-        throws OperationFailedException
-    {
-        return chatRoomWrapper.getChatRoom().getConfigurationForm();
-    }
-
-    /**
      * Returns the currently used transport for all operation within this chat
      * session.
      *
@@ -180,17 +167,6 @@ public class ConferenceChatSession
     public ChatTransport getCurrentChatTransport()
     {
         return currentChatTransport;
-    }
-
-    /**
-     * Returns the default mobile number used to send sms-es in this session. In
-     * the case of conference this is for now null.
-     *
-     * @return the default mobile number used to send sms-es in this session.
-     */
-    public String getDefaultSmsNumber()
-    {
-        return null;
     }
 
     /**
@@ -217,103 +193,6 @@ public class ConferenceChatSession
     }
 
     /**
-     * Returns the start date of the history of this chat session.
-     *
-     * @return the start date of the history of this chat session.
-     */
-    public Date getHistoryStartDate()
-    {
-        MetaHistoryService metaHistory
-            = GuiActivator.getMetaHistoryService();
-
-        // If the MetaHistoryService is not registered we have nothing to do
-        // here. The history could be "disabled" from the user
-        // through one of the configuration forms.
-        if (metaHistory == null)
-            return new Date(0);
-
-        Date startHistoryDate = new Date(0);
-
-        Collection<Object> firstMessage = metaHistory
-            .findFirstMessagesAfter(
-                chatHistoryFilter,
-                chatRoomWrapper.getChatRoom(),
-                new Date(0),
-                1);
-
-        if (firstMessage.size() > 0)
-        {
-            Iterator<Object> i = firstMessage.iterator();
-
-            Object o = i.next();
-
-            if (o instanceof MessageDeliveredEvent)
-            {
-                MessageDeliveredEvent evt
-                    = (MessageDeliveredEvent)o;
-
-                startHistoryDate = evt.getTimestamp();
-            }
-            else if (o instanceof MessageReceivedEvent)
-            {
-                MessageReceivedEvent evt = (MessageReceivedEvent)o;
-
-                startHistoryDate = evt.getTimestamp();
-            }
-        }
-
-        return startHistoryDate;
-    }
-
-    /**
-     * Returns the end date of the history of this chat session.
-     *
-     * @return the end date of the history of this chat session.
-     */
-    public Date getHistoryEndDate()
-    {
-        MetaHistoryService metaHistory
-            = GuiActivator.getMetaHistoryService();
-
-        // If the MetaHistoryService is not registered we have nothing to do
-        // here. The history could be "disabled" from the user
-        // through one of the configuration forms.
-        if (metaHistory == null)
-            return new Date(0);
-
-        Date endHistoryDate = new Date(0);
-
-        Collection<Object> lastMessage = metaHistory
-            .findLastMessagesBefore(
-                chatHistoryFilter,
-                chatRoomWrapper.getChatRoom(),
-                new Date(Long.MAX_VALUE), 1);
-
-        if (lastMessage.size() > 0)
-        {
-            Iterator<Object> i1 = lastMessage.iterator();
-
-            Object o1 = i1.next();
-
-            if (o1 instanceof MessageDeliveredEvent)
-            {
-                MessageDeliveredEvent evt
-                    = (MessageDeliveredEvent)o1;
-
-                endHistoryDate = evt.getTimestamp();
-            }
-            else if (o1 instanceof MessageReceivedEvent)
-            {
-                MessageReceivedEvent evt = (MessageReceivedEvent)o1;
-
-                endHistoryDate = evt.getTimestamp();
-            }
-        }
-
-        return endHistoryDate;
-    }
-
-    /**
      * Sets the transport that will be used for all operations within this chat
      * session.
      *
@@ -328,14 +207,6 @@ public class ConferenceChatSession
             l.currentChatTransportChanged(this);
         }
     }
-
-    /**
-     * Sets the default mobile number used to send sms-es in this session.
-     *
-     * @param smsPhoneNumber The default mobile number used to send sms-es in
-     * this session.
-     */
-    public void setDefaultSmsNumber(String smsPhoneNumber) {}
 
     /**
      * Returns the <tt>ChatSessionRenderer</tt> that provides the connection
@@ -552,17 +423,6 @@ public class ConferenceChatSession
 
         // Tell the chat panel to update the UI to include these participants.
         sessionRenderer.refreshAllChatContacts();
-    }
-
-    /**
-     * Indicates if the contact list is supported by this session. The contact
-     * list would be supported for all non-private sessions.
-     * @return <tt>true</tt> to indicate that the contact list is supported,
-     * <tt>false</tt> otherwise.
-     */
-    public boolean isContactListSupported()
-    {
-        return !ConferenceChatManager.isPrivate(chatRoomWrapper.getChatRoom());
     }
 
     /**

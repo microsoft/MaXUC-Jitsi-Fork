@@ -2,14 +2,14 @@
 package net.java.sip.communicator.service.httputil;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.plugin.desktoputil.AuthenticationWindow.AuthenticationWindowResult;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.launchutils.ProvisioningParams;
 
 import org.apache.http.auth.*;
 import org.apache.http.client.*;
 import org.jitsi.service.configuration.*;
-import org.jitsi.service.resources.*;
+import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.Hasher;
 
 /**
@@ -26,11 +26,6 @@ public class HTTPCredentialsProvider
      */
     private static final String HTTP_CREDENTIALS_PREFIX =
         "net.java.sip.communicator.util.http.credential.";
-
-    /**
-     * If we should continue retrying, this is set when user hits cancel.
-     */
-    private boolean retry = true;
 
     /**
      * The last scope we have used, no problem overriding because
@@ -62,11 +57,6 @@ public class HTTPCredentialsProvider
      * Authentication password if any.
      */
     private String authPassword = null;
-
-    /**
-     * Error message.
-     */
-    private String errorMessage = null;
 
     /**
      * Creates HTTPCredentialsProvider.
@@ -116,87 +106,79 @@ public class HTTPCredentialsProvider
             usernamePropertyName = getCredentialProperty(authscope);
         }
 
-        // Load the stored password for this user.
+        if (PreLoginUtils.isLoggedInViaSSO())
+        {
+            // If user was logged in with SSO we need to fetch a new token. To do that, we ask
+            // Electron to fetch a new token using the silent flow.
+            logger.info("Was logged in with SSO - retrieve a new SSO token");
+            String ssoToken = PreLoginUtils.refreshSSOToken();
+            return new SSOCredentials(ssoToken);
+        }
+
+        // Otherwise, if user is not logged in ask user for credentials.
         CredentialsStorageService credsService = HttpUtilActivator.getCredentialsService();
+        ConfigurationService configurationService = HttpUtilActivator.getConfigurationService();
         String pass = credsService.user() == null ? null : credsService.user().loadPassword(passwordPropertyName);
 
-        // if password is not saved ask user for credentials
-        ConfigurationService configurationService = HttpUtilActivator.getConfigurationService();
-
-        if (pass == null)
+        if (!PreLoginUtils.isLoggedIn())
         {
-            // Check for specific properties for the provisioning
-            // authentication window:
-            // - Find a user-friendly name for the provisioning service
-            // - Check for service provider-specific logo
-            // - Check for service provider-specific sign-up link
-            String serverName =
-                configurationService.global().getString(
-                    "net.java.sip.communicator.plugin.provisioning.SERVICE_PROVIDER_NAME",
-                    authscope.getHost());
-            ImageIconFuture icon = DesktopUtilActivator.getResources().getImage("service.gui.BRANDED_LOGO_64x64");
-            String signUpLink = HttpUtilActivator.getResources().getSettingsString("plugin.provisioning.SIGN_UP_LINK");
+            // User is not logged in, wait for Electron to send login info.
+            PreLoginUtils.awaitEvent(PreLoginUtils.EventType.LOGIN);
+            // User won't be able to change service provider anymore, update the flag.
+            PreLoginUtils.isServiceProviderChosen = true;
 
-            AuthenticationWindowResult result =
-                   AuthenticationWindow.getAuthenticationResult(authUsername,
-                                                                null,
-                                                                serverName,
-                                                                true,
-                                                                icon,
-                                                                errorMessage,
-                                                                signUpLink);
-
-            if(!result.isCanceled())
+            if (PreLoginUtils.isShutdownInitiated())
             {
-                authUsername = result.getUserName();
-                authPassword = new String(result.getPassword());
-                Credentials cred = new UsernamePasswordCredentials(
-                        authUsername,authPassword);
-
-                // if password remember is checked lets save passwords,
-                // if they seem not correct later will be removed.
-                if (result.isRememberPassword())
-                {
-                    String user = result.getUserName();
-                    configurationService.setActiveUser(user);
-                    // Store the active user's DN as a salt to protect Personally Identifiable
-                    // Information.  If we change active user, then it is right that this will
-                    // be updated.
-                    Hasher.setSalt(user);
-
-                    String password = new String(result.getPassword());
-
-                    if (credsService.user() != null)
-                    {
-                        credsService.user().storePassword(passwordPropertyName, password);
-                    }
-                    else
-                    {
-                        // The user credentials service hasn't been set up yet.
-                        // store value locally until set up is complete
-                        logger.debug("The user credentials service hasn't been set up yet. Storing password locally");
-                        credsService.storePasswordLocally(passwordPropertyName, password);
-
-                    }
-                }
-
-                return cred;
+                // Return immediately, avoid setting active user, let it fail.
+                // We need to do so to allow Felix to close the bundle - because
+                // otherwise it can't as the thread is blocked.
+                logger.info("Shutdown initiated, just continue");
+                return null;
             }
 
-            // well user canceled credentials input stop retry asking him
-            // if credentials are not correct
-            retry = false;
+            if (PreLoginUtils.hasSSOToken())
+            {
+                logger.info("User logging in with SSO.");
+                Hasher.setSalt(PreLoginUtils.currentUsername);
+                return new SSOCredentials(PreLoginUtils.currentSSOToken);
+            }
+            else
+            {
+                logger.info("User logging in with username and password");
+                return getUsernamePasswordCredentials();
+            }
         }
         else
         {
-            // we have saved values lets return them
+            // Or, if we have saved values (username and password) we return them.
             authUsername = configurationService.global().getString(usernamePropertyName);
             authPassword = pass;
 
             return new UsernamePasswordCredentials(authUsername, authPassword);
         }
+    }
 
-        return null;
+    private UsernamePasswordCredentials getUsernamePasswordCredentials()
+    {
+        if (ProvisioningParams.getPassword() != null)
+        {
+            // Login link was clicked and password was provided, login with that.
+            logger.info("Logging in with a link");
+            authUsername = ProvisioningParams.getSubscriber();
+            authPassword = ProvisioningParams.getPassword();
+        }
+        else
+        {
+            authUsername = PreLoginUtils.currentUsername;
+            authPassword = PreLoginUtils.currentPassword;
+        }
+
+        // Store the active user's DN as a salt to protect Personally Identifiable
+        // Information.  If we change active user, then it is right that this will
+        // be updated.
+        Hasher.setSalt(authUsername);
+
+        return new UsernamePasswordCredentials(authUsername, authPassword);
     }
 
     /**
@@ -231,7 +213,6 @@ public class HTTPCredentialsProvider
         }
 
         authPassword = null;
-        errorMessage = null;
     }
 
     /**
@@ -250,33 +231,6 @@ public class HTTPCredentialsProvider
     }
 
     /**
-     * Whether we need to continue retrying.
-     * @return whether we need to continue retrying.
-     */
-    boolean retry()
-    {
-        return retry;
-    }
-
-    /**
-     * Returns authentication username if any
-     * @return authentication username or null
-     */
-    public String getAuthenticationUsername()
-    {
-        return authUsername;
-    }
-
-    /**
-     * Returns authentication password if any
-     * @return authentication password or null
-     */
-    public String getAuthenticationPassword()
-    {
-        return authPassword;
-    }
-
-    /**
      * Set the authentication username.
      * @param username The new value for the username.
      */
@@ -286,26 +240,23 @@ public class HTTPCredentialsProvider
     }
 
     /**
-     * Set the authentication password.
-     * @param password The new value for the password.
-     */
-    public void setAuthenticationPassword(String password)
-    {
-        authPassword = password;
-    }
-
-    /**
-     * Mark the authentication as having failed
+     * Mark the authentication as having failed - instruct Electron to show an
+     * error popup.
      */
     public void authenticationFailed()
     {
         // Clear the data, but keep the username
         clear(true);
 
-        errorMessage =
-            HttpUtilActivator.getResources().getI18NString(
+        ResourceManagementService resources = HttpUtilActivator.getResources();
+        String errorMessage =
+            resources.getI18NString(
             "service.gui.AUTHENTICATION_FAILED",
-            new String[]
-                    {usedScope.getHost()});
+            new String[]{usedScope.getHost()});
+
+        String title = resources.getI18NString("service.gui.ERROR");
+        ErrorDialog errorDialog = new ErrorDialog(title, errorMessage);
+        errorDialog.setModal(true);
+        errorDialog.showDialog();
     }
 }

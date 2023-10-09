@@ -51,16 +51,4 @@ public class SplashScreenHTMLPane
             logger.error("Insert in the HTMLDocument failed.", e);
         }
     }
-
-    public void insertAfterStart(String text)
-    {
-        Element root = this.document.getDefaultRootElement();
-
-        try {
-            this.document.insertBeforeStart(root
-                    .getElement(0), text);
-        } catch (BadLocationException | IOException e) {
-            logger.error("Insert in the HTMLDocument failed.", e);
-        }
-    }
 }

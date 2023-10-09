@@ -2474,16 +2474,6 @@ public class OperationSetBasicTelephonySipImpl
     }
 
     /**
-     * Transfer authority used for interacting with user for unknown calls
-     *  and the requests for transfer.
-     * @param authority transfer authority.
-     */
-    public void setTransferAuthority(TransferAuthority authority)
-    {
-        this.transferAuthority = authority;
-    }
-
-    /**
      * Loop through all calls that are in progress and send re-invites to each of them.
      * This is used to reestablish calls after a Perimeta failover
      */

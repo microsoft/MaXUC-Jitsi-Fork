@@ -432,10 +432,10 @@ public class UcServicesConfigPanel
 
                 ConferenceService mConferenceService =
                                             GuiActivator.getConferenceService();
-                boolean confEnabled =
-                        mConferenceService.isFullServiceEnabled() ||
-                        (mConferenceService.isJoinEnabled() &&
-                                       mConferenceService.isConfAppInstalled());
+                boolean confEnabled = mConferenceService != null
+                    && (mConferenceService.isFullServiceEnabled()
+                        || (mConferenceService.isJoinEnabled()
+                            && mConferenceService.isConfAppInstalled()));
 
                 String autoLaunchExternal =
                     confEnabled ? AUTO_LAUNCH_EXTERNAL_CONF : AUTO_LAUNCH_EXTERNAL;

@@ -506,7 +506,4 @@ public class EmojiResources
         return mAllEmojisLoaded;
     }
 
-    public static String createURLFromImagePath(String ImagePath){
-        return EMOJI_IMAGE_URL_PREFIX + ImagePath;
-    }
 }

@@ -357,17 +357,6 @@ public class PacketLoggingServiceImpl
     }
 
     /**
-     * Checks is logging globally enabled for the service.
-     *
-     * @return is logging enabled.
-     */
-    @Override
-    public boolean isLoggingEnabled()
-    {
-        return getConfiguration().isGlobalLoggingEnabled();
-    }
-
-    /**
      * Checks is logging globally enabled for and is it currently available for
      * the given service.
      *

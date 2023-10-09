@@ -604,7 +604,7 @@ public abstract class AbstractSelectMultiIMContactsDialog
 
             Iterator<UIContactSource> filterSourceIter = filterSources.iterator();
 
-            // If we have stopped filtering in the mean time we return here.
+            // If we have stopped filtering in the meantime we return here.
             if (filterQuery.isCanceled())
                 return;
 
@@ -620,7 +620,7 @@ public abstract class AbstractSelectMultiIMContactsDialog
                     continue;
                 }
 
-                // If we have stopped filtering in the mean time we return here.
+                // If we have stopped filtering in the meantime we return here.
                 if (filterQuery.isCanceled())
                     return;
 

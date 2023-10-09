@@ -76,19 +76,6 @@ public abstract class AbstractFileTransfer
     }
 
     /**
-     * Removes the given <tt>FileTransferProgressListener</tt>.
-     *
-     * @param listener the listener to remove
-     */
-    public void removeProgressListener(FileTransferProgressListener listener)
-    {
-        synchronized(progressListeners)
-        {
-            this.progressListeners.remove(listener);
-        }
-    }
-
-    /**
      * Removes the given <tt>FileTransferStatusListener</tt>.
      *
      * @param listener the listener to remove

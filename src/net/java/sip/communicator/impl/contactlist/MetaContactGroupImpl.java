@@ -466,35 +466,6 @@ public class MetaContactGroupImpl
     }
 
     /**
-     * Returns a contact group encapsulated by this meta contact group, having
-     * the specified groupName and coming from the indicated ownerProvider.
-     *
-     * @param grpName the name of the contact group who we're looking for.
-     * @param ownerProvider a reference to the ProtocolProviderService that
-     * the contact we're looking for belongs to.
-     * @return a reference to a <tt>ContactGroup</tt>, encapsulated by this
-     * MetaContactGroup, carrying the specified name and originating from the
-     * specified ownerProvider or null if no such contact group was found.
-     */
-    public ContactGroup getContactGroup(String grpName,
-                                        ProtocolProviderService ownerProvider)
-    {
-        Iterator<ContactGroup> encapsulatedGroups = getContactGroups();
-
-        while (encapsulatedGroups.hasNext())
-        {
-            ContactGroup group = encapsulatedGroups.next();
-
-            if (group.getGroupName().equals(grpName)
-                && group.getProtocolProvider() == ownerProvider)
-            {
-                return group;
-            }
-        }
-        return null;
-    }
-
-    /**
      * Returns all protocol specific ContactGroups, encapsulated by this
      * MetaContactGroup and coming from the indicated ProtocolProviderService.
      * If none of the contacts encapsulated by this MetaContact is originating
@@ -891,20 +862,6 @@ public class MetaContactGroupImpl
         MetaContactImpl metaContactImpl = ((MetaContactImpl) metaContact);
         metaContactImpl.unsetParentGroup(this);
         lightRemoveMetaContact(metaContactImpl);
-    }
-
-    /**
-     * Returns the <tt>MetaContactGroup</tt> with the specified index.
-     * <p>
-     * @param index the index of the group to return.
-     * @return the <tt>MetaContactGroup</tt> with the specified index. <p>
-     * @throws IndexOutOfBoundsException if <tt>index</tt> is not a valid
-     *   index.
-     */
-    public MetaContactGroup getMetaContactSubgroup(int index) throws
-        IndexOutOfBoundsException
-    {
-        return subgroupsOrderedCopy.get(index);
     }
 
     /**

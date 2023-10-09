@@ -343,6 +343,7 @@ public class SslNetworkLayer
         SSLSocket sock = (SSLSocket) getSSLSocketFactory(address).createSocket(
             address, port);
         setTrafficClass(sock);
+        setHandshakeListener(sock);
         return sock;
     }
 
@@ -365,6 +366,7 @@ public class SslNetworkLayer
             SSLSocket sock = (SSLSocket) getSSLSocketFactory(address).createSocket(
                 address, port, myAddress, 0);
             setTrafficClass(sock);
+            setHandshakeListener(sock);
             return sock;
         }
 
@@ -516,6 +518,12 @@ public class SslNetworkLayer
         }
 
         return 0;
+    }
+
+    private void setHandshakeListener(SSLSocket socket)
+    {
+        socket.addHandshakeCompletedListener(
+                event -> certificateVerification.notifySecureConnectionEstablished("STRP", event.getSession()));
     }
 
     public void setSipStack(SipStackImpl arg0)

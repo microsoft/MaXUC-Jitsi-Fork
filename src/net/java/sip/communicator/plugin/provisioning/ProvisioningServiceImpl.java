@@ -9,7 +9,7 @@ package net.java.sip.communicator.plugin.provisioning;
 
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
-import static org.jitsi.util.SanitiseUtils.sanitise;
+import static org.jitsi.util.SanitiseUtils.sanitiseFirstPatternMatch;
 
 import java.awt.*;
 import java.beans.PropertyChangeListener;
@@ -41,9 +41,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.metaswitch.maxanalytics.event.AnalyticsResult;
+import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
+import com.metaswitch.maxanalytics.event.CommonKt;
+import com.metaswitch.maxanalytics.event.OpenIdProvider;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.http.HttpStatus;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
 import net.java.sip.communicator.plugin.desktoputil.ScreenInformation;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog.OnDismiss;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
@@ -54,6 +62,12 @@ import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.diagnostics.ReportReason;
 import net.java.sip.communicator.service.httputil.HTTPResponseResult;
 import net.java.sip.communicator.service.httputil.HttpUtils;
+import net.java.sip.communicator.service.httputil.HttpUtils.HttpMethod;
+import net.java.sip.communicator.service.httputil.HttpUrlParams;
+import net.java.sip.communicator.service.httputil.SSOCredentials;
+import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightService;
+import com.metaswitch.maxanalytics.event.LogInKt;
 import net.java.sip.communicator.service.protocol.OperationSetCallPark;
 import net.java.sip.communicator.service.provisioning.ProvisioningService;
 import net.java.sip.communicator.service.threading.CancellableRunnable;
@@ -87,6 +101,8 @@ public class ProvisioningServiceImpl implements ProvisioningService
     private static final Logger logger
         = Logger.getLogger(ProvisioningServiceImpl.class);
 
+    private static final Pattern SIP_PS_ERROR_PATTERN = Pattern.compile("^Error=(.*)$" , Pattern.MULTILINE | Pattern.DOTALL);
+
     /**
      * The time (in millis) that the config was last refreshed from the
      * provisioning server.  Other services can register to be informed when
@@ -95,19 +111,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
      */
     public static final String LAST_PROVISIONING_UPDATE_TIME
         = "net.java.sip.communicator.LAST_UPDATE_TIME";
-
-    /**
-     * Name of the config option which controls whether or not we should try to
-     * use a PAT to login
-     */
-    private static final String PROPERTY_USE_TOKEN
-        = "net.java.sip.communicator.plugin.provisioning.USE_PAT";
-
-    /**
-     * The place in the credentials service where the PAT (persistent
-     * authentication token) is stored
-     */
-    private static final String PROPERTY_PROVISIONING_TOKEN = "impl.commportal.TOKEN";
 
     /**
      * Name of the config update URL in the configuration service.
@@ -130,8 +133,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
     /**
      * Name of the CDAP URL in the config.
      */
-    private static final String CDAP_URL
-        = "net.java.sip.communicator.plugin.cdap.URL";
+    static final String CDAP_URL = "net.java.sip.communicator.plugin.cdap.URL";
 
     /**
      * Name of the active user being used by configuration.
@@ -153,13 +155,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
         = "net.java.sip.communicator.plugin.provisioning.auth";
 
     /**
-     * Name of the encrypted provisioning password in the configuration
-     * service.
-     */
-    static final String PROPERTY_PROVISIONING_ENCRYPTED_PASSWORD
-        = "net.java.sip.communicator.plugin.provisioning.auth.ENCRYPTED_PASSWORD";
-
-    /**
      * Name of the property that contains the provisioning method (i.e. DHCP,
      * DNS, manual, ...).
      */
@@ -178,42 +173,36 @@ public class ProvisioningServiceImpl implements ProvisioningService
     /**
      * Name of the enforce prefix property.
      */
-    private static final String PROVISIONING_ENFORCE_PREFIX_PROP
-        = "provisioning.ENFORCE_PREFIX";
+    private static final String PROVISIONING_ENFORCE_PREFIX_PROP = "provisioning.ENFORCE_PREFIX";
 
     /**
      * Name of the BG Contacts enabled property
      */
-    private static final String PROVISIONING__BG_CONTACTS
-        = "net.java.sip.communicator.BG_CONTACTS_ENABLED";
+    private static final String PROVISIONING__BG_CONTACTS = "net.java.sip.communicator.BG_CONTACTS_ENABLED";
 
     /**
      * The name of the property which specifies the update link in the
      * configuration file. Once getAndStoreConfig() has run, this will be
      * set correctly in the configuration service.
      */
-    static final String PROP_UPDATE_LINK
-        = "net.java.sip.communicator.UPDATE_LINK";
+    static final String PROP_UPDATE_LINK = "net.java.sip.communicator.UPDATE_LINK";
 
     /**
      * String representing the IM provisioning method in the configuration
      * service.
      */
-    private static final String IM_PROVISION_SOURCE_PROP =
-                             "net.java.sip.communicator.im.IM_PROVISION_SOURCE";
+    private static final String IM_PROVISION_SOURCE_PROP = "net.java.sip.communicator.im.IM_PROVISION_SOURCE";
 
     /**
      * String representing the name of the IM domain in the configuration
      * service.
      */
-    private static final String IM_DOMAIN_PROP =
-                                       "net.java.sip.communicator.im.IM_DOMAIN";
+    private static final String IM_DOMAIN_PROP = "net.java.sip.communicator.im.IM_DOMAIN";
 
     /**
      * Property to indicate whether IM is enabled in the client.
      */
-    private static final String IM_ENABLED_PROP
-                                    = "net.java.sip.communicator.im.IM_ENABLED";
+    private static final String IM_ENABLED_PROP = "net.java.sip.communicator.im.IM_ENABLED";
 
     /**
      * A config prefix that covers both WIRELESS and WIRED codecs.
@@ -255,6 +244,17 @@ public class ProvisioningServiceImpl implements ProvisioningService
      */
     public static final String VOIP_ENABLED_PROP =
                   "net.java.sip.communicator.plugin.generalconfig.VOIP_ENABLED";
+
+    /**
+     * Name of the config tracking whether user is logged in with SSO.
+     */
+    static final String PROPERTY_IS_SSO_ACTIVE =
+            "net.java.sip.communicator.plugin.provisioning.auth.SSO_ACTIVE";
+
+    /**
+     * Flag for checking if password was remembered.
+     */
+    private static final String REMEMBERED_PASSWORD = "net.java.sip.communicator.plugin.desktoputil.credentials";
 
     /**
      * List of config entries that expose personal data as their values (the part following
@@ -329,6 +329,8 @@ public class ProvisioningServiceImpl implements ProvisioningService
      */
     private final AnalyticsService mAnalyticsService;
 
+    private final InsightService mInsightService;
+
     /**
      * Access to the threading service
      */
@@ -352,9 +354,22 @@ public class ProvisioningServiceImpl implements ProvisioningService
     private boolean mTerminalError = true;
 
     /**
-     * Authentication username.
+     * Track when we hit an authFailedError so the first time this happens we can infer that the user's
+     * password has been changed and show them an appropriately worded dialog to re-enter their password.
      */
-    private static String provUsername = null;
+    private boolean hitAuthFailedError = false;
+
+    /**
+     * We start off trying a POST request to SIP-PS (more secure than a GET, as the password will be in the content, not
+     * the URL). Down-level EAS doesn't support this; if we fail with the POST we try with a GET.
+     */
+    private boolean fallBackToGetRequest = false;
+
+    /**
+     * We sometimes want to save credentials from previous failed requests, as sometimes we can re-use the previously
+     * entered username and/or password and save the user from having to unnecessarily re-enter these.
+     */
+    private Credentials savedCredentials;
 
      /**
       * The default audio system (wasapi for Windows 7 or 8 and portaudio for
@@ -374,11 +389,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
          contactSources.put("CommPortal", "CommPortal");
          contactSources.put("MacAddressBook", "Address Book");
      }
-
-    /**
-     * ProvisioningServiceImpl is a singleton.
-     */
-    private static ProvisioningServiceImpl sProvisioningServiceImpl = null;
 
     /**
      * Time constant used for scheduled tasks.
@@ -513,19 +523,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
      }
 
     /**
-     * Returns the instance of ProvisioningServiceImpl.
-     */
-    public static synchronized ProvisioningServiceImpl getProvisioningServiceImpl()
-    {
-        if (sProvisioningServiceImpl == null)
-        {
-            sProvisioningServiceImpl = new ProvisioningServiceImpl();
-            sProvisioningServiceImpl.registerConfigListener();
-        }
-        return sProvisioningServiceImpl;
-    }
-
-    /**
      * Adds a listener for PROPERTY_PROVISIONING_USERNAME,
      * which should be called when we first get some user config after
      * a user logs in.
@@ -557,11 +554,18 @@ public class ProvisioningServiceImpl implements ProvisioningService
     /**
       * Constructor.
       */
-     private ProvisioningServiceImpl()
+     ProvisioningServiceImpl()
      {
          // check if UUID is already configured
          mConfig = ProvisioningActivator.getConfigurationService();
+
+         String cdapUrl = mConfig.global().getString(CDAP_URL);
+         if (mConfig.global().getString(PROPERTY_CDAP_SP_ID) == null && !StringUtils.isNullOrEmpty(cdapUrl)) {
+             // Wait for user to choose service provider if it is not saved from last run
+             PreLoginUtils.awaitEvent(PreLoginUtils.EventType.SERVICE_PROVIDER);
+         }
          mAnalyticsService = ProvisioningActivator.getAnalyticsService();
+         mInsightService = ProvisioningActivator.getInsightService();
          mCredsService = ProvisioningActivator.getCredentialsStorageService();
          mThreadingService = ProvisioningActivator.getThreadingService();
 
@@ -593,6 +597,17 @@ public class ProvisioningServiceImpl implements ProvisioningService
              // Set the default audio system to wasapi for Windows.
              mAudioSystem = "wasapi";
          }
+
+         registerConfigListener();
+
+         if (StringUtils.isNullOrEmpty(cdapUrl))
+         {
+             logger.info("Tailored branding - fetching applicationID");
+             // This is a tailored branding - so initiate fetching applicationID
+             // as we have provisioning URL already - unlike with CDAP where we
+             // first need user to select a CDAP provider.
+             PreLoginUtils.fetchApplicationID();
+         }
      }
 
      /**
@@ -622,6 +637,10 @@ public class ProvisioningServiceImpl implements ProvisioningService
          /// Now we (probably) have the config, it's reasonable to start the
          // timer that sends the analytic that reports we are running
          mAnalyticsService.startSysRunningTimer();
+
+         // Start the insight service
+         // Data collection will begin as soon as the user accepts the eula
+         mInsightService.start();
 
          if (!mTerminalError &&
              mConfig.global().getProperty(PROPERTY_PROVISIONING_USERNAME) != null)
@@ -804,22 +823,17 @@ public class ProvisioningServiceImpl implements ProvisioningService
          }
 
          parameters.add("Contact source");
-         parameters.add(mConfig.user().getString(
-                           "net.java.sip.communicator.PERSONAL_CONTACT_STORE"));
+         parameters.add(mConfig.user().getString("net.java.sip.communicator.PERSONAL_CONTACT_STORE"));
 
-         // Add an analytic to say we're using SIP media security headers if we
-         // are (see PRD 14452).
-         boolean use3GPPMediaHeaders = mConfig.user().getBoolean(
-                 "net.java.sip.communicator.ENABLE_3GPP_MEDIA_HEADERS", false);
-         if (use3GPPMediaHeaders)
+         // Add an analytic to say we're using SIP media security headers if we are (see PRD 14452).
+         if (mConfig.user().getBoolean("net.java.sip.communicator.ENABLE_3GPP_MEDIA_HEADERS", false))
          {
              logger.debug("Adding analytics parameter for using 3GPP headers");
              parameters.add("3GPP media headers");
              parameters.add("enabled");
          }
 
-         mAnalyticsService.onEvent(AnalyticsEventType.CONFIG_RETRIEVED,
-                                   parameters.toArray(new String[parameters.size()]));
+         mAnalyticsService.onEvent(AnalyticsEventType.CONFIG_RETRIEVED, parameters.toArray(new String[parameters.size()]));
      }
 
     private void notifyCoreNotion() {
@@ -901,16 +915,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
      }
 
     /**
-     * Returns provisioning username.
-     *
-     * @return provisioning username
-     */
-    public String getProvisioningUsername()
-    {
-        return provUsername;
-    }
-
-    /**
      * Returns the provisioning DN if any.
      *
      * @return provisioning DN or null if the DN is not set
@@ -929,6 +933,13 @@ public class ProvisioningServiceImpl implements ProvisioningService
      */
     private void retrieveConfigurationFileFailed(boolean networkError)
     {
+        if (PreLoginUtils.isShutdownInitiated()) {
+            // Avoid handing error as we had to unblock Java to allow Felix to
+            // close the bundle - which caused login to execute - and fail.
+            logger.info("Shutdown initiated, avoid handling error");
+            return;
+        }
+
         // Retrieving config failed. The user either submitted blank
         // credentials, cancelled the login, or selected a CDAP server with
         // no valid SIP PS config.
@@ -1010,117 +1021,61 @@ public class ProvisioningServiceImpl implements ProvisioningService
                 url = url.substring(0, url.indexOf('?'));
             }
 
-            ArrayList<String> paramNames = null;
-            ArrayList<String> paramValues = null;
-            int usernameIx = -1;
-            int passwordIx = -1;
+            HttpUrlParams urlParams = HttpUrlParams.getHttpUrlParamsFromArgs(args);
 
-            if (args != null && args.length > 0)
-            {
-                paramNames = new ArrayList<>(args.length);
-                paramValues = new ArrayList<>(args.length);
-
-                for(int i = 0; i < args.length; i++)
-                {
-                    String s = args[i];
-
-                    String usernameParam = "${username}";
-                    String dnParam = "${directorynumber}";
-                    String passwordParam = "${password}";
-
-                    // If we find the username or password parameter at this
-                    // stage we replace it with an empty string.
-                    if(s.contains(usernameParam))
-                    {
-                        s = s.replace(usernameParam, "");
-                        usernameIx = paramNames.size();
-                    }
-                    else if(s.contains(dnParam))
-                    {
-                        s = s.replace(dnParam, "");
-                        usernameIx = paramNames.size();
-                    }
-                    else if(s.contains(passwordParam))
-                    {
-                        s = s.replace(passwordParam, "");
-                        passwordIx = paramNames.size();
-                    }
-
-                    int equalsIndex = s.indexOf("=");
-                    if (equalsIndex > -1)
-                    {
-                        paramNames.add(s.substring(0, equalsIndex));
-                        paramValues.add(s.substring(equalsIndex + 1));
-                    }
-                    else
-                    {
-                        logger.info("Invalid provisioning request parameter: \""
-                                    + s + "\", is replaced by \"" + s + "=\"");
-                        paramNames.add(s);
-                        paramValues.add("");
-                    }
-                }
-            }
-
-            // We do not prepopulate the username field unless provisioning
-            // fails using stored credentials, so initialize the name to null.
-            String prepopulatedUsername = null;
+            // Clear any saved credentials from previous spins.
+            savedCredentials = null;
+            hitAuthFailedError = false;
+            mStoredConfig = (mConfig.global().getProperty(PROPERTY_PROVISIONING_USERNAME) != null);
 
             while (true)
             {
-                // Try posting a config request to the Accession URL.
-                HTTPResponseResult res = postConfigRequest(url,
-                                                           paramNames,
-                                                           paramValues,
-                                                           usernameIx,
-                                                           passwordIx,
-                                                           prepopulatedUsername);
-
-                if ((res == null) || (res.getContentLength() == 0))
-                {
-                    // Retrieving config failed. The user either submitted
-                    // blank credentials, cancelled the login, or selected
-                    // a CDAP server with no valid SIP PS config.
-                    logger.error("Config retrieval failed.");
-
-                    if (!mStoredConfig)
-                    {
-                        // If the user doesn't have any stored config, set
-                        // mTerminalError to true, as the user has not been
-                        // authenticated.  Also forget any credentials that
-                        // the user did enter (including CDAP selection, as
-                        // they may have selected the wrong  SP) so that the
-                        // user will be prompted to re-enter them all next
-                        // time they start the client.
-                        setTerminalError(true);
-                        forgetCredentials(true);
-                    }
-
-                    if (HttpUtils.authWindowCancelled())
-                    {
-                        logger.user("Login cancelled");
-                        // No password has been saved, which means the
-                        // user cancelled the login dialog, so we just
-                        // want to shut down silently. Set mTerminalError to
-                        // indicate that (if provisioning is mandatory) the
-                        // client should be shut down.
-                        setTerminalError(true);
-                        handleConfigError();
-
-                        // There is no config to process, so return null.
-                        return null;
-                    }
-
-                    // If we get this far, we've got an error from the server so
-                    // fall through to the general error handling at the end of
-                    // this method.
-                    throw new Exception("Failed to get config from server");
+                if (PreLoginUtils.isShutdownInitiated()) {
+                    logger.info("Shutdown initiated, break the loop to" +
+                                "allow Felix to close all the bundles");
+                    return null;
                 }
 
-                String[] userPass = res.getCredentials();
-                if(userPass[0] != null && userPass[1] != null)
+                if (ProvisioningParams.getSubscriber() != null && !PreLoginUtils.isLoggedIn()) {
+                    logger.info("Logging in with a link, password provided:" +
+                                (ProvisioningParams.getPassword() != null ? "true" : "false"));
+                    savedCredentials = new UsernamePasswordCredentials(
+                            ProvisioningParams.getSubscriber(),
+                            ProvisioningParams.getPassword()
+                    );
+                }
+
+                // Try posting a config request to the Accession URL.
+                HTTPResponseResult res = makeHttpRequestForConfig(url,
+                                                                  (fallBackToGetRequest ? HttpMethod.GET : HttpMethod.POST),
+                                                                  urlParams);
+
+                // Store off the credentials from this request - if we need to try again, the username and/or
+                // password will be useful to remember.
+                if (res != null && !(res.getCredentials() instanceof SSOCredentials))
                 {
-                    provUsername = userPass[0];
+                    savedCredentials = res.getCredentials();
+                }
+
+                if ((res == null) || (res.getStatusCode() != HttpStatus.SC_OK) || (res.getContentLength() == 0))
+                {
+                    // Retrieving config failed.
+                    logger.error("Config retrieval failed." +
+                        " content length " + (res == null ? "null" : res.getContentLength()) +
+                        " status code " + (res == null ? "null" : res.getStatusCode()));
+
+                    if (!fallBackToGetRequest)
+                    {
+                        logger.info("Fallback to GET requests and try again");
+                        fallBackToGetRequest = true;
+                        continue;
+                    }
+                    logLoginAnalytics(res != null ?
+                                         new AnalyticsResult.HttpError(res.getStatusCode()) :
+                                         AnalyticsResult.FailureUnknown.INSTANCE
+                            );
+                    retrieveConfigurationFileFailed(false);
+                    return null;
                 }
 
                 // We have config from the server.  Parse the result into a string
@@ -1128,124 +1083,20 @@ public class ProvisioningServiceImpl implements ProvisioningService
 
                 // Remove Personal Data from the string (i.e. subscriber DNs)
                 String loggableConfigFromServer = sanitiseServerConfigForLogging(configFromServer);
+                logger.info("Config from server\n" + loggableConfigFromServer);
 
                 try
                 {
-                    logger.info("Config from server\n" + loggableConfigFromServer);
-
-                    Pattern errorPattern = Pattern.compile("^Error=(.*)$" , Pattern.MULTILINE | Pattern.DOTALL);
-                    Matcher errorMatcher = errorPattern.matcher(configFromServer);
+                    Matcher errorMatcher = SIP_PS_ERROR_PATTERN.matcher(configFromServer);
 
                     if (errorMatcher.matches())
                     {
-                        // The server has returned an error.  Assume to start
-                        // with that this is a terminal error and we should
-                        // delete user credentials, as that is safest and
-                        // should give the best default UX.
-                        boolean forgetCreds = true;
-                        setTerminalError(true);
-
-                        // Extract the error message returned by the server
-                        // from the response.
-                        String errorMessage = errorMatcher.group(1).trim();
-                        logger.error("Server returned provisioning error: " +
-                                     errorMessage);
-
-                        // If there is a mapping between the error message
-                        // returned by the server and a string to display to
-                        // the user, use that string as the error message.
-                        ErrorResponse errorResponse =
-                            ErrorResponse.fromServerError(errorMessage);
-
-                        if (errorResponse == ErrorResponse.ClientOutOfDate &&
-                            ProvisioningActivator.getUpdateService() != null)
+                        if (handleErrorFromServer(errorMatcher.group(1).trim()))
                         {
-                            // The client is out of date - force an update
-                            logger.warn("Client is out of date");
-                            // N.B. Client-triggered forced updates are only supported on Windows.
-                            // This method has no effect on Mac.
-                            ProvisioningActivator.getUpdateService().forceUpdate();
-                            return null;
-                        }
-                        else if (errorResponse == ErrorResponse.AuthFailed &&
-                                 mStoredConfig &&
-                                 StringUtils.isNullOrEmpty(prepopulatedUsername))
-                        {
-                            // Authentication failed, even though we have
-                            // stored config and there has been no previous
-                            // failure to authenticate in this session.
-                            // This probably means the remote password has
-                            // changed. Warn the user before reprompting for
-                            // their credentials.
-                            logger.error("Failed to authenticate using " +
-                                         " stored config. Prompting user.");
-                            errorMessage = mResourceService.getI18NString(
-                                "plugin.provisioning.PASSWORD_CHANGED_REMOTELY",
-                                 new String[]
-                                 {
-                                    mResourceService.getI18NString(
-                                              "service.gui.APPLICATION_NAME")
-                                 });
-                            setTerminalError(false);
-                            prepopulatedUsername = provUsername;
-                        }
-                        else if (errorResponse != null)
-                        {
-                            errorMessage =
-                                mResourceService.getI18NString(
-                                    errorResponse.getResourceString());
-
-                            // Store whether this is a terminal error
-                            setTerminalError(errorResponse.isTerminal());
-
-                            // If this is a subscriber error, the user might
-                            // just have entered the wrong username or
-                            // password, so make sure we delete their
-                            // credentials.
-                            forgetCreds = errorResponse.isSubscriberError();
-                        }
-
-                        displayLoginError(errorMessage, false);
-
-                        if (forgetCreds)
-                        {
-                            // This is a subscriber error, so forget the
-                            // entered username and password (but not CDAP
-                            // selection) and continue to the top of the loop,
-                            // so the user will be re-shown the login dialog.
-                            logger.warn("Subscriber error - prompt for login");
-                            ProvisioningParams.clear();
-                            forgetCredentials(false);
-
-                            // Remove any account details - the account details
-                            // may have changed and we don't want the old data
-                            // to hang around.  If it's not changed then there
-                            // will be no overall effect as the new config will
-                            // contain what we need.
-                            removeProvisionedAccounts();
                             continue;
-                        }
-                        else if (mTerminalError)
-                        {
-                            // This isn't a subscriber error, so there's no
-                            // point deleting the user's credentials and
-                            // re-displaying the login prompt.  It is a
-                            // terminal error, so there's also no point in
-                            // continuing to try to load saved config.  Call
-                            // handleConfigError to shut down the client
-                            // cleanly and return null here, as there's no
-                            // config to process.
-                            logger.warn("Terminal error - shut down the client");
-                            handleConfigError();
-                            return null;
                         }
                         else
                         {
-                            // This isn't a subscriber error or a terminal
-                            // error, so return null to see if the client can
-                            // start without any saved config.
-                            logger.warn("Non-subscriber, non-terminal error - " +
-                                        "attempt to start client with saved config");
                             return null;
                         }
                     }
@@ -1256,31 +1107,23 @@ public class ProvisioningServiceImpl implements ProvisioningService
                         // log in, or SIP-PS is behind a WAF that has returned some html. If we have
                         // any saved config then start the client with that, else show an error and
                         // close the client.
-                        logger.warn("Unrecognized config returned - attempt " +
-                                    "to start client with saved config");
+                        logger.warn("Unrecognized config returned");
+
+                        if (!fallBackToGetRequest)
+                        {
+                            logger.info("Fallback to GET requests and try again");
+                            fallBackToGetRequest = true;
+                            continue;
+                        }
+                        logLoginAnalytics(AnalyticsResult.InvalidData.INSTANCE);
                         retrieveConfigurationFileFailed(false);
                         return null;
                     }
 
-                    // The returned config from SIP PS is not just an error
-                    // response so process it now.
-                    String processedConfig = processReceivedConfig(configFromServer);
-
-                    String cdapConfigUrl = determineCdapUrl();
-
-                    // processedConfig may already contain an UPDATE_LINK returned from
-                    // SIP PS. For CDAP clients, we may need to replace it with a different URL.
-                    CDAPUpgradeUrl cdapUpgradeUrl = new CDAPUpgradeUrl(cdapConfigUrl, processedConfig);
-
-                    if (cdapUpgradeUrl.getUrl() != null)
-                    {
-                        // Override by appending the newly determined link to processedConfig,
-                        // even though the existing update link is still present.
-                        // This works as the config is applied in order, so last update wins.
-                        processedConfig = processedConfig.concat(
-                        PROP_UPDATE_LINK + "=" + cdapUpgradeUrl + "\n");
-                        logger.info("Overriding UPDATE_LINK to be " + cdapUpgradeUrl);
-                    }
+                    // The returned config from SIP PS is not just an error response so process it now.
+                    logger.debug("Successfully retrieved config from server");
+                    hitAuthFailedError = false;
+                    String processedConfig = processConfigFromServer(configFromServer);
 
                     if (mConfig.user() != null &&
                         mConfig.user().getBoolean(IM_ENABLED_PROP, true))
@@ -1288,10 +1131,24 @@ public class ProvisioningServiceImpl implements ProvisioningService
                         updateImConfiguration(isConfigRefresh, processedConfig);
                     }
 
+                    if (PreLoginUtils.hasSSOToken())
+                    {
+                        // If this was an SSO login, and it was successful - save the flag.
+                        logger.info("Login with SSO successful");
+                        ProvisioningActivator.getConfigurationService().global()
+                                .setProperty(PROPERTY_IS_SSO_ACTIVE, true);
+                    }
+
+                    // Successful login - clear login data.
+                    PreLoginUtils.clearManualLoginData();
+                    ProvisioningParams.clear();
+                    logLoginAnalytics(AnalyticsResult.Success.INSTANCE);
+
                     return processedConfig;
                 }
                 catch (Exception e)
                 {
+                    logLoginAnalytics(AnalyticsResult.FailureUnknown.INSTANCE);
                     logger.error("Error updating config", e);
                     return null;
                 }
@@ -1300,6 +1157,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
         catch (IOException e)
         {
             // Almost certainly a network error.
+            logLoginAnalytics(AnalyticsResult.NetworkError.INSTANCE);
             logger.warn("Network error: ", e);
             retrieveConfigurationFileFailed(true);
             return null;
@@ -1307,19 +1165,137 @@ public class ProvisioningServiceImpl implements ProvisioningService
         catch (Exception e)
         {
             // Some other error; probably not network.
+            logLoginAnalytics(AnalyticsResult.FailureUnknown.INSTANCE);
             logger.warn("Config retrieval failed: ", e);
             retrieveConfigurationFileFailed(false);
             return null;
         }
     }
 
+    private void logLoginAnalytics(AnalyticsResult result)
+    {
+        String rememberedPassword = mConfig.global().getString(REMEMBERED_PASSWORD);
+        mInsightService.logEvent(new InsightEvent(LogInKt.EVENT_LOG_IN, Map.of(
+                AnalyticsResultKt.PARAM_RESULT,
+                result.getValue(),
+                LogInKt.PARAM_LOG_IN_REMEMBER_PASSWORD,
+                String.valueOf(rememberedPassword != null),
+                LogInKt.PARAM_LOG_IN_ACCOUNT_CHANGED,
+                String.valueOf(PreLoginUtils.currentUsername != null),
+                CommonKt.PARAM_SSO_IDP,
+                PreLoginUtils.isLoggedInViaSSO() ?
+                        OpenIdProvider.MICROSOFT.getProvider() : OpenIdProvider.NONE.getProvider()
+                                 ))
+        );
+    }
+
     /**
+     * Process an error response from the server
+     * @param errorMessage The message from the server.
+     * @return true when we should continue trying to get config, false if we should stop trying.
+     */
+    private boolean handleErrorFromServer(String errorMessage)
+    {
+        logger.error("Server returned provisioning error: " + errorMessage);
+
+        // The server has returned an error.  Assume to start with that this is a terminal error and we should
+        // delete user credentials, as that is safest and should give the best default UX.
+        boolean forgetCreds = true;
+        setTerminalError(true);
+
+        // If there is a mapping between the error message returned by the server and a string to display to
+        // the user, use that string as the error message.
+        ErrorResponse errorResponse = ErrorResponse.fromServerError(errorMessage);
+
+        if (errorResponse == ErrorResponse.ClientOutOfDate &&
+            ProvisioningActivator.getUpdateService() != null)
+        {
+            logger.warn("Client is out of date");
+            // N.B. Client-triggered forced updates are only supported on Windows. This method has no effect on Mac.
+            ProvisioningActivator.getUpdateService().forceUpdate();
+            return false;
+        }
+        else if (errorResponse == ErrorResponse.AuthFailed &&
+                 mStoredConfig &&
+                 !hitAuthFailedError)
+        {
+            // Authentication failed, even though we have stored config and there has been no previous
+            // failure to authenticate in this session. This probably means the remote password has
+            // changed. Warn the user before reprompting for their credentials.
+            logger.error("Failed to authenticate using stored config. Prompting user.");
+            hitAuthFailedError = true;
+            errorMessage = mResourceService.getI18NString(
+                "plugin.provisioning.PASSWORD_CHANGED_REMOTELY",
+                 new String[]
+                 {
+                    mResourceService.getI18NString("service.gui.APPLICATION_NAME")
+                 });
+            setTerminalError(false);
+
+            // If we have any saved credentials, replace them with new ones that just contain the
+            // username so we can fill that in for the dialog requesting the new password.
+            if (savedCredentials != null && !(savedCredentials instanceof SSOCredentials))
+            {
+                savedCredentials = new UsernamePasswordCredentials(savedCredentials.getUserPrincipal().getName(), null);
+            }
+        }
+        else if (PreLoginUtils.hasSSOToken())
+        {
+            errorMessage = mResourceService.getI18NString(
+                    "service.gui.LOGIN_MICROSOFT_ERROR");
+            logger.warn("Failed to authenticate using SSO");
+        }
+        else if (errorResponse != null)
+        {
+            logger.error("Error from server " + errorResponse);
+            errorMessage = mResourceService.getI18NString(errorResponse.getResourceString());
+            setTerminalError(errorResponse.isTerminal());
+
+            // If this is a subscriber error, the user might just have entered the wrong username or
+            // password, so make sure we delete their credentials.
+            forgetCreds = errorResponse.isSubscriberError();
+
+            if (forgetCreds)
+            {
+                savedCredentials = null;
+            }
+        }
+
+        displayLoginError(errorMessage, false);
+
+        if (forgetCreds)
+        {
+            // This is a subscriber error, so forget the entered username and password (but not CDAP
+            // selection) and continue to the top of the loop, so the user will be re-shown the login dialog.
+            logger.warn("Subscriber error - prompt for login");
+            forgetCredentials(false);
+
+            // Remove any account details - the account details may have changed and we don't want the old data
+            // to hang around.  If it's not changed then there will be no overall effect as the new config will
+            // contain what we need.
+            removeProvisionedAccounts();
+            return true;
+        }
+        else
+        {
+            // This isn't a subscriber error, so there's no point deleting the user's credentials and
+            // re-displaying the login prompt.  Call handleConfigError to shut down the client cleanly
+            // if the error is terminal or there's no saved config. Otherwise, returning null will cause
+            // us to start up with saved config.
+            logger.warn("Config error. Terminal? " + mTerminalError + ", saved config? " + mStoredConfig);
+            handleConfigError();
+            return false;
+        }
+    }
+
+    /**
+     * Make any necessary amendments to the config we've received from the server.
      * @param configFromServer what we've received from the server
      * @return the Config we've received from the server with any required
      * adjustments made
      */
     @VisibleForTesting
-    protected String processReceivedConfig(String configFromServer)
+    protected String processConfigFromServer(String configFromServer)
     {
         String webSize = "net.java.sip.communicator.impl.browserpanel.size.WIDTH=${null}\n" +
                          "net.java.sip.communicator.impl.browserpanel.size.HEIGHT=${null}\n" +
@@ -1330,11 +1306,8 @@ public class ProvisioningServiceImpl implements ProvisioningService
             webSize +
             "net.java.sip.communicator.impl.neomedia.audioSystem=" + mAudioSystem + "\n";
 
-        // Edit this to false to allow manually selecting client language in settings.
-        String restrictedConfig = "net.java.sip.communicator.plugin.generalconfig.localeconfig.DISABLED=true\n";
-
         // Edit this to false to allow changing the notification mechanism in settings.
-        restrictedConfig += "net.java.sip.communicator.plugin.generalconfig.notificationconfig.DISABLED=true\n";
+        String restrictedConfig = "net.java.sip.communicator.plugin.generalconfig.notificationconfig.DISABLED=true\n";
 
         String sipProxyAutoConfig = extractText("(net\\.java\\.sip\\.communicator\\.impl\\.protocol\\.sip\\.acc\\d+\\.PROXY_AUTO_CONFIG=\\w+)", configFromServer);
         String[] sipAutoConfigSubStrings = sipProxyAutoConfig.split("PROXY_AUTO_CONFIG=");
@@ -1378,14 +1351,18 @@ public class ProvisioningServiceImpl implements ProvisioningService
                 configFromServer = configFromServer.concat(sipAccConfig + ".DIRECTORY_NUMBER=" + sipDn + "\n");
                 // Use the DN to create the user configuration if it does not already exist.
                 mConfig.createUser(sipDn);
-                mCredsService.setActiveUser();
                 // The user may have logged in using an email address. Overwrite these
                 // values with the DN now that it is known.
                 mConfig.global().setProperty(PROPERTY_ACTIVE_USER, sipDn);
+                // setActiveUser calls storePassword which securely stores password if there were any store locally.
+                // Master password depends on ACTIVE_USER property, so we save it before calling setActiveUser.
+                mCredsService.setActiveUser();
                 // Store the active user's DN as a salt to protect Personally Identifiable
                 // Information.  If we change active user, then it is right that this will
                 // be updated.
                 Hasher.setSalt(sipDn);
+                ProvisioningParams.clear();
+                ProvisioningParams.unsubscribe();
                 mConfig.global().setProperty(PROPERTY_PROVISIONING_USERNAME, sipDn);
             }
             else
@@ -1494,6 +1471,19 @@ public class ProvisioningServiceImpl implements ProvisioningService
         // Add the config from the server to the config string.
         configFromServer = configTemplate.concat(configFromServer);
         configFromServer = configFromServer.concat(restrictedConfig);
+
+        // processedConfig may already contain an UPDATE_LINK returned from
+        // SIP PS. For CDAP clients, we may need to replace it with a different URL.
+        CDAPUpgradeUrl cdapUpgradeUrl = new CDAPUpgradeUrl(determineCdapUrl(), configFromServer);
+
+        if (cdapUpgradeUrl.getUrl() != null)
+        {
+            // Override by appending the newly determined link to processedConfig,
+            // even though the existing update link is still present.
+            // This works as the config is applied in order, so last update wins.
+            configFromServer = configFromServer.concat(PROP_UPDATE_LINK + "=" + cdapUpgradeUrl + "\n");
+            logger.info("Overriding UPDATE_LINK to be " + cdapUpgradeUrl);
+        }
 
         return configFromServer;
     }
@@ -2180,8 +2170,10 @@ public class ProvisioningServiceImpl implements ProvisioningService
         OnDismiss dismissAction =
             forceExit ? OnDismiss.FORCE_EXIT : OnDismiss.DO_NOTHING;
 
-        new ErrorDialog(mResourceService.getI18NString("service.gui.ERROR"),
-            errorMessage, dismissAction).showDialog();
+        ErrorDialog dialog = new ErrorDialog(mResourceService.getI18NString("service.gui.ERROR"),
+            errorMessage, dismissAction);
+        dialog.setModal(true);
+        dialog.showDialog();
     }
 
     /**
@@ -2194,8 +2186,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
     private void forgetCredentials(boolean resetCdap)
     {
         logger.info("Removing username from config");
-        mConfig.global().removeProperty(PROPERTY_PROVISIONING_USERNAME);
-        mConfig.global().removeProperty(PROPERTY_ACTIVE_USER);
+        ConfigurationUtils.forgetUserCredentials(false);
 
         // If we're forgetting the credentials then we should forget the ones
         // we may have just received on a login URI, if we didn't clear them
@@ -2203,13 +2194,8 @@ public class ProvisioningServiceImpl implements ProvisioningService
         // failing which could result in the user getting locked out of their
         // account which is bad.
         ProvisioningParams.clear();
-
-        if (mConfig.user() != null)
-        {
-            logger.info("Removing and password from config");
-            mConfig.user().removeProperty(PROPERTY_PROVISIONING_ENCRYPTED_PASSWORD);
-            mConfig.user().removeProperty(PROPERTY_PROVISIONING_PASSWORD);
-        }
+        PreLoginUtils.clearSSOData();
+        PreLoginUtils.clearManualLoginData();
 
         if (resetCdap)
         {
@@ -2405,7 +2391,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
                         (String)value);
 
                 logger.info("Saving password for property: " +
-                            sanitise(key, PRIVACY_PATTERNS, str -> "_" + logHasher(str)));
+                            sanitiseFirstPatternMatch(key, PRIVACY_PATTERNS, str -> "_" + logHasher(str)));
             }
             else if (key.equals(PROP_UPDATE_LINK))
             {
@@ -2670,109 +2656,30 @@ public class ProvisioningServiceImpl implements ProvisioningService
     }
 
     /**
-     * Post a config request to the server
+     * Make an HTTP request to the server for config.
      *
      * @param url         The config server's URL
-     * @param paramNames  The names of the URL parameters
-     * @param paramValues The values of the URL parameters
-     * @param usernameIx  The index of the username in the URL parameters
-     * @param passwordIx  The index of the password in the URL parameters
+     * @param httpMethod GET or POST.
+     * @param urlParams A ProvisioningUrlParams object encapsulating the names and values of the URL params to use.
      *
      * @return The HTTPResponseResult from the server
      */
-    private HTTPResponseResult postConfigRequest(String url,
-                                                 ArrayList<String> paramNames,
-                                                 ArrayList<String> paramValues,
-                                                 int usernameIx,
-                                                 int passwordIx,
-                                                 String prepopulatedUsername)
+    private HTTPResponseResult makeHttpRequestForConfig(String url,
+                                                        HttpMethod httpMethod,
+                                                        HttpUrlParams urlParams)
         throws IOException
     {
         HTTPResponseResult res = null;
 
         try
         {
-            logger.info("Attempting to log in to " + url);
-
-            String token;
-            boolean useToken;
-
-            if (mCredsService.user() == null || mConfig.user() == null)
-            {
-                // No user therefore can't use the token.
-                token = null;
-                useToken = false;
-            }
-            else
-            {
-                token = mCredsService.user().loadPassword(PROPERTY_PROVISIONING_TOKEN);
-                useToken = mConfig.user().getBoolean(PROPERTY_USE_TOKEN, false);
-            }
-
-            if (token != null && useToken)
-            {
-                // We've got a token.  Try to use it
-                logger.debug("Getting config using token");
-
-                String[] tokenNames  = paramNames.toArray(new String[0]);
-                String[] tokenValues = paramValues.toArray(new String[0]);
-
-                // Update the directory number with the known directory number
-                String dn = getProvisioningNumber();
-                tokenValues[0] = dn;
-
-                // Update the password field to be the token
-                tokenNames[1] = "Encrypted";
-                tokenValues[1] =
-                        mCredsService.user().loadPassword(PROPERTY_PROVISIONING_TOKEN);
-
-                StringBuilder urlBuilder = new StringBuilder(url);
-                boolean isFirst = true;
-
-                for (int i = 0; i < tokenNames.length; i++)
-                {
-                    urlBuilder.append(isFirst ? "?" : "&")
-                              .append(tokenNames[i])
-                              .append("=")
-                              .append(URLEncoder.encode(tokenValues[i], StandardCharsets.UTF_8));
-
-                    isFirst = false;
-                }
-
-                res = HttpUtils.openURLConnection(urlBuilder.toString());
-
-                if (res != null)
-                {
-                    // Check to see if the response is a failure. If it is, just
-                    // ask the
-                    String response = convertResultToString(res);
-
-                    if (response.startsWith("Error"))
-                    {
-                        logger.warn("Error getting data with token");
-
-                        // Probably means that the token we have stored is
-                        // invalid.  Therefore, clear it out, and try again with
-                        // the stored username and password.  If that fails,
-                        // then we will ask the user to re-enter their password.
-                        mCredsService.user().removePassword(PROPERTY_PROVISIONING_TOKEN);
-                        res = null;
-                    }
-                }
-            }
-
-            if (res == null)
-            {
-                logger.debug("Getting config using password");
-                res = HttpUtils.sendDataAsPostWithFallbackToGet(url,
-                                                                PROPERTY_PROVISIONING_USERNAME,
-                                                                PROPERTY_PROVISIONING_PASSWORD,
-                                                                prepopulatedUsername,
-                                                                paramNames,
-                                                                paramValues,
-                                                                usernameIx,
-                                                                passwordIx);
-            }
+            logger.info("Attempting to log in to " + url + " with a " + httpMethod);
+            res = HttpUtils.sendHttpRequest(url,
+                                            httpMethod,
+                                            PROPERTY_PROVISIONING_USERNAME,
+                                            PROPERTY_PROVISIONING_PASSWORD,
+                                            urlParams,
+                                            savedCredentials);
         }
         catch(IOException e)
         {
@@ -2840,15 +2747,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
     void setTerminalError(boolean terminalError)
     {
         mTerminalError = terminalError;
-    }
-
-    /**
-     *  Set the stored config member variable
-     */
-    @VisibleForTesting
-    void setStoredConfig(boolean storedConfig)
-    {
-        mStoredConfig = storedConfig;
     }
 
     /**
@@ -3111,7 +3009,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
         final List<String> result = new ArrayList<>();
         for (String line : configFromServer.split("\\R"))
         {
-            String redactedAttrValues = sanitise(line,
+            String redactedAttrValues = sanitiseFirstPatternMatch(line,
                                                  SANITISE_CONFIG_PATTERN_LIST,
                                                  Hasher::logHasher);
 

@@ -586,14 +586,15 @@ Run_getJavaVMOptionStrings
             = {
                 _T("lib\\org.apache.felix.main.jar"),
                 _T("lib\\bcprovider.jar"),
-                _T("lib\\bundle\\Java-WebSocket.jar"),
                 _T("lib\\bundle\\metaswitch-protobuf.jar"),
                 _T("lib\\bundle\\protobuf-java.jar"),
+                _T("lib\\bundle\\maxanalytics-desktop.jar"),
                 _T("sc-bundles\\sc-launcher.jar"),
                 _T("sc-bundles\\json.jar"),
                 _T("sc-bundles\\util.jar"),
                 _T("sc-bundles\\libjitsi.jar"),
                 _T("sc-bundles\\jnalib.jar"),
+                _T("sc-bundles\\applicationinsights-core.jar"),
                 _T("lib"),
                 NULL
             };
@@ -646,6 +647,8 @@ Run_getJavaVMOptionStrings
                   _T("+UseG1GC"),
                   _T("Xlog"),
                   Run_getGCLogOptions(),
+                  _T("javaagent"),
+                  _T("./lib/applicationinsights-agent.jar"),
                   NULL
             };
 

@@ -321,15 +321,6 @@ public class SIPCommTextField
     }
 
     /**
-     * Sets the hint text to use.
-     */
-    public void setHintText(String newHintText)
-    {
-        mHintText = newHintText;
-        setToHintText();
-    }
-
-    /**
      * Sets contents to the hint text.
      */
     protected void setToHintText()
@@ -382,19 +373,6 @@ public class SIPCommTextField
         synchronized (changeListeners)
         {
             changeListeners.add(l);
-        }
-    }
-
-    /**
-     * Removes the given <tt>TextFieldChangeListener</tt> from the list of
-     * listeners notified on changes of the text contained in this field.
-     * @param l the <tt>TextFieldChangeListener</tt> to add
-     */
-    public void removeTextChangeListener(TextFieldChangeListener l)
-    {
-        synchronized (changeListeners)
-        {
-            changeListeners.remove(l);
         }
     }
 

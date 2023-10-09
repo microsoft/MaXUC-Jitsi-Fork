@@ -34,7 +34,6 @@ lib/native/mac/com/sun/jna
 lib/native/mac/libAEGetURLEventHandlerAgent.dylib
 lib/native/mac/libglobalshortcut.jnilib
 lib/native/mac/libjmacosxaddrbook.jnilib
-lib/native/mac/libjmsofficecomm.jnilib
 lib/native/mac/libjnavfoundation.jnilib
 lib/native/mac/libjnawtrenderer.jnilib
 lib/native/mac/libjndirectshow.jnilib
@@ -53,7 +52,6 @@ lib/native/windows/32/*.exe
 lib/native/windows/64/*.exe
 lib/native/windows/com/sun/jna
 lib/native/windows/globalshortcut.dll
-lib/native/windows/jmsofficecomm.dll
 lib/native/windows/jmsoutlookaddrbook.dll
 lib/native/windows/jnawtrenderer.dll
 lib/native/windows/jndirectshow.dll
@@ -72,6 +70,7 @@ lib/native/windows-64
 lib/native/windows/*.dll
 
 resources/install/macosx/libjabra.dylib
+resources/install/macosx/libyealinkusbsdk.dylib
 resources/install/macosx/libpltwrapper.dylib
 resources/install/macosx/Sparkle.framework.zip
 resources/install/macosx/Spokes3GSDK.framework.zip
@@ -79,25 +78,7 @@ lib/OpenJDK*.tar.gz
 resources/install/windows/xz.exe
 resources/install/windows/jre_windows.zip
 
-lib/bundle/log4j*
-lib/bundle/commons-*
-lib/bundle/easymock.jar
-lib/bundle/jackson-*.jar
-lib/bundle/Java-WebSocket*.jar
-lib/bundle/metadata-extractor*.jar
-lib/bundle/metaswitch-protobuf.jar
-lib/bundle/netty-*.jar
-lib/bundle/objenesis.jar
-lib/bundle/org.apache.felix.bundlerepository.jar
-lib/bundle/protobuf-java*
-lib/bundle/slf4j-*.jar
-lib/bundle/xmpcore*.jar
-lib/bundle/jxmpp-core.jar
-lib/bundle/jxmpp-jid.jar
-lib/bundle/jxmpp-util-cache.jar
-lib/bundle/dnsjava.jar
-lib/bundle/minidns-core.jar
-lib/bundle/smack-*.jar
+lib/bundle
 
 lib/installer-exclude/*.jar
 lib/installer-exclude/os-specific/*.jar
@@ -106,6 +87,7 @@ lib/os-specific/mac/orange-extensions.jar
 
 lib/animal-sniffer-annotations.jar
 lib/org.apache.felix.main.jar
+lib/applicationinsights-agent.jar
 
 lib/native/windows/32/history.xml
 lib/native/windows/64/history.xml

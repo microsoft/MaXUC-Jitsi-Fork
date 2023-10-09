@@ -9,7 +9,6 @@ package net.java.sip.communicator.impl.protocol.sip;
 
 import static org.jitsi.util.Hasher.logHasher;
 
-import java.net.URI;
 import java.util.*;
 
 import javax.sip.address.*;
@@ -53,11 +52,6 @@ public class ContactSipImpl
      * The presence status of the contact.
      */
     private PresenceStatus presenceStatus;
-
-    /**
-     * The image uri.
-     */
-    private URI imageUri;
 
     /**
      * The image content.
@@ -271,26 +265,6 @@ public class ContactSipImpl
     }
 
     /**
-     * Gets the image uri.
-     *
-     * @return the image uri.
-     */
-    URI getImageUri()
-    {
-        return imageUri;
-    }
-
-    /**
-     * Sets the image uri.
-     *
-     * @param imageUri the image uri.
-     */
-    void setImageUri(URI imageUri)
-    {
-        this.imageUri = imageUri;
-    }
-
-    /**
      * Gets a byte array containing an image (most often a photo or an avatar)
      * that the contact uses as a representation.
      *
@@ -299,17 +273,6 @@ public class ContactSipImpl
     public BufferedImageFuture getImage()
     {
         return image;
-    }
-
-    /**
-     * Sets a byte array containing an image (most often a photo or an avatar)
-     * that the contact uses as a representation.
-     *
-     * @param image an image representing the contact.
-     */
-    void setImage(BufferedImageFuture image)
-    {
-        this.image = image;
     }
 
     /**
@@ -575,19 +538,6 @@ public class ContactSipImpl
         ContactSipImpl sipContact = (ContactSipImpl) obj;
 
         return this.getAddress().equals(sipContact.getAddress());
-    }
-
-    /**
-     * Returns the presence operation set that this contact belongs
-     * to.
-     *
-     * @return the <tt>OperationSetPresenceSipImpl</tt> that
-     * this contact belongs to.
-     */
-    public OperationSetPresenceSipImpl getParentPresenceOperationSet()
-    {
-        return (OperationSetPresenceSipImpl) parentProvider
-            .getOperationSet(OperationSetPresence.class);
     }
 
     /**

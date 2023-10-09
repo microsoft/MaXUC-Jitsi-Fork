@@ -41,63 +41,63 @@ public interface ChatRoomConfigurationFormField
      * The undefined type is meant to be used by the implementation if they
      * don't know the type of the configuration property.
      */
-    public static final String TYPE_UNDEFINED = "Undefined";
+    String TYPE_UNDEFINED = "Undefined";
 
     /**
      * The fixed text type means that the value of this field is a text, that
      * could not be changed. This type is meant to be used for adding additional
      * information helping the user to complete the form.
      */
-    public static final String TYPE_TEXT_FIXED = "FixedText";
+    String TYPE_TEXT_FIXED = "FixedText";
 
     /**
      * The private text type indicates that the text, contained in this field
      * should not be shown to the user in clear text, instead if should be
      * protected by showing '*'. This type is used for passwords.
      */
-    public static final String TYPE_TEXT_PRIVATE = "PrivateText";
+    String TYPE_TEXT_PRIVATE = "PrivateText";
 
     /**
      * The boolean type means that the value of this field is of type Boolean.
      */
-    public static final String TYPE_BOOLEAN = "Boolean";
+    String TYPE_BOOLEAN = "Boolean";
 
     /**
      * The multi lines text type means that the value of this field is a text
      * represented on multiple lines.
      */
-    public static final String TYPE_TEXT_MULTI = "MultipleLinesText";
+    String TYPE_TEXT_MULTI = "MultipleLinesText";
 
     /**
      * The single line text type means that the value of this field is a text
      * represented on one line.
      */
-    public static final String TYPE_TEXT_SINGLE = "SingleLineText";
+    String TYPE_TEXT_SINGLE = "SingleLineText";
 
     /**
      * The list multi type means that the value of this field is a list that
      * allows multiple choice (i.e. multiple lines could be selected at the
      * same time).
      */
-    public static final String TYPE_LIST_MULTI = "ListMultiChoice";
+    String TYPE_LIST_MULTI = "ListMultiChoice";
 
     /**
      * The list single type means that the value of this field is a list that
      * allows only one line to be selected at a time.
      */
-    public static final String TYPE_LIST_SINGLE = "ListSingleChoice";
+    String TYPE_LIST_SINGLE = "ListSingleChoice";
 
     /**
      * The multi id type means that the value of this field is a list of Jids.
      */
-    public static final String TYPE_ID_MULTI = "MultiIDChoice";
+    String TYPE_ID_MULTI = "MultiIDChoice";
 
     /**
      * The id single type means that the value of this field is only one id
      * that can be selected. As TYPE_TEXT_SINGLE but contains Jid,
      * most probably in form of user@service.com.
      */
-    public static final String TYPE_ID_SINGLE = "SingleIDChoice";
+    String TYPE_ID_SINGLE = "SingleIDChoice";
 
     /**
      * Returns the name of the field to be filled out. This serves as an
@@ -158,13 +158,6 @@ public interface ChatRoomConfigurationFormField
      * field
      */
     Iterator<?> getValues();
-
-    /**
-     * Adds the given value to the values of this field.
-     *
-     * @param value the value to add
-     */
-    void addValue(Object value);
 
     /**
      * Sets the list of values for this field.

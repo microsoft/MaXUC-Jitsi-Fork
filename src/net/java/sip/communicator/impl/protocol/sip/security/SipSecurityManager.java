@@ -793,20 +793,6 @@ public class SipSecurityManager
     }
 
     /**
-     * Caches <tt>realm</tt> and <tt>credentials</tt> for later usage.
-     *
-     * @param realm the
-     * @param credentials UserCredentials
-     */
-    public void cacheCredentials(String realm, UserCredentials credentials)
-    {
-        CredentialsCacheEntry ccEntry = new CredentialsCacheEntry();
-        ccEntry.userCredentials = credentials;
-
-        this.cachedCredentials.cacheEntry(realm, ccEntry);
-    }
-
-    /**
      * Obtains user credentials from the security authority for the specified
      * <tt>realm</tt> and creates a new CredentialsCacheEntry with them.
      *

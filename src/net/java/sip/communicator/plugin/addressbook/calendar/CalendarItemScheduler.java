@@ -23,7 +23,6 @@ import net.java.sip.communicator.util.Logger;
  */
 public class CalendarItemScheduler
 {
-    private static final Logger sLog = Logger.getLogger(CalendarItemScheduler.class);
     private static final Logger outlookCalendarLogger = Logger.getLogger("jitsi.OutlookCalendarLogger");
     private static final ThreadingService threadingService = AddressBookProtocolActivator.getThreadingService();
 

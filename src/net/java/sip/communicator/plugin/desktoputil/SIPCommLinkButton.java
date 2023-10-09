@@ -39,8 +39,6 @@ public class SIPCommLinkButton
 
     public static final int HOVER_UNDERLINE = 1;
 
-    public static final int NEVER_UNDERLINE = 2;
-
     private int linkBehavior;
 
     private Color linkColor;
@@ -54,32 +52,6 @@ public class SIPCommLinkButton
     private URL buttonURL;
 
     private boolean isLinkVisited;
-
-    /**
-     * Created Link Button.
-     */
-    public SIPCommLinkButton()
-    {
-        this(null, null);
-    }
-
-    /**
-     * Created Link Button with text.
-     * @param text
-     */
-    public SIPCommLinkButton(String text)
-    {
-        this(text, null);
-    }
-
-    /**
-     * Created Link Button with url.
-     * @param url
-     */
-    public SIPCommLinkButton(URL url)
-    {
-        this(null, url);
-    }
 
     /**
      * Created Link Button with text and url.
@@ -123,41 +95,12 @@ public class SIPCommLinkButton
     }
 
     /**
-     * Changes link behaviour.
-     * @param bnew the new behaviour. One of ALWAYS_UNDERLINE, HOVER_UNDERLINE
-     *        and NEVER_UNDERLINE.
-     */
-    public void setLinkBehavior(int bnew)
-    {
-        if (bnew != ALWAYS_UNDERLINE && bnew != HOVER_UNDERLINE
-                && bnew != NEVER_UNDERLINE)
-            throw new IllegalArgumentException("Not a legal LinkBehavior");
-
-        int old = linkBehavior;
-        linkBehavior = bnew;
-        firePropertyChange("linkBehavior", old, bnew);
-        repaint();
-    }
-
-    /**
      * Returns the link behaviour.
      * @return the link behaviour.
      */
     public int getLinkBehavior()
     {
         return linkBehavior;
-    }
-
-    /**
-     * Sets the link color.
-     * @param color the new color.
-     */
-    public void setLinkColor(Color color)
-    {
-        Color colorOld = linkColor;
-        linkColor = color;
-        firePropertyChange("linkColor", colorOld, color);
-        repaint();
     }
 
     /**
@@ -170,18 +113,6 @@ public class SIPCommLinkButton
     }
 
     /**
-     * Sets the active link color.
-     * @param colorNew the new color.
-     */
-    public void setActiveLinkColor(Color colorNew)
-    {
-        Color colorOld = colorPressed;
-        colorPressed = colorNew;
-        firePropertyChange("activeLinkColor", colorOld, colorNew);
-        repaint();
-    }
-
-    /**
      * Returns the active link color.
      * @return the active link color.
      */
@@ -191,37 +122,12 @@ public class SIPCommLinkButton
     }
 
     /**
-     * Sets disabled link color.
-     * @param color the new color.
-     */
-    public void setDisabledLinkColor(Color color)
-    {
-        Color colorOld = disabledLinkColor;
-        disabledLinkColor = color;
-        firePropertyChange("disabledLinkColor", colorOld, color);
-        if (!isEnabled())
-            repaint();
-    }
-
-    /**
      * Returns the disabled link color.
      * @return the disabled link color.
      */
     public Color getDisabledLinkColor()
     {
         return disabledLinkColor;
-    }
-
-    /**
-     * Set visited link color.
-     * @param colorNew the new visited link color.
-     */
-    public void setVisitedLinkColor(Color colorNew)
-    {
-        Color colorOld = visitedLinkColor;
-        visitedLinkColor = colorNew;
-        firePropertyChange("visitedLinkColor", colorOld, colorNew);
-        repaint();
     }
 
     /**
@@ -244,27 +150,6 @@ public class SIPCommLinkButton
         setupToolTipText();
         firePropertyChange("linkURL", urlOld, url);
         revalidate();
-        repaint();
-    }
-
-    /**
-     * Returns the url.
-     * @return the link url.
-     */
-    public URL getLinkURL()
-    {
-        return buttonURL;
-    }
-
-    /**
-     * Set a link visited.
-     * @param flagNew is link visited.
-     */
-    public void setLinkVisited(boolean flagNew)
-    {
-        boolean flagOld = isLinkVisited;
-        isLinkVisited = flagNew;
-        firePropertyChange("linkVisited", flagOld, flagNew);
         repaint();
     }
 

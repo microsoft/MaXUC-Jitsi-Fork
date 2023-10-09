@@ -7,8 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.customcontactactions;
 
-import net.java.sip.communicator.service.protocol.*;
-
 import org.jitsi.service.resources.*;
 
 /**

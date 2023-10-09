@@ -42,16 +42,6 @@ public class DescriptionType
     }
 
     /**
-     * Creates description with value.
-     *
-     * @param value the value property.
-     */
-    public DescriptionType(String value)
-    {
-        this(value, null);
-    }
-
-    /**
      * Creates description with value and lang properties.
      *
      * @param value the value property.

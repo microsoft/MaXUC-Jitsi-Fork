@@ -24,12 +24,4 @@ import java.util.*;
 public interface GeolocationListener
     extends EventListener
 {
-    /**
-     * Called whenever a change occurs in the GeolocationPresence of one of the
-     * contacts that we have subscribed for.
-     *
-     * @param evt the ContactGeolocationPresenceChangeEvent describing the
-     * status change.
-     */
-    void contactGeolocationChanged(GeolocationEvent evt);
 }

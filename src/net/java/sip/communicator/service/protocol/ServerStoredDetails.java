@@ -304,8 +304,8 @@ public class ServerStoredDetails
      * A generic detail that should be used (extended) when representing details
      * that have anything to do with locales (countries/regions, languages,
      * etc). Most of the locales field could be ignored when extending
-     * the class. When representing a country for example
-     * we'd only be using the fields concerning the country.
+     * the class. When representing a country/region for example
+     * we'd only be using the fields concerning the country/region.
      */
     public static class LocaleDetail extends GenericDetail
     {
@@ -321,7 +321,7 @@ public class ServerStoredDetails
     }
 
     /**
-     * A detail representing a country of residence for the corresponding
+     * A detail representing a country/region of residence for the corresponding
      * subject.
      */
     public static class CountryDetail extends LocaleDetail
@@ -333,7 +333,7 @@ public class ServerStoredDetails
     }
 
     /**
-     * The name of a country associated with a work address.
+     * The name of a country/region associated with a work address.
      */
     public static class WorkCountryDetail extends CountryDetail
     {
@@ -722,6 +722,17 @@ public class ServerStoredDetails
         public WorkEmailAddressDetail(String value)
         {
             super("Work e-mail", value);
+        }
+    }
+
+    /**
+     * Represents an AAD email address.
+     */
+    public static class AADEmailAddressDetail extends EmailAddressDetail
+    {
+        public AADEmailAddressDetail(String value)
+        {
+            super("AAD e-mail", value);
         }
     }
 //----------------------------- Interests -------------------------------------

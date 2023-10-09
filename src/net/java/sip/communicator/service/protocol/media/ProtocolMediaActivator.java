@@ -12,6 +12,7 @@ import org.jitsi.service.neomedia.*;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.analytics.*;
+import net.java.sip.communicator.service.insights.InsightService;
 import net.java.sip.communicator.service.netaddr.*;
 import net.java.sip.communicator.util.*;
 
@@ -56,6 +57,8 @@ public class ProtocolMediaActivator
      * A reference to the analytics service
      */
     private static AnalyticsService analyticsService = null;
+
+    private static InsightService insightService;
 
     /**
      * Called when this bundle is started so the Framework can perform the
@@ -172,5 +175,14 @@ public class ProtocolMediaActivator
         }
 
         return analyticsService;
+    }
+
+    public static InsightService getInsightService()
+    {
+        if (insightService == null)
+        {
+            insightService = ServiceUtils.getService(bundleContext, InsightService.class);
+        }
+        return insightService;
     }
 }

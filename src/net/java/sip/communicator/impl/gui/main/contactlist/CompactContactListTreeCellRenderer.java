@@ -37,9 +37,6 @@ public class CompactContactListTreeCellRenderer
 {
     private static final long serialVersionUID = 0L;
 
-    private static final Logger sLog =
-        Logger.getLogger(CompactContactListTreeCellRenderer.class);
-
     /**
      * The height of the status icon.  All status icons should be the same
      * dimensions so we can simply use the height of the default no status

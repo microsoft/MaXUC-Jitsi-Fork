@@ -5,16 +5,6 @@ public class InvalidPhoneNumberException extends Exception
 {
     private static final long serialVersionUID = 0L;
 
-    public InvalidPhoneNumberException()
-    {
-        super();
-    }
-
-    public InvalidPhoneNumberException(String message)
-    {
-        super(message);
-    }
-
     public InvalidPhoneNumberException(Throwable t)
     {
         super(t);

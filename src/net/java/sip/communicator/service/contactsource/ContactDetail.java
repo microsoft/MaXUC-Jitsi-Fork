@@ -110,27 +110,6 @@ public class ContactDetail
             return value;
         }
 
-        /**
-         * Creates enum from its value.
-         *
-         * @param value the enum's value.
-         * @return created enum.
-         */
-        public static Category fromString(String value)
-        {
-            if (value != null)
-            {
-                for (Category category : Category.values())
-                {
-                    if (value.equalsIgnoreCase(category.value()))
-                    {
-                        return category;
-                    }
-                }
-                return null;
-            }
-            return null;
-        }
     }
 
     /**
@@ -208,9 +187,9 @@ public class ContactDetail
 
         /**
          * The standard/well-known label of a <tt>ContactDetail</tt>
-         * representing a country name.
+         * representing a country/region name.
          */
-        Country("Country"),
+        CountryRegion("CountryRegion"),
 
         /**
          * The standard/well-known label of a <tt>ContactDetail</tt>
@@ -267,27 +246,6 @@ public class ContactDetail
             return value;
         }
 
-        /**
-         * Creates enum from its value.
-         *
-         * @param value the enum's value.
-         * @return created enum.
-         */
-        public static SubCategory fromString(String value)
-        {
-            if (value != null)
-            {
-                for (SubCategory subCategory : SubCategory.values())
-                {
-                    if (value.equalsIgnoreCase(subCategory.value()))
-                    {
-                        return subCategory;
-                    }
-                }
-                return null;
-            }
-            return null;
-        }
     }
 
     /**
@@ -493,21 +451,6 @@ public class ContactDetail
                             List<Class<? extends OperationSet>> supportedOpSets)
     {
         this.supportedOpSets = supportedOpSets;
-    }
-
-    /**
-     * Adds a supported OpSet to the list of supported OpSets.
-     * @param supportedOpSet the OpSet to support.
-     */
-    public void addSupportedOpSet(Class<? extends OperationSet> supportedOpSet)
-    {
-        if (this.supportedOpSets == null)
-        {
-            this.supportedOpSets
-                = new ArrayList<>(2);
-        }
-
-        this.supportedOpSets.add(supportedOpSet);
     }
 
     /**

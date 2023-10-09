@@ -18,27 +18,11 @@ public class TextDBColumn extends DBColumn
         mDefault = null;
     }
 
-    public TextDBColumn(String name, String defaultVal)
-    {
-        super(name);
-        mMaxLength = DEFAULT_MAX_LENGTH;
-        mHasDefault = true;
-        mDefault = defaultVal;
-    }
-
     public TextDBColumn(String name, int maxLength)
     {
         super(name);
         mMaxLength = maxLength;
         mDefault = null;
-    }
-
-    public TextDBColumn(String name, int maxLength, String defaultVal)
-    {
-        super(name);
-        mMaxLength = maxLength;
-        mHasDefault = true;
-        mDefault = defaultVal;
     }
 
     @Override

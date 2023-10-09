@@ -7,20 +7,14 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Vector;
-
 import org.jivesoftware.smack.SmackException.NoResponseException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.XMPPException.XMPPErrorException;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.xdata.form.FillableForm;
 import org.jivesoftware.smackx.xdata.form.Form;
-import org.jivesoftware.smackx.xdata.FormField;
 
 import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
-import net.java.sip.communicator.service.protocol.ChatRoomConfigurationFormField;
 import net.java.sip.communicator.service.protocol.OperationFailedException;
 import net.java.sip.communicator.util.Logger;
 
@@ -70,38 +64,6 @@ public class ChatRoomConfigurationFormJabberImpl
         this.smackMultiUserChat = multiUserChat;
         this.smackConfigForm = smackConfigForm;
         this.smackSubmitForm = smackConfigForm.getFillableForm();
-    }
-
-    /**
-     * Returns an Iterator over a list of
-     * <tt>ChatRoomConfigurationFormFields</tt>.
-     *
-     * @return an Iterator over a list of
-     * <tt>ChatRoomConfigurationFormFields</tt>
-     */
-    public Iterator<ChatRoomConfigurationFormField> getConfigurationSet()
-    {
-        Vector<ChatRoomConfigurationFormField> configFormFields = new Vector<>();
-
-        Iterator<FormField> smackFormFields =
-            smackConfigForm.getDataForm().getFields().iterator();
-
-        while(smackFormFields.hasNext())
-        {
-            FormField smackFormField = smackFormFields.next();
-
-            if(smackFormField == null
-                || smackFormField.getType().equals(FormField.Type.hidden))
-                continue;
-
-            ChatRoomConfigurationFormFieldJabberImpl jabberConfigField
-                = new ChatRoomConfigurationFormFieldJabberImpl(
-                    smackFormField, smackSubmitForm);
-
-            configFormFields.add(jabberConfigField);
-        }
-
-        return Collections.unmodifiableList(configFormFields).iterator();
     }
 
     /**

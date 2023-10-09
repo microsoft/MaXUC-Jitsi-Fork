@@ -23,10 +23,6 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.*;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-
 import net.java.sip.communicator.plugin.desktoputil.ConfigSectionPanel;
 import net.java.sip.communicator.plugin.desktoputil.CreateConferenceMenu;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
@@ -35,12 +31,12 @@ import net.java.sip.communicator.plugin.desktoputil.SIPCommBasicTextButton;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommCheckBox;
 import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
+import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.AccountManager;
 import net.java.sip.communicator.service.protocol.OperationFailedException;
 import net.java.sip.communicator.service.protocol.ProtocolNames;
 import net.java.sip.communicator.service.reset.ResetService;
-import net.java.sip.communicator.service.systray.PopupMessageHandler;
 import net.java.sip.communicator.util.AccessibilityUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.FileUtils;
@@ -50,6 +46,7 @@ import org.jitsi.service.neomedia.Recorder;
 import org.jitsi.service.resources.ImageIconFuture;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.OSUtils;
+import org.jitsi.util.StringUtils;
 
 /**
  * The general configuration form.
@@ -130,34 +127,11 @@ public class GeneralConfigurationPanel
         "plugin.generalconfig.CONTACT_STORE_";
 
     /**
-     * Indicates if the Notification configuration panel should be disabled,
-     * i.e.  not visible to the user.
-     */
-    private static final String NOTIFICATION_CONFIG_DISABLED_PROP
-        =
-        "net.java.sip.communicator.plugin.generalconfig.notificationconfig.DISABLED";
-
-    /**
-     * Indicates if the Locale configuration panel should be disabled, i.e.
-     * not visible to the user.
-     */
-    private static final String LOCALE_CONFIG_DISABLED_PROP
-        =
-        "net.java.sip.communicator.plugin.generalconfig.localeconfig.DISABLED";
-
-    /**
      * Indicates if the privacy panel should be disabled, i.e. not visible to
      * the user.
      */
     private static final String PRIVACY_PROP =
         "net.java.sip.communicator.plugin.generalconfig.privacy.DISABLED";
-
-    /**
-     * Indicates whether we should be the default application for Outlook
-     * integration (for calls, IM and presence).
-     */
-    private static final String DEFAULT_OUTLOOK_INTEGRATION_APP_PROP =
-        "plugin.msofficecomm.DEFAULT_OUTLOOK_INTEGRATION_APP";
 
     /**
      * Indicates whether we should automatically log in when the application
@@ -177,6 +151,24 @@ public class GeneralConfigurationPanel
      */
     private static final String CALL_RECORDING_DISABLED_PROP =
                    "net.java.sip.communicator.impl.gui.CALL_RECORDING_DISABLED";
+
+    /**
+     * The name of the Locale not corresponding to any real language, must not
+     * appear in Locale dropdown.
+     */
+    private static final String INVALID_LOCALE_NAME = "plain";
+
+    /**
+     * The resource key for the system language option text.
+     */
+    private static final String SYSTEM_LANGUAGE =
+        "plugin.generalconfig.SYSTEM_LANGUAGE";
+
+    /**
+     * The resource key for the langauge and country option text.
+     */
+    private static final String LANGUAGE_AND_COUNTRY =
+        "plugin.generalconfig.LANGUAGE_AND_COUNTRY";
 
     /**
      * The maximum width, in pixels, of the dropdown used to select the folder
@@ -256,19 +248,7 @@ public class GeneralConfigurationPanel
             }
         }
 
-        if (!configService.user().getBoolean(NOTIFICATION_CONFIG_DISABLED_PROP, true))
-        {
-            Component notifConfigPanel = createNotificationConfigPanel();
-            if (notifConfigPanel != null)
-            {
-                add(notifConfigPanel);
-            }
-        }
-
-        if (!configService.user().getBoolean(LOCALE_CONFIG_DISABLED_PROP, true))
-        {
-            add(createLocaleConfigPanel());
-        }
+        add(createLocaleConfigPanel());
 
         Component contactStoreConfigPanel = createContactConfigPanel();
         if ((contactStoreConfigPanel != null))
@@ -308,12 +288,6 @@ public class GeneralConfigurationPanel
             generalConfigJPanel.add(createAutoStartCheckBox());
             generalConfigJPanel.add(createAutomaticLogInCheckBox());
 
-            // This option relates to either calls, or IM or both.
-            if (ConfigurationUtils.isCallingOrImEnabled())
-            {
-                generalConfigJPanel.add(createDefaultOutlookIntegrationAppCheckBox());
-            }
-
             // This option only makes sense if we actually have call function.
             if (ConfigurationUtils.isCallingEnabled())
             {
@@ -323,9 +297,11 @@ public class GeneralConfigurationPanel
 
         // Ringtones are only used for incoming calls or incoming meeting invites (which
         // are IMs).
-        boolean meetingInvitesEnabled =
-                GeneralConfigPluginActivator.getConferenceService().isFullServiceEnabled() &&
-                ConfigurationUtils.isImEnabled();
+        ConferenceService mConferenceService =
+            GeneralConfigPluginActivator.getConferenceService();
+        boolean meetingInvitesEnabled = mConferenceService != null
+            && mConferenceService.isFullServiceEnabled()
+            && ConfigurationUtils.isImEnabled();
 
         if (!configService.global().getBoolean(RINGTONES_CONFIG_DISABLED_PROP, false) &&
             (ConfigurationUtils.isCallingEnabled() || meetingInvitesEnabled))
@@ -441,43 +417,6 @@ public class GeneralConfigurationPanel
         }
 
         return results;
-    }
-
-    /**
-     * Creates the checkbox for whether we should be the default application
-     * for Outlook integration (for calls, IM and presence).
-     *
-     * @return the default Outlook integration application check box.
-     */
-    private Component createDefaultOutlookIntegrationAppCheckBox()
-    {
-        // Note, if neither IM nor calls are available, we will not show this
-        // checkbox at all, so we only handle 3/4 cases here.
-        String checkboxLabel = ConfigurationUtils.isImEnabled() ?
-            "plugin.generalconfig.DEFAULT_OUTLOOK_INTEGRATION_APP" :
-            "plugin.generalconfig.DEFAULT_OUTLOOK_INTEGRATION_APP_NO_IM";
-        checkboxLabel = ConfigurationUtils.isCallingEnabled() ?
-            checkboxLabel :
-            "plugin.generalconfig.DEFAULT_OUTLOOK_INTEGRATION_APP_NO_CALLS";
-
-        final JCheckBox defaultOutlookIntegrationAppCheckBox =
-            new SIPCommCheckBox(
-                Resources.getString(checkboxLabel),
-                configService.user().getBoolean(DEFAULT_OUTLOOK_INTEGRATION_APP_PROP, true));
-        defaultOutlookIntegrationAppCheckBox.setForeground(TEXT_COLOR);
-
-        defaultOutlookIntegrationAppCheckBox.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                logger.user("Default Outlook integration checkbox toggled to: " +
-                    defaultOutlookIntegrationAppCheckBox.isSelected());
-                configService.user().setProperty(DEFAULT_OUTLOOK_INTEGRATION_APP_PROP,
-                    defaultOutlookIntegrationAppCheckBox.isSelected());
-            }
-        });
-
-        return defaultOutlookIntegrationAppCheckBox;
     }
 
     /**
@@ -650,8 +589,11 @@ public class GeneralConfigurationPanel
        //  - The conference service is enabled.
        boolean callRecordingEnabled =
            !configService.user().getBoolean(CALL_RECORDING_DISABLED_PROP, false);
-       boolean confEnabled =
-           GeneralConfigPluginActivator.getConferenceService().isFullServiceEnabled();
+
+       ConferenceService mConferenceService =
+           GeneralConfigPluginActivator.getConferenceService();
+       boolean confEnabled = mConferenceService != null
+           && mConferenceService.isFullServiceEnabled();
 
        logger.debug("Setting recordings panel visibility. Call recording enabled? " +
                        callRecordingEnabled + ", conf enabled? " + confEnabled);
@@ -941,91 +883,6 @@ public class GeneralConfigurationPanel
     }
 
     /**
-     * Initializes the notification configuration panel.
-     * @return the created panel
-     */
-    private Component createNotificationConfigPanel()
-    {
-        ServiceReference<?>[] handlerRefs = null;
-        BundleContext bc = GeneralConfigPluginActivator.bundleContext;
-        try
-        {
-            handlerRefs = bc.getServiceReferences(
-                PopupMessageHandler.class.getName(),
-                null);
-        }
-        catch (InvalidSyntaxException ex)
-        {
-            logger.warn("Error while retrieving service refs", ex);
-        }
-
-        if (handlerRefs == null)
-            return null;
-
-        JPanel notifConfigPanel = new ConfigSectionPanel("plugin.notificationconfig.POPUP_NOTIF_HANDLER");
-
-        final JComboBox<Object> notifConfigComboBox = new JComboBox<>();
-
-        String configuredHandler =
-            (String) configService.user().getProperty("systray.POPUP_HANDLER");
-
-        for (ServiceReference<?> ref : handlerRefs)
-        {
-            PopupMessageHandler handler =
-                (PopupMessageHandler) bc.getService(ref);
-
-            notifConfigComboBox.addItem(handler);
-
-            if (configuredHandler != null &&
-                configuredHandler.equals(handler.getClass().getName()))
-            {
-                notifConfigComboBox.setSelectedItem(handler);
-            }
-        }
-
-        // We need an entry in combo box that represents automatic
-        // popup handler selection in systray service. It is selected
-        // only if there is no user preference regarding which popup
-        // handler to use.
-        String auto = "Auto";
-        notifConfigComboBox.addItem(auto);
-        if (configuredHandler == null)
-        {
-            notifConfigComboBox.setSelectedItem(auto);
-        }
-
-        notifConfigComboBox.addItemListener(new ItemListener()
-        {
-            public void itemStateChanged(ItemEvent evt)
-            {
-                if (notifConfigComboBox.getSelectedItem() instanceof String)
-                {
-                    // "Auto" selected. Delete the user's preference and
-                    // select the best available handler.
-                    ConfigurationUtils.setPopupHandlerConfig(null);
-                    GeneralConfigPluginActivator.getSystrayService()
-                        .selectBestPopupMessageHandler();
-                }
-                else
-                {
-                    PopupMessageHandler handler =
-                        (PopupMessageHandler)
-                        notifConfigComboBox.getSelectedItem();
-
-                    ConfigurationUtils.setPopupHandlerConfig(
-                        handler.getClass().getName());
-
-                    GeneralConfigPluginActivator.getSystrayService()
-                        .setActivePopupMessageHandler(handler);
-                }
-            }
-        });
-        notifConfigPanel.add(notifConfigComboBox);
-
-        return notifConfigPanel;
-    }
-
-    /**
      * Initializes the local configuration panel.
      * @return the created component
      */
@@ -1040,18 +897,33 @@ public class GeneralConfigurationPanel
 
         final JComboBox<String> localesConfigComboBox = new JComboBox<>();
 
+        localesConfigComboBox.addItem(Resources.getString(SYSTEM_LANGUAGE));
+
         Iterator<Locale> iter =
                 Resources.getResources().getAvailableLocales();
         while (iter.hasNext())
         {
             Locale locale = iter.next();
-            localesConfigComboBox.addItem(
-                locale.getDisplayLanguage(locale));
+
+            if (!INVALID_LOCALE_NAME.equals(localeToDisplayString(locale)))
+            {
+                localesConfigComboBox.addItem(localeToDisplayString(locale));
+            }
+            else
+            {
+                logger.info("Found an invalid locale.");
+            }
         }
         Locale currLocale =
             ConfigurationUtils.getCurrentLanguage();
-        localesConfigComboBox.setSelectedItem(currLocale
-            .getDisplayLanguage(currLocale));
+
+        if (currLocale != null) {
+            localesConfigComboBox.setSelectedItem(localeToDisplayString(currLocale));
+        }
+        else
+        {
+            localesConfigComboBox.setSelectedItem(Resources.getString("plugin.generalconfig.SYSTEM_LANGUAGE"));
+        }
 
         localesConfigComboBox.addActionListener(new ActionListener()
         {
@@ -1068,13 +940,14 @@ public class GeneralConfigurationPanel
                 while (iter.hasNext())
                 {
                     Locale locale = iter.next();
-                    if (locale.getDisplayLanguage(locale)
-                        .equals(language))
+                    if (localeToDisplayString(locale).equals(language))
                     {
                         ConfigurationUtils.setLanguage(locale);
-                        break;
+                        return;
                     }
                 }
+
+                ConfigurationUtils.setLanguage(null);
             }
         });
         localeComboBoxPanel.add(localesConfigComboBox);
@@ -1092,6 +965,23 @@ public class GeneralConfigurationPanel
         localeConfigPanel.add(warnLabel);
 
         return localeConfigPanel;
+    }
+
+    private String localeToDisplayString(Locale locale)
+    {
+        String localeDisplayLanguage = locale.getDisplayLanguage(locale);
+        String localeDisplayCountry = locale.getDisplayCountry(locale);
+        if (!StringUtils.isNullOrEmpty(localeDisplayCountry))
+        {
+            return Resources.getString(
+                    LANGUAGE_AND_COUNTRY,
+                    new String[] {localeDisplayLanguage, localeDisplayCountry}
+                );
+        }
+        else
+        {
+            return localeDisplayLanguage;
+        }
     }
 
     /**

@@ -46,16 +46,6 @@ public class Constants
      */
 
     /**
-     * Temporary method to load the css style used in the chat window.
-     *
-     * @param style
-     */
-    public static void loadSimpleStyle(StyleSheet style)
-    {
-        importStyle(style, "service.gui.HTML_TEXT_STYLE", null);
-    }
-
-    /**
      * Import the CSS style for the splash screens into the given StyleSheet
      * object.
      *

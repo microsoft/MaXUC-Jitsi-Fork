@@ -18,7 +18,6 @@ import java.awt.image.*;
 import java.util.*;
 
 import javax.swing.*;
-import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.plaf.*;
 import javax.swing.plaf.basic.*;
@@ -81,12 +80,6 @@ public class SIPCommTabbedPaneUI
     public static final int BUTTONSIZE = ScaleUtils.scaleInt(15);
 
     public static final int WIDTHDELTA = 1;
-
-    private static final Border PRESSEDBORDER = new SoftBevelBorder(
-            SoftBevelBorder.LOWERED);
-
-    private static final Border OVERBORDER = new SoftBevelBorder(
-            SoftBevelBorder.RAISED);
 
     //private Image closeImgB;
 
@@ -724,27 +717,6 @@ public class SIPCommTabbedPaneUI
         g.drawImage(maxImgI, dx, dy + 1, null);
     }
 
-    protected void paintActionButton(Graphics g, int dx, int dy, int status,
-            boolean isOver, JButton button, Image image)
-    {
-        button.setBorder(null);
-
-        if (isOver) {
-            switch (status) {
-            case OVER:
-                button.setBorder(OVERBORDER);
-                break;
-            case PRESSED:
-                button.setBorder(PRESSEDBORDER);
-                break;
-            }
-        }
-
-        button.setBackground(tabScroller.tabPanel.getBackground());
-        button.paint(image.getGraphics());
-        g.drawImage(image, dx, dy, null);
-    }
-
     /*
      * This method will create and return a polygon shape for the given tab
      * rectangle which has been cropped at the specified cropline with a torn
@@ -837,11 +809,6 @@ public class SIPCommTabbedPaneUI
             }
         }
         return -1;
-    }
-
-    public int getOverTabIndex()
-    {
-        return overTabIndex;
     }
 
     /**

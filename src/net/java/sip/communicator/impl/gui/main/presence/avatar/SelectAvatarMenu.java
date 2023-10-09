@@ -58,16 +58,6 @@ public class SelectAvatarMenu
     private static final int THUMB_HEIGHT = 48;
 
     /**
-     * Buttons corresponding to images.
-     * TODO: Although this field is declared, there is no code that actually initializes it, so it
-     * would appear to be entirely redundant.
-     * There is code that reads from it (in refreshRecentImages), but I have to assume this is never
-     * called, otherwise it would be hitting NPE when accessing this uninitialized array.
-     */
-    private SIPCommButton[] recentImagesButtons =
-        new SIPCommButton[MAX_STORED_IMAGES];
-
-    /**
      * Next free image index number.
      */
     private int nextImageIndex = 0;
@@ -137,62 +127,6 @@ public class SelectAvatarMenu
 
         UIManager.getDefaults().put(
             "Separator.foreground", oldSeparatorDefault);
-    }
-
-    /**
-     * Refresh images with those stored locally.
-     * TODO: This code is never called!
-     */
-    public void refreshRecentImages()
-    {
-        int i;
-
-        for (i = 0; i < MAX_STORED_IMAGES; i++)
-        {
-            BufferedImage image = AvatarStackManager.loadImage(i);
-            if (image == null)
-                break;
-
-            this.recentImagesButtons[i].setImage(new BufferedImageAvailable(createThumbnail(image)));
-            this.recentImagesButtons[i].setEnabled(true);
-        }
-
-        if (i < MAX_STORED_IMAGES)
-        {
-            this.nextImageIndex = i;
-
-            for (; i < MAX_STORED_IMAGES; i++)
-            {
-                this.recentImagesButtons[i].setImage(null);
-                this.recentImagesButtons[i].setEnabled(false);
-            }
-        }
-        else
-            this.nextImageIndex = MAX_STORED_IMAGES;
-    }
-
-    /**
-     * Create thumbnail for the image.
-     * @param image to scale.
-     * @return the thumbnail image.
-     */
-    private static BufferedImage createThumbnail(BufferedImage image)
-    {
-        int width = image.getWidth();
-        int height = image.getHeight();
-
-        // Image smaller than the thumbnail size
-        if (width < THUMB_WIDTH && height < THUMB_HEIGHT)
-            return image;
-
-        Image i;
-
-        if (width > height)
-            i = image.getScaledInstance(THUMB_WIDTH, -1, Image.SCALE_SMOOTH);
-        else
-            i = image.getScaledInstance(-1, THUMB_HEIGHT, Image.SCALE_SMOOTH);
-
-        return ImageUtils.getBufferedImage(i);
     }
 
     /**

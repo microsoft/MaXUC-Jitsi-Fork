@@ -557,16 +557,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set mail fields that we will lookup.
-     *
-     * @param list of mail fields that we will lookup
-     */
-    public void setMailSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.EMAIL, list);
-    }
-
-    /**
      * Returns mail suffix.
      *
      * @return mail suffix
@@ -597,16 +587,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set work phone fields that we will lookup.
-     *
-     * @param list of work phone fields that we will lookup
-     */
-    public void setWorkPhoneSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.WORKPHONE, list);
-    }
-
-    /**
      * Returns mobile phone fields that we will lookup.
      *
      * @return mobile phone fields that we will lookup
@@ -614,16 +594,6 @@ public class LdapDirectorySettingsImpl
     public List<String> getMobilePhoneSearchFields()
     {
         return mapAttributes.get(LdapConstants.MOBILEPHONE);
-    }
-
-    /**
-     * Set mobile phone fields that we will lookup.
-     *
-     * @param list of mobile phone fields that we will lookup
-     */
-    public void setMobilePhoneSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.MOBILEPHONE, list);
     }
 
     /**
@@ -637,16 +607,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set home phone fields that we will lookup.
-     *
-     * @param list of home phone fields that we will lookup
-     */
-    public void setHomePhoneSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.HOMEPHONE, list);
-    }
-
-    /**
      * Returns title fields that we will lookup.
      *
      * @return title fields that we will lookup
@@ -654,16 +614,6 @@ public class LdapDirectorySettingsImpl
     public List<String> getTitleSearchFields()
     {
         return mapAttributes.get(LdapConstants.TITLE);
-    }
-
-    /**
-     * Set title fields that we will lookup.
-     *
-     * @param list of title fields that we will lookup
-     */
-    public void setTitleSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.TITLE, list);
     }
 
     /**
@@ -677,16 +627,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set display name fields that we will lookup.
-     *
-     * @param list of display name fields that we will lookup
-     */
-    public void setDisplayNameSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.NICKNAME, list);
-    }
-
-    /**
      * Returns first name fields that we will lookup.
      *
      * @return first name fields that we will lookup
@@ -694,16 +634,6 @@ public class LdapDirectorySettingsImpl
     public List<String> getFirstNameSearchFields()
     {
         return mapAttributes.get(LdapConstants.FIRSTNAME);
-    }
-
-    /**
-     * Set first name fields that we will lookup.
-     *
-     * @param list of first name fields that we will lookup
-     */
-    public void setFirstNameSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.FIRSTNAME, list);
     }
 
     /**
@@ -717,16 +647,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set last name fields that we will lookup.
-     *
-     * @param list of last name fields that we will lookup
-     */
-    public void setLastNameSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.LASTNAME, list);
-    }
-
-    /**
      * Returns organization fields that we will lookup.
      *
      * @return organization fields that we will lookup
@@ -734,16 +654,6 @@ public class LdapDirectorySettingsImpl
     public List<String> getOrganizationSearchFields()
     {
         return mapAttributes.get(LdapConstants.ORG);
-    }
-
-    /**
-     * Set organization fields that we will lookup.
-     *
-     * @param list of organization fields that we will lookup
-     */
-    public void setOrganizationSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.ORG, list);
     }
 
     /**
@@ -757,16 +667,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set department fields that we will lookup.
-     *
-     * @param list of department fields that we will lookup
-     */
-    public void setDepartmentSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.DEPARTMENT, list);
-    }
-
-    /**
      * Returns location fields that we will lookup.
      *
      * @return location fields that we will lookup
@@ -774,16 +674,6 @@ public class LdapDirectorySettingsImpl
     public List<String> getLocationSearchFields()
     {
         return mapAttributes.get(LdapConstants.LOCATION);
-    }
-
-    /**
-     * Set location fields that we will lookup.
-     *
-     * @param list of location fields that we will lookup
-     */
-    public void setLocationSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.LOCATION, list);
     }
 
     /**
@@ -798,16 +688,6 @@ public class LdapDirectorySettingsImpl
     }
 
     /**
-     * Set other (i.e. not work/home/mobile) phone fields that we will lookup.
-     *
-     * @param list of other phone fields that we will lookup
-     */
-    public void setOtherPhoneSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.OTHERPHONE, list);
-    }
-
-    /**
      * Returns Jabber IM fields that we will lookup.
      *
      * @return Jabber IM fields that we will lookup
@@ -815,16 +695,6 @@ public class LdapDirectorySettingsImpl
     public List<String> getJabberSearchFields()
     {
         return mapAttributes.get(LdapConstants.JABBER);
-    }
-
-    /**
-     * Set Jabber IM fields that we will lookup.
-     *
-     * @param list of Jabber IM fields that we will lookup
-     */
-    public void setJabberSearchFields(List<String> list)
-    {
-        mapAttributes.put(LdapConstants.JABBER, list);
     }
 
     /**
@@ -846,24 +716,6 @@ public class LdapDirectorySettingsImpl
             throw new IllegalArgumentException("Illegal port number.");
         if(getBaseDN() == null)
             throw new IllegalArgumentException("Base DN has no content.");
-    }
-
-    /**
-     * Merge String elements from a list to a single String separated by space.
-     *
-     * @param lst list of <tt>String</tt>s
-     * @return <tt>String</tt>
-     */
-    public static String mergeStrings(List<String> lst)
-    {
-        StringBuilder bld = new StringBuilder();
-
-        for(String s : lst)
-        {
-            bld.append(s).append(" ");
-        }
-
-        return bld.toString();
     }
 
     /**

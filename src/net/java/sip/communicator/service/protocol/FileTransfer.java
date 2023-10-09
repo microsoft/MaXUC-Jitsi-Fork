@@ -106,11 +106,4 @@ public interface FileTransfer
      * @param listener the listener to add
      */
     void addProgressListener(FileTransferProgressListener listener);
-
-    /**
-     * Removes the given <tt>FileTransferProgressListener</tt>.
-     *
-     * @param listener the listener to remove
-     */
-    void removeProgressListener(FileTransferProgressListener listener);
 }

@@ -5,7 +5,6 @@
  */
 package net.java.sip.communicator.impl.gui.main.call;
 
-import java.awt.*;
 import java.beans.*;
 import java.util.*;
 
@@ -119,49 +118,6 @@ public class UIVideoHandler2
     void dispose()
     {
         callConferenceListener.dispose();
-    }
-
-    /**
-     * Determines whether a specific <tt>Container</tt> is an ancestor of a
-     * specific <tt>Component</tt> (in the UI hierarchy).
-     *
-     * @param container the <tt>Container</tt> which is to be tested as an
-     * ancestor of <tt>component</tt>
-     * @param component the <tt>Component</tt> which is to be tested as having
-     * <tt>container</tt> as its ancestor
-     * @return <tt>true</tt> if <tt>container</tt> is an ancestor of
-     * <tt>component</tt> (in the UI hierarchy); otherwise, <tt>false</tt>
-     */
-    public static boolean isAncestor(Container container, Component component)
-    {
-        do
-        {
-            Container parent = component.getParent();
-
-            if (parent == null)
-                return false;
-            else if (parent.equals(container))
-                return true;
-            else
-                component = parent;
-        }
-        while (true);
-    }
-
-    /**
-     * Gets the indicator which determines whether the visual <tt>Component</tt>
-     * depicting the video of the local peer/user streaming to the remote
-     * peer(s) is to be made visible in the user interface. The indicator does
-     * not determine whether the local peer/user is actually streaming video to
-     * the remote peer(s).
-     *
-     * @return <tt>true</tt> to have the visual <tt>Component</tt> depicting the
-     * video of the local peer/user streaming to the remote peer(s) visible in
-     * the user interface; otherwise, <tt>false</tt>
-     */
-    public boolean isLocalVideoVisible()
-    {
-        return localVideoVisible;
     }
 
     /**

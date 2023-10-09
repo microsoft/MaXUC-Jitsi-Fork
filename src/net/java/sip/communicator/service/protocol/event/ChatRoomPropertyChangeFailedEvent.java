@@ -26,12 +26,6 @@ public class ChatRoomPropertyChangeFailedEvent
     private static final long serialVersionUID = 0L;
 
     /**
-     * Indicates that the current implementation doesn't support the given
-     * property.
-     */
-    public static final int PROPERTY_NOT_SUPPORTED = 0;
-
-    /**
      * The reason of the failure.
      */
     private final String reason;
@@ -65,37 +59,6 @@ public class ChatRoomPropertyChangeFailedEvent
 
         this.reasonCode = reasonCode;
         this.reason = reason;
-    }
-
-    /**
-     * Returns the source chat room for this event.
-     *
-     * @return the <tt>ChatRoom</tt> associated with this
-     * event.
-     */
-    public ChatRoom getSourceChatRoom()
-    {
-        return (ChatRoom)getSource();
-    }
-
-    /**
-     * Returns the value of the property.
-     *
-     * @return the value of the property.
-     */
-    public Object getPropertyValue()
-    {
-        return getOldValue();
-    }
-
-    /**
-     * Return the expected after the change value of the property.
-     *
-     * @return the expected after the change value of the property
-     */
-    public Object getExpectedValue()
-    {
-        return getNewValue();
     }
 
     /**

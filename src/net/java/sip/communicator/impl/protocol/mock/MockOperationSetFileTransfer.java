@@ -105,11 +105,6 @@ public class MockOperationSetFileTransfer
                         return file.getName();
                     }
 
-                    public String getFileDescription()
-                    {
-                        return file.toString();
-                    }
-
                     public long getFileSize()
                     {
                         return file.length();

@@ -23,6 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 
+import com.metaswitch.maxanalytics.event.AnalyticsResult;
+import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
+import com.metaswitch.maxanalytics.event.CommonKt;
+import com.metaswitch.maxanalytics.event.ImKt;
+import com.metaswitch.maxanalytics.event.ImType;
 import org.jivesoftware.smack.chat2.Chat;
 import org.jivesoftware.smack.chat2.ChatManager;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
@@ -57,6 +62,7 @@ import net.java.sip.communicator.impl.protocol.jabber.JabberActivator.GroupMembe
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtension;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtensionProvider;
 import net.java.sip.communicator.service.contactlist.MetaContact;
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
 import net.java.sip.communicator.service.protocol.AbstractOperationSetBasicInstantMessaging;
@@ -366,8 +372,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
      * Remove from our <tt>jids</tt> map all entries that have not seen any
      * activity (i.e. neither outgoing nor incoming messages) for more than
      * JID_INACTIVITY_TIMEOUT. Note that this method is not synchronous and that
-     * it is only meant for use by the {@link #getJidForAddress(String)} and
-     * {@link #putJidForAddress(String, String)}
+     * it is only meant for use by the {@link #getJidForAddress(Jid)} and
+     * {@link #putJidForAddress(BareJid, EntityFullJid)}
      */
     private void purgeOldJids()
     {
@@ -720,37 +726,30 @@ public class OperationSetBasicInstantMessagingJabberImpl
         MessageDeliveredEvent msgDelivered =
             sendMessage(to, toResource, smsNumber, message, new ExtensionElement[0]);
 
+        String imType = smsNumber != null ?
+                ImType.SMS.getValue$maxanalytics() : ImType.CHAT.getValue$maxanalytics();
+
+        boolean delivered = msgDelivered != null && !msgDelivered.isFailed();
+
+        JabberActivator.getInsightService().logEvent(
+                new InsightEvent(
+                        ImKt.EVENT_IM_SEND_MESSAGE,
+                        Map.of(CommonKt.PARAM_TYPE,
+                               imType,
+                               AnalyticsResultKt.PARAM_RESULT,
+                               delivered ?
+                                       AnalyticsResult.Success.INSTANCE.getValue() :
+                                       AnalyticsResult.FailureUnknown.INSTANCE.getValue()
+                        ),
+                        Map.of(ImKt.PARAM_IM_LENGTH,
+                               (double) message.getContent().length())
+                )
+        );
+
         if (fireEvent)
         {
             fireMessageEvent(msgDelivered);
         }
-    }
-
-    /**
-     * Replaces the message with ID <tt>correctedMessageUID</tt> sent to
-     * the contact <tt>to</tt> at their <tt>ContactResource</tt>
-     * <tt>resource</tt> with the message <tt>message</tt>
-     *
-     * @param to The contact to send the message to.
-     * @param resource The contact resource to send the message to (if null,
-     * the message will be sent to all of the contact's registered resources)
-     * @param message The new message.
-     * @param correctedMessageUID The ID of the message being replaced.
-     */
-    public void correctMessage(Contact to,
-                               ContactResource resource,
-                               ImMessage message,
-                               String correctedMessageUID)
-    {
-        ExtensionElement[] exts = new ExtensionElement[1];
-        exts[0] = new MessageCorrectionExtension(correctedMessageUID);
-
-        ContactResource contactResource =
-            (resource == null) ? ContactResource.BASE_RESOURCE : resource;
-        MessageDeliveredEvent msgDelivered
-            = sendMessage(to, contactResource, null, message, exts);
-        msgDelivered.setCorrectedMessageUID(correctedMessageUID);
-        fireMessageEvent(msgDelivered);
     }
 
     /**
@@ -1723,8 +1722,8 @@ public class OperationSetBasicInstantMessagingJabberImpl
 
             if (sourceContact == null)
             {
-                logger.trace("received a message from an unknown contact: "
-                             + otherUserId);
+                logger.debug("received a message from an unknown contact: "
+                             + sanitiseChatAddress(otherUserId));
 
                 // No need to create a volatile contact for SMS messages.
                 if (messageType != MessageEvent.SMS_MESSAGE)
@@ -2098,12 +2097,10 @@ public class OperationSetBasicInstantMessagingJabberImpl
         // not, we cannot message this contact.
         boolean isAuthorised;
         boolean isCommPortalIm = "CommPortal".equals(ConfigurationUtils.getImProvSource());
-        boolean autoPopulateIMEnabled = ConfigurationUtils.autoPopulateIMEnabled();
         logParams.add("isCommPortalIm:" + isCommPortalIm);
-        logParams.add("autoPopulateIMEnabled:" + autoPopulateIMEnabled);
-        if (isCommPortalIm && autoPopulateIMEnabled)
+        if (isCommPortalIm)
         {
-            // CommPortal IM with autoPopulate - no contacts appear as request pending, so always
+            // CommPortal IM - no contacts appear as request pending, so always
             // treat them as if they are authorised.
             isAuthorised = true;
         }

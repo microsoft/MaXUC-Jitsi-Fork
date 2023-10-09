@@ -9,6 +9,8 @@ package net.java.sip.communicator.impl.gui.main.call;
 import java.awt.event.*;
 import java.beans.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.*;
 import java.util.*;
 import java.util.Timer;
@@ -25,10 +27,15 @@ import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.systray.*;
+import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPANamespace;
+import net.java.sip.communicator.service.wispaservice.WISPANotion;
+import net.java.sip.communicator.service.wispaservice.WISPANotionType;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.FileUtils;
 import net.java.sip.communicator.util.Logger;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
 
 /**
  * The button that starts/stops the call recording.
@@ -59,6 +66,8 @@ public class RecordButton extends InCallButton
      */
     private static final ResourceManagementService resources
         = GuiActivator.getResources();
+
+    private static final WISPAService wispaService = GuiActivator.getWISPAService();
 
     /**
      * The string used to label this menu item in the dropdown when recording
@@ -486,7 +495,7 @@ public class RecordButton extends InCallButton
 
         try
         {
-            FileUtils.moveFile(mTempFile, target);
+            Files.move(mTempFile.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             showSavedToast(filename, new File(savedCallsFolder.getPath()));
             logger.info("Recording for call " + mCall.getCallID() +
                         " saved.");
@@ -646,9 +655,8 @@ public class RecordButton extends InCallButton
         try
         {
             mTempFile = getTempFile();
-            logger.debug("Writing call recording for call " +
-                         mCall.getCallID() +
-                         " to temporary file " + mTempFile.getName());
+            logger.debug("Writing call recording for call " + mCall.getCallID()
+                + " to temporary file " + sanitiseFilePath(mTempFile.getAbsolutePath()));
 
             Recorder recorder = getRecorder();
 
@@ -750,8 +758,6 @@ public class RecordButton extends InCallButton
      */
     private void showSavedToast(String filename, final File folderPath)
     {
-        SystrayService systray = GuiActivator.getSystrayService();
-
         String message = resources.getI18NString(
                "service.gui.CALL_RECORDING_SAVE_TEXT", new String[] {filename});
 
@@ -767,9 +773,9 @@ public class RecordButton extends InCallButton
                }
                catch (IOException e)
                {
-                   logger.debug("Failed to open call recording folder at " +
-                                folderPath.getAbsolutePath() +
-                                " for call " + mCall.getCallID(), e);
+                    logger.debug("Failed to open call recording folder at "
+                        + sanitiseFilePath(mTempFile.getAbsolutePath()) + " for call "
+                        + mCall.getCallID(), e);
                    SwingUtilities.invokeLater(new Runnable()
                    {
                        public void run()
@@ -782,11 +788,14 @@ public class RecordButton extends InCallButton
             }
         };
 
-        systray.showPopupMessage(
-            new PopupMessage(CALL_RECORDING_SAVED_SUCCESSFULLY_TITLE,
-                             message,
-                             null,
-                             null,
-                             toastClickedAction));
+        if (wispaService != null)
+        {
+            Object actionData = new WISPANotion(WISPANotionType.NOTIFICATION,
+                new NotificationInfo(CALL_RECORDING_SAVED_SUCCESSFULLY_TITLE,
+                    message, toastClickedAction));
+
+            wispaService.notify(WISPANamespace.EVENTS, WISPAAction.NOTION,
+                actionData);
+        }
     }
 }

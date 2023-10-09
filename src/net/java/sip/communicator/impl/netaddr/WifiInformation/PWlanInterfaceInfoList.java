@@ -1,12 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.netaddr.WifiInformation;
-import java.util.*;
 
 import com.sun.jna.*;
+import com.sun.jna.Structure.FieldOrder;
 
 /**
  * A pointer to a {@link WlanInterfaceInfoListEmpty}
  */
+@FieldOrder({"WlanInterfaceInfoList"})
 public class PWlanInterfaceInfoList
     extends Structure
 {
@@ -18,10 +19,4 @@ public class PWlanInterfaceInfoList
 
     // Fields making up the structure
     public WlanInterfaceInfoListEmpty.ByReference WlanInterfaceInfoList;
-
-    @Override
-    protected List<String> getFieldOrder()
-    {
-        return Arrays.asList(new String[] {"WlanInterfaceInfoList"});
-    }
 }

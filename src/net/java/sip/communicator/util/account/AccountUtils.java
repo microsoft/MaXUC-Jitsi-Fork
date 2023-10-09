@@ -16,7 +16,6 @@ import org.jitsi.service.neomedia.format.*;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.util.*;
 
 /**
@@ -50,25 +49,6 @@ public class AccountUtils
         }
 
         return accountManager == null ? new Vector<>() : accountManager.getStoredAccounts();
-    }
-
-    /**
-     * Return the <tt>AccountID</tt> corresponding to the given string account
-     * identifier.
-     *
-     * @param accountID the account identifier string
-     * @return the <tt>AccountID</tt> corresponding to the given string account
-     * identifier
-     */
-    public static AccountID getAccountForID(String accountID)
-    {
-        Collection<AccountID> allAccounts = getStoredAccounts();
-        for(AccountID account : allAccounts)
-        {
-            if(account.getAccountUniqueID().equals(accountID))
-                return account;
-        }
-        return null;
     }
 
     /**
@@ -468,34 +448,6 @@ public class AccountUtils
         }
 
         return res;
-    }
-
-    /**
-     * Gets the display name of the MetaContact with the given chat address
-     *
-     * @param chatAddress The chat address
-     * @return The display name of the MetaContact with the given chat address
-     */
-    public static String getDisplayNameFromChatAddress(String chatAddress)
-    {
-        String displayName = chatAddress;
-
-        MetaContactListService contactListService =
-                                         UtilActivator.getContactListService();
-
-        ProtocolProviderService imProvider = getImProvider();
-        String accountId = (imProvider != null) ?
-            imProvider.getAccountID().getAccountUniqueID() : "unknown";
-
-        MetaContact metaContact =
-           contactListService.findMetaContactByContact(chatAddress, accountId);
-
-        if (metaContact != null)
-        {
-            displayName = metaContact.getDisplayName();
-        }
-
-        return displayName;
     }
 
     public static void enableAccount(AccountID account)

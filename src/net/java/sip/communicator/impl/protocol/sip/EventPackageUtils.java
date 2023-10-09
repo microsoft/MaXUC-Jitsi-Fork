@@ -75,29 +75,6 @@ public final class EventPackageUtils
     }
 
     /**
-     * Determines whether a BYE request has already been processed in a specific
-     * <tt>Dialog</tt> and thus allows determining whether the dialog in
-     * question should be terminated when the last associated subscription is
-     * terminated.
-     *
-     * @param dialog the <tt>Dialog</tt> to be examined
-     *
-     * @return <tt>true</tt> if a BYE request has already been processed in the
-     * specified <tt>dialog</tt>; <tt>false</tt>, otherwise
-     */
-    public static boolean isByeProcessed(Dialog dialog)
-    {
-        synchronized (dialog)
-        {
-            DialogApplicationData applicationData =
-                (DialogApplicationData) SipApplicationData.getApplicationData(
-                        dialog, SipApplicationData.KEY_SUBSCRIPTIONS);
-            return (applicationData == null) ? false : applicationData
-                .isByeProcessed();
-        }
-    }
-
-    /**
      * Processes a BYE request in a specific <tt>Dialog</tt> for the
      * purposes of subscription associations and returns an indicator which
      * determines whether the specified dialog should still be considered alive

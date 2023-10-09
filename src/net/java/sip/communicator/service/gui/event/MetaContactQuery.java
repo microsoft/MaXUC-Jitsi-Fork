@@ -144,29 +144,6 @@ public class MetaContactQuery
     }
 
     /**
-     * Notifies the <tt>MetaContactQueryListener</tt> that a new
-     * <tt>MetaGroup</tt> has been received as a result of a search.
-     * @param metaGroup the received <tt>MetaGroup</tt>
-     */
-    public void fireQueryEvent(MetaContactGroup metaGroup)
-    {
-        MetaGroupQueryEvent event
-            = new MetaGroupQueryEvent(this, metaGroup);
-
-        List<MetaContactQueryListener> listeners;
-        synchronized (queryListeners)
-        {
-            listeners = new LinkedList<>(queryListeners);
-        }
-
-        Iterator<MetaContactQueryListener> listenersIter = listeners.iterator();
-        while (listenersIter.hasNext())
-        {
-            listenersIter.next().metaGroupReceived(event);
-        }
-    }
-
-    /**
      * Notifies the <tt>MetaContactQueryListener</tt> that this query has
      * changed its status.
      * @param queryStatus the new query status

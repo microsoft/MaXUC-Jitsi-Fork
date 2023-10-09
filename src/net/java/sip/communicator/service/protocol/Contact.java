@@ -31,7 +31,7 @@ public interface Contact
      *
      * @return a string representation of the Contact with any PII hashed.
      */
-    public String toString();
+    String toString();
 
     /**
      * Returns a String that can be used for identifying the contact. The

@@ -110,7 +110,7 @@ HRESULT startServerBitness(JavaLogger* logger, const char* logFile, int port, co
     serverExec[1] = testVersion;
     for(int i = 0; i < 2; ++i)
     {
-        logger->info("Starting: '%s'", serverExec[i]);
+        logger->info("Starting: '%d'th location", i);
 
         // Create the server
         if(CreateProcess(

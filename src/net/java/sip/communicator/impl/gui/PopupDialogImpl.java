@@ -12,8 +12,6 @@ import javax.swing.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.util.*;
 
-import org.jitsi.service.resources.*;
-
 /**
  * Implements <code>PopupDialog</code> interface.
  *
@@ -31,52 +29,6 @@ public class PopupDialogImpl
      */
     public PopupDialogImpl()
     {
-    }
-
-    /**
-     * Implements the <tt>PopupDialog.showInputPopupDialog(Object)</tt> method.
-     * Invokes the corresponding <tt>JOptionPane.showInputDialog</tt> method.
-     *
-     * @param mesg the object to display
-     */
-    public String showInputPopupDialog(Object mesg)
-    {
-        logger.info("Show input dialog: " + mesg);
-        return showInputDialog(mesg);
-    }
-
-    /**
-     * Implements the <tt>PopupDialog.showInputPopupDialog(Object, String)</tt>
-     * method. Invokes the corresponding <tt>JOptionPane.showInputDialog</tt>
-     * method.
-     *
-     * @param mesg the message to display
-     * @param initialSelectionVal the value used to initialize the input
-     * field.
-     */
-    public String showInputPopupDialog(Object mesg,
-            String initialSelectionVal)
-    {
-        logger.info("Show input dialog: " + mesg);
-        return showInputDialog(mesg, initialSelectionVal);
-    }
-
-    /**
-     * Implements the
-     * <tt>PopupDialog.showInputPopupDialog(Object, String, int)</tt> method.
-     * Invokes the corresponding <tt>JOptionPane.showInputDialog</tt> method.
-     *
-     * @param mesg the message to display
-     * @param mesgType the type of message to be displayed: ERROR_MESSAGE,
-     * INFORMATION_MESSAGE, WARNING_MESSAGE, QUESTION_MESSAGE, or PLAIN_MESSAGE
-     * @param title the String to display in the dialog title bar
-     */
-    public String showInputPopupDialog(Object mesg, String title,
-        int mesgType)
-    {
-        logger.info("Show input dialog: " + title + " | " + mesg);
-        return showInputDialog(null, mesg, title,
-            popupDialog2JOptionPaneMessageType(mesgType));
     }
 
     private static int popupDialog2JOptionPaneMessageType(int type)
@@ -119,31 +71,6 @@ public class PopupDialogImpl
     }
 
     /**
-     * Implements the
-     * <tt>PopupDialog.showInputPopupDialog(Object, String, int, Object[],
-     * Object)</tt> method. Invokes the corresponding
-     * <tt>JOptionPane.showInputDialog</tt> method.
-     *
-     * @param mesg the message to display
-     * @param mesgType the type of message to be displayed: ERROR_MESSAGE,
-     * INFORMATION_MESSAGE, WARNING_MESSAGE, QUESTION_MESSAGE, or PLAIN_MESSAGE
-     * @param title the String to display in the dialog title bar
-     * @param selectionVal an array of Objects that gives the possible
-     * selections
-     * @param initialSelectionVal the value used to initialize the input field
-     * @param icon the icon to show in the input window.
-     */
-    public Object showInputPopupDialog(Object mesg, String title,
-        int mesgType, Object[] selectionVal,
-        Object initialSelectionVal, BufferedImageFuture icon)
-    {
-        logger.info("Show input dialog: " + title + " | " + mesg);
-        return showInputDialog(null, mesg, title,
-            popupDialog2JOptionPaneMessageType(mesgType),
-            icon.getImageIcon().resolve(), selectionVal, initialSelectionVal);
-    }
-
-    /**
      * Implements the <tt>PopupDialog.showMessagePopupDialog(Object)</tt>
      * method. Invokes the corresponding
      * <tt>JOptionPane.showMessageDialog</tt> method.
@@ -172,39 +99,6 @@ public class PopupDialogImpl
         logger.info("Show message dialog: " + title + " | " + mesg);
         showMessageDialog(null, mesg, title,
             popupDialog2JOptionPaneMessageType(mesgType));
-    }
-
-    /**
-     * Implements the <tt>PopupDialog.showMessagePopupDialog(Object, String,
-     * int)</tt> method. Invokes the corresponding
-     * <tt>JOptionPane.showMessageDialog</tt> method.
-     *
-     * @param mesg the Object to display
-     * @param title the title string for the dialog
-     * @param mesgType the type of message to be displayed: ERROR_MESSAGE,
-     * INFORMATION_MESSAGE, WARNING_MESSAGE, QUESTION_MESSAGE, or PLAIN_MESSAGE
-     * @param icon the image to display in the message dialog.
-     */
-    public void showMessagePopupDialog(Object mesg, String title,
-        int mesgType, BufferedImageFuture icon)
-    {
-        logger.info("Show message dialog: " + title + " | " + mesg);
-        showMessageDialog(null, mesg, title,
-            popupDialog2JOptionPaneMessageType(mesgType),
-            icon.getImageIcon().resolve());
-    }
-
-    /**
-     * Implements the <tt>PopupDialog.showConfirmPopupDialog(Object)</tt>
-     * method. Invokes the corresponding
-     * <tt>JOptionPane.showConfirmDialog</tt> method.
-     *
-     * @param mesg the message to display
-     */
-    public int showConfirmPopupDialog(Object mesg)
-    {
-        logger.info("Show confirm dialog: " + mesg);
-        return showConfirmDialog(null, mesg);
     }
 
     /**
@@ -260,31 +154,6 @@ public class PopupDialogImpl
         return showConfirmDialog(null, mesg, title,
             popupDialog2JOptionPaneOptionType(optType),
             popupDialog2JOptionPaneMessageType(mesgType));
-    }
-
-    /**
-     * Implements the <tt>PopupDialog.showConfirmPopupDialog(Object, String,
-     * int, int)</tt> method. Invokes the corresponding
-     * <tt>JOptionPane.showConfirmDialog</tt> method.
-     *
-     * @param mesg the Object to display
-     * @param title the title string for the dialog
-     * @param optType an integer designating the options available on the
-     * dialog: YES_NO_OPTION, or YES_NO_CANCEL_OPTION
-     * @param mesgType an integer designating the kind of message this is;
-     * primarily used to determine the icon from the pluggable Look and Feel:
-     * ERROR_MESSAGE, INFORMATION_MESSAGE, WARNING_MESSAGE, QUESTION_MESSAGE,
-     * or PLAIN_MESSAGE
-     * @param icon the icon to display in the dialog
-     */
-    public int showConfirmPopupDialog(Object mesg, String title,
-        int optType, int mesgType, BufferedImageFuture icon)
-    {
-        logger.info("Show confirm dialog: " + mesg + ", title: " + title);
-        return showConfirmDialog(null, mesg, title,
-            popupDialog2JOptionPaneOptionType(optType),
-            popupDialog2JOptionPaneMessageType(mesgType),
-            icon.getImageIcon().resolve());
     }
 
     /**
@@ -349,9 +218,4 @@ public class PopupDialogImpl
     {
     }
 
-    @Override
-    public void repaintWindow()
-    {
-        repaint();
-    }
 }

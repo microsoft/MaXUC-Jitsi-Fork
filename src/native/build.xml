@@ -332,7 +332,7 @@
 
   <!-- Build all object files and shared libraries -->
   <target name="build-native" description="Build all object files and libraries."
-          depends="globalshortcut, sysactivity, localhostretriever, msoutlookaddrbook32, msoutlookaddrbookcomserver32, msofficecomm,
+          depends="globalshortcut, sysactivity, localhostretriever, msoutlookaddrbook32, msoutlookaddrbookcomserver32,
           aegeturleventhandler, sparkle">
       <echo message="All object files and libraries have been built." />
   </target>
@@ -350,7 +350,6 @@
     <echo message="'ant msoutlookaddrbook32' (Windows only) to compile the 32 bit jmsoutlookaddrbook shared library and the jmsoutlookaddrbook 32 bit COM server" />
     <echo message="'ant msoutlookaddrbookcomserver32' (Windows only) to compile Accession Outlook Server for Windows 32 bit" />
     <echo message="'ant msoutlookaddrbookcomserver64' (Windows only) to compile Accession Outlook Server for Windows 64 bit" />
-    <echo message="'ant msofficecomm' (Windows only) to compile the jmsofficecomm shared library" />
     <echo message="'ant sysactivity' to compile the sysactivitynotifications shared library" />
     <echo message="" />
     <echo message="Options:" />
@@ -512,69 +511,6 @@
     <exec executable="strip">
       <arg value="-x"/>
       <arg value="${executable}"/>
-    </exec>
-  </target>
-
-  <!--
-       Compile jmsofficecomm library for Windows.
-  -->
-  <target
-      name="msofficecomm"
-      description="Build jmsofficecomm shared library for Windows"
-      if="is.running.windows"
-      depends="init-native,buildtools.init-ant-contrib" >
-    <if>
-      <not>
-        <available file="${src}/native/windows/msofficecomm/msgrua.tlb" />
-      </not>
-      <then>
-        <fail message="Run 'midl ${OCS2007SDK}\msgrua.idl' in ${src}/native/windows/msofficecomm to generate msgrua.tlb" />
-      </then>
-    </if>
-
-    <condition property="target" value="pe-i386" else="x86-64">
-        <isset property="cross_32"/>
-    </condition>
-
-    <exec executable="windres">
-      <arg value="--target=${target}"/>
-      <arg value="${src}/native/windows/msofficecomm/Resources.rc" />
-      <arg value="${obj}/Resources.o"/>
-    </exec>
-    <cc
-        name="gcc"
-        objdir="${obj}"
-        outfile="${native_install_dir}/jmsofficecomm"
-        outtype="shared">
-      <compilerarg value="-D_JNI_IMPLEMENTATION_" />
-      <compilerarg value="-D_WIN32_WINNT=0x0502" />
-      <compilerarg value="-DWINVER=0x0502" />
-      <compilerarg value="-DUNICODE" />
-      <compilerarg value="-D_UNICODE" />
-      <compilerarg value="-I${system.JAVA_HOME}/include" />
-      <compilerarg value="-I${system.JAVA_HOME}/include/win32" />
-      <compilerarg value="-I${src}/native/windows/msofficecomm" />
-      <compilerarg value="-m32" if="cross_32" />
-      <compilerarg value="-m64" if="cross_64" />
-      <compilerarg value="-O2" />
-      <compilerarg value="-Wall" />
-      <compilerarg value="-Wno-unknown-pragmas" />
-
-      <linkerarg value="-ojmsofficecomm.dll" />
-      <linkerarg value="-m32" if="cross_32" />
-      <linkerarg value="-m64" if="cross_64" />
-      <linkerarg value="-Wl,--kill-at" />
-      <linkerarg value="-Wl,--subsystem,windows" />
-      <linkerarg value="-static-libgcc" />
-      <linkerarg value="-Wl,-Bstatic" location="end" if="is.running.windows" />
-      <linkerarg value="${obj}/Resources.o" location="mid" />
-      <libset libs="advapi32, uuid, ole32, oleaut32, msi, stdc++" />
-
-      <fileset dir="${src}\native\windows\msofficecomm" includes="*.cxx" />
-    </cc>
-    <exec executable="strip">
-      <arg value="-x"/>
-      <arg value="${native_install_dir}/jmsofficecomm.dll"/>
     </exec>
   </target>
 </project>

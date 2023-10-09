@@ -346,7 +346,7 @@ class PeerPanel extends JPanel implements CallPeerListener, ActionListener
         mCrmButtonSetter = new CrmButtonSetter(callPeer.getDisplayName(),
                                                peerAddress,
                                                crmButtonPanel);
-        mCrmButtonSetter.createButton(callPeer);
+        mCrmButtonSetter.createButton();
 
         setCrmButtonStyle();
 
@@ -788,8 +788,6 @@ class PeerPanel extends JPanel implements CallPeerListener, ActionListener
 
         callFrame.updateCallTitlePeers();
 
-        mCrmButtonSetter.updateButton(callPeer);
-
         setCrmButtonStyle();
 
         // Update the call frame.
@@ -851,21 +849,6 @@ class PeerPanel extends JPanel implements CallPeerListener, ActionListener
         // Cancel the timers too.
         disableTimer.cancel();
         dtmfTimer.stop();
-    }
-
-    /**
-     * Updates the local hold button for this call peer as the global hold
-     * status of the call has changed
-     *
-     * @param selected whether to enable the local hold button for this peer
-     */
-    public void setLocalHoldButtonEnabled(boolean selected)
-    {
-        // Check whether the hold button is showing
-        if (btnPeerOther.getName().equals(HOLD_BUTTON_NAME))
-        {
-            btnPeerOther.setEnabled(selected);
-        }
     }
 
     /**

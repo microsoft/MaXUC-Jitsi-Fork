@@ -32,17 +32,6 @@ public class GlobalShortcutEvent
      * Initializes a new <tt>GlobalShortcutEvent</tt>.
      *
      * @param keyStroke keystroke
-     */
-    public GlobalShortcutEvent(AWTKeyStroke keyStroke)
-    {
-        this.keyStroke = keyStroke;
-        isReleased = false;
-    }
-
-    /**
-     * Initializes a new <tt>GlobalShortcutEvent</tt>.
-     *
-     * @param keyStroke keystroke
      * @param isReleased if the event is for release this parameter is true
      * else this parameter is false
      */

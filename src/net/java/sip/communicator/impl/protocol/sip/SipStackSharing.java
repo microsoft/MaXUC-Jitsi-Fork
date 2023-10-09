@@ -17,6 +17,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import javax.sip.*;
 import javax.sip.address.*;
 import javax.sip.header.*;
@@ -27,7 +29,6 @@ import com.google.common.annotations.VisibleForTesting;
 import gov.nist.core.net.AddressResolver;
 import gov.nist.javax.sip.*;
 import gov.nist.javax.sip.header.*;
-import gov.nist.javax.sip.stack.*;
 
 import net.java.sip.communicator.service.certificate.CertificateService;
 import net.java.sip.communicator.service.netaddr.event.*;
@@ -72,7 +73,7 @@ public class SipStackSharing
     /**
      * Our SIP stack (provided by JAIN-SIP).
      */
-    private final SipStack stack;
+    private final SipStackExt stack;
 
     /**
      * The JAIN-SIP provider that we use for clear UDP/TCP.
@@ -146,11 +147,25 @@ public class SipStackSharing
             Properties sipStackProperties = new SipStackProperties();
 
             // Create SipStack object
-            this.stack = sipFactory.createSipStack(sipStackProperties);
-            logger.trace("Created stack: " + this.stack);
+            stack = (SipStackExt)sipFactory.createSipStack(sipStackProperties);
+            logger.trace("Created stack: " + stack);
 
-            ((SIPTransactionStack) this.stack)
-                    .setAddressResolver(addressResolver);
+            stack.setAddressResolver(addressResolver);
+
+            // Rather than using the default set of ciphers that the SIP stack
+            // chose in the distant past (which are now discredited as weak)
+            // we pass in the full set of ciphers that Java supports, which
+            // includes much stronger ones.
+            CertificateService certificateService = SipActivator.getCertificateService();
+            // certificateService will not normally be null, but it is in UTs so
+            // we skip affecting the ciphers in that case
+            if (certificateService != null)
+            {
+                SSLContext sslContext = certificateService.getSSLContext();
+                SSLParameters defaultSSLParameters = sslContext.getDefaultSSLParameters();
+                String[] cipherSuites = defaultSSLParameters.getCipherSuites();
+                stack.setEnabledCipherSuites(cipherSuites);
+            }
 
             SipActivator.getNetworkAddressManagerService()
                     .addNetworkConfigurationChangeListener(this);
@@ -179,12 +194,12 @@ public class SipStackSharing
         boolean shouldStartListening = false;
         synchronized (listenerLock)
         {
-            if (this.listeners.size() == 0)
+            if (listeners.size() == 0)
             {
                 shouldStartListening = true;
             }
-            this.listeners.add(listener);
-            logger.trace(this.listeners.size() + " listeners now");
+            listeners.add(listener);
+            logger.trace(listeners.size() + " listeners now");
         }
 
         if (shouldStartListening)
@@ -293,10 +308,10 @@ public class SipStackSharing
      */
     public void removeSipListener(ProtocolProviderServiceSipImpl listener)
     {
-        boolean noMoreListeners = false;
+        boolean noMoreListeners;
         synchronized (listenerLock)
         {
-            this.listeners.remove(listener);
+            listeners.remove(listener);
 
             int listenerCount = listeners.size();
             noMoreListeners = listenerCount == 0;
@@ -318,7 +333,7 @@ public class SipStackSharing
     {
         synchronized (listenerLock)
         {
-            return new HashSet<>(this.listeners);
+            return new HashSet<>(listeners);
         }
     }
 
@@ -332,7 +347,7 @@ public class SipStackSharing
     public ListeningPoint getLP(String transport)
     {
         ListeningPoint lp;
-        Iterator<? extends ListeningPoint> it = this.stack.getListeningPoints();
+        Iterator<? extends ListeningPoint> it = stack.getListeningPoints();
 
         if(!it.hasNext())
         {
@@ -366,17 +381,17 @@ public class SipStackSharing
         {
             int bindRetriesValue = getBindRetriesValue();
 
-            this.createProvider(this.getPreferredClearPort(),
-                            bindRetriesValue, false);
-            this.createProvider(this.getPreferredSecurePort(),
-                            bindRetriesValue, true);
-            this.stack.start();
+            createProvider(getPreferredClearPort(),
+                           bindRetriesValue, false);
+            createProvider(getPreferredSecurePort(),
+                           bindRetriesValue, true);
+            stack.start();
             logger.trace("started listening");
         }
         catch(Exception ex)
         {
             logger.error("An unexpected error happened while creating the SipProviders and ListeningPoints.", ex);
-            throw new OperationFailedException("An unexpected error hapenned"
+            throw new OperationFailedException("An unexpected error happened "
                     + "while initializing the SIP stack"
                     , OperationFailedException.INTERNAL_ERROR
                     , ex);
@@ -423,60 +438,55 @@ public class SipStackSharing
         if(retries < 0)
         {
             // very unlikely to happen with the default 50 retries
-            logger.error(context + "couldn't find free ports to listen on.");
+            logger.error(context + " couldn't find free ports to listen on.");
             return;
         }
 
-        ListeningPoint tlsLP = null;
+        ListeningPoint tlsLP;
         ListeningPoint udpLP = null;
-        ListeningPoint tcpLP = null;
+        ListeningPoint tcpLP;
 
         try
         {
             if(secure)
             {
-                tlsLP = this.stack.createListeningPoint(
+                tlsLP = stack.createListeningPoint(
                         NetworkUtils.IN_ADDR_ANY
                         , preferredPort
                         , ListeningPoint.TLS);
                 logger.trace("TLS secure ListeningPoint has been created.");
 
-                this.secureJainSipProvider =
-                    this.stack.createSipProvider(tlsLP);
-                this.secureJainSipProvider.addSipListener(this);
+                secureJainSipProvider = stack.createSipProvider(tlsLP);
+                secureJainSipProvider.addSipListener(this);
             }
             else
             {
-                udpLP = this.stack.createListeningPoint(
+                udpLP = stack.createListeningPoint(
                         NetworkUtils.IN_ADDR_ANY
                         , preferredPort
                         , ListeningPoint.UDP);
-                tcpLP = this.stack.createListeningPoint(
+                tcpLP = stack.createListeningPoint(
                         NetworkUtils.IN_ADDR_ANY
                         , preferredPort
                         , ListeningPoint.TCP);
                 logger.trace("UDP and TCP clear ListeningPoints have "
                             + "been created.");
 
-                this.clearJainSipProvider =
-                    this.stack.createSipProvider(udpLP);
-                this.clearJainSipProvider.
-                    addListeningPoint(tcpLP);
-                this.clearJainSipProvider.addSipListener(this);
+                clearJainSipProvider = stack.createSipProvider(udpLP);
+                clearJainSipProvider.addListeningPoint(tcpLP);
+                clearJainSipProvider.addSipListener(this);
             }
 
             logger.trace(context + "SipProvider has been created.");
         }
-        catch(InvalidArgumentException ex)
+        catch (InvalidArgumentException ex)
         {
             // makes sure we didn't leave an open listener
             // as both UDP and TCP listener have to bind to the same port
-            if(tlsLP != null)
-                this.stack.deleteListeningPoint(tlsLP);
-            if(udpLP != null)
-                this.stack.deleteListeningPoint(udpLP);
-            if(tcpLP != null)
-                this.stack.deleteListeningPoint(tcpLP);
+            if (udpLP != null)
+            {
+                stack.deleteListeningPoint(udpLP);
+            }
 
             // FIXME: "Address already in use" is not working
             // as ex.getMessage() displays in the locale language in SC
@@ -492,7 +502,7 @@ public class SipStackSharing
                 // tries again on a new random port
                 int currentlyTriedPort = NetworkUtils.getRandomPortNumber();
                 logger.debug("Retrying bind on port " + currentlyTriedPort);
-                this.createProvider(currentlyTriedPort, retries-1, secure);
+                createProvider(currentlyTriedPort, retries-1, secure);
             }
             else
                 throw ex;
@@ -508,31 +518,31 @@ public class SipStackSharing
     {
         try
         {
-            if (this.stack != null)
+            if (stack != null)
             {
-                if (this.secureJainSipProvider != null)
+                if (secureJainSipProvider != null)
                 {
-                    this.secureJainSipProvider.removeSipListener(this);
-                    this.stack.deleteSipProvider(this.secureJainSipProvider);
-                    this.secureJainSipProvider = null;
+                    secureJainSipProvider.removeSipListener(this);
+                    stack.deleteSipProvider(secureJainSipProvider);
+                    secureJainSipProvider = null;
                 }
                 else
                 {
                     logger.warn("Failed to remove secureJainSipProvider as already null.");
                 }
 
-                if (this.clearJainSipProvider != null)
+                if (clearJainSipProvider != null)
                 {
-                    this.clearJainSipProvider.removeSipListener(this);
-                    this.stack.deleteSipProvider(this.clearJainSipProvider);
-                    this.clearJainSipProvider = null;
+                    clearJainSipProvider.removeSipListener(this);
+                    stack.deleteSipProvider(clearJainSipProvider);
+                    clearJainSipProvider = null;
                 }
                 else
                 {
                     logger.warn("Failed to remove clearJainSipProvider as already null.");
                 }
 
-                Iterator<? extends ListeningPoint> it = this.stack.getListeningPoints();
+                Iterator<? extends ListeningPoint> it = stack.getListeningPoints();
                 if (it != null)
                 {
                     Vector<ListeningPoint> lpointsToRemove = new Vector<>();
@@ -544,7 +554,7 @@ public class SipStackSharing
                     it = lpointsToRemove.iterator();
                     while (it.hasNext())
                     {
-                        this.stack.deleteListeningPoint(it.next());
+                        stack.deleteListeningPoint(it.next());
                     }
                 }
                 else
@@ -552,7 +562,7 @@ public class SipStackSharing
                     logger.warn("Failed to remove ListeningPoints as already null.");
                 }
 
-                this.stack.stop();
+                stack.stop();
             }
             else
             {
@@ -587,11 +597,11 @@ public class SipStackSharing
 
         if(transport.equalsIgnoreCase(ListeningPoint.UDP) || transport.equalsIgnoreCase(ListeningPoint.TCP))
         {
-            sp = this.clearJainSipProvider;
+            sp = clearJainSipProvider;
         }
         else if(transport.equalsIgnoreCase(ListeningPoint.TLS))
         {
-            sp = this.secureJainSipProvider;
+            sp = secureJainSipProvider;
         }
 
         if(sp == null)
@@ -739,7 +749,7 @@ public class SipStackSharing
             //any exception thrown within our code should be caught here
             //so that we could log it rather than interrupt stack activity with
             //it.
-            this.logApplicationException(DialogTerminatedEvent.class, exc);
+            logApplicationException(DialogTerminatedEvent.class, exc);
         }
     }
 
@@ -763,7 +773,7 @@ public class SipStackSharing
             //any exception thrown within our code should be caught here
             //so that we could log it rather than interrupt stack activity with
             //it.
-            this.logApplicationException(DialogTerminatedEvent.class, exc);
+            logApplicationException(DialogTerminatedEvent.class, exc);
         }
     }
 
@@ -863,7 +873,7 @@ public class SipStackSharing
              * that we could log it rather than interrupt stack activity with
              * it.
              */
-            this.logApplicationException(DialogTerminatedEvent.class, exc);
+            logApplicationException(DialogTerminatedEvent.class, exc);
 
             // Unfortunately, death can hardly be ignored.
             if (exc instanceof ThreadDeath)
@@ -922,7 +932,7 @@ public class SipStackSharing
             //any exception thrown within our code should be caught here
             //so that we could log it rather than interrupt stack activity with
             //it.
-            this.logApplicationException(DialogTerminatedEvent.class, exc);
+            logApplicationException(DialogTerminatedEvent.class, exc);
         }
     }
 
@@ -964,7 +974,7 @@ public class SipStackSharing
             //any exception thrown within our code should be caught here
             //so that we could log it rather than interrupt stack activity with
             //it.
-            this.logApplicationException(DialogTerminatedEvent.class, exc);
+            logApplicationException(DialogTerminatedEvent.class, exc);
         }
     }
 
@@ -1003,7 +1013,7 @@ public class SipStackSharing
             //any exception thrown within our code should be caught here
             //so that we could log it rather than interrupt stack activity with
             //it.
-            this.logApplicationException(DialogTerminatedEvent.class, exc);
+            logApplicationException(DialogTerminatedEvent.class, exc);
         }
     }
 
@@ -1030,7 +1040,7 @@ public class SipStackSharing
 
         List<ProtocolProviderServiceSipImpl> currentListenersCopy
             = new ArrayList<>(
-                this.getSipListeners());
+                getSipListeners());
 
         // Let's first narrow down candidate choice by comparing
         // addresses and ports (no point in delivering to a provider with a
@@ -1309,10 +1319,10 @@ public class SipStackSharing
         throws IOException
     {
         if(ListeningPoint.TLS.equalsIgnoreCase(transport))
-            return (java.net.InetSocketAddress)(((SipStackImpl)this.stack)
+            return (java.net.InetSocketAddress)(((SipStackImpl)stack)
                 .getLocalAddressForTlsDst(dst, dstPort, localAddress));
         else
-            return (java.net.InetSocketAddress)(((SipStackImpl)this.stack)
+            return (java.net.InetSocketAddress)(((SipStackImpl)stack)
             .getLocalAddressForTcpDst(dst, dstPort, localAddress, 0));
     }
 
@@ -1458,7 +1468,7 @@ public class SipStackSharing
         Iterator<? extends SipProvider> sipProviders = stack.getSipProviders();
         while (sipProviders.hasNext())
         {
-            SipProvider sipProvider = (SipProvider) sipProviders.next();
+            SipProvider sipProvider = sipProviders.next();
             sipProvider.setRegistrar(registrar);
         }
     }
@@ -1466,7 +1476,7 @@ public class SipStackSharing
     /**
      * If a tcp(tls) provider stays unregistering for a long time after
      * connection changed most probably it won't get registered after
-     * unregistering fails, cause underlying listening point are conncted
+     * unregistering fails, cause underlying listening point are connected
      * to wrong interfaces. So we will replace them.
      */
     private class ResetListeningPoint
@@ -1485,16 +1495,16 @@ public class SipStackSharing
 
         /**
          * Constructs this task.
-         * @param pp
+         * @param pp protocol provider
          */
         ResetListeningPoint(ProtocolProviderServiceSipImpl pp)
         {
-            this.protocolProvider = pp;
+            protocolProvider = pp;
         }
 
         /**
          * Notified when registration state changed for a provider.
-         * @param evt
+         * @param evt event
          */
         public void registrationStateChanged(RegistrationStateChangeEvent evt)
         {

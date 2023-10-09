@@ -59,31 +59,6 @@ public class ChooseCallAccountPopupMenu
     private final JComponent invoker;
 
     /**
-     * The call interface listener, which would be notified once the call
-     * interface is created.
-     */
-    private CallInterfaceListener callInterfaceListener;
-
-    /**
-     * Creates this dialog.
-     *
-     * @param invoker the invoker of this pop up menu
-     * @param contactToCall the contact to call
-     * @param telephonyProviders a list of all possible telephony providers
-     */
-    public ChooseCallAccountPopupMenu(
-        JComponent invoker,
-        final String contactToCall,
-        List<ProtocolProviderService> telephonyProviders)
-    {
-        this(invoker,
-             contactToCall,
-             telephonyProviders,
-             OperationSetBasicTelephony.class,
-             null);
-    }
-
-    /**
      * Creates this dialog.
      *
      * @param invoker the invoker of this pop up menu
@@ -202,9 +177,6 @@ public class ChooseCallAccountPopupMenu
                         contactDisplayName,
                         contactString,
                         Reformatting.NEEDED);
-
-                if (callInterfaceListener != null)
-                    callInterfaceListener.callInterfaceStarted();
 
                 ChooseCallAccountPopupMenu.this.setVisible(false);
             }
@@ -385,20 +357,6 @@ public class ChooseCallAccountPopupMenu
     public void showPopupMenu(int x, int y)
     {
         setLocation(x, y);
-        setVisible(true);
-    }
-
-    /**
-     * Shows this popup menu regarding to its invoker location.
-     */
-    public void showPopupMenu()
-    {
-        Point location = new Point(invoker.getX(),
-            invoker.getY() + invoker.getHeight());
-
-        SwingUtilities
-            .convertPointToScreen(location, invoker.getParent());
-        setLocation(location);
         setVisible(true);
     }
 

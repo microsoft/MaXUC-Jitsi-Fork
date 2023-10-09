@@ -108,16 +108,6 @@ public class IncomingFileTransferRequestJabberImpl
     }
 
     /**
-     * Returns the description of the file corresponding to this request.
-     *
-     * @return the description of the file corresponding to this request
-     */
-    public String getFileDescription()
-    {
-        return fileTransferRequest.getDescription();
-    }
-
-    /**
      * Returns the name of the file corresponding to this request.
      *
      * @return the name of the file corresponding to this request

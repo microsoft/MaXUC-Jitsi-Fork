@@ -8,36 +8,66 @@
 package net.java.sip.communicator.impl.protocol.sip;
 
 import static net.java.sip.communicator.service.protocol.OperationSetBasicTelephony.*;
-import static org.jitsi.util.Hasher.logHasher;
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+import static org.jitsi.util.Hasher.logHasher;
 
-import java.net.*;
-import java.text.*;
-import java.util.*;
-import java.util.regex.*;
-
-import javax.sip.*;
-import javax.sip.address.*;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import javax.sip.ClientTransaction;
+import javax.sip.Dialog;
+import javax.sip.DialogState;
+import javax.sip.InvalidArgumentException;
+import javax.sip.ServerTransaction;
+import javax.sip.SipException;
+import javax.sip.SipProvider;
+import javax.sip.Transaction;
+import javax.sip.TransactionState;
+import javax.sip.TransactionUnavailableException;
+import javax.sip.address.Address;
+import javax.sip.address.SipURI;
 import javax.sip.address.URI;
-import javax.sip.header.*;
-import javax.sip.message.*;
+import javax.sip.header.ContactHeader;
+import javax.sip.header.ContentLengthHeader;
+import javax.sip.header.ContentTypeHeader;
+import javax.sip.header.Header;
+import javax.sip.header.HeaderFactory;
+import javax.sip.header.ReasonHeader;
+import javax.sip.message.Request;
+import javax.sip.message.Response;
 
-import net.java.sip.communicator.service.protocol.emergencylocation.EmergencyCallContext;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiConstants.*;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiCrmService;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiError;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiMessageMap;
-import net.java.sip.communicator.service.websocketserver.WebSocketApiRequestListener;
-import org.jitsi.service.resources.*;
-
-import gov.nist.javax.sip.header.*;
+import com.google.common.annotations.VisibleForTesting;
+import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
+import com.metaswitch.maxanalytics.event.CallAction;
+import com.metaswitch.maxanalytics.event.CallKt;
+import com.metaswitch.maxanalytics.event.CallType;
+import com.metaswitch.maxanalytics.event.CommonKt;
+import gov.nist.javax.sip.header.ContentLength;
+import gov.nist.javax.sip.header.ContentType;
 import gov.nist.javax.sip.message.Content;
 import gov.nist.javax.sip.message.MultipartMimeContent;
 
-import net.java.sip.communicator.impl.protocol.sip.sdp.*;
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.service.contactlist.*;
-import net.java.sip.communicator.service.contactsource.*;
+import net.java.sip.communicator.impl.protocol.sip.sdp.SdpUtils;
+import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
+import net.java.sip.communicator.service.contactlist.MetaContact;
+import net.java.sip.communicator.service.contactlist.MetaContactListService;
+import net.java.sip.communicator.service.contactsource.ContactChangedEvent;
+import net.java.sip.communicator.service.contactsource.ContactQuery;
+import net.java.sip.communicator.service.contactsource.ContactQueryListener;
+import net.java.sip.communicator.service.contactsource.ContactQueryStatusEvent;
+import net.java.sip.communicator.service.contactsource.ContactReceivedEvent;
+import net.java.sip.communicator.service.contactsource.ContactRemovedEvent;
+import net.java.sip.communicator.service.contactsource.ContactSourceService;
+import net.java.sip.communicator.service.contactsource.ExtendedContactSourceService;
+import net.java.sip.communicator.service.contactsource.SourceContact;
+import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.protocol.Call;
 import net.java.sip.communicator.service.protocol.CallPeerState;
 import net.java.sip.communicator.service.protocol.Contact;
@@ -46,11 +76,13 @@ import net.java.sip.communicator.service.protocol.OperationSetCallPark;
 import net.java.sip.communicator.service.protocol.OperationSetPresence;
 import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
-import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.service.protocol.media.*;
+import net.java.sip.communicator.service.protocol.emergencylocation.EmergencyCallContext;
+import net.java.sip.communicator.service.protocol.event.CallPeerChangeEvent;
+import net.java.sip.communicator.service.protocol.media.MediaAwareCallPeer;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.ServiceUtils;
+import org.jitsi.service.resources.ResourceManagementService;
 
 /**
  * Our SIP implementation of the default CallPeer;
@@ -144,6 +176,9 @@ public class CallPeerSipImpl
      */
     private final Object displayNameLock = new Object();
 
+    private String diversionDisplayValue = null;
+    private String analyticsValue = null;
+
     /**
      * The JAIN SIP dialog that has been created by the application for
      * communication with this call peer.
@@ -162,13 +197,6 @@ public class CallPeerSipImpl
      * receiving requests and responses related to this call peer.
      */
     private SipProvider jainSipProvider = null;
-
-    /**
-     * The transport address that we are using to address the peer or the
-     * first one that we'll try when we next send them a message (could be the
-     * address of our sip registrar).
-     */
-    private InetSocketAddress transportAddress = null;
 
     /**
      * A reference to the <tt>SipMessageFactory</tt> instance that we should
@@ -257,7 +285,60 @@ public class CallPeerSipImpl
     }
 
     @Override
-    public String getDiversionInfo()
+    public String getDiversionDisplayValue(boolean sendAnalytic)
+    {
+        if (diversionDisplayValue == null)
+        {
+            // Get any associated diversion information
+            final NameAndNumber diversionValue = extractDiversionValue(getDiversionInfo());
+
+            if (diversionValue.name != null)
+            {
+                diversionDisplayValue = diversionValue.name;
+                analyticsValue = AnalyticsParameter.VALUE_SIGNALLED;
+            }
+            else if (diversionValue.number != null)
+            {
+                // First we see if we can get a contact name for this number
+                MetaContactListService metaContactListService = ServiceUtils.getService(
+                        SipActivator.bundleContext,
+                        MetaContactListService.class);
+
+                if (metaContactListService != null)
+                {
+                    List<MetaContact> metaContactList = metaContactListService
+                            .findMetaContactByNumber(diversionValue.number);
+
+                    if (metaContactList.size() > 0)
+                    {
+                        // If there are multiple contacts, then we simply use the first.
+                        // Other parts of the code try and do better, but that is
+                        // false accuracy here.
+                        diversionDisplayValue = metaContactList.get(0).getDisplayName();
+                        analyticsValue = AnalyticsParameter.VALUE_CONTACT_MATCH;
+                    }
+                }
+
+                if (diversionDisplayValue == null)
+                {
+                    // We didn't find a matching contact, so just format the existing number
+                    diversionDisplayValue = SipActivator.getPhoneNumberUtils().formatNumberForDisplay(diversionValue.number);
+                    analyticsValue = AnalyticsParameter.VALUE_NO_MATCH;
+                }
+            }
+        }
+
+        if (sendAnalytic && analyticsValue != null)
+        {
+            SipActivator.getAnalyticsService().onEvent(AnalyticsEventType.INCOMING_DIVERTED_CALL,
+                                                       AnalyticsParameter.PARAM_DIVERSION_NAME,
+                                                       analyticsValue);
+        }
+
+        return diversionDisplayValue;
+    }
+
+    private String getDiversionInfo()
     {
         String diversion = null;
 
@@ -449,14 +530,6 @@ public class CallPeerSipImpl
             }
         }
 
-        // Do a CRM lookup for the peer - this needs to be done whether or not
-        // any resultant CRM display name will be used as the peer's Accession
-        // display name.
-        //
-        // Use the peer address for the lookup, but don't do further processing
-        // as the CRM service should take care of that.
-        performCrmNameLookup(getAddress());
-
         if (name == null)
         {
             // If no name is found at this point, it becomes acceptable to use
@@ -529,48 +602,6 @@ public class CallPeerSipImpl
             }
         }
         return name;
-    }
-
-    /**
-     * Do a CRM lookup for the peer's address (if there is one) over the
-     * WebSocket server API.
-     *
-     * @param peerAddress The address of the peer to use in the CRM lookup.
-     */
-    private void performCrmNameLookup(String peerAddress)
-    {
-        logger.entry();
-
-        // No-op if we have no address to lookup.
-        if (peerAddress != null)
-        {
-            logger.debug("Lookup " + sanitiseChatAddress(peerAddress) +
-                         " in CRM.");
-
-            // Try to do a CRM DN lookup via any applications connected over
-            // the WebSocket API to look for CRM contact names.
-            WebSocketApiCrmService crmService =
-                    DesktopUtilActivator.getWebSocketApiCrmService();
-
-            // Try to send the request - note that no request will be sent
-            // if there is no appropriate WebSocket connection.
-            if (crmService != null)
-            {
-                // Pass the number to lookup and a listener object to the
-                // service query method, let it handle the rest.
-                crmService.crmDnLookup(peerAddress,
-                                       new CrmNameQueryListener());
-            }
-        }
-        else
-        {
-            // Mark the CRM lookup as finished unsuccessfully. This should never
-            // be hit as the peerAddress is not expected to be null.
-            mCrmLookupCompleted = true;
-            mCrmLookupSuccessful = false;
-        }
-
-        logger.exit();
     }
 
     /**
@@ -857,44 +888,6 @@ public class CallPeerSipImpl
     }
 
     /**
-     * Sets the display name for the call peer after a CRM query.
-     *
-     * @param crmLookupSuccessful whether the request was successful
-     * @param displayName the peer's display name
-     */
-    private void setDisplayNameFromCrmQuery(boolean crmLookupSuccessful,
-                                            String displayName)
-    {
-        synchronized (displayNameLock)
-        {
-            mCrmLookupCompleted = true;
-            mCrmLookupSuccessful = crmLookupSuccessful;
-
-            // Don't update the display name if the CRM lookup failed, or if
-            // it's not appropriate to use a CRM display name.
-            if (!mCanUseCrmLookupDisplayName || !crmLookupSuccessful)
-            {
-                if (!mCanUseCrmLookupDisplayName)
-                {
-                    logger.debug("Not using CRM display name.");
-                }
-
-                // Don't actually change the peer name, but fire a display name
-                // change event so that listeners that care about the CRM lookup
-                // can take any appropriate actions.
-                fireCallPeerChangeEvent(
-                        CallPeerChangeEvent.CALL_PEER_DISPLAY_NAME_CHANGE,
-                        this.displayName,
-                        this.displayName);
-            }
-            else
-            {
-                setDisplayName(displayName);
-            }
-        }
-    }
-
-    /**
      * Sets the JAIN SIP dialog that has been created by the application for
      * communication with this call peer.
      * @param dialog the JAIN SIP dialog that has been created by the
@@ -988,26 +981,6 @@ public class CallPeerSipImpl
     }
 
     /**
-     * The address that we have used to contact this peer. In cases
-     * where no direct connection has been established with the peer,
-     * this method will return the address that will be first tried when
-     * connection is established (often the one used to connect with the
-     * protocol server). The address may change during a session and
-     *
-     * @param transportAddress The address that we have used to contact this
-     * peer.
-     */
-    public void setTransportAddress(InetSocketAddress transportAddress)
-    {
-        InetSocketAddress oldTransportAddress = this.transportAddress;
-        this.transportAddress = transportAddress;
-
-        this.fireCallPeerChangeEvent(
-            CallPeerChangeEvent.CALL_PEER_TRANSPORT_ADDRESS_CHANGE,
-                oldTransportAddress, transportAddress);
-    }
-
-    /**
      * Returns the contact corresponding to this peer or null if no
      * particular contact has been associated.
      * <p>
@@ -1057,21 +1030,6 @@ public class CallPeerSipImpl
     public void setMetaContact(MetaContact metaContact)
     {
         peerContact = metaContact;
-    }
-
-    /**
-     * Returns a URL pointing to a location with call control information for
-     * this peer or <tt>null</tt> if no such URL is available for this
-     * call peer.
-     *
-     * @return a URL link to a location with call information or a call control
-     * web interface related to this peer or <tt>null</tt> if no such URL
-     * is available.
-     */
-    @Override
-    public URL getCallInfoURL()
-    {
-        return getMediaHandler().getCallInfoURL();
     }
 
     /**
@@ -1945,6 +1903,7 @@ public class CallPeerSipImpl
 
         try
         {
+            sendTelemetryIncomingCall(CallAction.DECLINED);
             serverTransaction.sendResponse(rejectResponse);
             logger.debug("sent response");
         }
@@ -2045,6 +2004,7 @@ public class CallPeerSipImpl
          */
         try
         {
+            sendTelemetryCallEnd();
             return EventPackageUtils.processByeThenIsDialogAlive(dialog);
         }
         catch (SipException ex)
@@ -2268,6 +2228,7 @@ public class CallPeerSipImpl
             {
                 // We're answering an SDP offer so media can start flowing now
                 // - no need to wait for the ACK.
+                sendTelemetryIncomingCall(CallAction.ACCEPTED);
                 setState(CallPeerState.CONNECTED);
                 getMediaHandler().start();
 
@@ -2716,6 +2677,85 @@ public class CallPeerSipImpl
         return result;
     }
 
+    @VisibleForTesting
+    public static class NameAndNumber
+    {
+        public final String name;
+        public final String number;
+
+        public NameAndNumber(String name, String number)
+        {
+            this.name = name;
+            this.number = number;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            NameAndNumber that = (NameAndNumber) o;
+            return Objects.equals(name, that.name) && Objects.equals(number, that.number);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(name, number);
+        }
+    }
+
+    // Parse the value from the diversion header, to get the text that we should
+    // use in the UI.
+    // Effectively a port of the Android code SIPURIParser, without fixing any
+    // of the bugs there!
+    // Specifically, I believe this is a valid diversion header
+    //   Diversion: <sip:userA>;count=23
+    // Note the sip address is an alphabetic name which does not contain an @.
+    // This code specifically handles the absence of the @ by keeping
+    // numeric digits from the remainder of the string, and thus ends up
+    // using the digits from the count at the end of the header.
+    @VisibleForTesting
+    public static CallPeerSipImpl.NameAndNumber extractDiversionValue(String diversion)
+    {
+        String name = null;
+        String number = null;
+        if (diversion != null)
+        {
+            // We expect various parts in the diversion info
+            // - an optional friendly name
+            // - an address
+            // - optional parameters (not specifically accounted for in the Android code we have ported)
+            String uri = diversion;
+            if (diversion.startsWith("\""))
+            {
+                // A friendly name is present.
+                // Get the display name from the URI and replace escaped characters.
+                name = diversion.substring(1, diversion.lastIndexOf('"'))
+                        .replaceAll("\\\\([\\\\|\"])", "$1");
+
+                // I'm not sure if there is another bug here - the parameters
+                // may include string values, and if so it's possible that the
+                // < or > characters could appear in those strings.
+                uri = diversion.substring(diversion.lastIndexOf('<'), diversion.lastIndexOf('>'));
+            }
+
+            // I believe the absence of an @ handling is bugged;
+            // - a sip address without an @ may be alphabetic, not numeric
+            // - even if numeric, we should not include digits that appear after the end of the sip url
+            int numberEndIndex = uri.indexOf('@');
+            // Note unlike the Android code, we don't do % decoding here,
+            // that uses an Android only method, and I see no evidence that
+            // the data will be encoded using that method anyway.
+            number = uri.substring(uri.indexOf(':') + 1, numberEndIndex < 0 ? uri.length() : numberEndIndex);
+
+            // Strip out invalid chars.
+            number = number.replaceAll("[^0-9#*+]+", "");
+        }
+
+        return new CallPeerSipImpl.NameAndNumber(name, number);
+    }
+
     /**
      * Class used to update the display name of the peer based on query results
      * from an <tt>ExtendedContactSourceService</tt>.
@@ -2807,65 +2847,26 @@ public class CallPeerSipImpl
         }
     }
 
-    /**
-     * Listens for updates from applications connected via the WebSocket API
-     * that can provide CRM integration function - expects to get a WebSocket
-     * API message with a display name (from a CRM contact record).
-     */
-    private class CrmNameQueryListener implements WebSocketApiRequestListener
+    private void sendTelemetryIncomingCall(CallAction action)
     {
-        /**
-         * Process a response to the WebSocket API.
-         *
-         * @param success Whether the request was successful.
-         * @param responseMessage The WebSocket API message map.
-         */
-        @Override
-        public void responseReceived(boolean success,
-                                     WebSocketApiMessageMap responseMessage)
-        {
-            if (success)
-            {
-                try
-                {
-                    String crmDisplayName = (String) responseMessage.getFieldOfType(
-                            WebSocketApiMessageField.DN_LOOKUP_DISPLAY_NAME);
+        SipActivator.getInsightService().logEvent(new InsightEvent(CallKt.EVENT_INCOMING_CALL,
+                                                                   Map.of(AnalyticsResultKt.PARAM_RESULT,
+                                                                          action.getValue$maxanalytics(),
+                                                                          CallKt.PARAM_CALL_DIVERTED,
+                                                                          "false")));
+    }
 
-                    logger.debug("Successful CRM lookup, update peer " +
-                                         "display name");
-                    setDisplayNameFromCrmQuery(true,
-                                               crmDisplayName);
-                }
-                catch (WebSocketApiError.WebSocketApiMessageException e)
-                {
-                    logger.error("Exception hit when trying to retrieve" +
-                                 "CRM display name from lookup:\n", e);
-
-                    // Raise an API error if there was a problem with the data
-                    // in the response.
-                    SipActivator.getWebSocketApiErrorService().raiseError(
-                            responseMessage.getApiError());
-                    requestTerminated();
-                }
-            }
-            else
-            {
-               logger.debug("Unsuccessful CRM lookup, terminate request");
-               requestTerminated();
-            }
-        }
-
-        /**
-         * Treat this as an unsuccessful request to the WebSocket API.
-         */
-        @Override
-        public void requestTerminated()
-        {
-            logger.debug("Terminating CRM request");
-
-            // If the lookup failed, call into this method so that any
-            // post-lookup clean-up actions can be taken.
-            setDisplayNameFromCrmQuery(false, null);
-        }
+    private void sendTelemetryCallEnd()
+    {
+        SipActivator.getInsightService().logEvent(
+                new InsightEvent(CallKt.EVENT_CALL_END,
+                                 Map.of(
+                                         CommonKt.PARAM_TYPE,
+                                         isLocalVideoStreaming() ?
+                                                 CallType.VIDEO.getValue$maxanalytics() :
+                                                 CallType.AUDIO.getValue$maxanalytics()
+                                 )
+                )
+        );
     }
 }

@@ -6,8 +6,6 @@
  */
 package net.java.sip.communicator.impl.protocol.sip.xcap.model.commonpolicy;
 
-import org.jitsi.util.*;
-
 /**
  * The Authorization Rules sphere element.
  * <p/>
@@ -27,21 +25,6 @@ public class SphereType
      */
     public SphereType()
     {
-    }
-
-    /**
-     * Create the sphere element with the value attribute.
-     *
-     * @param value the value attribute.
-     * @throws IllegalArgumentException if uri attribute is null or empty.
-     */
-    public SphereType(String value)
-    {
-        if (StringUtils.isNullOrEmpty(value))
-        {
-            throw new IllegalArgumentException("value cannot be null or empty");
-        }
-        this.value = value;
     }
 
     /**

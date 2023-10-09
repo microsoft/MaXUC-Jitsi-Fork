@@ -452,19 +452,6 @@ public class ContactJabberImpl
     }
 
     /**
-     * Specifies whether this contact is to be considered persistent or not. The
-     * method is to be used _only_ when a non-persistent contact has been added
-     * to the contact list and its encapsulated VolatileBuddy has been repalced
-     * with a standard buddy.
-     * @param persistent true if the buddy is to be considered persistent and
-     * false for volatile.
-     */
-    void setPersistent(boolean persistent)
-    {
-        this.isPersistent = persistent;
-    }
-
-    /**
      * Resolve this contact against the given entry
      * @param entry the server stored entry
      */

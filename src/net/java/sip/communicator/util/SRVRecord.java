@@ -69,16 +69,6 @@ public class SRVRecord
     }
 
     /**
-     * Get DNS TTL.
-     *
-     * @return DNS TTL
-     */
-    public long getTTL()
-    {
-        return record.getTTL();
-    }
-
-    /**
      * Get domain name.
      *
      * @return domain name

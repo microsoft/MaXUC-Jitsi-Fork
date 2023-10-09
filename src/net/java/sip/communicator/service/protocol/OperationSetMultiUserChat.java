@@ -26,23 +26,6 @@ public interface OperationSetMultiUserChat
     String CHATROOM_ID_PREFIX = "chatroom-";
 
     /**
-     * Returns the <tt>List</tt> of <tt>String</tt>s indicating chat rooms
-     * currently available on the server that this protocol provider is
-     * connected to.
-     *
-     * @return a <tt>java.util.List</tt> of the name <tt>String</tt>s for chat
-     * rooms that are currently available on the server that this protocol
-     * provider is connected to.
-     *
-     * @throws OperationFailedException if we failed retrieving this list from
-     * the server.
-     * @throws OperationNotSupportedException if the server does not support
-     * multi-user chat
-     */
-    List<String> getExistingChatRooms()
-        throws OperationFailedException, OperationNotSupportedException;
-
-    /**
      * Returns a count of the number of currently active chat rooms.
      *
      * @return the number of currently active chat rooms
@@ -57,23 +40,6 @@ public interface OperationSetMultiUserChat
      * given connection.
      */
     List<ChatRoom> getCurrentlyJoinedChatRooms();
-
-    /**
-     * Returns a list of the chat rooms that <tt>chatRoomMember</tt> has joined
-     * and is currently active in.
-     *
-     * @param chatRoomMember the chatRoomMember whose current ChatRooms we will
-     * be querying.
-     * @return a list of the chat rooms that <tt>chatRoomMember</tt> has
-     * joined and is currently active in.
-     *
-     * @throws OperationFailedException if an error occurs while trying to
-     * discover the room on the server.
-     * @throws OperationNotSupportedException if the server does not support
-     * multi-user chat
-     */
-    List<String> getCurrentlyJoinedChatRooms(ChatRoomMember chatRoomMember)
-        throws OperationFailedException, OperationNotSupportedException;
 
     /**
      * Creates a room with the named <tt>roomName</tt> and according to the
@@ -120,15 +86,6 @@ public interface OperationSetMultiUserChat
         throws OperationFailedException, OperationNotSupportedException;
 
     /**
-     * Informs the sender of an invitation that we decline their invitation.
-     *
-     * @param invitation the invitation we are rejecting.
-     * @param rejectReason the reason to reject the invitation (optional)
-     */
-    void rejectInvitation(ChatRoomInvitation invitation,
-                          String rejectReason);
-
-    /**
      * Adds a listener to invitation notifications. The listener will be fired
      * anytime an invitation is received.
      *
@@ -163,15 +120,6 @@ public interface OperationSetMultiUserChat
             ChatRoomInvitationRejectionListener listener);
 
     /**
-     * Returns true if <tt>contact</tt> supports multi-user chat sessions.
-     *
-     * @param contact reference to the contact whose support for chat rooms
-     * we are currently querying.
-     * @return a boolean indicating whether <tt>contact</tt> supports chat rooms.
-     */
-    boolean isMultiChatSupportedByContact(Contact contact);
-
-    /**
      * Returns true if multi user chat is supported on the server
      *
      * @return true if multi user chat is supported on the server
@@ -203,11 +151,4 @@ public interface OperationSetMultiUserChat
      */
     void addChatRoomCreatedListener(ChatRoomCreatedListener listener);
 
-    /**
-     * Removes a listener that was being notified of new chat rooms being
-     * created.
-     *
-     * @param listener a chat room created listener
-     */
-    void removeChatRoomCreatedListener(ChatRoomCreatedListener listener);
 }

@@ -59,6 +59,18 @@ public interface ThreadingService
     }
 
     /**
+     * Schedules the specified runnable for execution after the specified delay.
+     *
+     * @param name a name for the task to be scheduled
+     * @param runnable the runnable to be scheduled.
+     * @param delay delay in milliseconds before task is to be executed.
+     * @param runAfterSleep if NO, the task will be dropped if it is now overdue
+     * because the device has been asleep
+     */
+    void schedule(String name, CancellableRunnable runnable, long delay,
+        RunAfterSleep runAfterSleep);
+
+    /**
      * Similar to schedule, this schedules the specified runnable for execution
      * after the specified delay.  However, the runnable will be invoked on the
      * EDT.
@@ -107,4 +119,10 @@ public interface ThreadingService
                                   CancellableRunnable runnable,
                                   long delay,
                                   long period);
+
+    enum RunAfterSleep
+    {
+        YES,
+        NO;
+    }
 }

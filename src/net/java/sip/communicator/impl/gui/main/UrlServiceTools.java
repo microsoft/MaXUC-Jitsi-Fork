@@ -90,6 +90,8 @@ public class UrlServiceTools
      */
     private static UcServicesConfigPanel ucServicesConfigPanel;
 
+    private static final Object initLock = new Object();
+
     /**
      * Update the necessary state when the config changes.
      */
@@ -196,10 +198,19 @@ public class UrlServiceTools
      */
     public static UrlServiceTools getUrlServiceTools()
     {
-        if (sUrlServiceTools == null)
+        // Ensure that the class is actually a singleton by adding a lock
+        // This code can be executed from different threads, for example
+        // if settings data is sent over WISPA while this object is still not
+        // initialised, it would cause a loop between sending settings and
+        // initialising UrlServiceTools as that initialisation causes
+        // settings resend
+        synchronized (initLock)
         {
-            logger.info("Create URL service tools");
-            sUrlServiceTools = new UrlServiceTools();
+            if (sUrlServiceTools == null)
+            {
+                logger.info("Create URL service tools");
+                sUrlServiceTools = new UrlServiceTools();
+            }
         }
 
         return sUrlServiceTools;
@@ -334,8 +345,7 @@ public class UrlServiceTools
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                logger.user("CRM button clicked to launch an accession " +
-                                    "CRM search");
+                logger.user("CRM button clicked to launch an CRM search");
                 ServiceType.CRM.launchSelectedCrmService(name, number);
             }
         });

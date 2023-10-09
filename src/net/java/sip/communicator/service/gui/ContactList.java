@@ -59,14 +59,6 @@ public interface ContactList
     void addContactSource(ContactSourceService contactSource);
 
     /**
-     * Removes the given contact source from the list of available contact
-     * sources.
-     *
-     * @param contactSource
-     */
-    void removeContactSource(ContactSourceService contactSource);
-
-    /**
      * Removes all stored contact sources.
      */
     void removeAllContactSources();
@@ -218,13 +210,6 @@ public interface ContactList
     UIContact getSelectedContact();
 
     /**
-     * Returns the list of selected contacts.
-     *
-     * @return the list of selected contacts
-     */
-    List<UIContact> getSelectedContacts();
-
-    /**
      * Returns the currently selected <tt>UIGroup</tt> if there's one.
      *
      * @return the currently selected <tt>UIGroup</tt> if there's one.
@@ -310,14 +295,6 @@ public interface ContactList
      * <tt>false</tt> - otherwise
      */
     void setMultipleSelectionEnabled(boolean isEnabled);
-
-    /**
-     * Enables/disables drag operations on this contact list.
-     *
-     * @param isEnabled <tt>true</tt> to enable drag operations, <tt>false</tt>
-     * otherwise
-     */
-    void setDragEnabled(boolean isEnabled);
 
     /**
      * Enables/disables the right mouse click menu.

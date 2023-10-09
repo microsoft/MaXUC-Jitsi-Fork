@@ -33,6 +33,10 @@ public class UpdateServiceMacImpl implements UpdateService
             return;
         }
 
+        // We need to call updateLink before checking for updates since in case of SSO login,
+        // we first need to fetch a fresh token in order for link to work properly.
+        SparkleActivator.updateLink();
+
         blockUserInteractionIfBelowMinimumVersion();
         logger.debug("Calling checkForUpdates() with isUserTriggered = " + isUserTriggered);
         if (isUserTriggered)

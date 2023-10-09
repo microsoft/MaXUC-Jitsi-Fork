@@ -11,7 +11,6 @@ import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.ContactResource;
 import net.java.sip.communicator.service.protocol.OperationSetBasicInstantMessaging;
 import net.java.sip.communicator.service.protocol.OperationSetContactCapabilities;
-import net.java.sip.communicator.service.protocol.OperationSetFileTransfer;
 import net.java.sip.communicator.service.protocol.OperationSetPresence;
 import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications;
 import net.java.sip.communicator.service.protocol.OperationSetTypingNotifications.TypingState;
@@ -216,24 +215,6 @@ public class MetaContactChatTransport
     public boolean allowsTypingNotifications()
     {
         return mContact.getProtocolProvider().getOperationSet(OperationSetTypingNotifications.class) != null;
-    }
-
-    /**
-     * Returns <code>true</code> if this chat transport supports file transfer,
-     * otherwise returns <code>false</code>.
-     *
-     * @return <code>true</code> if this chat transport supports file transfer,
-     * otherwise returns <code>false</code>.
-     */
-    public boolean allowsFileTransfer()
-    {
-        Object ftOpSet = mContact.getProtocolProvider()
-            .getOperationSet(OperationSetFileTransfer.class);
-
-        if (ftOpSet != null)
-            return true;
-        else
-            return false;
     }
 
     /**

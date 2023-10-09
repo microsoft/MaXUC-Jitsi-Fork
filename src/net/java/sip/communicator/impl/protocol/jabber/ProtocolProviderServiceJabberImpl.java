@@ -28,6 +28,7 @@ import java.util.Objects;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509TrustManager;
 import javax.swing.SwingUtilities;
 
@@ -36,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.SmackException;
@@ -79,6 +81,7 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.messagearchivin
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtension;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.version.VersionManager;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
+import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
 import net.java.sip.communicator.plugin.jabberaccregwizz.JabberAccountRegistrationWizard;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsParameter;
@@ -114,7 +117,6 @@ import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProxyInfo;
 import net.java.sip.communicator.service.protocol.RegistrationState;
 import net.java.sip.communicator.service.protocol.SecurityAuthority;
-import net.java.sip.communicator.service.protocol.TransportProtocol;
 import net.java.sip.communicator.service.protocol.event.RegistrationStateChangeEvent;
 import net.java.sip.communicator.service.protocol.jabberconstants.JabberStatusEnum;
 import net.java.sip.communicator.service.threading.CancellableRunnable;
@@ -151,13 +153,6 @@ public class ProtocolProviderServiceJabberImpl
         Logger.getLogger(ProtocolProviderServiceJabberImpl.class);
 
     /**
-     * Discovery Info URN for classic RFC3264-style Offer/Answer negotiation
-     * with no support for Trickle ICE and low tolerance to transport/payload
-     * separation. Defined in XEP-0176
-     */
-    public static final String URN_IETF_RFC_3264 = "urn:ietf:rfc:3264";
-
-    /**
      * URN for XEP-0077 inband registration
      */
     public static final String URN_REGISTER = "jabber:iq:register";
@@ -181,6 +176,12 @@ public class ProtocolProviderServiceJabberImpl
      */
     private static final String XMPP_DSCP_PROPERTY =
         "net.java.sip.communicator.impl.protocol.XMPP_DSCP";
+
+    /**
+     * Name of the provisioning username in the configuration service.
+     */
+    static final String PROPERTY_PROVISIONING_USERNAME
+            = "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
 
     /**
      * Used to connect to a XMPP server.
@@ -307,7 +308,7 @@ public class ProtocolProviderServiceJabberImpl
     /**
      * The details of the proxy we are using to connect to the server (if any)
      */
-    private org.jivesoftware.smack.proxy.ProxyInfo mProxy;
+    private org.jivesoftware.smack.proxy.ProxyInfo mProxy = null;
 
     /**
      * State for connect and login state.
@@ -632,28 +633,6 @@ public class ProtocolProviderServiceJabberImpl
     public boolean isSignalingTransportSecure()
     {
         return mConnection != null && mConnection.isSecureConnection();
-    }
-
-    /**
-     * Returns the "transport" protocol of this instance used to carry the
-     * control channel for the current protocol service.
-     *
-     * @return The "transport" protocol of this instance: TCP, TLS or UNKNOWN.
-     */
-    public TransportProtocol getTransportProtocol()
-    {
-        // Without a connection, there is no transport available.
-        if(mConnection != null && mConnection.isConnected())
-        {
-            // Transport using a secure connection.
-            if(mConnection.isSecureConnection())
-            {
-                return TransportProtocol.TLS;
-            }
-            // Transport using a unsecure connection.
-            return TransportProtocol.TCP;
-        }
-        return TransportProtocol.UNKNOWN;
     }
 
     /**
@@ -1153,6 +1132,7 @@ public class ProtocolProviderServiceJabberImpl
         mCurrentLocalIp = getLocalIpToUse();
 
         setTrafficClass();
+        logHandshakeParameters();
 
         if(mAbortConnecting)
         {
@@ -1280,7 +1260,8 @@ public class ProtocolProviderServiceJabberImpl
      * @throws JitsiXmppException if TLS is required but there is no
      * CertificateService available
      */
-    private XMPPTCPConnectionConfiguration.Builder getXMPPConfigBuilder(
+    @VisibleForTesting
+    XMPPTCPConnectionConfiguration.Builder getXMPPConfigBuilder(
             InetSocketAddress address,
             String serviceName,
             JabberLoginStrategy loginStrategy)
@@ -1298,6 +1279,18 @@ public class ProtocolProviderServiceJabberImpl
         configBuilder.addEnabledSaslMechanism(SASLPlainMechanism.NAME);
 
         configBuilder.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
+
+        // If CommPortal provisioning is turned on and login was done via SSO,
+        // we need to set authzid for our connection because we will be sending
+        // access token instead of password and by authzid EAS can distinguish
+        // between the two.
+        boolean isCommPortalIM = "CommPortal".equals(ConfigurationUtils.getImProvSource());
+        if (isCommPortalIM && PreLoginUtils.isLoggedInViaSSO())
+        {
+            String dn = configService.global().getString(PROPERTY_PROVISIONING_USERNAME);
+            // "azuread" is a magic string which tells AMS that we are using AAD SSO.
+            configBuilder.setAuthzid(JidCreate.entityBareFrom(dn + "@azuread"));
+        }
 
         CertificateService cvs = JabberActivator.getCertificateService();
         CompletableFuture<Void> listener = new CompletableFuture<>();
@@ -2295,21 +2288,6 @@ public class ProtocolProviderServiceJabberImpl
     }
 
     /**
-     * Determines if the given list of <tt>features</tt> is supported by the
-     * specified jabber id.
-     *
-     * @param jid the jabber id that we'd like to get information about
-     * @param feature the feature to check for
-     *
-     * @return <tt>true</tt> if the list of features is supported, otherwise
-     * returns <tt>false</tt>
-     */
-    public boolean isFeatureSupported(Jid jid, String feature)
-    {
-        return isFeatureListSupported(jid, feature);
-    }
-
-    /**
      * Returns the full jabber id (jid) corresponding to the given contact. If
      * the provider is not connected returns null.
      *
@@ -2621,6 +2599,20 @@ public class ProtocolProviderServiceJabberImpl
                     sLog.info("Failed to set trafficClass", e);
                 }
             }
+        }
+    }
+
+    /**
+     * Logs TLS handshake parameters for the XMPP socket.
+     */
+    private void logHandshakeParameters()
+    {
+        if (mConnection.isSecureConnection())
+        {
+            final SSLSocket sslSocket = (SSLSocket) mConnection.getSocket();
+
+            CertificateService certificateService = JabberActivator.getCertificateService();
+            certificateService.notifySecureConnectionEstablished("XMPP", sslSocket.getSession());
         }
     }
 

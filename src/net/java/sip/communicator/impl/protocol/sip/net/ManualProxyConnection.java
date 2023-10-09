@@ -29,10 +29,11 @@ public class ManualProxyConnection
     private static final Logger logger
         = Logger.getLogger(ManualProxyConnection.class);
 
-    private String address;
-    private int port;
+    private int defaultPort;
 
-    private InetSocketAddress[] lookups;
+    private String[] proxyAddresses;
+    private int proxyIndex;
+    private InetSocketAddress[] currentLookups;
     private int lookupIndex;
 
     /**
@@ -44,12 +45,14 @@ public class ManualProxyConnection
     {
         super(account);
         logger.debug("Creating new ManualProxyConnection for " +
-                    account != null ? account.getLoggableAccountID() : account);
+                     account.getLoggableAccountID());
         reset();
     }
 
     /*
-     * (non-Javadoc)
+     * Returns the next address to try connecting to.
+     * Iterates over all configured proxies. Before trying each proxy,
+     * its domain name is resolved using DNS query.
      *
      * @see net.java.sip.communicator.impl.protocol.sip.net.ProxyConnection#
      * getNextAddress()
@@ -57,76 +60,99 @@ public class ManualProxyConnection
     @Override
     protected boolean getNextAddressFromDns()
     {
-        logger.debug("Getting next address from DNS - lookups: " + Arrays.toString(lookups));
-        if(lookups == null)
-        {
-            if (!initializeAddresses())
-            {
-                return false;
-            }
-        }
+        logger.debug("Getting next address from DNS - lookups: " + Arrays.toString(currentLookups));
 
-        //check if the available addresses are exhausted
-        if(lookupIndex >= lookups.length)
+        // find next possible address
+        if (!findNextHostOrProxy())
         {
             logger.debug("No more addresses for " + account.getLoggableAccountID());
-            lookups = null;
             return false;
         }
 
         //assign the next address and return lookup success
-        socketAddress = lookups[lookupIndex];
+        socketAddress = currentLookups[lookupIndex];
         logger.debug("Returning <" + socketAddress + "> as next address for " +
                      account.getLoggableAccountID());
-        lookupIndex++;
         return true;
     }
 
-    /**
-     * Convert the config (which might contain multiple hostnames) into a array
-     * of concrete addresses.
-     *
-     * @return an array of InetSocketAddress
-     */
-    private boolean initializeAddresses()
+    private boolean findNextHostOrProxy()
     {
-        logger.debug("Initializing addresses for " + address);
-
-        lookupIndex = 0;
-        List<InetSocketAddress> addresses = new LinkedList<>();
-
-        // Config can contain a semi-colon separated list of addresses. Iterate
-        // through them all.
-        for (String anAddress : address.split(";"))
+        // iterate over all proxies till the end of the list
+        for (; proxyIndex < proxyAddresses.length; proxyIndex++)
         {
-            try
+            // lazy DNS resolving, if lookup is null, fill it with resolved addresses.
+            if (currentLookups == null)
             {
-                // split(":")[0] will always return just the address whether
-                // there is a port or not.
-                final String domain = anAddress.split(":")[0];
-                final int port = extractPort(anAddress, this.port);
-                logger.debug("Doing A/AAAA lookup for " + domain + ":" + port);
-                addresses.addAll(Arrays.asList(
-                        NetworkUtils.getAandAAAARecords(domain, port)));
+                if (!initializeAddressesForCurrentProxy())
+                {
+                    // nothing resolved, try the next proxy
+                    currentLookups = null;
+                    continue;
+                }
+
+                // start trying resolved addresses from the beginning.
+                lookupIndex = 0;
             }
-            catch (ParseException e)
+            else
             {
-                logger.error("Invalid address <" + anAddress + ">", e);
+                // try next address in current array of resolved addresses
+                lookupIndex++;
             }
+
+            // check if the available lookups are exhausted
+            if (lookupIndex < currentLookups.length)
+            {
+                // address to try is found, exit
+                return true;
+            }
+
+            // no more addresses to try - move to the next proxy
+            currentLookups = null;
         }
 
-        lookups = addresses.toArray(new InetSocketAddress[0]);
+        // next time start over from the first proxy
+        proxyIndex = 0;
+
+        // all proxies tried, no address to try
+        return false;
+    }
+
+    /**
+     * Convert the current proxy address into an array of the resolved addresses.
+     *
+     * @return true if the array of address is not empty
+     */
+    private boolean initializeAddressesForCurrentProxy()
+    {
+        final String proxyAddress = proxyAddresses[proxyIndex];
+        logger.debug("Initializing addresses for " + proxyAddress);
+
+        final List<InetSocketAddress> addresses = new LinkedList<>();
+
+        try
+        {
+            // split(":")[0] will always return just the address whether there is a port or not.
+            final String domain = proxyAddress.split(":")[0];
+            final int port = extractPort(proxyAddress, this.defaultPort);
+            logger.debug("Doing A/AAAA lookup for " + domain + ":" + port);
+
+            final InetSocketAddress[] records = NetworkUtils.getAandAAAARecords(domain, port);
+            if (records != null)
+            {
+                addresses.addAll(Arrays.asList(records));
+            }
+        }
+        catch (ParseException e)
+        {
+            logger.error("Invalid address <" + proxyAddress + ">", e);
+        }
+
+        currentLookups = addresses.toArray(new InetSocketAddress[0]);
         logger.debug("Found results: " + addresses);
 
-        // There were no valid proxy addresses. Return false to indicate "out
-        // of addresses" and reset state.
-        if(lookups.length == 0)
-        {
-            lookups = null;
-            return false;
-        }
-
-        return true;
+        // There were no valid proxy addresses.
+        return currentLookups.length != 0;
     }
 
     /**
@@ -143,7 +169,7 @@ public class ManualProxyConnection
 
         if (parsed.length == 2 && parsed[1].matches("\\d+"))
         {
-            return Integer.valueOf(parsed[1]);
+            return Integer.parseInt(parsed[1]);
         }
         else
         {
@@ -161,14 +187,19 @@ public class ManualProxyConnection
     public void reset()
     {
         super.reset();
+
         // Strip all whitespace from the address list
-        address = account.getAccountPropertyString(PROXY_ADDRESS).replaceAll("\\s+","");
-        port = account.getAccountPropertyInt(PROXY_PORT, PORT_5060);
+        String address = account.getAccountPropertyString(PROXY_ADDRESS).replaceAll("\\s+", "");
+        // Config can contain a semi-colon separated list of addresses.
+        proxyAddresses = address.split(";");
+        proxyIndex = 0;
+        currentLookups = null;
+
+        defaultPort = account.getAccountPropertyInt(PROXY_PORT, PORT_5060);
         transport = account.getAccountPropertyString(PREFERRED_TRANSPORT);
 
-        //check property sanity
-        if(!ProtocolProviderServiceSipImpl.isValidTransport(transport))
-            throw new IllegalArgumentException(
-                transport + " is not a valid SIP transport");
+        // check property sanity
+        if (!ProtocolProviderServiceSipImpl.isValidTransport(transport))
+            throw new IllegalArgumentException(transport + " is not a valid SIP transport");
     }
 }

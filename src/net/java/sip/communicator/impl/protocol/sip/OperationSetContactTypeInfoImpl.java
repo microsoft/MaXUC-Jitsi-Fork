@@ -41,39 +41,6 @@ public class OperationSetContactTypeInfoImpl
     }
 
     /**
-     * Access the contact type. If none specified null is returned.
-     * @param contact the contact to be queried for type.
-     * @return the contact type or null if missing.
-     */
-    public String getContactType(Contact contact)
-    {
-        return contactList.getContactType(contact);
-    }
-
-    /**
-     * Sets the contact type of the contact.
-     * @param contact the contact to be changed.
-     * @param contactType the type set to the contact.
-     */
-    public void setContactType(Contact contact, String contactType)
-    {
-        contactList.setContactType(contact, contactType);
-
-        if (contact.isPersistent())
-        {
-            try
-            {
-                contactList.updateResourceLists();
-            }
-            catch (Throwable e)
-            {
-                throw new IllegalStateException(
-                        "Error while setting contact type", e);
-            }
-        }
-    }
-
-    /**
      * Persistently adds a subscription for the presence status of the contact
      * corresponding to the specified contactIdentifier to the top level group.
      * Note that this method, unlike the subscribe method in

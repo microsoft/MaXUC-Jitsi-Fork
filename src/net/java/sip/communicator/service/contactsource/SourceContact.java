@@ -29,7 +29,7 @@ public interface SourceContact
      *
      * @return a string representation of the SourceContact with any PII hashed.
      */
-    public String toString();
+    String toString();
 
     /**
      * Key for extra details data.  An 'extra detail' is one that cannot be

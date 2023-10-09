@@ -13,7 +13,6 @@ import static java.util.stream.Collectors.toList;
 import java.beans.*;
 import java.io.*;
 import java.lang.reflect.*;
-import java.net.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
@@ -22,32 +21,29 @@ import java.nio.file.WatchService;
 import java.security.*;
 import java.security.KeyStore.*;
 import java.security.cert.*;
-import java.security.cert.Certificate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.*;
 import javax.security.auth.callback.*;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.bouncycastle.asn1.*;
-import org.bouncycastle.asn1.x509.*;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.cert.jcajce.*;
+
 import org.jitsi.service.configuration.*;
 import org.jitsi.util.*;
 
 import net.java.sip.communicator.launcher.SIPCommunicator;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.plugin.desktoputil.AuthenticationWindow.*;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
+import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.service.certificate.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
-import net.java.sip.communicator.service.httputil.*;
 import net.java.sip.communicator.service.threading.ThreadFactoryBuilder;
 import net.java.sip.communicator.util.Logger;
 
@@ -95,23 +91,8 @@ public class CertificateServiceImpl
     private final CredentialsStorageService credService =
         CertificateVerificationActivator.getCredService();
 
-    // ------------------------------------------------------------------------
-    // properties
-    // ------------------------------------------------------------------------
-    /**
-     * Base property name for the storage of certificate user preferences.
-     */
-    private static final String PNAME_CERT_TRUST_PREFIX =
-        "net.java.sip.communicator.impl.certservice";
-
-    /** Hash algorithm for the cert thumbprint*/
-    private static final String THUMBPRINT_HASH_ALGORITHM = "SHA1";
-
-    /**
-     * Caches retrievals of AIA information (downloaded certs or failures).
-     */
-    private Map<URI, AiaCacheEntry> aiaCache =
-            new HashMap<>();
+    private final AnalyticsService analyticsService =
+            CertificateVerificationActivator.getAnalyticsService();
 
     /**
      * Caches retrievals of TrustManagers based on the identities they were
@@ -157,23 +138,6 @@ public class CertificateServiceImpl
 
     private static final BrowserLikeHostnameMatcher BrowserMatcher =
             new BrowserLikeHostnameMatcher();
-
-    // ------------------------------------------------------------------------
-    // Map access helpers
-    // ------------------------------------------------------------------------
-    /**
-     * AIA cache retrieval entry.
-     */
-    private static class AiaCacheEntry
-    {
-        Date cacheDate;
-        X509Certificate cert;
-        AiaCacheEntry(Date cacheDate, X509Certificate cert)
-        {
-            this.cacheDate = cacheDate;
-            this.cert = cert;
-        }
-    }
 
     /**
      * Monitors the macOS keychain for changes to the trusted root certificate
@@ -403,46 +367,6 @@ public class CertificateServiceImpl
         return map;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.service.certificate.CertificateService#
-     * setClientAuthCertificateConfig
-     * (net.java.sip.communicator.service.certificate.CertificateConfigEntry)
-     */
-    public void setClientAuthCertificateConfig(CertificateConfigEntry e)
-    {
-        if (e.getId() == null)
-            e.setId("conf" + Math.abs(new SecureRandom().nextInt()));
-        String pn = PNAME_CLIENTAUTH_CERTCONFIG_BASE + "." + e.getId();
-        config.global().setProperty(pn, e.getId());
-        config.global().setProperty(pn + ".alias", e.getAlias());
-        config.global().setProperty(pn + ".displayName", e.getDisplayName());
-        config.global().setProperty(pn + ".keyStore", e.getKeyStore());
-        config.global().setProperty(pn + ".savePassword", e.isSavePassword());
-        if (e.isSavePassword())
-            credService.global().storePassword(pn, e.getKeyStorePassword());
-        else
-            credService.global().removePassword(pn);
-        config.global().setProperty(pn + ".keyStoreType", e.getKeyStoreType());
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see net.java.sip.communicator.service.certificate.CertificateService#
-     * removeClientAuthCertificateConfig(java.lang.String)
-     */
-    public void removeClientAuthCertificateConfig(String id)
-    {
-        for (String p : config.global().getPropertyNamesByPrefix(
-            PNAME_CLIENTAUTH_CERTCONFIG_BASE + "." + id, true))
-        {
-            config.global().removeProperty(p);
-        }
-        config.global().removeProperty(PNAME_CLIENTAUTH_CERTCONFIG_BASE + "." + id);
-    }
-
     /**
      * @see CertificateService#getSSLContext()
      */
@@ -660,329 +584,24 @@ public class CertificateServiceImpl
         throws GeneralSecurityException
     {
         Objects.requireNonNull(identitiesToTest);
-        X509TrustManager cachedTm = queryTrustManagerCache(identitiesToTest);
-        if (cachedTm != null)
+
+        return getConfiguredTrustManager(identitiesToTest, clientVerifier, serverVerifier);
+    }
+
+    private X509TrustManager getConfiguredTrustManager(final List<String> identitiesToTest,
+                                                       final CertificateMatcher clientVerifier,
+                                                       final CertificateMatcher serverVerifier)
+            throws GeneralSecurityException
+    {
+        X509TrustManager trustManager = queryTrustManagerCache(identitiesToTest);
+
+        if (trustManager == null)
         {
-            logger.debug("Cached TrustManager found with identities: " +
-                         identitiesToTest);
-            return cachedTm;
+            trustManager = new ReloadableX509TrustManager(identitiesToTest, serverVerifier, clientVerifier);
+            trustManagerCache.put(identitiesToTest, trustManager);
         }
 
-        logger.debug("Creating new TrustManager with identities: " +
-                     identitiesToTest);
-        // obtain the default X509 trust manager
-        X509TrustManager defaultTm = null;
-        TrustManagerFactory tmFactory =
-            TrustManagerFactory.getInstance(TrustManagerFactory
-                .getDefaultAlgorithm());
-
-        tmFactory.init(initialiseKeyStore());
-        for (TrustManager m : tmFactory.getTrustManagers())
-        {
-            if (m instanceof X509TrustManager)
-            {
-                defaultTm = (X509TrustManager) m;
-                break;
-            }
-        }
-        if (defaultTm == null)
-            throw new GeneralSecurityException(
-                "No default X509 trust manager found");
-
-        final X509TrustManager tm = defaultTm;
-
-        final X509TrustManager tmToReturn = new X509TrustManager()
-        {
-            private boolean serverCheck;
-
-            public X509Certificate[] getAcceptedIssuers()
-            {
-                return tm.getAcceptedIssuers();
-            }
-
-            public void checkServerTrusted(X509Certificate[] chain,
-                String authType) throws CertificateException
-            {
-                serverCheck = true;
-                checkCertTrusted(chain, authType);
-            }
-
-            public void checkClientTrusted(X509Certificate[] chain,
-                String authType) throws CertificateException
-            {
-                serverCheck = false;
-                checkCertTrusted(chain, authType);
-            }
-
-            private void checkCertTrusted(X509Certificate[] chain,
-                String authType) throws CertificateException
-            {
-                try
-                {
-                 // check and default configurations for property
-                    // if missing default is null - false
-                    String defaultAlwaysTrustMode =
-                        CertificateVerificationActivator.getResources()
-                            .getSettingsString(
-                                CertificateService.PNAME_ALWAYS_TRUST);
-
-                    boolean alwaysTrustMode = Boolean.parseBoolean(defaultAlwaysTrustMode);
-
-                    if (config.user() != null)
-                    {
-                        alwaysTrustMode = config.user().getBoolean(PNAME_ALWAYS_TRUST,
-                            alwaysTrustMode);
-                    }
-
-                    if (alwaysTrustMode)
-                    {
-                        return;
-                    }
-
-                    boolean failedToVerify = false;
-
-                    try
-                    {
-                        // check the certificate itself (issuer, validity)
-                        try
-                        {
-                            chain = tryBuildChain(chain);
-                        }
-                        catch (Exception e)
-                        {
-                            // Log the exception and take the chain as is
-                            logger.info(e);
-                        }
-
-                        logger.debug("Checking server certificate" +
-                            " authType: " + authType +
-                            " tm: " + tm);
-
-                        if(serverCheck)
-                        {
-                            tm.checkServerTrusted(chain, authType);
-                        }
-                        else
-                        {
-                            tm.checkClientTrusted(chain, authType);
-                        }
-                   }
-                   catch (CertificateException e)
-                   {
-                       // Failed to validate the certificate chain using the
-                       // default Trust Manager.
-                       // We used to check against a custom trust store here
-                       // in this case - removed under BUG-4242
-                       failedToVerify = true;
-
-                       logger.warn("Failed to check certificate " +
-                                   "using default trust manager: ", e);
-                   }
-
-                   if (!failedToVerify)
-                   {
-                       if(identitiesToTest.isEmpty())
-                       {
-                           return;
-                       }
-                       else
-                       {
-                           try
-                           {
-                               if(serverCheck)
-                               {
-                                   serverVerifier.verify(identitiesToTest, chain[0]);
-                               }
-                               else
-                               {
-                                   clientVerifier.verify(identitiesToTest, chain[0]);
-                               }
-                           }
-                           catch (CertificateException e)
-                           {
-                               failedToVerify = true;
-                               logger.warn("Failed to verify certificate: ", e);
-                           }
-
-                           // OK, the certificate is valid.
-                       }
-                   }
-
-                   if (failedToVerify)
-                   {
-                        String thumbprint = getThumbprint(
-                            chain[0], THUMBPRINT_HASH_ALGORITHM);
-                        List<String> storedCerts = new LinkedList<>();
-
-                        if (identitiesToTest.isEmpty())
-                        {
-                            String propName =
-                                PNAME_CERT_TRUST_PREFIX + ".server." + thumbprint;
-
-                            // get the thumbprints from the permanent allowances
-                            String hashes = config.global().getString(propName);
-                            if (hashes != null)
-                                storedCerts.addAll(Arrays.asList(hashes.split(",")));
-                        }
-                        else
-                        {
-                            for (String identity : identitiesToTest)
-                            {
-                                String propName =
-                                    PNAME_CERT_TRUST_PREFIX + ".param." + identity;
-
-                                // get the thumbprints from the permanent allowances
-                                String hashes = config.global().getString(propName);
-                                if (hashes != null)
-                                    Collections.addAll(storedCerts, hashes.split(","));
-                            }
-                        }
-
-                        if (!storedCerts.contains(thumbprint))
-                        {
-                            logger.debug("Certificate not stored:" +
-                                " stored: " + storedCerts +
-                                " thumbprint: " + thumbprint);
-
-                            throw new CertificateException(
-                                "The peer provided certificate with Subject <"
-                                    + chain[0].getSubjectDN()
-                                    + "> is not trusted");
-                        }
-                        // ok, we've seen this certificate before
-                    }
-                }
-                catch (Exception e)
-                {
-                    logger.error("Error checking certificate: " + e);
-                    throw e;
-                }
-            }
-
-            private X509Certificate[] tryBuildChain(X509Certificate[] chain)
-                throws IOException,
-                URISyntaxException,
-                CertificateException
-            {
-                // Only try to build chains for servers that send only their
-                // own cert, but no issuer. This also matches self-signed (will
-                // be ignored later) and Root-CA signed certs. In this case we
-                // throw the Root-CA away after the lookup
-                if (chain.length != 1)
-                    return chain;
-
-                // ignore self signed certs
-                if (chain[0].getIssuerDN().equals(chain[0].getSubjectDN()))
-                    return chain;
-
-                // prepare for the newly created chain
-                List<X509Certificate> newChain =
-                        new ArrayList<>(chain.length + 4);
-                newChain.addAll(Arrays.asList(chain));
-
-                // search from the topmost certificate upwards
-                CertificateFactory certFactory =
-                    CertificateFactory.getInstance("X.509");
-                X509Certificate current = chain[chain.length - 1];
-                boolean foundParent;
-                int chainLookupCount = 0;
-                do
-                {
-                    foundParent = false;
-                    // extract the url(s) where the parent certificate can be
-                    // found
-                    byte[] aiaBytes =
-                        current.getExtensionValue(
-                            Extension.authorityInfoAccess.getId());
-                    if (aiaBytes == null)
-                        break;
-
-                    AuthorityInformationAccess aia
-                        = AuthorityInformationAccess.getInstance(
-                           JcaX509ExtensionUtils.parseExtensionValue(aiaBytes));
-
-                    // the AIA may contain different URLs and types, try all
-                    // of them
-                    for (AccessDescription ad : aia.getAccessDescriptions())
-                    {
-                        // we are only interested in the issuer certificate,
-                        // not in OCSP urls the like
-                        if (!ad.getAccessMethod().equals(
-                            AccessDescription.id_ad_caIssuers))
-                            continue;
-
-                        GeneralName gn = ad.getAccessLocation();
-                        if (!(gn.getTagNo() ==
-                                GeneralName.uniformResourceIdentifier
-                            && gn.getName() instanceof DERIA5String))
-                            continue;
-
-                        URI uri =
-                            new URI(((DERIA5String) gn.getName()).getString());
-                        // only http(s) urls; LDAP is taken care of in the
-                        // default implementation
-                        if (!(uri.getScheme().equalsIgnoreCase("http") || uri
-                            .getScheme().equals("https")))
-                            continue;
-
-                        X509Certificate cert = null;
-
-                        // try to get cert from cache first to avoid consecutive
-                        // (slow) http lookups
-                        AiaCacheEntry cache = aiaCache.get(uri);
-                        if (cache != null && cache.cacheDate.after(new Date()))
-                        {
-                            cert = cache.cert;
-                        }
-                        else
-                        {
-                            // download if no cache entry or if it is expired
-                            logger
-                                .debug("Downloading parent certificate for <"
-                                    + current.getSubjectDN()
-                                    + "> from <"
-                                    + uri + ">");
-                            try
-                            {
-                                InputStream is =
-                                    HttpUtils.openURLConnection(uri.toString())
-                                        .getContent();
-                                cert =
-                                    (X509Certificate) certFactory
-                                        .generateCertificate(is);
-                            }
-                            catch (Exception e)
-                            {
-                                logger.debug("Could not download from <" + uri
-                                    + ">");
-                            }
-                            // cache for 10mins
-                            aiaCache.put(uri, new AiaCacheEntry(new Date(
-                                new Date().getTime() + 10 * 60 * 1000), cert));
-                        }
-                        if (cert != null)
-                        {
-                            if (!cert.getIssuerDN().equals(cert.getSubjectDN()))
-                            {
-                                newChain.add(cert);
-                                foundParent = true;
-                                current = cert;
-                                break; // an AD was valid, ignore others
-                            }
-                            else
-                                logger.debug("Parent is self-signed, ignoring");
-                        }
-                    }
-                    chainLookupCount++;
-                }
-                while (foundParent && chainLookupCount < 10);
-                chain = newChain.toArray(chain);
-                return chain;
-            }
-        };
-
-        trustManagerCache.put(identitiesToTest, tmToReturn);
-        return tmToReturn;
+        return trustManager;
     }
 
     /**
@@ -995,68 +614,6 @@ public class CertificateServiceImpl
                 .sorted()
                 .collect(toList());
         return trustManagerCache.get(sorted);
-    }
-
-    /**
-     * Initialises a new KeyStore instance.
-     * <p>
-     * For Windows, we rely on the native OS implementation
-     * (obtained via the SunMSCAPI provider),
-     * so we simply return null here.
-     * <p>
-     * For macOS, we must load the certificates from the system root
-     * into a KeyStore.
-     */
-    private static KeyStore initialiseKeyStore() throws GeneralSecurityException
-    {
-        KeyStore ks = null;
-        if (OSUtils.isWindows())
-        {
-            try
-            {
-                ks = KeyStore.getInstance("Windows-ROOT", "SunMSCAPI");
-                ks.load(null, null);
-            }
-            catch (Exception ex)
-            {
-                throw new GeneralSecurityException("Cannot init KeyStore for Windows", ex);
-            }
-        }
-        else
-        {
-            ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            try
-            {
-                ks.load(null, null);
-                ProcessBuilder pb = new ProcessBuilder("security", "find-certificate", "-a", "-p",
-                                                       getMacOSKeychainPath() + "/" + getMacOSKeychainFileName());
-                Process proc = pb.start();
-                proc.waitFor(100, TimeUnit.MILLISECONDS);
-                try (BufferedInputStream procInputStream = new BufferedInputStream(proc.getInputStream()))
-                {
-                    int certCount = 0;
-                    while (procInputStream.available() > 0)
-                    {
-                        Certificate cert = cf.generateCertificate(procInputStream);
-                        ks.setCertificateEntry(cert.toString(), cert);
-                        certCount++;
-                    }
-                    logger.debug("Loaded " + certCount +
-                                    " certificates from the macOS system root");
-                }
-            }
-            catch (IOException e)
-            {
-                throw new GeneralSecurityException(
-                        "Unable to load certificates from macOS system root", e);
-            }
-            catch (InterruptedException ex)
-            {
-                Thread.currentThread().interrupt();
-            }
-        }
-        return ks;
     }
 
     /**
@@ -1135,6 +692,15 @@ public class CertificateServiceImpl
         return useSecureWispa() ? wispaCertificateInfo.getStoreFormat() : null;
     }
 
+    @Override
+    public void notifySecureConnectionEstablished(String connection, SSLSession session)
+    {
+        analyticsService.onEvent(AnalyticsEventType.SECURE_CONNECTION_ESTABLISHED,
+                                 AnalyticsParameter.PARAM_TLS_CONNECTION, connection,
+                                 AnalyticsParameter.PARAM_TLS_PROTOCOL_VERSION, session.getProtocol(),
+                                 AnalyticsParameter.PARAM_TLS_CIPHER, session.getCipherSuite());
+    }
+
     protected static class BrowserLikeHostnameMatcher
         implements CertificateMatcher
     {
@@ -1195,37 +761,6 @@ public class CertificateServiceImpl
                     + "> contains no SAN for <"
                     + identitiesToTest + ">");
         }
-    }
-
-    /**
-     * Calculates the hash of the certificate known as the "thumbprint"
-     * and returns it as a string representation.
-     *
-     * @param cert The certificate to hash.
-     * @param algorithm The hash algorithm to use.
-     * @return The SHA-1 hash of the certificate.
-     * @throws CertificateException
-     */
-    private static String getThumbprint(Certificate cert, String algorithm)
-        throws CertificateException
-    {
-        MessageDigest digest;
-        try
-        {
-            digest = MessageDigest.getInstance(algorithm);
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-            throw new CertificateException(e);
-        }
-        byte[] encodedCert = cert.getEncoded();
-        StringBuilder sb = new StringBuilder(encodedCert.length * 2);
-        try (Formatter f = new Formatter(sb))
-        {
-            for (byte b : digest.digest(encodedCert))
-                f.format("%02x", b);
-        }
-        return sb.toString();
     }
 
     /**

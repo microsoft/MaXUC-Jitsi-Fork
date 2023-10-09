@@ -400,16 +400,6 @@ public abstract class Call
     }
 
     /**
-     * Check if to include the ZRTP attribute to SIP/SDP
-     *
-     * @return include the ZRTP attribute to SIP/SDP
-     */
-    public boolean isSipZrtpAttribute()
-    {
-        return sipZrtpAttribute;
-    }
-
-    /**
      * Returns an iterator over all call peers.
      *
      * @return an Iterator over all peers currently involved in the call.

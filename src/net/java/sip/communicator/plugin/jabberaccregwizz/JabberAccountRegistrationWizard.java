@@ -103,17 +103,6 @@ public class JabberAccountRegistrationWizard
     }
 
     /**
-     * Implements the <code>AccountRegistrationWizard.getPageImage</code> method.
-     * Returns the image used to decorate the wizard page
-     *
-     * @return byte[] the image used to decorate the wizard page
-     */
-    public BufferedImageFuture getPageImage()
-    {
-        return Resources.getBufferedImage(Resources.PAGE_IMAGE);
-    }
-
-    /**
      * Implements the <code>AccountRegistrationWizard.getProtocolName</code>
      * method. Returns the protocol name for this wizard.
      * @return String
@@ -121,17 +110,6 @@ public class JabberAccountRegistrationWizard
     public String getProtocolName()
     {
         return Resources.getString("plugin.jabberaccregwizz.PROTOCOL_NAME");
-    }
-
-    /**
-     * Implements the <code>AccountRegistrationWizard.getProtocolDescription
-     * </code> method. Returns the description of the protocol for this wizard.
-     * @return String
-     */
-    public String getProtocolDescription()
-    {
-        return Resources
-            .getString("plugin.jabberaccregwizz.PROTOCOL_DESCRIPTION");
     }
 
     /**
@@ -334,8 +312,9 @@ public class JabberAccountRegistrationWizard
 
         // Remember the password if the box is already ticked on the
         // form or if we came from another registration form.
-        accPanel.setRememberPassword(accPanel.isRememberPassword() ||
-                                     rememberPassword);
+        accPanel.setRememberPassword(password != null &&
+                                     (accPanel.isRememberPassword() ||
+                                     rememberPassword));
 
         firstWizardPage.commitPage();
 
@@ -387,7 +366,8 @@ public class JabberAccountRegistrationWizard
             accountProperties.put(  ProtocolProviderFactory.ACCOUNT_ICON_PATH,
                                     accountIconPath);
 
-        if (registration.isRememberPassword())
+        // Password is null in case of SSO login.
+        if (registration.isRememberPassword() && passwd != null)
         {
             accountProperties.put(ProtocolProviderFactory.PASSWORD, passwd);
         }
@@ -553,24 +533,6 @@ public class JabberAccountRegistrationWizard
     public Dimension getSize()
     {
         return new Dimension(300, 480);
-    }
-
-    /**
-     * Returns the identifier of the page to show first in the wizard.
-     * @return the identifier of the page to show first in the wizard.
-     */
-    public Object getFirstPageIdentifier()
-    {
-        return firstWizardPage.getIdentifier();
-    }
-
-    /**
-     * Returns the identifier of the page to show last in the wizard.
-     * @return the identifier of the page to show last in the wizard.
-     */
-    public Object getLastPageIdentifier()
-    {
-        return firstWizardPage.getIdentifier();
     }
 
     /**

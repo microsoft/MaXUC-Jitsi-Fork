@@ -128,8 +128,4 @@ public interface ExportedWindow
      */
     void setParams(Object[] windowParams);
 
-    /**
-     * Repaints the exported window
-     */
-    void repaintWindow();
 }

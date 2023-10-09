@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.analytics;
 
+import com.metaswitch.maxanalytics.event.ImKt;
+import com.metaswitch.maxanalytics.event.RateAppKt;
+
 /**
  * The complete list of events that can be sent to the analytics server and
  * maybe also SAS.
@@ -30,7 +33,6 @@ public enum AnalyticsEventType
     // Life-cycle
     APP_STARTED("Application started"),
     CDAP_PROVISIONING_URI_MATCH("App launched using CDAP login link"),
-    ACCESS_DENIED("Preventing user from using app"),
     GOT_COS("Class of service retrieved"),
     CONFIG_RETRIEVED("Config retrieved"),
     GETTING_CONFIG_FAILED("Get Cfg Failed"),
@@ -39,6 +41,7 @@ public enum AnalyticsEventType
     SHUTDOWN("Application being shut down"),
     ELECTRON_DOWN("Electron can't be reached"),
     CP_TOKEN_RETRIEVED("CommPortal token retrieved"),
+    SECURE_CONNECTION_ESTABLISHED("Secure connection established", true),
 
     // Errors
     UNCAUGHT_EXCEPTION("Uncaught Exception"),
@@ -57,11 +60,17 @@ public enum AnalyticsEventType
     OUTLOOK_CALL("Outlook Call"),
     OUTBOUND_CALL("User making a call"),
     INCOMING_ANSWERED("User answered incoming call"),
+    INCOMING_ANSWERED_SHORTCUT("User answered incoming call using global keyboard shortcut"),
     INCOMING_REJECT("User rejected incoming call"),
+    INCOMING_REJECT_SHORTCUT("User rejected incoming call using global keyboard shortcut"),
+    HANGUP_CALL_SHORTCUT("User ended ongoing call using global keyboard shortcut"),
+    FOCUS_CALL_SHORTCUT("User focused call using global keyboard shortcut"),
+    MUTE_CALL_SHORTCUT("User used the mute call global keyboard shortcut"),
+    PTT_CALL_SHORTCUT("User used the push to talk global shortcut"),
+    INCOMING_REJECT_IM("User rejected incoming call with IM"),
     CUT_THRU("Media cut through"),
     MEDIA_PRECREATE("Media precreate"),
     ASKED_TO_MERGE("User asked to merge calls"),
-    INCOMING_MERGED("User merged incoming call"),
     START_TRANSFER("User is trying to transfer call"),
     TRANSFERRED_CALL("User successfully transferred call"),
     CALL_PUSHED("Jump pushed call"),
@@ -75,8 +84,6 @@ public enum AnalyticsEventType
     CALL_WITH_DIRECT_CALLING_DISABLED("Call made with direct calling disabled", true),
     INCOMING_DIVERTED_CALL("Incoming Diverted Call"),
 
-    // IM
-    MAX_IM_ACCOUNTS("Max IM Acc"),
     IM_CONNECTED("IM connected"),
     IM_SIGNED_IN("User sign in IM"),
     OUTLOOK_IM("Outlook IM"),
@@ -93,6 +100,7 @@ public enum AnalyticsEventType
     XMPP_AUTHENTICATION_BACKOFF_SUCCESS("Event - XMPP authentication backoff success", true),
     XMPP_AUTHENTICATION_BACKOFF_HIT_MAX_FAILURES("Event - XMPP authentication backoff hit max failures", true),
     CHAT_LIST_REQUEST_BEFORE_IM_PROVIDER_READY("Failed to provide chat list because IM provider not ready", true),
+    CHAT_AUTHORISATION_REQUEST_RECEIVED("Received chat authorisation request from an external contact"),
 
     // File Transfer
     SEND_FILE_STARTED("Started outgoing file transfer"),
@@ -109,7 +117,6 @@ public enum AnalyticsEventType
     FAVORITES_ADD("User adding contact to favorites"),
     FAVORITES_REMOVE("User removing contact from favorites"),
     USER_CHANGE_AVATAR("User changed their avatar"),
-    SEARCH_LDAP_CONTACTS("User asked to search for LDAP contacts", true),
     LDAP_CONTACT_FOUND("LDAP search found a contact", true),
     LDAP_ENABLED("LDAP enabled"),
 
@@ -125,7 +132,13 @@ public enum AnalyticsEventType
     SEND_ERROR_REPORT("User sending error report"),
     SET_CUSTOM_STATUS("Set a custom status", true),
     THIRD_PARTY_INTEGRATION_LAUNCHED("Third party service launched", true),
-    EVENT_RATE_APP("User - Rate app"),
+    VERSION_UPDATE_DIALOG_USER_NOTIFIED("Upgrade - User notified of new version available"),
+    VERSION_UPDATE_USER_CHECK_FOR_UPDATES("Upgrade - User requested a check for updates"),
+    VERSION_UPDATE_DIALOG_USER_ACCEPT("Upgrade - User accepted update"),
+    VERSION_UPDATE_DIALOG_USER_DISMISS("Upgrade - User dismissed update"),
+    VERSION_UPDATE_USER_CANCEL_DOWNLOAD("Upgrade - User cancelled update download"),
+    VERSION_UPDATE_VERIFY_SUCCESS("Upgrade - Successful"),
+    VERSION_UPDATE_ERROR("Upgrade - Error"),
 
     // MaX Meeting
     ACC_MEET_USER_CREATE("User Created new Meeting"),
@@ -143,14 +156,9 @@ public enum AnalyticsEventType
     ACC_MEET_SET_CONFIG("Changing Meeting settings"),
     ACC_MEET_ADD_ASSISTANT("Assign scheduling privileges"),
     ACC_MEET_REMOVE_ASSISTANT("Revoke scheduling privileges"),
-    ACC_MEET_MANAGE_WEBINAR("Opened manage webinar"),
 
     // N-Series Conference Widget
     NSERIES_CONF_START("User launched N-Series Conference via widget"),
-
-    // WebSocket server analytics
-    WEBSOCKET_CONNECTION_CREATED("New WebSocket connection established"),
-    WEBSOCKET_CONNECTION_DESTROYED("WebSocket connection torn down"),
 
     // Misc
     UNRECOGNIZED_OUTLOOK_TIME_ZONE("Unrecognized Outlook time zone"),
@@ -167,6 +175,9 @@ public enum AnalyticsEventType
     // CHECK_EMERGENCY_LOCATIONS("Event - Check emergency locations"),
     // LOCATION_SETTINGS_CHANGED("Setting changed"),
     // EMERGENCY_CALL_HANDLED_BY_OS("Feature - Emergency call handled by OS"),
+
+    EVENT_RATE_APP(RateAppKt.EVENT_RATE_APP),
+    EVENT_IM_WINDOW_LAUNCH(ImKt.EVENT_IM_WINDOW_LAUNCH),
     ;
 
    /**
@@ -248,13 +259,4 @@ public enum AnalyticsEventType
         return mEventName;
     }
 
-    /**
-     * Gets the String value for sending to CommPortal
-     *
-     * @return the value
-     */
-    public String toStringForCommPortal()
-    {
-        return mCommPortalName;
-    }
 }

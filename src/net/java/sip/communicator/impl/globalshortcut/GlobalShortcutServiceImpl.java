@@ -14,8 +14,6 @@ import java.util.List;
 import net.java.sip.communicator.service.globalshortcut.*;
 import net.java.sip.communicator.service.keybindings.*;
 import net.java.sip.communicator.util.Logger;
-
-import org.jitsi.util.*;
 // disambiguation
 
 /**
@@ -364,6 +362,11 @@ public class GlobalShortcutServiceImpl
                 entry.getKey().equals("hangup") ||
                 entry.getKey().equals("answer_hangup") ||
                 entry.getKey().equals("mute") ||
+                entry.getKey().equals("focus_call_mac") ||
+                entry.getKey().equals("answer_mac") ||
+                entry.getKey().equals("hangup_mac") ||
+                entry.getKey().equals("answer_hangup_mac") ||
+                entry.getKey().equals("mute_mac") ||
                 entry.getKey().equals("push_to_talk"))
             {
                 for(AWTKeyStroke e : entry.getValue())
@@ -402,16 +405,6 @@ public class GlobalShortcutServiceImpl
     }
 
     /**
-     * Returns UIShortcut object.
-     *
-     * @return UIShortcut object
-     */
-    public UIShortcut getUIShortcut()
-    {
-        return uiShortcut;
-    }
-
-    /**
      * Enable or not global shortcut.
      *
      * @param enable enable or not global shortcut
@@ -447,108 +440,4 @@ public class GlobalShortcutServiceImpl
         }
     }
 
-    /**
-     * Enable or disable special key detection.
-     *
-     * @param enable enable or not special key detection.
-     * @param callback object to be notified
-     */
-    public synchronized void setSpecialKeyDetection(boolean enable,
-        GlobalShortcutListener callback)
-    {
-        keyboardHook.detectSpecialKeyPress(enable);
-
-        if(specialKeyNotifiers.contains(callback) == enable)
-        {
-            return;
-        }
-
-        if(enable)
-        {
-            specialKeyNotifiers.add(callback);
-        }
-        else
-        {
-            specialKeyNotifiers.remove(callback);
-        }
-    }
-
-    /**
-     * Get special keystroke or null if not supported or user cancels. If no
-     * special key is detected for 5 seconds, it returns null
-     *
-     * @return special keystroke or null if not supported or user cancels
-     */
-    public AWTKeyStroke getSpecialKey()
-    {
-        AWTKeyStroke ret = null;
-
-        specialKeyDetected = null;
-        keyboardHook.detectSpecialKeyPress(true);
-
-        // Windows only for the moment
-        if(OSUtils.IS_WINDOWS)
-        {
-            synchronized(specialKeySyncRoot)
-            {
-                try
-                {
-                    specialKeySyncRoot.wait(5000);
-                }
-                catch(InterruptedException e)
-                {
-                }
-            }
-
-            ret = specialKeyDetected;
-            specialKeyDetected = null;
-        }
-
-        keyboardHook.detectSpecialKeyPress(false);
-        return ret;
-    }
-
-    /**
-     * Simple test.
-     */
-    public void test()
-    {
-        GlobalShortcutListener l = new GlobalShortcutListener()
-        {
-            public void shortcutReceived(GlobalShortcutEvent evt)
-            {
-                System.out.println("global shortcut event");
-            }
-        };
-
-        AWTKeyStroke ks = AWTKeyStroke.getAWTKeyStroke("control B");
-        AWTKeyStroke ks2 = AWTKeyStroke.getAWTKeyStroke("control E");
-
-        if(ks == null)
-        {
-            logger.info("Failed to register keystroke");
-            System.out.println("failed to register keystroke");
-            return;
-        }
-
-        this.registerShortcut(l, ks);
-        this.registerShortcut(l, ks2);
-        try{Thread.sleep(30000);}catch(InterruptedException e){}
-        this.unregisterShortcut(l, ks);
-        try{Thread.sleep(5000);}catch(InterruptedException e){}
-        this.unregisterShortcut(l, ks2);
-
-        /*
-        boolean ret = keyboardHook.registerShortcut(ks.getKeyCode(),
-            getModifiers(ks));
-        System.out.println("finally " + ret);
-
-        System.out.println("registered");
-        try{Thread.sleep(30000);}catch(InterruptedException e){}
-        System.out.println("unregistered1");
-        keyboardHook.unregisterShortcut(ks.getKeyCode(),
-            getModifiers(ks));
-        System.out.println("unregistered2");
-         */
-    }
 }

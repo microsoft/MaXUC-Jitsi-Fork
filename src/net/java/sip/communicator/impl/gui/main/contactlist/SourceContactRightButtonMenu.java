@@ -17,8 +17,6 @@ import javax.swing.*;
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.impl.gui.customcontrols.*;
-import net.java.sip.communicator.impl.gui.main.*;
 import net.java.sip.communicator.impl.gui.main.call.*;
 import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.impl.gui.main.chat.history.*;
@@ -89,11 +87,6 @@ public class SourceContactRightButtonMenu
      * Add contact component.
      */
     private Component addContactComponent;
-
-    /**
-     * Menu item to launch a CRM search for the contact.
-     */
-    private JMenuItem crmItem;
 
     /**
      * The resource management service

@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.imageloader;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.awt.image.*;
 import java.net.*;
 
@@ -72,7 +74,7 @@ public class BufferedImageLoading extends AbstractBufferedImagePending implement
             else
             {
                 // Load the image on another thread
-                ImageLoaderActivator.getThreadingService().submit("Load image: " + mUrl, this);
+                ImageLoaderActivator.getThreadingService().submit("Load image: " + sanitiseFilePath(mUrl.toString()), this);
             }
         }
     }
@@ -92,7 +94,7 @@ public class BufferedImageLoading extends AbstractBufferedImagePending implement
         }
         catch (Exception ex)
         {
-            sLog.error("Failed to load image from path: " + mUrl, ex);
+            sLog.error("Failed to load image from path: " + sanitiseFilePath(mUrl.toString()), ex);
 
             // Although we haven't actually retrieved the image, we need to mark
             retrievedImage();

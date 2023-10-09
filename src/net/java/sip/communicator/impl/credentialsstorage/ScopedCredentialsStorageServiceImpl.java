@@ -357,7 +357,7 @@ public class ScopedCredentialsStorageServiceImpl
             if (mCrypto == null)
             {
                 sLog.info("Create new Crypto instance");
-                char[] masterPassword = getMasterPasswordFromOS();
+                char[] masterPassword = getMasterPasswordFromOSForActiveUser();
 
                 if (masterPassword == null)
                 {
@@ -395,7 +395,7 @@ public class ScopedCredentialsStorageServiceImpl
         synchronized (ScopedCredentialsStorageServiceImpl.class)
         {
             sLog.info("synchronized - create new Crypto instance");
-            char[] oldMasterPassword = getMasterPasswordFromOS();
+            char[] oldMasterPassword = getMasterPasswordFromOSForActiveUser();
 
             if (oldMasterPassword == null)
             {
@@ -408,7 +408,7 @@ public class ScopedCredentialsStorageServiceImpl
 
             try
             {
-                storeMasterPasswordInOS(newMasterPassword);
+                storeMasterPasswordInOSForActiveUser(newMasterPassword);
 
                 // We can now migrate all password properties from the old default
                 // master password to the new secure master password.
@@ -432,35 +432,44 @@ public class ScopedCredentialsStorageServiceImpl
         }
     }
 
-    /**
-     * Simple helper function that must be called inside a statically synchronised block
-     * as per the body of createCrypto.
-     */
-    private char[] getMasterPasswordFromOS()
+    private char[] getMasterPasswordFromOSForActiveUser()
     {
-        // Retrieve an existing token from the store if there
-        String tokenName = OS_ACCESS_TOKEN_STEM +
-            mConfigurationService.getGlobalConfigurationService().getProperty(
-                ConfigurationServiceImpl.PROPERTY_ACTIVE_USER);
-        StoredToken storedToken = sTokenStorage.get(tokenName);
-        sLog.info("Retrieved token under " + logHasher(tokenName) + ": " + (storedToken != null));
-        return storedToken != null ? storedToken.getValue() : null;
+        return getMasterPasswordFromOS(mConfigurationService.getGlobalConfigurationService().getString(
+                ConfigurationServiceImpl.PROPERTY_ACTIVE_USER));
     }
 
     /**
      * Simple helper function that must be called inside a statically synchronised block
      * as per the body of createCrypto.
      */
-    private void storeMasterPasswordInOS(char[] masterPassword)
+    private char[] getMasterPasswordFromOS(String key)
+    {
+        // Retrieve an existing token from the store if there
+        String tokenName = OS_ACCESS_TOKEN_STEM + key;
+        StoredToken storedToken = sTokenStorage.get(tokenName);
+        sLog.info("Retrieved token under " + logHasher(tokenName) + ": " + (storedToken != null));
+        return storedToken != null ? storedToken.getValue() : null;
+    }
+
+    private void storeMasterPasswordInOSForActiveUser(char[] masterPassword)
+    {
+        storeMasterPasswordInOS(masterPassword,
+            mConfigurationService.getGlobalConfigurationService().getString(
+                ConfigurationServiceImpl.PROPERTY_ACTIVE_USER));
+    }
+
+    /**
+     * Simple helper function that must be called inside a statically synchronised block
+     * as per the body of createCrypto.
+     */
+    private void storeMasterPasswordInOS(char[] masterPassword, String key)
     {
         StoredToken token = new StoredToken(masterPassword, StoredTokenType.ACCESS);
 
         try
         {
             // Save the token to the store
-            String tokenName = OS_ACCESS_TOKEN_STEM +
-                               mConfigurationService.getGlobalConfigurationService().getProperty(
-                                       ConfigurationServiceImpl.PROPERTY_ACTIVE_USER);
+            String tokenName = OS_ACCESS_TOKEN_STEM + key;
             sTokenStorage.add(tokenName, token);
             sLog.info("Added/Updated token to OS Credential Manager under the key: " + logHasher(tokenName));
         }
@@ -552,5 +561,27 @@ public class ScopedCredentialsStorageServiceImpl
         }
 
         return result;
+    }
+
+    /**
+     * Trigger copying a master password from one key (if one exists under it) to a second key
+     * (blatting over any password already stored under that key).
+     */
+    @Override
+    public void copyMasterPassword(String from, String to)
+    {
+        synchronized (ScopedCredentialsStorageServiceImpl.class)
+        {
+            char[] masterPassword = getMasterPasswordFromOS(from);
+            if (masterPassword != null)
+            {
+                sLog.info("Copy master password from " + logHasher(from) + " to " + logHasher(to));
+                storeMasterPasswordInOS(masterPassword, to);
+            }
+            else
+            {
+                sLog.info("No master password found for " + logHasher(from));
+            }
+        }
     }
 }

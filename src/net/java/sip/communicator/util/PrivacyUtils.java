@@ -100,7 +100,11 @@ public final class PrivacyUtils
             CTD_MY_PHONES,
             SCHEDULED_ASSISTANTS,
             CUSTOM_STATUS,
-            DEVICE_LIST,
+// I don't know how a decision was made to include device list here.
+// Since the handling we do is to remove DNs from the data, and I can't
+// see how DNs would be part of that data, I don't think it should be
+// considered privacy related.
+//            DEVICE_LIST,
             DIAL_IN_1,
             DIAL_IN_2,
             DISPLAY_NAME,
@@ -118,14 +122,15 @@ public final class PrivacyUtils
 
     /**
      * Using username part of <a href="https://www.rfc-editor.org/rfc/rfc5322#section-3.2.3">Internet message format</a>
+     * The characters have been slightly reordered to move the hyphen to the end, so it is not treated as a range indicator.
      */
-    public static final Pattern CHAT_ADDRESS_PATTERN = Pattern.compile("[A-Za-z0-9!#$%&'*+-/=?^_`{|}~.]+(?=@)");
+    public static final Pattern CHAT_ADDRESS_PATTERN = Pattern.compile("[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+(?=@)");
 
-    public static final Pattern CP_URL_DN = Pattern.compile("(?<=DirectoryNumber=)([0-9]+)(?=&)");
+    public static final Pattern CP_URL_DN = Pattern.compile("(?<=DirectoryNumber=)([0-9]+)(?=&|$)");
 
     /**
      * Pattern to sanitise JSON values in Call Pull request parameter.
-     * E.g. https://server/session<REMOVED>/line/action.js?returnerrorsnow=true&
+     * E.g. https://server/session<redacted>/line/action.js?returnerrorsnow=true&
      * version=8.0&request=%7B%22reason%22%3A%22singleStepTransfer%22%2C%22extensions%22%3A%7B
      * %22privateData%22%3A%7B%22private%22%3A%7B%22callJumpTargetType%22%3A%22number%22%2C
      * %22targetAlertInfo%22%3A%22info%3DX-MSW-client-jumpto%3Bid%3Dd70c3c24403142408074f420804b1eec%22%7D%7D%7D%2C
@@ -172,8 +177,6 @@ public final class PrivacyUtils
             Pattern.compile("session=(\\p{XDigit}{8,})&")
     );
     /* END OF COMMPORTAL CONFIG CONSTANTS */
-
-    private static final String REMOVED_PLACEHOLDER = "__removed__";
 
     /**
      * Prevent instantiation.
@@ -260,7 +263,7 @@ public final class PrivacyUtils
     {
         if (value != null)
         {
-            // PeerId can have 1-3 components divided by /, hash each component separately
+            // PeerId can have 1-3 components separated by /, hash each component separately
             final String[] components = value.toString().split("/");
             int numComponentsToHash = components.length;
             if (!hashLastComponent)
@@ -270,13 +273,14 @@ public final class PrivacyUtils
 
             for (int i = 0; i < numComponentsToHash; i++)
             {
-                String hashedValue = sanitiseChatRoom(components[i]);
-                if (components[i].equals(hashedValue))
+                final String component = components[i];
+                String hashedValue = sanitiseChatRoom(component);
+                if (component.equals(hashedValue))
                 {
-                    hashedValue = sanitiseChatAddress(components[i]);
-                    if (components[i].equals(hashedValue))
+                    hashedValue = sanitiseChatAddress(component);
+                    if (component.equals(hashedValue))
                     {
-                        hashedValue = Hasher.logHasher(components[i]);
+                        hashedValue = Hasher.logHasher(component);
                     }
                 }
 
@@ -327,7 +331,33 @@ public final class PrivacyUtils
     }
 
     /**
-     * Returns a URL which is able to be logged. We use this when a URL contains
+     * Removes PII from any filepath(s) in a string by removing the username.
+     *
+     * Eg "C:\Users\USERNAME\folder;C:\Users\USERNAME" will be
+     * replaced with "C:\Users\<redacted>\folder;C:\Users\<redacted>"
+     *
+     * If passed something where the username is the last part of the filepath, any following
+     * information will be eaten up to the next delimiter
+     * example: "C:\Users\USERNAME is a file path" will become "C:\Users\<redacted>"
+     *
+     * @param stringToSanitise The string to be treated.
+     * @return A string with the relevant PII removed
+     */
+    public static String sanitiseFilePath(String stringToSanitise)
+    {
+        if (stringToSanitise == null) {
+            return null;
+        }
+        // replace anything following the string "users/" or "users\" (case
+        // insensitive) up to the next /\;:
+        // \\\\ makes one \ as you have to escape \ once in regex, and each \
+        // once in java
+        return stringToSanitise.replaceAll("(?i)(?<=users[/\\\\])[^/\\\\;:]+",
+            REDACTED);
+    }
+
+    /**
+     * Returns a URL which can be logged. We use this when a URL contains
      * a session ID. We can't print the whole URl for security reasons, so we
      * remove a central part of the session ID. This still gives L3 the
      * information they need to be able to reconstruct the URL from server logs.
@@ -346,8 +376,8 @@ public final class PrivacyUtils
         // characters} + "&". We need to check both. 8 is an arbitrary number
         // which is low enough that it shouldn't miss any session IDs, but
         // high enough that it won't give false positives.
-        result = sanitise(result, SESSION_PATTERNS, PrivacyUtils::obfuscateSessionId);
-        result = sanitise(result, LINE_PATTERN, str -> "/line__removed__/");
+        result = sanitiseFirstPatternMatch(result, SESSION_PATTERNS, PrivacyUtils::obfuscateSessionId);
+        result = sanitise(result, LINE_PATTERN, str -> "/line" + REDACTED + "/");
         result = sanitise(result, CP_URL_DN, Hasher::logHasher);
         result = sanitise(result, CALL_PULL_REQUEST, Hasher::logHasher);
 
@@ -357,19 +387,20 @@ public final class PrivacyUtils
     /**
      * Returns a session ID substitute which is able to be logged. We don't
      * log the whole session ID due to security concerns, but it is useful for
-     * L3 to be able to correlate with server-side logs, so we print an
-     * obfuscated version which strips out the central characters.
+     * L3 to be able to correlate with server-side logs, so we print a
+     * partially redacted version which strips out the central characters.
      *
      * @param sessionId The session ID to modify
-     * @return  There are three cases:
-     *          1) the ID has >= 20 characters. Return a string of the first 8
-     *          and last 4 characters from the session ID, with "__removed__" in
-     *          between. If it is not at least 8 characters long, it returns null.
-     *          2) the ID has <20 but >=16 characters. Just return the first 8
-     *          characters followed by "__removed__" as any more characters would
+     * @return  There are 4 cases:
+     *          1) null input is returned unchanged
+     *          2) the ID has >= 20 characters. Return a string of the first 8
+     *          and last 4 characters from the session ID, with "<redacted>" in
+     *          between.
+     *          3) the ID has <20 but >=16 characters. Just return the first 8
+     *          characters followed by "<redacted>" as any more characters would
      *          compromise security.
-     *          3) the ID has <=15 characters. We never expect this to happen.
-     *          Return "__Redacted as less than 16 characters.__";
+     *          4) the ID has <=15 characters. We never expect this to happen.
+     *          Return "<redacted as less than 16 characters>";
      */
     public static String obfuscateSessionId(final String sessionId)
     {
@@ -380,17 +411,17 @@ public final class PrivacyUtils
         }
         else if (sessionId.length() >= 20)
         {
-            obfuscatedSessionId = sessionId.substring(0,8) + REMOVED_PLACEHOLDER +
+            obfuscatedSessionId = sessionId.substring(0,8) + REDACTED +
                                   sessionId.substring(sessionId.length() - 4);
         }
         else if (sessionId.length() >= 16)
         {
-            obfuscatedSessionId = sessionId.substring(0,8) + REMOVED_PLACEHOLDER;
+            obfuscatedSessionId = sessionId.substring(0,8) + REDACTED;
         }
         else
         {
             // This should never happen
-            obfuscatedSessionId = "__Redacted as less than 16 characters.__";
+            obfuscatedSessionId = "<redacted as less than 16 characters>";
         }
         return obfuscatedSessionId;
     }

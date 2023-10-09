@@ -7,7 +7,6 @@
 package net.java.sip.communicator.impl.gui.main.account;
 
 import java.beans.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 import javax.swing.*;
@@ -15,7 +14,6 @@ import javax.swing.*;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.plugin.desktoputil.SwingWorker;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
@@ -349,35 +347,6 @@ public class AccountList
     }
 
     /**
-     * Enables or disables the current account.
-     *
-     * @param account the account to disable/enable
-     * @param enable indicates if the account should be enabled or disabled
-     */
-    private void enableAccount(Account account, boolean enable)
-    {
-        account.setEnabled(enable);
-
-        AccountManager accountManager = GuiActivator.getAccountManager();
-        AccountID accountID = account.getAccountID();
-
-        try
-        {
-            if (enable)
-                accountManager.loadAccount(accountID);
-            else
-                accountManager.unloadAccount(accountID);
-
-            // fire an event that account is enabled/disabled
-            firePropertyChange(ACCOUNT_STATE_CHANGED, !enable, enable);
-        }
-        catch (OperationFailedException ofex)
-        {
-            throw new UndeclaredThrowableException(ofex);
-        }
-    }
-
-    /**
      * Ensures that the account with the given <tt>accountID</tt> is removed
      * from the list.
      *
@@ -403,49 +372,5 @@ public class AccountList
             accountListModel.removeAccount(account);
 
         accountConfigPanel.updateButtons();
-    }
-
-    /**
-     * Enables the account in separate thread.
-     */
-    private class EnableAccountWorker
-        extends SwingWorker
-    {
-        /**
-         * The account to use.
-         */
-        private Account account;
-
-        /**
-         * Enable/disable account.
-         */
-        private boolean enable;
-
-        EnableAccountWorker(Account account, boolean enable)
-        {
-            this.account = account;
-            this.enable = enable;
-        }
-
-        /**
-         * Worker thread.
-         * @return
-         */
-        @Override
-        protected Object construct()
-        {
-            enableAccount(account, enable);
-
-            return null;
-        }
-
-        /**
-         * Called on the event dispatching thread (not on the worker thread)
-         * after the <code>construct</code> method has returned.
-         */
-        protected void finished()
-        {
-            AccountList.this.repaint();
-        }
     }
 }

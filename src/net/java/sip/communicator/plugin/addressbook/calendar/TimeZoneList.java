@@ -199,6 +199,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Romance Standard Time", "Europe/Paris", "(GMT +01:00) Brussels, Copenhagen, Madrid, Paris"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Romance Standard Time", "Europe/Paris", "(UTC+01:00) Bruxelles, Copenhague, Madrid, Paris"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Romance Standard Time", "Europe/Paris", "(UTC+01:00) Brussels, Copenhagen"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Romance Standard Time", "Europe/Paris", "(UTC+01:00) Bruselas, Copenhague, Madrid, Par\u00EDs"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Russian Standard Time", "Europe/Moscow", "(GMT +03:00) Moscow, St. Petersburg, Volgograd"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Russian Standard Time", "Europe/Moscow", "(GMT +03:00) Moscow, St. Petersburg"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Russia Time Zone 3", "Europe/Samara", "(GMT +04:00) Izhevsk, Samara (RTZ 3)"));
@@ -311,6 +312,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Central Standard Time", "America/Chicago", "GMT-0600 (Standard) / GMT-0500 (Daylight)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Central Standard Time", "America/Chicago", "(GMT-06:00) Central Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Central Standard Time", "America/Chicago", "(GMT-06:00) America/Chicago"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Central Standard Time", "America/Chicago", "(GMT-06:00) USA (Central)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Chatham Islands Standard Time", "Pacific/Chatham", "(GMT+12:45) Chatham Islands"));
         ZONEMAPPINGS.add(new TimeZoneMapping("China Standard Time", "Asia/Shanghai", "(GMT+08:00) Beijing, Chongqing, Hong Kong, Urumqi"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Colombia Time", "America/Bogota", "(GMT-05:00) Bogota, Lima, Quito"));
@@ -331,9 +333,12 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05.00) Eastern Time (US & Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05.00) Eastern Time (US %2A Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05.00) Eastern Time (US * Canada)"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05:00) Est (\u00C9.-U. et Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05:00) America/New_York"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05.00) America/New_York"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05:00) Eastern Standard Time"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-0500) Eastern Standard Time"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(GMT-05:00) US Eastern Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "GMT-0500 (Standard) / GMT-0400 (Daylight)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time (Mexico)", "America/Cancun", "(GMT-05:00) Chetumal"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Easter Island Standard Time", "Chile/EasterIsland", "(GMT-06:00) Easter Island"));
@@ -387,6 +392,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(GMT-07:00) Mountain Time (US 8 Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(GMT-07:00) America/Denver"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(GMT-07:00) Mountain Standard Time"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(GMT-07:00) US Mountain Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Myanmar Standard Time", "Asia/Rangoon", "(GMT+06:30) Yangon (Rangoon)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("N. Central Asia Standard Time", "Asia/Novosibirsk", "(GMT+06:00) Novosibirsk"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Namibia Standard Time", "Africa/Windhoek", "(GMT+02:00) Windhoek"));
@@ -405,6 +411,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Pacific Standard Time", "America/Los_Angeles", "(GMT-08:00) Pacific Time (US & Canada); Tijuana"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Pacific Standard Time", "America/Los_Angeles", "(GMT-08:00) Pacific Time (US %2A Canada); Tijuana"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Pacific Standard Time", "America/Los_Angeles", "(GMT-08:00) Pacific Time (US * Canada); Tijuana"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Pacific Standard Time", "America/Los_Angeles", "(GMT-08.00) Pacific Time (US & Canada)/Tijuana"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Pacific Standard Time", "America/Los_Angeles", "(GMT-08:00) Pacific Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Pacific Standard Time", "America/Los_Angeles", "GMT -0800 (Standard) / GMT -0700 (Daylight)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Pakistan Standard Time", "Asia/Karachi", "(GMT+05:00) Islamabad, Karachi"));
@@ -533,6 +540,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("China Standard Time", "Asia/Shanghai", "(UTC+08:00) Beijing, Chongqing, Hong Kong, Urumqi"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Colombia Time", "America/Bogota", "(UTC-05:00) Bogota, Lima, Quito"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Colombia Time", "America/Bogota", "(UTC-05:00) Bogot\u00e1, Lima, Quito, Rio Branco"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Colombia Time", "America/Bogota", "(UTC-05:00) Bogot\u00E1, Lima, Quito"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Cuba Standard Time", "America/Havana", "(UTC-05:00) Havana"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Dateline Standard Time", "Etc/GMT+12", "(UTC-12:00) International Date Line West"));
         ZONEMAPPINGS.add(new TimeZoneMapping("E. Africa Standard Time", "Africa/Nairobi", "(UTC+03:00) Nairobi"));
@@ -550,6 +558,8 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(UTC-05.00) America/New_York"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(UTC-05:00) Eastern Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(UTC-05:00) Est (É.-U. et Canada)"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(UTC-05:00) Est (\u00C9.-U. et Canada)"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "(UTC-05:00) Eastern Time (V.S. en Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time", "America/New_York", "UTC-0500 (Standard) / UTC-0400 (Daylight)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Eastern Standard Time (Mexico)", "America/Cancun", "(UTC-05:00) Chetumal"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Easter Island Standard Time", "Chile/EasterIsland", "(UTC-06:00) Easter Island"));
@@ -566,6 +576,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("GMT Standard Time", "Europe/London", "UTC Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("GMT Standard Time", "Europe/London", "(UTC) Co-ordinated Universal Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("GMT Standard Time", "Europe/London", "(UTC) Temps universel coordonné"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("GMT Standard Time", "Europe/London", "(UTC) Temps universel coordonn\u00E9"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Greenland Standard Time", "America/Godthab", "(UTC-03:00) Greenland"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Greenwich Mean Time", "Europe/London", "UTC Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Greenwich Mean Time", "Europe/London", "UTC-0000 (Standard) / UTC +0100 (Daylight)"));
@@ -605,6 +616,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Morocco Standard Time", "Africa/Casablanca", "(UTC+00:00) Casablanca"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Morocco Standard Time", "Africa/Casablanca", "(UTC+01:00) Casablanca"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time (Mexico)", "America/Chihuahua", "(UTC-07:00) Chihuahua, La Paz, Mazatlan"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time (Mexico)", "America/Chihuahua", "(UTC-07:00) La Paz, Mazatlan"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(UTC-07:00) Mountain Time (US & Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(UTC-07:00) Mountain Time (US %2A Canada)"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Mountain Standard Time", "America/Denver", "(UTC-07:00) Mountain Time (US * Canada)"));
@@ -665,6 +677,7 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("Tasmania Standard Time", "Australia/Hobart", "(UTC+10:00) Hobart"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Tocantins Standard Time", "America/Araguaina", "(UTC-03:00) Araguaina"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Tokyo Standard Time", "Asia/Tokyo", "(UTC+09:00) Osaka, Sapporo, Tokyo"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("Tokyo Standard Time", "Asia/Tokyo", "(UTC+09:00) \u5927\u962A\u3001\u672D\u5E4C\u3001\u6771\u4EAC"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Tomsk Standard Time", "Asia/Tomsk", "(UTC+07:00) Tomsk"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Tonga Standard Time", "Pacific/Tongatapu", "(UTC+13:00) Nuku'alofa"));
         ZONEMAPPINGS.add(new TimeZoneMapping("Tonga Standard Time", "Pacific/Tongatapu", "(UTC+14:00) Nuku'alofa Island"));
@@ -698,7 +711,9 @@ public class TimeZoneList {
         ZONEMAPPINGS.add(new TimeZoneMapping("W. Europe Standard Time", "Europe/Berlin", "(UTC+01:00) Amsterdam, Berlin, Berne, Rome, Stockholm, Vienne"));
         ZONEMAPPINGS.add(new TimeZoneMapping("W. Europe Standard Time", "Europe/Berlin", "(UTC+01:00) Amsterdam, Berlino, Berna, Roma, Stoccolma, Vienna"));
         ZONEMAPPINGS.add(new TimeZoneMapping("W. Europe Standard Time", "Europe/Berlin", "(UTC+01:00) Amsterdam, Berlin, Bern, Rom, Stockholm, Wien"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("W. Europe Standard Time", "Europe/Berlin", "(UTC+1.00) Amsterdam, Berlino, Berna, Roma, Stoccolma, Vienna"));
         ZONEMAPPINGS.add(new TimeZoneMapping("W. Europe Standard Time", "Europe/Berlin", "W. Europe Standard Time"));
+        ZONEMAPPINGS.add(new TimeZoneMapping("W. Europe Standard Time", "Europe/Berlin", "(GMT+01:00) W. Europe Standard Time"));
         ZONEMAPPINGS.add(new TimeZoneMapping("West Asia Standard Time", "Asia/Tashkent", "(UTC+05:00) Tashkent"));
         ZONEMAPPINGS.add(new TimeZoneMapping("West Asia Standard Time", "Asia/Tashkent", "(UTC+05:00) Ashgabat, Tashkent"));
         ZONEMAPPINGS.add(new TimeZoneMapping("West Asia Standard Time", "Asia/Tashkent", "(UTC+05:00) Ashgabat, Toshkent"));

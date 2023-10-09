@@ -501,7 +501,7 @@ public class AuthenticationWindow extends SIPCommFrame implements ActionListener
                 // If we've just received a URI with a subscriber on then we
                 // should update the subscriber field with the latest value.
                 logger.info("Login URI clicked, filling in subscriber field " +
-                            "with: " + subscriberFromUri);
+                            "with: " + logHasher(subscriberFromUri));
 
                 ((JTextField) aw.uinValue).setText(subscriberFromUri);
 

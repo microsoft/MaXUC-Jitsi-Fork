@@ -12,12 +12,10 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -140,59 +138,6 @@ public class ImageUtils
         int height)
     {
         return new ImageIcon(scaleImageWithinBounds(image, width, height));
-    }
-
-    /**
-     * Scales the given <tt>image</tt> to fit in the given <tt>width</tt> and
-     * <tt>height</tt>.
-     *
-     * @param imageBytes the bytes of the image to scale
-     * @param width the desired width
-     * @param height the desired height
-     * @return the scaled image
-     */
-    public static Image scaleImageWithinBounds( byte[] imageBytes,
-                                                    int width,
-                                                    int height)
-    {
-        if (imageBytes == null || !(imageBytes.length > 0))
-            return null;
-
-        Image imageIcon = null;
-
-        try
-        {
-            Image image = null;
-
-            // sometimes ImageIO fails, will fall back to awt Toolkit
-            try
-            {
-                image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            } catch (Exception e)
-            {
-                try
-                {
-                    image = Toolkit.getDefaultToolkit().createImage(imageBytes);
-                } catch (Exception e1)
-                {
-                    // if it fails throw the original exception
-                    throw e;
-                }
-            }
-            if(image != null)
-                imageIcon = scaleImageWithinBounds(image, width, height);
-            else
-                logger.trace("Unknown image format or error reading image");
-        }
-        catch (Exception e)
-        {
-            logger.debug("Could not create image.", e);
-        }
-
-        if (imageIcon != null)
-            return imageIcon;
-
-        return null;
     }
 
     /**
@@ -332,22 +277,6 @@ public class ImageUtils
     }
 
     /**
-     * Returns a scaled elliptical instance of the given <tt>image</tt>.
-     * @param image the image to scale
-     * @param width the desired width
-     * @param height the desired height
-     * @return a byte array containing the scaled elliptical image
-     */
-    public static byte[] getScaledEllipticalInstanceInBytes(
-        Image image, int width, int height)
-    {
-        BufferedImage scaledImage
-            = (BufferedImage) getScaledEllipticalImage(image, width, height);
-
-        return convertImageToBytes(scaledImage);
-    }
-
-    /**
      * Returns a scaled rounded icon from the given <tt>image</tt>, scaled
      * within the given <tt>width</tt> and <tt>height</tt>.
      * @param image the image to scale
@@ -414,57 +343,6 @@ public class ImageUtils
             return new ImageIcon(scaledImage);
 
         return null;
-    }
-
-    /**
-     * Creates a rounded corner scaled image.
-     *
-     * @param imageBytes The bytes of the image to be scaled.
-     * @param width The maximum width of the scaled image.
-     * @param height The maximum height of the scaled image.
-     *
-     * @return The rounded corner scaled image.
-     */
-    public static ImageIcon getScaledRoundedIcon(  byte[] imageBytes,
-                                                   int width,
-                                                   int height)
-    {
-        return getScaledIcon(imageBytes,
-                             Shape.ROUNDED_RECTANGLE,
-                             width,
-                             height);
-    }
-
-    /**
-     * Creates a elliptical scaled image.
-     *
-     * @param imageBytes The bytes of the image to be scaled.
-     * @param width The maximum width of the scaled image.
-     * @param height The maximum height of the scaled image.
-     *
-     * @return The elliptical scaled image.
-     */
-    public static ImageIcon getScaledEllipticalIcon(  byte[] imageBytes,
-                                                      int width,
-                                                      int height)
-    {
-        return getScaledIcon(imageBytes, Shape.ELLIPSE, width, height);
-    }
-
-    /**
-     * Creates a circular scaled image.
-     *
-     * @param imageBytes The bytes of the image to be scaled.
-     * @param width The maximum width of the scaled image.
-     * @param height The maximum height of the scaled image.
-     *
-     * @return The circular scaled image.
-     */
-    public static ImageIcon getScaledCircularIcon(  byte[] imageBytes,
-                                                      int width,
-                                                      int height)
-    {
-        return getScaledIcon(imageBytes, Shape.CIRCLE, width, height);
     }
 
     /**
@@ -692,71 +570,6 @@ public class ImageUtils
     }
 
     /**
-     * Creates a cropped, scaled image.
-     *
-     * @param imageBytes The bytes of the image to be scaled.
-     * @param shape The shape of the scaled image.
-     * @param width The maximum width of the scaled image.
-     * @param height The maximum height of the scaled image.
-     *
-     * @return The cropped, scaled image.
-     */
-    private static ImageIcon getScaledIcon(  byte[] imageBytes,
-                                             Shape shape,
-                                             int width,
-                                             int height)
-    {
-        if (imageBytes == null || !(imageBytes.length > 0))
-            return null;
-
-        ImageIcon imageIcon = null;
-
-        try
-        {
-            Image image = null;
-
-            // sometimes ImageIO fails, will fall back to awt Toolkit
-            try
-            {
-                image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            } catch (Exception e)
-            {
-                try
-                {
-                    image = Toolkit.getDefaultToolkit().createImage(imageBytes);
-                } catch (Exception e1)
-                {
-                    // if it fails throw the original exception
-                    throw e;
-                }
-            }
-            if(image != null)
-            {
-                switch (shape)
-                {
-                case ELLIPSE:
-                    imageIcon = getScaledEllipticalIcon(image, width, height);
-                    break;
-                case ROUNDED_RECTANGLE:
-                    imageIcon = getScaledRoundedIcon(image, width, height);
-                    break;
-                case CIRCLE:
-                    imageIcon = getScaledCircularIcon(image, width, height);
-                    break;
-                }
-            }
-            else
-                logger.trace("Unknown image format or error reading image");
-        }
-        catch (Exception e)
-        {
-            logger.debug("Could not create image.", e);
-        }
-
-        return imageIcon;
-    }
-
-    /**
      * Returns the buffered image corresponding to the given url image path.
      *
      * @param imagePath the path indicating, where we can find the image.
@@ -849,62 +662,6 @@ public class ImageUtils
             logger.error("Failed to convert bytes to image.", e);
         }
         return image;
-    }
-
-    /**
-     * Creates a composed image from two images. If one of the images
-     * is missing will add an empty space on its place.
-     * @param leftImage the left image.
-     * @param rightImage the right image
-     * @param imageObserver need to calculate image sizes.
-     * @return the composed image.
-     */
-    public static Image getComposedImage(
-                    Image leftImage, Image rightImage,
-                    ImageObserver imageObserver)
-    {
-        int height = 0;
-        if(leftImage == null && rightImage == null)
-            return null;
-        if(leftImage != null && rightImage != null)
-            height = Math.max(leftImage.getHeight(imageObserver),
-                              rightImage.getHeight(imageObserver));
-        else if(leftImage == null)
-            height = rightImage.getHeight(imageObserver);
-        else
-            height = leftImage.getHeight(imageObserver);
-
-        int width = 0;
-        int leftWidth = 0;
-        if(leftImage != null && rightImage != null)
-        {
-            leftWidth = leftImage.getWidth(imageObserver);
-            width = leftWidth +
-                     rightImage.getWidth(imageObserver);
-        }
-        else if(leftImage == null)
-        {
-            leftWidth = rightImage.getWidth(imageObserver);
-            width = leftWidth*2;
-        }
-        else
-        {
-            leftWidth = leftImage.getWidth(imageObserver);
-            width = leftWidth*2;
-        }
-
-        BufferedImage buffImage =
-            new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = (Graphics2D) buffImage.getGraphics();
-
-        AntialiasingManager.activateAntialiasing(g);
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
-        if(leftImage != null)
-            g.drawImage(leftImage, 0, 0, null);
-        if(rightImage != null)
-            g.drawImage(rightImage, leftWidth + 1, 0, null);
-
-        return buffImage;
     }
 
     /**

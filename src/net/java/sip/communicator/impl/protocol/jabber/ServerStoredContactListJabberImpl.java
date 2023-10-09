@@ -52,6 +52,9 @@ import net.java.sip.communicator.service.protocol.event.ContactPropertyChangeEve
 import net.java.sip.communicator.service.protocol.event.ServerStoredGroupEvent;
 import net.java.sip.communicator.service.protocol.event.ServerStoredGroupListener;
 import net.java.sip.communicator.service.protocol.event.SubscriptionEvent;
+import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPANamespace;
+import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.ContactLogger;
 import net.java.sip.communicator.util.Logger;
@@ -751,50 +754,17 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     }
 
     /**
-     * Creates a non persistent contact for the specified address. This would
-     * also create (if necessary) a group for volatile contacts that would not
-     * be added to the server stored contact list. This method would have no
-     * effect on the server stored contact list.
+     * Creates a non-persistent contact for the specified address.
+     * This just creates a contact and does not create any group.
      * @param id the address of the contact to create.
-     * @param displayName
+     * @param displayName contact name
      * @return the newly created volatile <tt>ContactImpl</tt>
      */
     ContactJabberImpl createVolatileContact(String id, String displayName)
     {
         contactLogger.debug("Creating volatile contact with id " + sanitisePeerId(id) +
                             " and display name " + logHasher(displayName));
-        VolatileContactJabberImpl newVolatileContact
-            = new VolatileContactJabberImpl(id, this, displayName);
-
-        //Check whether a volatile group already exists and if not create
-        //one
-        ContactGroupJabberImpl theVolatileGroup = getNonPersistentGroup();
-
-        //if the parent group is null then add necessary create the group
-        if (theVolatileGroup == null)
-        {
-            theVolatileGroup = new VolatileContactGroupJabberImpl(
-                JabberActivator.getResources().getI18NString(
-                    "service.gui.NOT_IN_CONTACT_LIST_GROUP_NAME"),
-                this);
-
-            theVolatileGroup.addContact(newVolatileContact);
-
-            mRootGroup.addSubGroup(theVolatileGroup);
-
-            fireGroupEvent(theVolatileGroup
-                           , ServerStoredGroupEvent.GROUP_CREATED_EVENT);
-            fireContactAdded(theVolatileGroup, newVolatileContact);
-
-        }
-        else
-        {
-            theVolatileGroup.addContact(newVolatileContact);
-
-            fireContactAdded(theVolatileGroup, newVolatileContact);
-        }
-
-        return newVolatileContact;
+        return new VolatileContactJabberImpl(id, this, displayName);
     }
 
     /**
@@ -1133,6 +1103,13 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             logger.warn("rosterChangeListener is null - this is expected if " +
                                               "jabber has become unregistered");
         }
+
+        // Workaround for DATA_LIST being requested before we have received all messages
+        // from the server. Sending DATA_LIST to Electron again to ensure most up-to-date
+        // data when we start up the app. Send dummy object to ensure null catching logic
+        // is not hit.
+        WISPAService wispaService = JabberActivator.getWispaService();
+        wispaService.notify(WISPANamespace.MESSAGING, WISPAAction.DATA_LIST, new Object());
     }
 
     /**

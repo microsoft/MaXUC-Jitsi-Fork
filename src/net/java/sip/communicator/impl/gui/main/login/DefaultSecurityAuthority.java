@@ -316,15 +316,4 @@ public class DefaultSecurityAuthority
         this.isUserNameEditable = isUserNameEditable;
     }
 
-    /**
-     * Indicates if the user name is currently editable, i.e. could be changed
-     * by user or not.
-     *
-     * @return <code>true</code> if the user name could be changed,
-     * <code>false</code> - otherwise.
-     */
-    public boolean isUserNameEditable()
-    {
-        return isUserNameEditable;
-    }
 }

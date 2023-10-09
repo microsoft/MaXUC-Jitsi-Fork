@@ -20,7 +20,6 @@ import net.java.sip.communicator.impl.gui.customcontrols.*;
 import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.impl.gui.main.chatroomslist.*;
 import net.java.sip.communicator.impl.gui.main.contactlist.*;
-import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.event.*;
@@ -58,12 +57,6 @@ public class ChatWindowManager
 
     private final List <ChatListener> mChatListeners
         = new ArrayList<>();
-
-    /**
-     * Keeps track of the ChatWindows that are currently active, so that we can
-     * position new ChatWindows without obscuring other ones.
-     */
-    protected final WindowStacker mWindowStacker = new WindowStacker();
 
     /**
      * A lock object to control synchronization of chat panels.
@@ -134,38 +127,6 @@ public class ChatWindowManager
                 chatContainer.addChat(chatPanel);
 
             chatContainer.openChat(chatPanel, setSelected, alertWindow);
-        }
-    }
-
-    /**
-     * Returns <tt>true</tt> if there is an opened <tt>ChatPanel</tt> for the
-     * given <tt>MetaContact</tt>.
-     *
-     * @param metaContact the <tt>MetaContact</tt>, for which the chat is about
-     * @return <tt>true</tt> if there is an opened <tt>ChatPanel</tt> for the
-     * given <tt>MetaContact</tt>
-     */
-    public boolean isChatOpenedFor(MetaContact metaContact)
-    {
-        return isChatOpenedForDescriptor(metaContact);
-    }
-
-    /**
-     * Determines whether there is an opened <tt>ChatPanel</tt> for a specific
-     * chat descriptor.
-     *
-     * @param descriptor the chat descriptor which is to be checked whether
-     * there is an opened <tt>ChatPanel</tt> for
-     * @return <tt>true</tt> if there is an opened <tt>ChatPanel</tt> for the
-     * specified chat descriptor; <tt>false</tt>, otherwise
-     */
-    private boolean isChatOpenedForDescriptor(Object descriptor)
-    {
-        synchronized (mChatSyncRoot)
-        {
-            ChatPanel chatPanel = findChatPanelForDescriptor(descriptor);
-
-            return ((chatPanel != null) && chatPanel.isShown());
         }
     }
 
@@ -637,19 +598,6 @@ public class ChatWindowManager
         else
         {
             return new CreateChatRoomRunner(chatRoom).getChatPanel();
-        }
-    }
-
-    /**
-     * Returns all open <code>ChatPanel</code>s.
-     *
-     * @return  A list of <code>ChatPanel</code>s
-     */
-    public List<ChatPanel> getChatPanels()
-    {
-        synchronized (mChatSyncRoot)
-        {
-            return new ArrayList<>(mChatPanels);
         }
     }
 
@@ -1363,18 +1311,6 @@ public class ChatWindowManager
             {
                 sLog.error("No chat panel found for " + mChatRoomUid);
             }
-        }
-    }
-
-    /**
-     * Returns all currently instantiated <tt>ChatPanels</tt>.
-     * @return all instantiated <tt>ChatPanels</tt>
-     */
-    public Collection <ChatPanel> getAllChats()
-    {
-        synchronized (mChatSyncRoot)
-        {
-            return new ArrayList<>(mChatPanels);
         }
     }
 

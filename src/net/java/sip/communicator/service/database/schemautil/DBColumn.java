@@ -47,12 +47,6 @@ public abstract class DBColumn
         return this;
     }
 
-    public DBColumn caseInsensitive()
-    {
-        mCaseSensitive = false;
-        return this;
-    }
-
     /**
      * Called if the column cannot be null
      * @return this

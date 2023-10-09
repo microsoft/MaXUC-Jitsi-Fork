@@ -53,43 +53,12 @@ class EmptyAccountRegistrationWizard
     }
 
     /**
-     * Returns the ID of our only page.
-     *
-     * @return the ID of our only page
-     */
-    public Object getFirstPageIdentifier()
-    {
-        return page.getIdentifier();
-    }
-
-    /**
      * Called by the NewAccountDialog protocol combo renderer. We don't have an
      * icon so we return <tt>null</tt>
      *
      * @return <tt>null</tt>;
      */
     public BufferedImageFuture getIcon()
-    {
-        return null;
-    }
-
-    /**
-     * Returns the ID of our last and only page.
-     *
-     * @return the id of our last (and only) page.
-     */
-    public Object getLastPageIdentifier()
-    {
-        return EmptyAccountRegistrationWizardPage.FIRST_PAGE_IDENTIFIER;
-    }
-
-    /**
-     * Returns null since we don't have any images associated with this wizard
-     * or no image in our case.
-     *
-     * return an empty byte[] array.
-     */
-    public BufferedImageFuture getPageImage()
     {
         return null;
     }
@@ -102,17 +71,6 @@ class EmptyAccountRegistrationWizard
     public Iterator<WizardPage> getPages()
     {
         return pages.iterator();
-    }
-
-    /**
-     * Returns a dummy protocol description.
-     *
-     * @return a string containing a dummy protocol description.
-     */
-    public String getProtocolDescription()
-    {
-        return GuiActivator.getResources()
-            .getI18NString("impl.gui.main.account.DUMMY_PROTOCOL_DESCRIPTION");
     }
 
     /**

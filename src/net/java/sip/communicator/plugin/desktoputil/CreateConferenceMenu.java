@@ -9,6 +9,7 @@ import javax.swing.border.*;
 
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.service.conference.ConferenceService;
 
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
@@ -242,7 +243,10 @@ public class CreateConferenceMenu
      */
     public static boolean isConferenceServiceEnabled()
     {
-        return DesktopUtilActivator.getConferenceService().isFullServiceEnabled();
+        ConferenceService mConferenceService =
+            DesktopUtilActivator.getConferenceService();
+        return (mConferenceService != null
+            && mConferenceService.isFullServiceEnabled());
     }
 
     /**

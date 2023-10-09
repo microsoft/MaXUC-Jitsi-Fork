@@ -34,14 +34,6 @@ public interface CallJumpService
 
     /**
      * Unregisters the given CallJumpComponent from being notified when there
-     * is a change to whether or not there is a call available to pull.
-     *
-     * @param callPullComponent the CallJumpComponent
-     */
-    void unRegisterForCallPullUpdates(CallJumpComponent callPullComponent);
-
-    /**
-     * Unregisters the given CallJumpComponent from being notified when there
      * is a change to whether or not the call with the given call ID is
      * available to push.
      * @param callPushComponent the CallJumpComponent
@@ -62,6 +54,12 @@ public interface CallJumpService
      * @param callJumpComponent The component to notify in case of an error
      */
     void push(final CallData call, CallJumpComponent callJumpComponent);
+
+    /**
+     * Pushes the given call from this phone
+     * @param remoteParty The remote party the call to push is with
+     */
+    void push(String remoteParty);
 
     /**
      * Returns the alert-info header to use when requesting a call jump.

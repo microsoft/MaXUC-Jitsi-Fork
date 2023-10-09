@@ -11,10 +11,6 @@ import net.java.sip.communicator.service.protocol.*;
  */
 public class ContactLogger
 {
-    /**
-     * Meta-Logger used to log information on the state of this logging class
-     */
-    private static final Logger sLog = Logger.getLogger(ContactLogger.class);
 
     /**
      * The java.util.Logger that actually does the logging
@@ -32,11 +28,6 @@ public class ContactLogger
     public static ContactLogger getLogger()
     {
         return sLogger;
-    }
-
-    public boolean isTraceEnabled()
-    {
-        return sLoggerDelegate.isLoggable(Level.FINER);
     }
 
     public void note(Object msg)
@@ -102,11 +93,6 @@ public class ContactLogger
     public void debug(MetaContact metaContact, Object msg, Throwable t)
     {
         logMetaContact(metaContact, msg, t, Level.FINE);
-    }
-
-    public boolean isInfoEnabled()
-    {
-        return sLoggerDelegate.isLoggable(Level.INFO);
     }
 
     public void info(MetaContact metaContact, Object msg)

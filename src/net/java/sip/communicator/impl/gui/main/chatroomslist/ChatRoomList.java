@@ -239,32 +239,6 @@ public class ChatRoomList
     }
 
     /**
-     * Removes the given <tt>ChatRoom</tt> from the list of all chat rooms.
-     *
-     * @param chatRoomWrapper the <tt>ChatRoomWrapper</tt> to remove
-     */
-    public void removeChatRoom(ChatRoomWrapper chatRoomWrapper)
-    {
-        ChatRoomProviderWrapper chatRoomProvider
-            = chatRoomWrapper.getParentProvider();
-
-        if (providersList.contains(chatRoomProvider))
-        {
-            chatRoomProvider.removeChatRoom(chatRoomWrapper);
-
-            if (chatRoomWrapper.isPersistent())
-            {
-                ConfigurationUtils.saveChatRoom(
-                    chatRoomProvider.getProtocolProvider(),
-                    chatRoomWrapper.getChatRoomID(),
-                    null,   // The new identifier.
-                    null,   // The name of the chat room.
-                    null);  // The subject of the chat room.
-            }
-        }
-    }
-
-    /**
      * Returns the <tt>ChatRoomWrapper</tt> that correspond to the given
      * <tt>ChatRoom</tt>. If the list of chat rooms doesn't contain a
      * corresponding wrapper - returns null.
@@ -353,38 +327,6 @@ public class ChatRoomList
         {
             chatRoomProvider.synchronizeProvider();
         }
-    }
-
-    /**
-     * Returns an iterator to the list of chat room providers.
-     *
-     * @return an iterator to the list of chat room providers.
-     */
-    public Iterator<ChatRoomProviderWrapper> getChatRoomProviders()
-    {
-        return providersList.iterator();
-    }
-
-    /**
-     * Adds a ChatRoomProviderWrapperListener to the listener list.
-     *
-     * @param listener the ChatRoomProviderWrapperListener to be added
-     */
-    public synchronized void addChatRoomProviderWrapperListener(
-        ChatRoomProviderWrapperListener listener)
-    {
-        providerChangeListeners.add(listener);
-    }
-
-    /**
-     * Removes a ChatRoomProviderWrapperListener from the listener list.
-     *
-     * @param listener the ChatRoomProviderWrapperListener to be removed
-     */
-    public synchronized void removeChatRoomProviderWrapperListener(
-        ChatRoomProviderWrapperListener listener)
-    {
-        providerChangeListeners.remove(listener);
     }
 
     /**

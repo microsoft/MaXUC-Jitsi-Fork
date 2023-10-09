@@ -7,7 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
-import static org.jitsi.util.Hasher.logHasher;
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.jivesoftware.smack.chat2.Chat;
@@ -192,7 +192,7 @@ public class OperationSetTypingNotificationsJabberImpl
                             ((ContactResourceJabberImpl) resource).getFullJid();
 
         logger.debug("Sending XEP-0085 chat state=" + state
-            + " to " + logHasher(jid));
+            + " to " + sanitiseChatAddress(jid));
 
         Chat chat = ChatManager.getInstanceFor(
             parentProvider.getConnection())
@@ -210,7 +210,7 @@ public class OperationSetTypingNotificationsJabberImpl
             //we don't want to bother the user with network exceptions
             //so let's simply log it.
             logger.warn("Failed to send state [" + state + "] to ["
-                + logHasher(contact.getAddress()) + "].", exc);
+                + sanitiseChatAddress(contact.getAddress()) + "].", exc);
         }
     }
 
@@ -380,17 +380,16 @@ public class OperationSetTypingNotificationsJabberImpl
             String fromID =
                 (from.asEntityBareJidIfPossible() != null) ?
                     from.asEntityBareJidIfPossible().toString() : "";
-            logger.info("Composing notification from ID: " + fromID);
+            logger.info("Composing notification from ID: " + sanitiseChatAddress(fromID));
 
             Contact sourceContact = opSetPersPresence.findContactByID(fromID);
 
-            if(sourceContact == null)
+            if (sourceContact == null)
             {
-                logger.debug("sourceContact is null, Creating volatile contact");
-                //create the volatile contact
-                sourceContact = opSetPersPresence.createVolatileContact(fromID);
-                logger.debug("volatile contact created");
+                logger.debug("sourceContact is null, ignoring notifications from unknown contacts");
+                return;
             }
+
             logger.debug("firing a TYPING notification");
             fireTypingNotificationsEvent(sourceContact, TypingState.TYPING);
         }
@@ -404,17 +403,16 @@ public class OperationSetTypingNotificationsJabberImpl
             String fromID =
                 (from.asEntityBareJidIfPossible() != null) ?
                     from.asEntityBareJidIfPossible().toString() : "";
-            logger.info("Notification cancelled from ID: " + fromID);
+            logger.info("Notification cancelled from ID: " + sanitiseChatAddress(fromID));
 
             Contact sourceContact = opSetPersPresence.findContactByID(fromID);
 
-            if(sourceContact == null)
+            if (sourceContact == null)
             {
-                logger.debug("sourceContact is null, Creating volatile contact");
-                //create the volatile contact
-                sourceContact = opSetPersPresence.createVolatileContact(fromID);
-                logger.debug("volatile contact created");
+                logger.debug("sourceContact is null, ignoring notification from unknown contacts");
+                return;
             }
+
             logger.debug("firing a NOT_TYPING notification");
             fireTypingNotificationsEvent(sourceContact, TypingState.NOT_TYPING);
         }
@@ -437,11 +435,11 @@ public class OperationSetTypingNotificationsJabberImpl
                                  ChatState state,
                                  org.jivesoftware.smack.packet.Message message)
         {
-            logger.debug(logHasher(chat.getXmppAddressOfChatPartner().toString())
-                + " entered the " + state.name() + " state.");
-
             String fromID =
-                chat.getXmppAddressOfChatPartner().asBareJid().toString();
+                    chat.getXmppAddressOfChatPartner().asBareJid().toString();
+
+            logger.debug(sanitiseChatAddress(fromID)
+                + " entered the " + state.name() + " state.");
 
             // Don't send typing notifications for SMS messages.
             if (fromID.contains("@sms."))
@@ -449,10 +447,10 @@ public class OperationSetTypingNotificationsJabberImpl
 
             Contact sourceContact = opSetPersPresence.findContactByID(fromID);
 
-            if(sourceContact == null)
+            if (sourceContact == null)
             {
-                //create the volatile contact
-                sourceContact = opSetPersPresence.createVolatileContact(fromID);
+                logger.debug("sourceContact is null, ignoring notification from unknown contacts");
+                return;
             }
 
             TypingState typingState = chatStateToTypingState(state);

@@ -29,24 +29,6 @@ public enum Persistence
         "Keybindings (mapping of KeyStrokes to string representations of actions)";
 
     /**
-     * Returns the enum representation of a string. This is case sensitive.
-     *
-     * @param str toString representation of this enum
-     * @return enum associated with a string
-     * @throws IllegalArgumentException if argument is not represented by this
-     *             enum.
-     */
-    public static Persistence fromString(String str)
-    {
-        for (Persistence type : Persistence.values())
-        {
-            if (str.equals(type.toString()))
-                return type;
-        }
-        throw new IllegalArgumentException();
-    }
-
-    /**
      * Attempts to load this type of persistent keystroke map from a given path.
      * This is unable to parse any null content.
      *
@@ -296,54 +278,6 @@ public enum Persistence
             output.flush();
             output.close();
             throw exc;
-        }
-    }
-
-    /**
-     * Provides the textual output of what this persistence format would save
-     * given a set of bindings. This silently fails, returning null if unable to
-     * generate output from bindings.
-     *
-     * @param bindings bindings for which to generate saved output
-     * @return string reflecting what would be saved by this persistence format
-     */
-    public String getOutput(Map<KeyStroke, String> bindings)
-    {
-        /*-
-         * This utilizes a rather lengthy chain of redirection to generate output as a string:
-         * PipedOutputStream ->
-         * PipedInputStream ->
-         * Scanner ->
-         * StringBuilder ->
-         * String
-         */
-
-        PipedOutputStream pipeOut = new PipedOutputStream();
-        PipedInputStream pipeIn = new PipedInputStream();
-        Scanner scanner = new Scanner(pipeIn);
-
-        try
-        {
-            pipeOut.connect(pipeIn);
-            save(pipeOut, bindings);
-            pipeOut.flush();
-            pipeOut.close();
-
-            StringBuilder builder = new StringBuilder();
-            if (scanner.hasNextLine())
-                builder.append(scanner.nextLine());
-            while (scanner.hasNextLine())
-            {
-                builder.append("\n");
-                builder.append(scanner.nextLine());
-            }
-            scanner.close();
-            pipeIn.close();
-            return builder.toString();
-        }
-        catch (IOException | UnsupportedOperationException exc)
-        {
-            return null;
         }
     }
 

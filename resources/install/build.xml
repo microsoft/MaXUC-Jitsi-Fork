@@ -9,11 +9,32 @@
 
     <import file="../../build.xml"/>
 
+    <!-- The directory where plugins are located in -->
+    <property name="plugins" value="${ext}/plugins"/>
+
     <import file="${inst.resrc}/custom-installer-build-targets.xml"/>
 
     <!-- Load installer properties -->
     <!-- USERS NEED TO UPDATE THIS FILE -->
     <property file="${inst.resrc}/installers.properties"/>
+
+    <target name="-windows-installer-plugin">
+        <basename property="plugin-name" file="${plugin-location}" />
+        <echo message="=== Executing Windows installer step for ${plugin-name} ====" />
+        <ant dir="${plugin-location}" antfile="build.xml" target="windows-installer">
+            <property name="wix.app.dir" value="${windows.app.dir}/tmp/light" />
+            <property environment="env" />
+        </ant>
+    </target>
+
+    <target name="-macosx-installer-plugin">
+        <basename property="plugin-name" file="${plugin-location}" />
+        <echo message="=== Executing Mac installer step for ${plugin-name} ====" />
+        <ant dir="${plugin-location}" antfile="build.xml" target="macosx-installer">
+            <property name="macosx.app.dir" value="${macosx.app.dir}" />
+            <property environment="env" />
+        </ant>
+    </target>
 
     <target name="load-properties">
         <!-- load properties on demand here so it can evaluate
@@ -22,10 +43,9 @@
         so load the overriders first -->
         <property file="${inst.resrc}/ant-build-config-overrides.properties"/>
         <property file="${credentials}/macosx/macosx-sign.properties"/>
-        <property file="${credentials}/windows/windows-sign.properties"/>
         <property file="${inst.resrc}/ant-build-config.properties"/>
 
-    	<!-- If the old app name property isn't already set, use a default of "" -->
+        <!-- If the old app name property isn't already set, use a default of "" -->
     	<property name="application.oldname.ascii" value="" />
 
         <!--
@@ -33,8 +53,6 @@
             because we will modify at least the PATH where is needed.
         -->
         <property environment="env" />
-
-        <runtarget target="set-meeting-properties" />
 
         <!-- Display the properties - essential to understand the build process -->
         <echoproperties/>
@@ -147,6 +165,14 @@
                 <include name="bin/jqs*.exe" />
             </fileset>
         </delete>
+
+        <!-- generating the customised font configuration file from the original default file in JDK. -->
+        <mkdir dir="${unzip.windows.jre.dest}/jre/conf/fonts" />
+        <exec executable="sed" output="${unzip.windows.jre.dest}/jre/conf/fonts/fontconfig.properties" logError="true" failonerror="true">
+            <arg value="-E"/>
+            <arg value="s/(allfonts\.thai)=DokChampa/\1=Leelawadee UI/g;s/(sansserif\.[a-z]+\.alphabetic)=Arial/\1=Segoe UI/g;s/^(filename\.Segoe_UI_Symbol=SEGUISYM.TTF)$/\1\n\nfilename.Segoe_UI=segoeui.ttf\nfilename.Segoe_UI_Bold=segoeuib.ttf\nfilename.Segoe_UI_Italic=segoeuii.ttf\nfilename.Segoe_UI_Bold_Italic=segoeuiz.ttf/g"/>
+            <arg value="${unzip.windows.jre.dest}/jre/lib/fontconfig.properties.src"/>
+        </exec>
     </target>
 
     <target name="build-installation-wix-base"
@@ -209,9 +235,7 @@
             <arg value="TARGET_BASENAME=${wix.app.launcher.name}" />
             <arg value="ENABLE_COVERAGE=${env.ENABLE_COVERAGE}" />
         </exec>
-        <antcall target="wix-sign-file">
-            <param name="file.to.sign" value="${light.dir}/${wix.app.launcher.name}.exe"/>
-        </antcall>
+
         <delete>
             <fileset dir="${light.dir}">
                 <include name="config.h" />
@@ -225,10 +249,10 @@
             </fileset>
         </copy>
 
-        <!-- place the licences html file where the AboutWindow can find it -->
-        <copy todir="${light.dir}/resources/licences" overwrite="true">
-            <fileset dir="${sc.basedir}/resources/licences">
-                <include name="licences.html" />
+        <!-- copy any resources that we'd like to be available to the installed client -->
+        <copy todir="${light.dir}/resources" overwrite="true">
+            <fileset dir="${sc.basedir}/resources/bundle"
+                     includes="**/*">
             </fileset>
         </copy>
 
@@ -242,6 +266,9 @@
             </fileset>
             <fileset dir="${sc.basedir}/lib">
                 <include name="jitsi-defaults.properties" />
+            </fileset>
+            <fileset dir="${sc.basedir}/lib">
+                <include name="applicationinsights.json" />
             </fileset>
             <fileset dir="${sc.basedir}/lib">
                 <include name="jitsi-default-overrides.properties" />
@@ -282,8 +309,9 @@
         <!-- Include Electron client if configured to do so -->
         <runtarget target="windows-electron"/>
 
-        <!-- Include Meeting if configured to do so -->
-        <runtarget target="windows-meeting" />
+        <foreach param="plugin-location" target="-windows-installer-plugin" >
+            <path refid="included.plugins" />
+        </foreach>
 
         <mkdir dir="${light.dir}/native" />
         <copy todir="${light.dir}/native" overwrite="true">
@@ -291,9 +319,6 @@
                 <include name="**" />
             </fileset>
         </copy>
-        <antcall target="wix-sign-dlls">
-            <param name="folder.to.sign" value="${light.dir}/native"/>
-        </antcall>
         <mkdir dir="${light.dir}/sc-bundles" />
         <copy todir="${light.dir}/sc-bundles" overwrite="true">
             <fileset dir="${sc.basedir}/sc-bundles">
@@ -339,11 +364,11 @@
                 todir="${light.dir}"
                 overwrite="true" />
 
-        <property name="wix.home" value="C:\Program Files (x86)\WiX Toolset V3.10\bin" />
+        <property name="wix.home" value="C:\Program Files (x86)\WiX Toolset v4.0" />
 
         <!-- Execute heat.exe -->
         <exec
-                executable="${wix.home}\heat.exe"
+                executable="${user.home}\.nuget\packages\wixtoolset.heat\4.0.1\tools\net472\x64\heat.exe"
                 dir="${light.dir}"
                 failonerror="true">
             <arg value="dir" />
@@ -394,9 +419,6 @@
             <arg value="MINGW_HOME=${mingw.home}" />
             <arg value="TARGET_DIR=${light.dir}" />
         </exec>
-        <antcall target="wix-sign-file">
-            <param name="file.to.sign" value="${light.dir}/cleansweep.exe"/>
-        </antcall>
         <delete>
             <fileset dir="${light.dir}">
                 <include name="config.h" />
@@ -404,14 +426,30 @@
             </fileset>
         </delete>
 
+        <path id="files-to-sign">
+            <fileset dir="${light.dir}/native">
+                <include name="**/*.dll"/>
+                <include name="**/*.exe"/>
+            </fileset>
+            <file file="${light.dir}/${wix.app.launcher.name}.exe"/>
+            <file file="${light.dir}/cleansweep.exe"/>
+            <fileset dir="${light.dir}/ui">
+                <include name="*.exe"/>
+            </fileset>
+        </path>
+
+        <antcall target="wix-sign-file">
+            <reference refid="files-to-sign" torefid="files.to.sign"/>
+        </antcall>
+
         <!-- prepare properties for executing candle.exe -->
         <condition property="candle.var.Platform" value="x64" else="x86">
             <equals arg1="${windows.arch}" arg2="64" />
         </condition>
         <condition
                 property="candle.arg.var.JRESetup"
-                value="-dJRESetup=${windows.jre.arch.file}"
-                else="-nologo">
+                value="JRESetup=${windows.jre.arch.file}"
+                else="NoJRESetup=true">
             <and>
                 <isset property="windows.jre.arch.file" />
                 <not>
@@ -460,9 +498,14 @@
             <arg value="PRODUCTBUILDVERSION=${sip-communicator.version}" />
             <arg value="PRODUCTNAME=${application.name.ascii}" />
         </exec>
+
+        <path id="installer-to-sign">
+            <file file="${windows.app.dir}\tmp\setup.exe"/>
+        </path>
         <antcall target="wix-sign-file">
-            <param name="file.to.sign" value="${windows.app.dir}\tmp\setup.exe"/>
+            <reference refid="installer-to-sign" torefid="files.to.sign"/>
         </antcall>
+
         <move
                 file="${windows.app.dir}/tmp/setup.exe"
                 preservelastmodified="true"
@@ -488,7 +531,6 @@
 
         <runtarget target="wix-template-replace" />
 
-        <copy file="${credentials}/windows/websocket_keystore.jks" todir="${windows.app.dir}/tmp" overwrite="true" filtering="no" />
         <if><not><available file="${windows.app.dir}\tmp\${wix.locale.default.culture}.wxl" /></not>
         <then>
           <echo message="Creating wxl file" />
@@ -541,24 +583,7 @@
         <echo message="  wix.locale.default.codepage: ${wix.locale.default.codepage}" />
         <echo message="  wix.locale.default.id: ${wix.locale.default.id}" />
 
-        <!-- Execute candle.exe -->
-        <exec
-                executable="${wix.home}\candle.exe"
-                dir="${windows.app.dir}/tmp"
-                failonerror="true">
-            <arg value="-nologo" />
-            <arg value="-dcodepage=${wix.locale.default.codepage}" />
-            <arg value="-dPlatform=${candle.var.Platform}" />
-            <arg value="-ext" />
-            <arg value="WixUIExtension" />
-            <arg value="-ext" />
-            <arg value="WixUtilExtension" />
-            <arg value="-dSourceDir=light" />
-            <arg value="${candle.arg.var.JRESetup}" />
-            <arg value="installer-windows.wxs" />
-        </exec>
-
-        <!-- Finish the preparation for the execution of light.exe -->
+        <!-- Finish the preparation for the execution of wix tool -->
         <copy todir="${light.dir}" overwrite="true">
             <fileset dir="${inst.resrc}/doc">
                 <include name="License.rtf" />
@@ -568,26 +593,34 @@
             </fileset>
         </copy>
 
-        <!-- Execute light.exe -->
+        <!-- Execute wix.exe -->
         <exec
-                executable="${wix.home}\light.exe"
+                executable="wix.exe"
                 dir="${light.dir}"
                 failonerror="true">
-            <arg value="-reusecab"/>
+            <arg value="build" />
             <arg value="-cc"/>
             <arg value="${light.dir}/cabcache"/>
-            <arg value="-nologo" />
             <arg value="${wix.light.additional.arg}" />
             <arg value="-ext" />
-            <arg value="WixUIExtension" />
+            <arg value="WixToolset.UI.wixext" />
             <arg value="-ext" />
-            <arg value="WixUtilExtension" />
-            <arg value="-cultures:${wix.locale.default.culture}" />
+            <arg value="WixToolset.Util.wixext" />
+            <arg value="-d" />
+            <arg value="codepage=${wix.locale.default.codepage}" />
+            <arg value="-d" />
+            <arg value="Platform=${candle.var.Platform}" />
+            <arg value="-d" />
+            <arg value="SourceDir=${windows.app.dir}\tmp\light" />
+            <arg value="-d" />
+            <arg value="${candle.arg.var.JRESetup}" />
+            <arg value="-culture" />
+            <arg value="${wix.locale.default.culture}" />
             <arg value="-loc" />
             <arg value="${windows.app.dir}\tmp\${wix.locale.default.culture}.wxl" />
             <arg value="-out" />
             <arg value="${windows.app.dir}\tmp\setup.msi" />
-            <arg value="${windows.app.dir}\tmp\installer-windows.wixobj" />
+            <arg value="${windows.app.dir}\tmp\installer-windows.wxs" />
         </exec>
 
         <!-- Write locale id to file so we can verify we built the correct transforms later -->
@@ -711,11 +744,24 @@
             - (For dev brandings) Disabled all unwanted installer languages?
         </fail>
 
-        <!-- Once all locales have been built and put in the msi, sign it -->
-        <antcall target="wix-sign-file">
-            <param name="file.to.sign" value="${windows.app.dir}\tmp\setup.msi"/>
-        </antcall>
+        <!-- Update the msi to set available languages -->
+        <exec
+                executable="cscript.exe"
+                dir="${light.dir}"
+                failonerror="true">
+            <arg value="${inst.resrc}\windows\WiLangId.vbs" />
+            <arg value="${windows.app.dir}\tmp\setup.msi" />
+            <arg value="Package" />
+            <arg value="${wix.locale.default.id},${wix.locale.list}" />
+        </exec>
 
+        <!-- Once all locales have been built and put in the msi, sign it -->
+        <path id="msi-installer-to-sign">
+            <file file="${windows.app.dir}\tmp\setup.msi"/>
+        </path>
+        <antcall target="wix-sign-file">
+            <reference refid="msi-installer-to-sign" torefid="files.to.sign"/>
+        </antcall>
     </target>
 
     <!-- Creates localized msi installers and the resulting
@@ -769,49 +815,43 @@
               </exec>
             </then>
             </if>
-            <!-- Execute candle.exe for locale.name-->
+
+            <!-- Execute wix.exe for locale.name -->
             <exec
-                    executable="${wix.home}\candle.exe"
-                    dir="${windows.app.dir}/tmp"
-                    failonerror="true">
-                <arg value="-nologo" />
-                <arg value="-dcodepage=${locale.codepage}" />
-                <arg value="-dPlatform=${candle.var.Platform}" />
-                <arg value="-ext" />
-                <arg value="WixUIExtension" />
-                <arg value="-ext" />
-                <arg value="WixUtilExtension" />
-                <arg value="-dSourceDir=light" />
-                <arg value="${candle.arg.var.JRESetup}" />
-                <arg value="installer-windows.wxs" />
-            </exec>
-            <!-- Execute light.exe for locale.name -->
-            <exec
-                    executable="${wix.home}\light.exe"
+                    executable="wix.exe"
                     dir="${light.dir}"
                     failonerror="true">
-                <arg value="-v" />
-                <arg value="-reusecab"/>
+                <arg value="build" />
                 <arg value="-cc"/>
                 <arg value="${light.dir}/cabcache"/>
-                <arg value="-nologo" />
                 <arg value="${wix.light.additional.arg}" />
                 <arg value="-ext" />
-                <arg value="WixUIExtension" />
+                <arg value="WixToolset.UI.wixext" />
                 <arg value="-ext" />
-                <arg value="WixUtilExtension" />
-                <arg value="-cultures:${locale.name}" />
+                <arg value="WixToolset.Util.wixext" />
+                <arg value="-d" />
+                <arg value="codepage=${locale.codepage}" />
+                <arg value="-d" />
+                <arg value="Platform=${candle.var.Platform}" />
+                <arg value="-d" />
+                <arg value="SourceDir=${windows.app.dir}\tmp\light" />
+                <arg value="-d" />
+                <arg value="${candle.arg.var.JRESetup}" />
+                <arg value="-culture" />
+                <arg value="${locale.name}" />
                 <arg value="-loc" />
                 <arg value="${windows.app.dir}\tmp\${locale.name}.wxl" />
                 <arg value="-out" />
                 <arg value="${windows.app.dir}\tmp\setup_${locale.name}.msi" />
-                <arg value="${windows.app.dir}\tmp\installer-windows.wixobj" />
+                <arg value="${windows.app.dir}\tmp\installer-windows.wxs" />
             </exec>
 
             <exec
-                    executable="${wix.home}\torch.exe"
+                    executable="wix.exe"
                     dir="${light.dir}"
                     failonerror="true">
+                <arg value="msi" />
+                <arg value="transform" />
                 <arg value="-p" />
                 <arg value="-t" />
                 <arg value="language" />
@@ -924,9 +964,14 @@
             <arg value="PACKAGESIZE=${old.packagesize}" />
             <arg value="PRODUCTBUILDVERSION=${sip-communicator.version}" />
         </exec>
+
+        <path id="delta-installer-to-sign">
+            <file file="${windows.app.dir}\tmp\setup.exe"/>
+        </path>
         <antcall target="wix-sign-file">
-            <param name="file.to.sign" value="${windows.app.dir}\tmp\setup.exe"/>
+            <reference refid="delta-installer-to-sign" torefid="files.to.sign"/>
         </antcall>
+
         <move
                 file="${windows.app.dir}/tmp/setup.exe"
                 preservelastmodified="true"
@@ -934,78 +979,23 @@
     </target>
 
     <target name="wix-sign-file">
-        <antcall target="-wix-sign-file-pfx" />
-        <antcall target="-wix-sign-file-usb-sha1" />
-        <exec executable="cmd"
-              failonerror="true">
-          <arg value="/c" />
-          <arg value="${inst.resrc}/windows/timestamp.bat" />
-          <arg value="${file.to.sign}" />
-        </exec>
+        <if>
+            <and>
+                <equals arg1="${env.SKIP_NOTARIZATION}" arg2="true"/>
+                <not>
+                    <equals arg1="${env.SIGN_WINDOWS}" arg2="true"/>
+                </not>
+            </and>
+            <then>
+                <echo message="Skipping Windows signing"/>
+            </then>
+            <else>
+                <antcall target="signing.esrp-sign">
+                    <reference refid="files.to.sign"/>
+                </antcall>
+            </else>
+        </if>
     </target>
-
-    <target name="-wix-sign-file-usb-sha1" if="sign.cert.usb.sha1">
-        <exec executable="${inst.resrc}/windows/signtool.exe"
-              failonerror="true">
-            <arg value="sign" />
-            <arg value="/v" />
-            <arg value="/d" />
-            <arg value="${application.name.ascii}" />
-            <arg value="/sha1" />
-            <arg value="${sign.cert.usb.sha1}" />
-            <arg value="${file.to.sign}" />
-        </exec>
-    </target>
-
-    <target name="-wix-sign-file-pfx" if="sign.cert.file" unless="sign.cert.usb.sha1">
-        <antcall target="-wix-sign-file-with-password" />
-        <antcall target="-wix-sign-file-without-password" />
-    </target>
-
-    <target name="-wix-sign-file-with-password" if="sign.cert.password">
-        <exec executable="${inst.resrc}/windows/signtool.exe"
-              failonerror="true">
-            <arg value="sign" />
-            <arg value="/v" />
-            <arg value="/d" />
-            <arg value="${application.name.ascii}" />
-            <arg value="/f" />
-            <arg value="${sign.cert.file}" />
-            <arg value="/fd" />
-            <arg value="SHA256" />
-            <arg value="/p" />
-            <arg value="${sign.cert.password}" />
-            <arg value="${file.to.sign}" />
-        </exec>
-    </target>
-
-    <target name="-wix-sign-file-without-password" unless="sign.cert.password">
-        <exec executable="${inst.resrc}/windows/signtool.exe"
-              failonerror="true">
-            <arg value="sign" />
-            <arg value="/d" />
-            <arg value="${application.name.ascii}" />
-            <arg value="/f" />
-            <arg value="${sign.cert.file}" />
-            <arg value="/fd" />
-            <arg value="SHA256" />
-            <arg value="${file.to.sign}" />
-        </exec>
-    </target>
-
-    <!-- signs all dll files in folder - $folder.to.sign
-        do it if $sign.cert.file is available -->
-    <target name="wix-sign-dlls" depends="buildtools.init-ant-contrib" >
-        <foreach param="file.to.sign" target="wix-sign-file"
-                 inheritall="true" inheritrefs="true">
-            <path>
-                <fileset dir="${folder.to.sign}">
-                    <include name="*.dll"/>
-                </fileset>
-            </path>
-        </foreach>
-    </target>
-
     <!-- - - - - - - - - - - BUILDING RELEASE PACKAGES - - - - - - - - - - - -->
     <!-- Internal target called by the "clean target" - removes the macosx-specific file -->
     <!-- we only execute if at least one (in this case the first) of the links we are
@@ -1014,6 +1004,7 @@
     <target name="clean-macosx" if="macResourcesExist">
 
         <delete failonerror="false" file="${macosx.resrc.dir}/jitsi-defaults.properties"/>
+        <delete failonerror="false" file="${macosx.resrc.dir}/applicationinsights.json"/>
         <delete failonerror="false" file="${macosx.resrc.dir}/logging.properties"/>
         <delete failonerror="false" file="${macosx.resrc.dir}/felix.client.run.properties"/>
         <symlink action="delete" failonerror="false"
@@ -1044,7 +1035,7 @@
 
       <mkdir dir="${macosx.app.dir}"/>
 
-      <!-- Prepare the logging.properties file for macosx -->
+        <!-- Prepare the logging.properties file for macosx -->
       <copy file="${inst.resrc}/logging.properties"
               tofile="${macosx.resrc.dir}/logging.properties"
               overwrite="true"/>
@@ -1052,12 +1043,12 @@
             token="java.util.logging.FileHandler.pattern = %h/.sip-communicator/log"
             value="java.util.logging.FileHandler.pattern = log"/>
 
-      <!-- Prepare the felix.client.run.properties file for macosx -->
+        <!-- Prepare the felix.client.run.properties file for macosx -->
       <copy file="${lib}/felix.client.run.properties"
             tofile="${macosx.resrc.dir}/felix.client.run.properties"
             overwrite="true"/>
 
-      <!-- Refer to custom-installer-build-targets.xml comment [1] -->
+        <!-- Refer to custom-installer-build-targets.xml comment [1] -->
         <jar compress="false" destfile="${bundles.dest}/add-working-directory-to-classpath.jar">
             <manifest>
                 <attribute name="Class-Path" value="." />
@@ -1070,21 +1061,29 @@
             overwrite="true"
             failonerror="false"/>
 
+        <!-- Prepare the applicationinsights.json file for macosx -->
+      <copy file="${lib}/applicationinsights.json"
+            tofile="${macosx.resrc.dir}/applicationinsights.json"
+            overwrite="true"
+            failonerror="false"/>
+
       <copy file="${lib}/jitsi-default-overrides.properties"
             tofile="${macosx.resrc.dir}/jitsi-default-overrides.properties"
             overwrite="true"
             failonerror="false"/>
 
-      <!-- Code in AboutWindow expects to find the licence text in a file below the current directory -->
-      <copy file="${sc.basedir}/resources/licences/licences.html"
-            tofile="${macosx.resrc.dir}/resources/licences/licences.html"
-            overwrite="true"/>
+      <!-- copy any resources that we'd like to be available to the installed client -->
+      <copy todir="${macosx.resrc.dir}/resources" overwrite="true">
+          <fileset dir="${sc.basedir}/resources/bundle"
+                   includes="**/*">
+          </fileset>
+      </copy>
 
-      <!-- Remove the reference to the update bundle -->
+        <!-- Remove the reference to the update bundle -->
       <replace file="${macosx.resrc.dir}/felix.client.run.properties"
                token="reference:file:sc-bundles/updatewindows.jar"
                value=""/>
-      <!-- colons can be escaped after some modifications -->
+        <!-- colons can be escaped after some modifications -->
       <replace file="${macosx.resrc.dir}/felix.client.run.properties"
                token="reference\:file\:sc-bundles/updatewindows.jar"
                value=""/>
@@ -1093,7 +1092,7 @@
                 replace="org.osgi.framework.storage=$\{user.home\}/Library/Application Support/${application.name.ascii}/sip-communicator.bin"
                 flags="m"/>
 
-      <!-- Remove directory prefixes from the felix properties file -->
+        <!-- Remove directory prefixes from the felix properties file -->
       <replace file="${macosx.resrc.dir}/felix.client.run.properties"
         token="sc-bundles/"
         value=""/>
@@ -1102,7 +1101,7 @@
         token="lib/bundle/"
         value=""/>
 
-      <!-- We copy macosx-specific bundles from
+        <!-- We copy macosx-specific bundles from
            sc-bundles/os-specific/macosx to sc-bundles -->
       <copy todir="${bundles.dest}">
             <fileset dir="${bundles.dest.mac}">
@@ -1110,15 +1109,15 @@
             </fileset>
       </copy>
 
-      <!-- Delete the old .app if it exists -->
+        <!-- Delete the old .app if it exists -->
       <delete dir="${macosx.app.dir}/${application.name.ascii}.app"
               quiet="yes" failonerror="false"/>
-      <!-- Delete the old tmp if it exists -->
+        <!-- Delete the old tmp if it exists -->
       <delete dir="${macosx.app.dir}/tmp"
               quiet="yes" failonerror="false"/>
       <mkdir dir="${macosx.app.dir}/tmp"/>
 
-      <!-- Sparkle needs the build number. If it is not
+        <!-- Sparkle needs the build number. If it is not
            available, we use the normal build label -->
       <condition property="sparkle.build"
                  value="${sparkle}"
@@ -1126,7 +1125,7 @@
           <isset property="sparkle"/>
       </condition>
 
-      <!-- removes any spaces from application name if any -->
+        <!-- removes any spaces from application name if any -->
       <propertyregex property="macosx.stub.filename"
             input="${application.name.ascii}"
             regexp=" "
@@ -1135,7 +1134,7 @@
             global="true"
             defaultValue="${application.name.ascii}"/>
 
-      <!-- install_name_tool -change lib/native/mac/libjnwebrtc.dylib libjnwebrtc.dylib libjnwebrtcaec.dylib -->
+        <!-- install_name_tool -change lib/native/mac/libjnwebrtc.dylib libjnwebrtc.dylib libjnwebrtcaec.dylib -->
 
       <fail unless="env.JRE_HOME" message="JRE_HOME is required but is not set."/>
       <basename property="macosx.jre.version" file="${env.JRE_HOME}/../.."/>
@@ -1209,6 +1208,9 @@
             <option value="-Djna.nounpack=true" />
             <option value="-Djna.boot.library.path=$APP_ROOT/Contents/MacOS" />
 
+            <!-- Run the Application Insights Agent -->
+            <option value="-javaagent:$APP_ROOT/Contents/Java/applicationinsights-agent.jar" />
+
             <!-- Specify SUBundleName in Info.plist to support app name change over upgrade -->
             <plistentry key="SUBundleName" value="${sparkle.bundle.name}" />
 
@@ -1225,8 +1227,9 @@
                 <include name="resources/install/macosx/logging.properties"/>
                 <include name="resources/install/macosx/felix.client.run.properties"/>
                 <include name="resources/install/macosx/jitsi-defaults.properties"/>
+                <include name="resources/install/macosx/applicationinsights.json"/>
                 <include name="resources/install/macosx/jitsi-default-overrides.properties"/>
-                <include name="resources/install/macosx/resources/licences/licences.html"/>
+                <include name="resources/install/macosx/resources/**/*"/>
             </classpath>
 
             <librarypath dir=".">
@@ -1335,36 +1338,41 @@
         <key>CFBundleName</key>]]></replacevalue>
         </replace>
 
-      <!-- Delete the tmp if it exists -->
+        <!-- Delete the tmp if it exists -->
        <delete dir="${macosx.app.dir}/tmp"
               quiet="yes" failonerror="false"/>
     </target>
 
     <target name="add-headset-lib" depends="macosx" description="Move headset libraries to MacOS">
-          <!-- Install the headset libs in the Java directory in the application package. Rename to add an additional 'lib' prefix as required by Mac -->
+          <!-- Install the headset libs in the Java directory in the application package. -->
           <move file="${macosx.resrc.dir}/libjabra.dylib"
-                tofile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/liblibjabra.dylib"
+                tofile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/libjabra.dylib"
+                preservelastmodified="true"
+                overwrite="true" filtering="yes">
+          </move>
+          <move file="${macosx.resrc.dir}/libyealinkusbsdk.dylib"
+                tofile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/libyealinkusbsdk.dylib"
                 preservelastmodified="true"
                 overwrite="true" filtering="yes">
           </move>
           <move file="${macosx.resrc.dir}/libpltwrapper.dylib"
-                tofile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/liblibpltwrapper.dylib"
+                tofile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/libpltwrapper.dylib"
                 preservelastmodified="true"
                 overwrite="true" filtering="yes">
-           </move>
-           <mkdir dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks"/>
-           <unzip src="${macosx.resrc.dir}/Spokes3GSDK.framework.zip"
+          </move>
+          <mkdir dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks"/>
+          <unzip src="${macosx.resrc.dir}/Spokes3GSDK.framework.zip"
                 dest="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks" overwrite="true"/>
-           <!-- Ant unzip tasks does not preserve symlinks, so we recreate them -->
-           <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Versions/Current"
+          <!-- Ant unzip task does not preserve symlinks, so we recreate them -->
+          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Versions/Current"
                 resource="./A" overwrite="true"/>
-           <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Headers"
+          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Headers"
                 resource="Versions/Current/Headers" overwrite="true"/>
-           <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Resources"
+          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Resources"
                 resource="Versions/Current/Resources" overwrite="true"/>
-           <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Spokes3GSDK"
+          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Spokes3GSDK"
                 resource="Versions/Current/Spokes3GSDK" overwrite="true"/>
-           <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/PrivateHeaders"
+          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/PrivateHeaders"
                 resource="Versions/Current/PrivateHeaders" overwrite="true"/>
     </target>
 
@@ -1375,18 +1383,18 @@
             if="sparkle"
             description="Create an .app package for MACOSX with Sparkle support">
 
-      <!-- Add the sparkle bundle path in the felix.client.run.properties file -->
+        <!-- Add the sparkle bundle path in the felix.client.run.properties file -->
       <echo file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/felix.client.run.properties"
             append="true">felix.auto.start.71= reference:file:sparkle.jar
       </echo>
 
-      <!-- Add the Sparkle bundle and JNI to the application package -->
+        <!-- Add the Sparkle bundle and JNI to the application package -->
       <copy file="${bundles.dest}/sparkle.jar"
             todir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
       <copy file="lib/native/mac/libsparkle_init.dylib"
             todir="${macosx.app.dir}/${application.name.ascii}.app/Contents/MacOS"/>
 
-      <!-- Add the Sparkle properties in the Info.plist file -->
+        <!-- Add the Sparkle properties in the Info.plist file -->
       <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Info.plist">
         <replacetoken><![CDATA[<key>CFBundleName</key>]]></replacetoken>
         <replacevalue><![CDATA[<key>SUCheckAtStartup</key>
@@ -1404,7 +1412,7 @@
     <key>CFBundleName</key>]]></replacevalue>
       </replace>
 
-      <!-- Now replace the download link-->
+        <!-- Now replace the download link-->
       <replace file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Info.plist">
         <replacefilter token="_DOWNLOAD_LINK_" value="${link.updates.macosx}"/>
       </replace>
@@ -1441,7 +1449,7 @@
       <mkdir dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks"/>
       <unzip src="${macosx.resrc.dir}/Sparkle.framework.zip"
             dest="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks"/>
-      <!-- Ant unzip tasks does not preserve symlinks, so we recreate them -->
+        <!-- Ant unzip tasks does not preserve symlinks, so we recreate them -->
       <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/Current"
             resource="./B"/>
       <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Autoupdate"
@@ -1471,7 +1479,7 @@
       <chmod file="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater"
                perm="ugo+rx"/>
 
-            <!-- If the customer wants a none ASCII app name, we need to fix up the Info.plist file :( -->
+        <!-- If the customer wants a none ASCII app name, we need to fix up the Info.plist file :( -->
             <if><available file="${macosx.resrc.dir}/fixAsciiInfoPlist.txt" />
             <then>
               <echo message="De-ASCIIifying Info.plist" />
@@ -1641,9 +1649,13 @@
     </target>
 
     <!-- Create the DMG - This only works on MacOSX (need hdiutil) -->
-    <target name="dmg" depends="macosx-sparkle,macosx-meeting,add-headset-lib,mac-electron"
+    <target name="dmg" depends="macosx-sparkle,add-headset-lib,mac-electron"
             if="is.running.macos"
             description="Create a .dmg package for MACOSX (only works on MACOSX)">
+
+      <foreach param="plugin-location" target="-macosx-installer-plugin" >
+        <path refid="included.plugins" />
+      </foreach>
 
       <propertyregex property="package.name.despaced" input="${package.name}"
                      regexp="\s" replace="" global="true"/>
@@ -1655,19 +1667,21 @@
       <delete file="${macosx.app.dir}/${macosx.dmg.name}"
               quiet="yes" failonerror="false"/>
 
-      <!-- Creates empty folders in Contents/Resources for
+        <!-- Creates empty folders in Contents/Resources for
       available languages, so macosx can switch languages -->
       <antcall target="dmg-create-language-folders" />
 
-      <!-- sign before creating the image, so the signed app goes into it -->
-      <antcall target="macosx-sign-app"/>
+        <!-- sign before creating the image, so the signed app goes into it -->
+      <retry retrycount="2" retrydelay="10000">
+        <antcall target="macosx-sign-app"/>
+      </retry>
 
-      <!-- Unmount any Disk Images before continuing or the build will fail -->
+        <!-- Unmount any Disk Images before continuing or the build will fail -->
       <exec executable="/bin/bash" os="Mac OS X" failonerror="false">
         <arg value="${sc.basedir}/resources/install/unmountAll.sh"/>
       </exec>
 
-      <!-- Create a temporary Disk Image -->
+        <!-- Create a temporary Disk Image -->
       <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
         <arg value="create"/>
         <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
@@ -1678,9 +1692,10 @@
         <arg value="-ov"/>
         <arg value="-format"/>
         <arg value="UDRW"/>
+        <arg value="-verbose"/>
       </exec>
 
-      <!-- Attach the temporary image -->
+        <!-- Attach the temporary image -->
       <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
         <arg value="attach"/>
         <arg value="-readwrite"/>
@@ -1691,7 +1706,7 @@
         <arg value="${release}"/>
       </exec>
 
-      <!-- Copy the background and icon and deletes .DS_STORE file -->
+        <!-- Copy the background and icon and deletes .DS_STORE file -->
       <mkdir dir="${release}/${application.name.ascii}/.background"/>
       <copy file="${macosx.resrc.dir}/dmg-background.png"
               tofile="${release}/${application.name.ascii}/.background/background.png"
@@ -1707,20 +1722,20 @@
         <arg value="${release}/${application.name.ascii}"/>
       </exec>
 
-      <!-- Add a symbolic link to the Applications directory -->
-      <symlink link="${release}/${application.name.ascii}" resource="/Applications"/>
+        <!-- Add a symbolic link to the Applications directory -->
+      <symlink link="${release}/${application.name.ascii}/Applications" resource="/Applications"/>
 
-      <!-- Use AppleScript to set the visual styles -->
+        <!-- Use AppleScript to set the visual styles -->
       <exec executable="osascript" os="Mac OS X" failonerror="true">
         <arg value="${brand-location}/resources/install/dmgLayout.txt"/>
         <arg value="${application.name.ascii}"/>
       </exec>
 
-      <!-- Sync memory and disk -->
+        <!-- Sync memory and disk -->
       <exec executable="sync" os="Mac OS X" failonerror="true">
       </exec>
 
-      <!-- Compress it to a new read only image -->
+        <!-- Compress it to a new read only image -->
       <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
         <arg value="convert"/>
         <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
@@ -1730,11 +1745,11 @@
         <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
       </exec>
 
-      <!-- Delete the temporary image -->
+        <!-- Delete the temporary image -->
       <delete file="${macosx.app.dir}/${macosx.dmg.tmpname}"
               quiet="yes" failonerror="false"/>
 
-      <!-- Unlock the keychain with 20 minute timeout -->
+        <!-- Unlock the keychain with 20 minute timeout -->
       <antcall target="macosx-unlock-keychain"/>
 
         <!-- Sign the .dmg -->
@@ -1749,10 +1764,10 @@
             <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
         </exec>
 
-      <!-- Lock the keychain again -->
+        <!-- Lock the keychain again -->
       <antcall target="macosx-lock-keychain"/>
 
-      <!-- Notarize the app if required -->
+        <!-- Notarize the app if required -->
       <if>
         <equals arg1="${env.SKIP_NOTARIZATION}" arg2="true"/>
         <then>
@@ -1761,16 +1776,16 @@
         <else>
             <runtarget target="macosx-notarize-app"/>
 
-            <!-- Verify that the package has been notarised correctly -->
+                <!-- Verify that the package has been notarised correctly -->
             <echo message="Assessing .app after notarisation"/>
-            <!-- Attach disk image -->
+                <!-- Attach disk image -->
             <exec executable="/usr/bin/hdiutil" failonerror="true">
                 <arg value="attach"/>
                 <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
                 <arg value="-mountroot"/>
                 <arg value="${macosx.app.dir}/Test"/>
             </exec>
-            <!-- Check the app passes Gatekeeper execution checks -->
+                <!-- Check the app passes Gatekeeper execution checks -->
             <exec executable="/usr/sbin/spctl" resultproperty="return-code" errorproperty="error-message">
                 <arg value="-a"/>
                 <arg value="-t"/>
@@ -1778,15 +1793,15 @@
                 <arg value="-vvv"/>
                 <arg value="${macosx.app.dir}/Test/${application.name.ascii}/${application.name.ascii}.app"/>
             </exec>
-            <!-- Detach disk image -->
+                <!-- Detach disk image -->
             <exec executable="/usr/bin/hdiutil" failonerror="true">
                 <arg value="detach"/>
                 <arg value="${macosx.app.dir}/Test/${application.name.ascii}"/>
             </exec>
-            <!-- Remove temporary directory -->
+                <!-- Remove temporary directory -->
             <delete dir="${macosx.app.dir}/Test"
                     quiet="yes" failonerror="false"/>
-            <!-- Fail the build on unsuccessful spctl check -->
+                <!-- Fail the build on unsuccessful spctl check -->
             <fail>
                 <condition><not><equals arg1="${return-code}" arg2="0"/></not></condition>
                 Gatekeeper check failed. Error: ${error-message}
@@ -1794,7 +1809,7 @@
         </else>
       </if>
 
-      <!-- creates the sparkle xmls -->
+        <!-- creates the sparkle xmls -->
       <antcallback target="macosx-sparkle-files" return="sparkle.appcast.file"/>
       <antcall target="macosx-sparkle-delta-updates">
           <param name="sparkle.appcast.file" value="${sparkle.appcast.file}"/>
@@ -1803,7 +1818,7 @@
           <param name="sparkle.appcast.file" value="${sparkle.appcast.file}"/>
       </antcall>
 
-      <!-- remove folder we are done -->
+        <!-- remove folder we are done -->
       <delete dir="${macosx.app.dir}/${application.name.ascii}.app"
               quiet="yes" failonerror="false"/>
     </target>
@@ -1831,6 +1846,33 @@
             <srcfile/>
             <fileset dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java" includes="*.dylib"/>
         </apply>
+
+        <!--
+            This signs the following three libraries:
+                - libnetty_resolver_dns_native_macos_x86_64.jnilib
+                - libnetty_transport_native_kqueue_x86_64.jnilib
+                - libjnidispatch.jnilib
+            Since signing the libraries messes up the sha-digest, signatures and manifests need to be purged
+            before repacking
+        -->
+        <echo message="Codesigning all applicationinsights-agent .jnilib files"/>
+        <antcall target="unpack-applicationinsights"/>
+        <apply executable="/usr/bin/codesign" parallel="false" os="Mac OS X" failonerror="true">
+            <arg value="-v"/>
+            <arg value="-f"/>
+            <arg value="--options"/>
+            <arg value="runtime"/>
+            <arg value="--entitlements"/>
+            <arg value="${sc.basedir}/resources/install/macosx/entitlements.xml"/>
+            <arg value="-s"/>
+            <arg value="${macosx.sign.certid}"/>
+            <arg value="--timestamp"/>
+            <srcfile/>
+            <fileset dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/ApplicationInsights"
+                     includes="**/*.jnilib"/>
+        </apply>
+        <antcall target="purge-applicationsinisghts-signatures"/>
+        <antcall target="repack-applicationinsights"/>
 
         <echo message="Codesigning Sparkle/.../finish_installation.app/.../Autoupdate"/>
         <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
@@ -2106,19 +2148,17 @@
                 tofile="${macosx.app.dir}/${sparkle.appcast.file}"
                 overwrite="true" filtering="yes">
 
-        <filterset recurse="false">
+          <filterset recurse="false">
             <filter token="SPARKLE_DELTAS" value="
-
-        &lt;enclosure type=&quot;application/octet-stream&quot;
-      sparkle:version=&quot;${sparkle.build}&quot; length=&quot;${delta.file.length}&quot;
-          sparkle:dsaSignature=&quot;${delta.signature.base64}&quot;
-      sparkle:deltaFrom=&quot;${old.sparkle.build}&quot;
-      url=&quot;${sparkle.delta.download.location}/${application.name.ascii}-${old.sparkle.build}-to-${sparkle.build}.delta&quot;/&gt;
-          @SPARKLE_DELTAS@
-        " />
-        </filterset>
-      </move>
-
+              &lt;enclosure type=&quot;application/octet-stream&quot;
+              sparkle:version=&quot;${sparkle.build}&quot; length=&quot;${delta.file.length}&quot;
+              sparkle:dsaSignature=&quot;${delta.signature.base64}&quot;
+              sparkle:deltaFrom=&quot;${old.sparkle.build}&quot;
+              url=&quot;${sparkle.delta.download.location}/${application.name.ascii}-${old.sparkle.build}-to-${sparkle.build}.delta&quot;/&gt;
+              @SPARKLE_DELTAS@
+            " />
+          </filterset>
+        </move>
     </target>
 
     <target name="-delete-oldest-delta-data">
@@ -2191,5 +2231,43 @@
         <condition property="bundle.identifier" value="org.${package.name}" else="org.${package.name.original}">
             <equals arg1="${package.name.original}" arg2=""/>
         </condition>
+    </target>
+
+    <target name="unpack-applicationinsights" >
+        <property name="content.root" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
+
+        <echo message="Unpacking application insights for signing"/>
+        <unzip dest="${content.root}/ApplicationInsights">
+            <fileset file="${content.root}/applicationinsights-agent.jar"
+            includes="**/*.jnilib"/>
+        </unzip>
+    </target>
+
+    <!-- Repacking also recreates the manifest for the agent -->
+    <target name="repack-applicationinsights" >
+        <property name="content.root" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
+
+        <echo message="Repacking application insights..."/>
+        <delete file="${content.root}/applicationinsights-agent.jar" />
+        <jar destfile="${content.root}/applicationinsights-agent.jar"
+            basedir="${content.root}/ApplicationInsights"
+            update="false">
+            <manifest>
+                <attribute name="Premain-Class" value="com.microsoft.applicationinsights.agent.Agent" />
+                <attribute name="Agent-Class" value="com.microsoft.applicationinsights.agent.Agent" />
+                <attribute name="Can-Redefine-Classes" value="true" />
+                <attribute name="Can-Retransform-Classes" value="true" />
+            </manifest>
+        </jar>
+        <delete dir="${content.root}/ApplicationInsights" />
+    </target>
+
+    <target name="purge-applicationsinisghts-signatures">
+        <delete>
+            <fileset dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/ApplicationInsights">
+                <include name="**/MSFTSIG.RSA"/>
+                <include name="**/MSFTSIG.SF"/>
+            </fileset>
+        </delete>
     </target>
 </project>
