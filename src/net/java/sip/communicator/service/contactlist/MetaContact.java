@@ -267,6 +267,14 @@ public interface MetaContact extends CreateConferenceMenuContainer
     List<String> getEmails();
 
     /**
+     * Returns the AAD email address associated with this contact, as defined in
+     * the stored contact details.
+     *
+     * @return the Microsoft email for this contact
+     */
+    String getMicrosoftEmail();
+
+    /**
      * Returns the avatar of this contact, that can be used when including this
      * <tt>MetaContact</tt> in user interface.
      *
@@ -285,6 +293,11 @@ public interface MetaContact extends CreateConferenceMenuContainer
      * @return an avatar (e.g. user photo) of this contact.
      */
     BufferedImageFuture getAvatar(boolean isLazy);
+
+    /**
+     * Clear any cached avatar for this MetaContact, so next time an avatar is requested it's recalculated.
+     */
+    void clearCachedAvatar();
 
     /**
      * Returns the general status of the given MetaContact. Detects the
@@ -434,14 +447,6 @@ public interface MetaContact extends CreateConferenceMenuContainer
      * @return The IM contact within
      */
     Contact getIMContact();
-
-    /**
-     * Get the group contact that is contained within this MetaContact, or null
-     * if there is no such contact
-     *
-     * @return The group contact within
-     */
-    Contact getGroupContact();
 
     /**
      * Get the personal contact that is contained within this MetaContact, or

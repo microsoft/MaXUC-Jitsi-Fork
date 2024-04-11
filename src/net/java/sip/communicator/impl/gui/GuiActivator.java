@@ -45,7 +45,6 @@ import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
-import net.java.sip.communicator.service.contactlist.NotifyWhenAvailableService;
 import net.java.sip.communicator.service.contactsource.ContactSourceService;
 import net.java.sip.communicator.service.contactsource.SourceContact;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
@@ -60,7 +59,7 @@ import net.java.sip.communicator.service.gui.PluginComponent;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService;
 import net.java.sip.communicator.service.imageloader.ImageLoaderService;
-import net.java.sip.communicator.service.insights.InsightService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.managecontact.ManageContactService;
 import net.java.sip.communicator.service.managecontact.ManageContactWindow;
 import net.java.sip.communicator.service.managecontact.ViewContactService;
@@ -121,8 +120,6 @@ public class GuiActivator implements BundleActivator, StateDumper
 
     private static MetaContactListService metaCListService;
 
-    private static NotifyWhenAvailableService notifyWhenAvailableService;
-
     private static CallHistoryService callHistoryService;
 
     private static CallJumpService callJumpService;
@@ -151,7 +148,7 @@ public class GuiActivator implements BundleActivator, StateDumper
 
     private static AnalyticsService analyticsService;
 
-    private static InsightService insightService;
+    private static InsightsService insightsService;
 
     private static ResetService resetService;
 
@@ -172,8 +169,6 @@ public class GuiActivator implements BundleActivator, StateDumper
     private static MessageHistoryService messageHistoryService;
 
     private static ThreadingService threadingService;
-
-    private static ConferenceService conferenceService;
 
     private static DiagnosticsService diagsService;
 
@@ -581,20 +576,6 @@ public class GuiActivator implements BundleActivator, StateDumper
     }
 
     /**
-     * @return the NotifyWhenAvailableService obtained from the bundle context.
-     */
-    public static NotifyWhenAvailableService getNotifyWhenAvailableService()
-    {
-        if (notifyWhenAvailableService == null)
-        {
-            notifyWhenAvailableService = ServiceUtils.getService(bundleContext,
-                                             NotifyWhenAvailableService.class);
-        }
-
-        return notifyWhenAvailableService;
-    }
-
-    /**
      * Returns the <tt>CallHistoryService</tt> obtained from the bundle
      * context.
      * @return the <tt>CallHistoryService</tt> obtained from the bundle
@@ -769,15 +750,15 @@ public class GuiActivator implements BundleActivator, StateDumper
         return analyticsService;
     }
 
-    public static InsightService getInsightService()
+    public static InsightsService getInsightsService()
     {
-        if (insightService == null)
+        if (insightsService == null)
         {
-            insightService =
-                    ServiceUtils.getService(bundleContext, InsightService.class);
+            insightsService =
+                    ServiceUtils.getService(bundleContext, InsightsService.class);
         }
 
-        return insightService;
+        return insightsService;
     }
 
     /**
@@ -1227,11 +1208,7 @@ public class GuiActivator implements BundleActivator, StateDumper
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-            conferenceService = ServiceUtils.getService(bundleContext,
-                                                        ConferenceService.class);
-
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**
@@ -1294,6 +1271,16 @@ public class GuiActivator implements BundleActivator, StateDumper
         }
 
         return wispaService;
+    }
+
+    /**
+     * Returns a reference to the bundle context that we were started with.
+     * @return a reference to the BundleContext instance that we were started
+     * with.
+     */
+    public static BundleContext getBundleContext()
+    {
+        return bundleContext;
     }
 
     @Override

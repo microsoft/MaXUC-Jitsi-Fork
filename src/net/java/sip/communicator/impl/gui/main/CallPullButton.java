@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.GUI_CALL_PULL;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -8,8 +10,6 @@ import java.util.List;
 import java.util.Timer;
 
 import javax.swing.*;
-
-import com.metaswitch.maxanalytics.event.CallKt;
 
 import org.jitsi.service.resources.*;
 
@@ -203,7 +203,7 @@ public class CallPullButton extends AbstractPluginComponent implements CallJumpC
     {
         sLog.user("'Call Available to Pull' pop-up clicked");
         GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.CALL_PULLED);
-        GuiActivator.getInsightService().logEvent(CallKt.EVENT_CALL_PULL);
+        GuiActivator.getInsightsService().logEvent(GUI_CALL_PULL.name(), null);
 
         if (mCallData != null)
         {

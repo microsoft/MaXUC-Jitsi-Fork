@@ -6,6 +6,8 @@ import static org.jitsi.util.Hasher.logHasher;
 import java.util.*;
 import java.util.Map.Entry;
 
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.SipParameterInfo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.OperationSetServerStoredUpdatableContactInfo.ContactUpdateResultListener;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.GenericDetail;
@@ -268,6 +270,13 @@ public class ProtocolProviderServiceOutlookImpl
 
         // Remove the contact from the map
         contactMap.remove(accessionID);
+
+        AddressBookProtocolActivator
+                .getInsightsService()
+                .logEvent(InsightsEventHint.COMMON_HINT_CONTACT_DELETED.name(),
+                          Map.of(SipParameterInfo.CONTACTS_DELETED.name(),
+                                 // No need to do casting like in ServerStoredContactListJabberImpl, already a `Contact`
+                                 List.of(contact)));
 
         // Fire the subscription removed event
         try

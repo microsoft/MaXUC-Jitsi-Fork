@@ -40,7 +40,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import net.java.sip.communicator.launcher.SIPCommunicator;
+import net.java.sip.communicator.launcher.ElectronUILauncher;
 import net.java.sip.communicator.util.Logger;
 
 /**
@@ -110,12 +110,12 @@ public class WISPACertificateInfo
     {
         // Read the system properties relating to the WISPA keys/certificates.
         // These will have been set by the launcher, on startup.
-        String wispaDir = System.getProperty(SIPCommunicator.WISPA_KEYS_DIR_PROPERTY);
-        keyStoreFile = System.getProperty(SIPCommunicator.WISPA_SERVER_KEY_STORE_PROPERTY);
-        trustStoreFile = System.getProperty(SIPCommunicator.WISPA_SERVER_TRUST_STORE_PROPERTY);
-        String clientKeyStoreFile = System.getProperty(SIPCommunicator.WISPA_CLIENT_KEY_STORE_PROPERTY);
-        String serverCertFile = System.getProperty(SIPCommunicator.WISPA_SERVER_CERTIFICATE_PROPERTY);
-        String clientPassphrase = System.getProperty(SIPCommunicator.WISPA_CLIENT_PASSPHRASE_PROPERTY);
+        String wispaDir = System.getProperty(ElectronUILauncher.WISPA_KEYS_DIR_PROPERTY);
+        keyStoreFile = System.getProperty(ElectronUILauncher.WISPA_SERVER_KEY_STORE_PROPERTY);
+        trustStoreFile = System.getProperty(ElectronUILauncher.WISPA_SERVER_TRUST_STORE_PROPERTY);
+        String clientKeyStoreFile = System.getProperty(ElectronUILauncher.WISPA_CLIENT_KEY_STORE_PROPERTY);
+        String serverCertFile = System.getProperty(ElectronUILauncher.WISPA_SERVER_CERTIFICATE_PROPERTY);
+        String clientPassphrase = System.getProperty(ElectronUILauncher.WISPA_CLIENT_PASSPHRASE_PROPERTY);
 
         // Generate one-time random passwords for the server key store and trust store.
         serverPassphrase = UUID.randomUUID().toString();

@@ -54,4 +54,13 @@ public class AddressBookContactMacImpl
     {
         return serverDetails;
     }
+
+    /**
+     * Conveniece getter for
+     */
+    @Override
+    public ContactType getContactType()
+    {
+        return ContactType.NATIVE_MAC;
+    }
 }

@@ -1,18 +1,16 @@
 package net.java.sip.communicator.plugin.desktoputil;
 
+import static net.java.sip.communicator.service.insights.parameters.DesktopUtilParameterInfo.SSO_TOKEN_REFRESHED;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.HashMap;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.metaswitch.maxanalytics.event.AnalyticsResult;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.SSOKt;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -21,7 +19,7 @@ import net.java.sip.communicator.service.cdap.CDAPService;
 import net.java.sip.communicator.service.cdap.ServiceProviderDetails;
 import net.java.sip.communicator.service.credentialsstorage.ScopedCredentialsStorageService;
 import net.java.sip.communicator.service.httputil.HttpUtils;
-import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
 import net.java.sip.communicator.service.provisioning.RefreshSSOToken;
 import net.java.sip.communicator.service.provisioning.SsoError;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
@@ -34,6 +32,7 @@ import net.java.sip.communicator.util.launchutils.ProvisioningParams;
 import org.jitsi.service.configuration.ScopedConfigurationService;
 import org.jitsi.service.resources.ResourceManagementService;
 import org.jitsi.util.StringUtils;
+import org.jitsi.util.ThreadUtils;
 
 /**
  * A helper class for the pre login flow which exposes API to freeze/unfreeze
@@ -59,6 +58,7 @@ public class PreLoginUtils
     public static String currentUsername = "";
     public static String currentSSOToken = "";
     public static SsoError currentSSOError = null;
+    public static String currentGraphAPIToken = "";
     public static String currentPassword = "";
     public static boolean didSSOLoginFail = false;
     @VisibleForTesting static boolean isShutdownInitiated = false;
@@ -186,7 +186,7 @@ public class PreLoginUtils
             synchronized (lock)
             {
                 log.info("Continue Java execution with event type: " + lockType);
-                lock.notifyAll();
+                ThreadUtils.notifyAll(lock);
             }
         }
     }
@@ -270,9 +270,10 @@ public class PreLoginUtils
     /**
      * Pushes sso token and username retrieved from the MSAL lib upon user login.
      */
-    public static void setSSOData(String username, String ssoToken, SsoError ssoError) {
+    public static void setSSOData(String username, String ssoToken, String graphAPIToken, SsoError ssoError) {
         currentUsername = username;
         currentSSOToken = ssoToken;
+        currentGraphAPIToken = graphAPIToken;
         currentSSOError = ssoError;
         didSSOLoginFail = StringUtils.isNullOrEmpty(ssoToken);
     }
@@ -282,6 +283,7 @@ public class PreLoginUtils
      */
     public static void clearSSOData() {
         currentSSOToken = "";
+        currentGraphAPIToken = "";
         currentSSOError = null;
         didSSOLoginFail = false;
     }
@@ -303,7 +305,8 @@ public class PreLoginUtils
     /**
      * Returns true if PROPERTY_ACTIVE_USER is set, false otherwise.
      */
-    public static boolean isLoggedIn() {
+    public static boolean isLoggedIn()
+    {
         return DesktopUtilActivator.getConfigurationService().global().getProperty(PROPERTY_ACTIVE_USER) != null;
     }
 
@@ -607,21 +610,18 @@ public class PreLoginUtils
         }
         else if (!hasSSOToken())
         {
-            DesktopUtilActivator.getInsightService().logEvent(new InsightEvent(SSOKt.EVENT_SSO_AUTHENTICATION, Map.of(
-                    AnalyticsResultKt.PARAM_RESULT,
-                    AnalyticsResult.FailureUnknown.INSTANCE.getValue()
-            )));
+            DesktopUtilActivator.getInsightsService().logEvent(InsightsEventHint.DESKTOP_UTIL_SSO_TOKEN.name(),
+                                                              Map.of(SSO_TOKEN_REFRESHED.name(),
+                                                                     false));
             // We failed to refresh SSO token, display an error message and force logout.
             log.error("Failed to refresh SSO token, clearing saved values");
-            ConfigurationUtils.forgetUserCredentials(false);
             displaySSORefreshError();
         }
         else
         {
-            DesktopUtilActivator.getInsightService().logEvent(new InsightEvent(SSOKt.EVENT_SSO_AUTHENTICATION, Map.of(
-                    AnalyticsResultKt.PARAM_RESULT,
-                    AnalyticsResult.Success.INSTANCE.getValue()
-            )));
+            DesktopUtilActivator.getInsightsService().logEvent(InsightsEventHint.DESKTOP_UTIL_SSO_TOKEN.name(),
+                                                              Map.of(SSO_TOKEN_REFRESHED.name(),
+                                                                     true));
         }
 
         return currentSSOToken;
@@ -642,6 +642,7 @@ public class PreLoginUtils
             // and show the Login screen. That's why we check for CommPortalService here, since it's started after
             // ProvisioningService - where we log in to SIPPS.
             log.warn("SSO login failed, displaying error");
+            ConfigurationUtils.clearCredentialsAndLogout(false);
             dialog = new ErrorDialog(errorTitle, loginFailedMessage);
         }
         else

@@ -20,6 +20,8 @@ import java.util.*;
 import javax.sdp.*;
 import javax.sip.header.*;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import net.java.sip.communicator.impl.protocol.sip.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.media.*;
@@ -1471,7 +1473,8 @@ public class SdpUtils
      * @return Whether an extra 3GPP attribute should be added to the SDP media
      * description
      */
-    private static boolean shouldAdd3GPPAttribute()
+    @VisibleForTesting
+    public static boolean shouldAdd3GPPAttribute()
     {
         Set<ProtocolProviderServiceSipImpl> providersList =
                 ProtocolProviderServiceSipImpl.getAllInstances();

@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import javax.swing.SwingWorker;
+
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -22,6 +23,9 @@ import net.java.sip.communicator.impl.gui.main.chatroomslist.joinforms.*;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
 import net.java.sip.communicator.service.analytics.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.enums.InsightsResultCode;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
@@ -556,6 +560,7 @@ public class ConferenceChatManager
 
         if (chatRoom == null)
         {
+            sendLeaveRoomAnalytic(InsightsResultCode.ROOM_JID_NOT_VALID);
             logger.error("Failed to leave chat room, it doesn't exist");
             return;
         }
@@ -567,10 +572,12 @@ public class ConferenceChatManager
             try
             {
                 chatRoom.leave(true, LocalUserChatRoomPresenceChangeEvent.LOCAL_USER_LEFT, null);
+                sendLeaveRoomAnalytic(InsightsResultCode.SUCCESS);
             }
             catch (IllegalStateException e)
             {
                 // If we fail to leave, display a popup saying to try again.
+                sendLeaveRoomAnalytic(InsightsResultCode.XMPP_ERROR);
                 logger.error("Failed to leave chat room", e);
                 String errorTitle = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_LEAVE_GROUP_CHAT_TITLE");
                 String errorMessage = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_LEAVE_GROUP_CHAT");
@@ -580,11 +587,25 @@ public class ConferenceChatManager
         }
         else
         {
+            sendLeaveRoomAnalytic(InsightsResultCode.NOT_IN_ROOM);
             logger.warn("User tried to leave chat room that Jabber claims they're not in");
         }
 
         ChatRoomWrapper existChatRoomWrapper = chatRoomList.findChatRoomWrapperFromChatRoom(chatRoom);
         closeChatRoom(existChatRoomWrapper);
+    }
+
+    /**
+     * Sends an analytic event for leaving group chat
+     *
+     * @param code Mapped value for parameter result
+     */
+    private void sendLeaveRoomAnalytic(InsightsResultCode code)
+    {
+        GuiActivator.getInsightsService().logEvent(InsightsEventHint.GUI_IM_LEAVE_ROOM.name(),
+                Map.of(
+                        CommonParameterInfo.INSIGHTS_RESULT_CODE.name(), code
+                ));
     }
 
     /**

@@ -48,7 +48,7 @@ public class VersionImpl
      * See 31003 for more details, and consider reworking this code in the
      * future!
      */
-    public static final int VERSION_MINOR = 20;
+    public static final int VERSION_MINOR = 21;
 
     /**
      * The version minor field. Default value is VERSION_MINOR.

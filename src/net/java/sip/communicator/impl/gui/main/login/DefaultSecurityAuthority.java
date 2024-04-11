@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.login;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitisePeerId;
+
 import java.util.*;
 
 import org.jitsi.service.resources.*;
@@ -140,7 +142,7 @@ public class DefaultSecurityAuthority
                     ProtocolProviderFactory.SERVER_ADDRESS_VALIDATED, false);
 
                 logger.debug("Server address validated for " +
-                              jabberAccount.getAccountAddress() + "? " +
+                              sanitisePeerId(jabberAccount.getAccountAddress()) + "? " +
                                                         serverAddressValidated);
 
                 String menuResource;

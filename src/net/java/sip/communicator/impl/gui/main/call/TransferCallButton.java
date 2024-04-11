@@ -10,8 +10,10 @@ package net.java.sip.communicator.impl.gui.main.call;
 import java.awt.event.*;
 import java.util.*;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import net.java.sip.communicator.impl.gui.*;
-import net.java.sip.communicator.service.analytics.*;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -81,7 +83,7 @@ public class TransferCallButton extends InCallButton
         // will become enabled when the call connects.
         for (CallPeer peer : conference.getCallPeers())
         {
-            if (!peer.getState().equals(CallPeerState.CONNECTED))
+            if (!CallPeerState.CONNECTED.equals(peer.getState()))
             {
                 this.setEnabled(false);
             }
@@ -107,7 +109,8 @@ public class TransferCallButton extends InCallButton
     /**
      * Transfers the given <tt>callPeer</tt>.
      */
-    private void transferCall()
+    @VisibleForTesting
+    public void transferCall()
     {
         GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.START_TRANSFER);
 
@@ -139,10 +142,23 @@ public class TransferCallButton extends InCallButton
         // We support transfer for one-to-one calls only.
         CallPeer initialPeer = call.getCallPeers().next();
 
-        if (transferCalls == null || transferCalls.isEmpty())
-            CallManager.openCallTransferDialog(initialPeer);
+        if (transferCalls.isEmpty())
+        {
+            // No active calls available for the transfer - display
+            // TransferCallMenu which provides attended and unattended call
+            // transfer options to choose from.
+            TransferCallMenu transferCallMenu
+                    = new TransferCallMenu(
+                    TransferCallButton.this, initialPeer);
+
+            transferCallMenu.showPopupMenu();
+        }
         else
         {
+            // At least one active call in progress - display
+            // TransferActiveCallsMenu that allows the user to choose between
+            // attended call transfer (to the peers from the active call list)
+            // or unattended transfer to another number.
             TransferActiveCallsMenu activeCallsMenu
                 = new TransferActiveCallsMenu(
                     TransferCallButton.this, initialPeer, transferCalls);
@@ -170,7 +186,7 @@ public class TransferCallButton extends InCallButton
                 // We're only interested in one to one calls
                 && activeCall.getCallPeerCount() == 1
                 // we are interested only in connected calls
-                && activeCallState.equals(CallState.CALL_IN_PROGRESS))
+                && CallState.CALL_IN_PROGRESS.equals(activeCallState))
             {
                 CallPeer peer = activeCall.getCallPeers().next();
 
@@ -201,7 +217,7 @@ public class TransferCallButton extends InCallButton
         // connected
         if (callConference.containsCall(evt.getSourceCall()))
         {
-            if (evt.getSourceCall().getCallState().equals(CallState.CALL_IN_PROGRESS))
+            if (CallState.CALL_IN_PROGRESS.equals(evt.getSourceCall().getCallState()))
             {
                 logger.debug("Call is connected so enable the transfer call button");
                 this.setEnabled(true);

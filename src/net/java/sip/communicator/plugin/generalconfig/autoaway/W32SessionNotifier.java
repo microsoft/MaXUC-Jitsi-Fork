@@ -3,7 +3,6 @@ package net.java.sip.communicator.plugin.generalconfig.autoaway;
 
 import org.jitsi.util.*;
 
-import com.sun.jna.*;
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.WinDef.*;
 

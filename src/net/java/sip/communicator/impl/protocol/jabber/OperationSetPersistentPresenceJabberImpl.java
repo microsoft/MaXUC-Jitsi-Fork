@@ -945,7 +945,7 @@ public class OperationSetPersistentPresenceJabberImpl
             // store off the operation for later.
             if (rosterLoaded)
             {
-                ssContactList.removeContact((ContactJabberImpl)contact);
+                ssContactList.removeContactFromServer((ContactJabberImpl)contact);
             }
             else
             {
@@ -1312,7 +1312,7 @@ public class OperationSetPersistentPresenceJabberImpl
         {
             try
             {
-                ssContactList.removeContact((ContactJabberImpl)cur_contact);
+                ssContactList.removeContactFromServer((ContactJabberImpl)cur_contact);
             }
             catch (OperationFailedException e)
             {
@@ -1778,8 +1778,7 @@ public class OperationSetPersistentPresenceJabberImpl
                     return;
                 }
 
-                ContactGroup parent =
-                    ssContactList.findContactGroup(sourceContact);
+                ContactGroup parent = sourceContact.getParentContactGroup();
 
                 // If the sourceContact isn't already resolved, mark it as
                 // such, as receiving presence from the server proves they are
@@ -2197,27 +2196,23 @@ public class OperationSetPersistentPresenceJabberImpl
                         AuthorizationResponse response
                             = handler.processAuthorisationRequest(req, srcContact, isInSameBG);
 
-                        if (response != null)
+                        if (response.equals(AuthorizationResponse.ACCEPT))
                         {
-                            if (response.getResponseCode().equals(AuthorizationResponse.ACCEPT))
-                            {
-                                responsePresenceType = Presence.Type.subscribed;
+                            responsePresenceType = Presence.Type.subscribed;
 
-                                sLog.info("Sending Accepted Subscription");
-                            }
-                            else if (response.getResponseCode().equals(AuthorizationResponse.REJECT))
-                            {
-                                responsePresenceType = Presence.Type.unsubscribed;
-                                sLog.info("Sending Rejected Subscription");
-                            }
-
-                            // Send analytics
-                            JabberActivator.getAnalyticsService().onEvent(
-                                    AnalyticsEventType.CHAT_AUTHORISATION_REQUEST_RECEIVED,
-                                    AnalyticsParameter.PARAM_AUTH_RESPONSE, response.getResponseCode().getCode(),
-                                    AnalyticsParameter.PARAM_AUTH_RESPONSE_REASON, response.getReason(),
-                                    AnalyticsParameter.PARAM_EXTERNAL_CONTACT, Boolean.toString(!isInSameBG));
+                            sLog.info("Sending Accepted Subscription");
                         }
+                        else if (response.equals(AuthorizationResponse.REJECT))
+                        {
+                            responsePresenceType = Presence.Type.unsubscribed;
+                            sLog.info("Sending Rejected Subscription");
+                        }
+
+                        // Send analytics
+                        JabberActivator.getAnalyticsService().onEvent(
+                                AnalyticsEventType.CHAT_AUTHORISATION_REQUEST_RECEIVED,
+                                AnalyticsParameter.PARAM_AUTH_RESPONSE, response.toString(),
+                                AnalyticsParameter.PARAM_EXTERNAL_CONTACT, Boolean.toString(!isInSameBG));
                     }
 
                     // subscription ignored
@@ -2286,14 +2281,8 @@ public class OperationSetPersistentPresenceJabberImpl
 
                 if(contact != null)
                 {
-                    AuthorizationResponse response
-                        = new AuthorizationResponse(
-                                AuthorizationResponse.REJECT,
-                                "");
-
-                    handler.processAuthorizationResponse(response, contact);
                     try{
-                        ssContactList.removeContact(contact);
+                        ssContactList.removeContactFromServer(contact);
                     }
                     catch(OperationFailedException e)
                     {
@@ -2301,17 +2290,6 @@ public class OperationSetPersistentPresenceJabberImpl
                                 "Cannot remove contact that unsubscribed.");
                     }
                 }
-            }
-            else if (presenceType == Presence.Type.subscribed)
-            {
-                ContactJabberImpl contact
-                    = ssContactList.findContactById(fromID);
-                AuthorizationResponse response
-                    = new AuthorizationResponse(
-                            AuthorizationResponse.ACCEPT,
-                            "");
-
-                handler.processAuthorizationResponse(response, contact);
             }
         }
     }

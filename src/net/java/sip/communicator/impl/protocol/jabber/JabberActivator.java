@@ -25,7 +25,7 @@ import net.java.sip.communicator.service.globaldisplaydetails.GlobalDisplayDetai
 import net.java.sip.communicator.service.gui.ContactSyncBarService;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.imageloader.ImageLoaderService;
-import net.java.sip.communicator.service.insights.InsightService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
@@ -169,17 +169,12 @@ public class JabberActivator implements BundleActivator
      */
     private static AnalyticsService analyticsService;
 
-    private static InsightService insightService;
+    private static InsightsService insightsService;
 
     /**
      * The threading service
      */
     private static ThreadingService threadingService;
-
-    /**
-     * The conference service
-     */
-    private static ConferenceService conferenceService;
 
     /**
      * The global display details service
@@ -716,14 +711,14 @@ public class JabberActivator implements BundleActivator
         return analyticsService;
     }
 
-    public static InsightService getInsightService()
+    public static InsightsService getInsightsService()
     {
-        if (insightService == null)
+        if (insightsService == null)
         {
-            insightService =
-                 ServiceUtils.getService(bundleContext, InsightService.class);
+            insightsService =
+                 ServiceUtils.getService(bundleContext, InsightsService.class);
         }
-        return insightService;
+        return insightsService;
     }
 
     /**
@@ -748,12 +743,7 @@ public class JabberActivator implements BundleActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-        {
-            conferenceService =
-                ServiceUtils.getService(bundleContext, ConferenceService.class);
-        }
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**

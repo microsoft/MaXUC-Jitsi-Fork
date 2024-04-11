@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException.XMPPErrorException;
@@ -65,12 +66,14 @@ public class InfoRetreiver
     /**
      * A callback to the Jabber provider that created us.
      */
-    private final ProtocolProviderServiceJabberImpl jabberProvider;
+    @VisibleForTesting
+    public ProtocolProviderServiceJabberImpl jabberProvider;
 
     /**
      * Map to hold all the details retrieved so far
      */
-    private final Map<String, List<GenericDetail>> retrievedDetails
+    @VisibleForTesting
+    public Map<String, List<GenericDetail>> retrievedDetails
         = new ConcurrentHashMap<>();
 
     private static final String TAG_FN_OPEN = "<FN>";
@@ -80,7 +83,8 @@ public class InfoRetreiver
      * The name of the property which indicates whether detailed server stored
      * info is supported for Jabber e.g. organization, phone number
      */
-    private final boolean extraInfoDisabled =
+    @VisibleForTesting
+    public boolean extraInfoDisabled =
         JabberActivator.getConfigurationService().global().getBoolean(
             "net.java.sip.communicator.impl.protocol.jabber." +
             "EXTRA_VCARD_INFO_DISABLED",
@@ -89,7 +93,8 @@ public class InfoRetreiver
     /**
      * The timeout to wait before considering vcard has time outed.
      */
-    private final long vcardTimeoutReply;
+    @VisibleForTesting
+    public long vcardTimeoutReply;
 
     protected InfoRetreiver(ProtocolProviderServiceJabberImpl jabberProvider)
     {

@@ -18,6 +18,9 @@ import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.filehistory.*;
 import net.java.sip.communicator.service.gui.ChatRoomWrapper;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
+import net.java.sip.communicator.service.insights.values.GuiValueInfo;
 import net.java.sip.communicator.service.metahistory.*;
 import net.java.sip.communicator.service.msghistory.*;
 import net.java.sip.communicator.service.protocol.*;
@@ -292,6 +295,7 @@ public class ExportPanel
                 new Date(System.currentTimeMillis()));
         }
 
+        int messageType = 0;
         if ((msgList != null) && (msgList.size() > 0))
         {
             // If we've got some messages, loop through them to extract the
@@ -329,6 +333,7 @@ public class ExportPanel
                         continue;
                     }
 
+                    messageType = eventType;
                     timestamp = evt.getTimestamp();
 
                     // Create the message for export. It takes the form:
@@ -380,6 +385,15 @@ public class ExportPanel
                 writer.println(message);
             }
         }
+        // If we made it here, we've written the whole IM history to the file
+        GuiActivator.getInsightsService().logEvent(
+                InsightsEventHint.GUI_IM_EXPORT.name(),
+                Map.of(
+                        CommonParameterInfo.TYPE.name(),
+                        messageType == MessageEvent.GROUP_MESSAGE ? GuiValueInfo.GROUP_CHAT :
+                                (messageType == MessageEvent.SMS_MESSAGE) ? GuiValueInfo.SMS : GuiValueInfo.IM
+                )
+        );
     }
 
     /**

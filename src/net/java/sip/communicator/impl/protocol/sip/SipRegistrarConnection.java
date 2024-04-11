@@ -43,6 +43,7 @@ import javax.sip.header.MinExpiresHeader;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 
+import com.google.common.annotations.VisibleForTesting;
 import gov.nist.core.NameValueList;
 import gov.nist.javax.sip.address.AddressImpl;
 import gov.nist.javax.sip.header.ims.ServiceRoute;
@@ -881,7 +882,8 @@ public class SipRegistrarConnection
     * scheduled to run after the expiration timeout has come to an end when
     * it will resend the REGISTER request.
     */
-    private class ReRegisterTask extends CancellableRunnable
+    @VisibleForTesting
+    public class ReRegisterTask extends CancellableRunnable
     {
         /**
         * Simply calls the register method.

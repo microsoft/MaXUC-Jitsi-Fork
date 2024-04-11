@@ -14,6 +14,7 @@ import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import net.java.sip.communicator.plugin.addressbook.OutlookUtils;
+import net.java.sip.communicator.util.ClockUtils;
 
 /**
  * The class represents the recurring pattern structure of calendar item.
@@ -506,7 +507,7 @@ public class RecurringPattern
         if (endType == 0x2023 || endType == 0xFFFFFFFF)
             return false;
 
-        Calendar cal = Calendar.getInstance(creationTimeZone);
+        Calendar cal = ClockUtils.getCalendar(creationTimeZone);
         cal.setTime(date);
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
@@ -526,7 +527,7 @@ public class RecurringPattern
     Pair<Date, Date> getNextMeeting()
     {
         // If the series has ended, then just return.
-        if (dateOutOfRange(new Date()))
+        if (dateOutOfRange(ClockUtils.getDateNow()))
         {
             return null;
         }
@@ -579,17 +580,17 @@ public class RecurringPattern
         // The recurrence type is day, therefore the pattern contains
         // the number of minutes until the next event.  E.g. 1440 for
         // an event that happens every day (1440 = 60 * 24)
-        Calendar startCalendar = Calendar.getInstance(creationTimeZone);
+        Calendar startCalendar = ClockUtils.getCalendar(creationTimeZone);
         startCalendar.setTime(startDate);
 
-        Calendar endCalendar = Calendar.getInstance(creationTimeZone);
+        Calendar endCalendar = ClockUtils.getCalendar(creationTimeZone);
         endCalendar.setTime(endDate);
 
         // Use days rather than minutes to increment the calendar so
         // that daylight saving time is taken into account.
         int periodInDays = period/1440;
 
-        Calendar currentCalendar = Calendar.getInstance(creationTimeZone);
+        Calendar currentCalendar = ClockUtils.getCalendar(creationTimeZone);
 
         // Move forward in time until we hit the future
         while (endCalendar.before(currentCalendar))
@@ -638,7 +639,7 @@ public class RecurringPattern
 
         // Recurrence type is week, therefore the period is a number of
         // weeks.  I.e. 2 means every 2 weeks.
-        Calendar cal = Calendar.getInstance(creationTimeZone);
+        Calendar cal = ClockUtils.getCalendar(creationTimeZone);
 
         // The enum for the firstDow field is the same as Calendar day of
         // week enum + 1 day
@@ -647,7 +648,7 @@ public class RecurringPattern
         int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
         int index = allowedDaysOfWeek.indexOf(dayOfWeek);
 
-        Date currentDate = new Date();
+        Date currentDate = ClockUtils.getDateNow();
 
         // Move forward in time until we hit the future
         if (endDate.before(currentDate))
@@ -754,14 +755,14 @@ public class RecurringPattern
     {
         long duration = getMeetingEndDate().getTime()
                                               - getMeetingStartDate().getTime();
-        Calendar cal = Calendar.getInstance(creationTimeZone);
+        Calendar cal = ClockUtils.getCalendar(creationTimeZone);
         cal.setTime(startDate);
-        Date currentDate = new Date();
+        Date currentDate = ClockUtils.getDateNow();
 
         // Move forward in time until we hit the future
         if(cal.getTimeInMillis() + duration < currentDate.getTime())
         {
-            Calendar cal2 = Calendar.getInstance(creationTimeZone);
+            Calendar cal2 = ClockUtils.getCalendar(creationTimeZone);
             cal2.setTime(currentDate);
             int years
                 = cal2.get(Calendar.YEAR) - cal.get(Calendar.YEAR);
@@ -807,7 +808,7 @@ public class RecurringPattern
      */
     private Date getMonthNStartDate(Date startDate, int dayOfWeekInMonth)
     {
-        Calendar cal = Calendar.getInstance(creationTimeZone);
+        Calendar cal = ClockUtils.getCalendar(creationTimeZone);
         cal.setTime(startDate);
 
         if(dayOfWeekInMonth == -1)
@@ -846,16 +847,16 @@ public class RecurringPattern
         int dayOfWeekInMonth = (patternSpecific2 == 5? -1 : patternSpecific2);
         long duration = getMeetingEndDate().getTime()
                                               - getMeetingStartDate().getTime();
-        Calendar cal = Calendar.getInstance(creationTimeZone);
+        Calendar cal = ClockUtils.getCalendar(creationTimeZone);
         cal.setTime(startDate);
         cal.set(Calendar.DAY_OF_MONTH, 1);
         cal.setTime(getMonthNStartDate(cal.getTime(), dayOfWeekInMonth));
-        Date currentDate = new Date();
+        Date currentDate = ClockUtils.getDateNow();
 
         // Add time until we reach the current date
         if(cal.getTimeInMillis() + duration < currentDate.getTime())
         {
-            Calendar cal2 = Calendar.getInstance(creationTimeZone);
+            Calendar cal2 = ClockUtils.getCalendar(creationTimeZone);
             cal2.setTime(currentDate);
             int years
                 = cal2.get(Calendar.YEAR) - cal.get(Calendar.YEAR);
@@ -922,7 +923,7 @@ public class RecurringPattern
      */
     private Pair<Date, Date> checkForEarlierModifiedMeeting(Date startDate, Date endDate)
     {
-        Date currentDate = new Date();
+        Date currentDate = ClockUtils.getDateNow();
         ExceptionInfo nextModifiedMeeting = null;
         Date nextStartDate;
         Date nextEndDate;

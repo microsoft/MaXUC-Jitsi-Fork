@@ -1,12 +1,11 @@
+<?xml version="1.0" encoding="windows-1252" ?>
+<!-- Do not convert this file to another encoding and do not remove "encoding" attribute above.
+     brand-client.py script (populateAndSaveTemplate) reads the attribute
+     and uses it to encode branding values before replacing them in this file. -->
 <WixLocalization
     xmlns="http://wixtoolset.org/schemas/v4/wxl"
     Culture="en-us"
     Language="1033">
-
-  <String Id="CleanSweepDlg_Title" Overridable="yes" Value="@@PRODUCT_NAME_TITLECASE@@ Setup" />
-  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes" Value="WixUI_Bmp_Banner" />
-  <String Id="CleanSweepDlgDescription" Overridable="yes" Value="Which additional tasks should be done?" />
-  <String Id="CleanSweepDlgTitle" Overridable="yes" Value="{\WixUI_Font_Title}Additional Tasks" />
 
   <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes" Value="[ProductName] Setup" />
   <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes" Value="WixUI_Bmp_Banner" />

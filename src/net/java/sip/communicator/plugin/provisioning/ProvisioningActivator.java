@@ -15,7 +15,7 @@ import org.osgi.framework.*;
 import net.java.sip.communicator.service.analytics.*;
 import net.java.sip.communicator.service.credentialsstorage.*;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.insights.InsightService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.netaddr.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.provisioning.*;
@@ -87,7 +87,7 @@ public class ProvisioningActivator
      */
     private static AnalyticsService analyticsService;
 
-    private static InsightService insightService;
+    private static InsightsService insightsService;
 
     /**
      * The update service
@@ -290,15 +290,15 @@ public class ProvisioningActivator
         return analyticsService;
     }
 
-    public static InsightService getInsightService()
+    public static InsightsService getInsightsService()
     {
-        if (insightService == null)
+        if (insightsService == null)
         {
-            insightService = ServiceUtils.getService(bundleContext,
-                                                       InsightService.class);
+            insightsService = ServiceUtils.getService(bundleContext,
+                                                       InsightsService.class);
         }
 
-        return insightService;
+        return insightsService;
     }
 
     /**

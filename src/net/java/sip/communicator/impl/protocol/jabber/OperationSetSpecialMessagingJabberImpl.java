@@ -3,7 +3,9 @@ package net.java.sip.communicator.impl.protocol.jabber;
 
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.java.sip.communicator.service.diagnostics.DiagnosticsServiceRegistrar;
@@ -25,7 +27,7 @@ public class OperationSetSpecialMessagingJabberImpl
     /**
      * A map from type of special message to the handler for that type
      */
-    private final Map<String, SpecialMessageHandler> specialMessageHandlers =
+    private final Map<String, List<SpecialMessageHandler>> specialMessageHandlers =
             new HashMap<>();
 
     /**
@@ -77,7 +79,13 @@ public class OperationSetSpecialMessagingJabberImpl
             {
                 logger.debug("Adding special message handler " + handler +
                                                            " for type " + type);
-                specialMessageHandlers.put(type, handler);
+                List<SpecialMessageHandler> currentHandlers = specialMessageHandlers.get(type);
+                if (currentHandlers == null)
+                {
+                    currentHandlers = new ArrayList<>();
+                }
+                currentHandlers.add(handler);
+                specialMessageHandlers.put(type, currentHandlers);
             }
         }
     }
@@ -96,7 +104,7 @@ public class OperationSetSpecialMessagingJabberImpl
     }
 
     @Override
-    public SpecialMessageHandler getSpecialMessageHandler(String type)
+    public List<SpecialMessageHandler> getSpecialMessageHandlers(String type)
     {
         synchronized (specialMessageHandlers)
         {

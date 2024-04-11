@@ -164,11 +164,6 @@ public class ConfigurationFrame
     private final ConfigurationService mConfigService;
 
     /**
-     * The conference service.
-     */
-    private final ConferenceService mConferenceService;
-
-    /**
      * Initializes a new <tt>ConfigurationFrame</tt> instance.
      *
      * @param mainFrame The main application window.
@@ -183,7 +178,6 @@ public class ConfigurationFrame
         this.configList = new ConfigFormList(this);
 
         mConfigService = GuiActivator.getConfigurationService();
-        mConferenceService = GuiActivator.getConferenceService();
 
         JScrollPane configScrollList = new JScrollPane();
 
@@ -233,7 +227,7 @@ public class ConfigurationFrame
 
         this.getContentPane().add(mainPanel);
 
-        GuiActivator.bundleContext.addServiceListener(this);
+        GuiActivator.getBundleContext().addServiceListener(this);
 
         // General configuration forms only.
         String osgiFilter = "("
@@ -243,7 +237,7 @@ public class ConfigurationFrame
         ServiceReference<?>[] confFormsRefs = null;
         try
         {
-            confFormsRefs = GuiActivator.bundleContext
+            confFormsRefs = GuiActivator.getBundleContext()
                 .getServiceReferences(
                     ConfigurationForm.class.getName(),
                     osgiFilter);
@@ -256,7 +250,7 @@ public class ConfigurationFrame
             for (int i = 0; i < confFormsRefs.length; i++)
             {
                 ConfigurationForm form
-                    = (ConfigurationForm) GuiActivator.bundleContext
+                    = (ConfigurationForm) GuiActivator.getBundleContext()
                         .getService(confFormsRefs[i]);
 
                 this.addConfigurationForm(form);
@@ -309,6 +303,7 @@ public class ConfigurationFrame
 
         addWindowListener(new WindowAdapter()
         {
+            @Override
             public void windowClosing(WindowEvent evt)
             {
                 // When the options window is closed, we should notify the
@@ -471,7 +466,11 @@ public class ConfigurationFrame
         boolean videoCallsEnabled = !mConfigService.user()
             .getBoolean(DISABLE_VIDEO_UI_PROPERTY, false);
 
-        boolean meetingEnabled = mConferenceService != null && mConferenceService.isJoinEnabled();
+        ConferenceService conferenceService = GuiActivator.getConferenceService();
+        // Set meeting enabled to true if joining is enabled and
+        // the conference service impl isn't teams
+        boolean meetingEnabled = conferenceService != null && conferenceService.isJoinEnabled() &&
+                                 conferenceService.isLegacyImplementation();
 
         logger.debug("Show video config form: " +
             " video calls enabled: " + videoCallsEnabled +
@@ -621,10 +620,14 @@ public class ConfigurationFrame
      */
     private synchronized void setConfFormVisibility()
     {
-        if (mConferenceService != null
-            && (mConferenceService.isFullServiceEnabled()
-                || (mConferenceService.isJoinEnabled()
-                    && mConferenceService.isConfAppInstalled())))
+        ConferenceService conferenceService = GuiActivator.getConferenceService();
+        if (conferenceService != null
+            && (conferenceService.isFullServiceEnabled()
+                // check whether this conference service is the teams impl, do not
+                // show the config form if it is
+                && conferenceService.isLegacyImplementation()
+                || (conferenceService.isJoinEnabled()
+                    && conferenceService.isConfAppInstalled())))
         {
             logger.debug("Conference service enabled");
             if (!isConfFormVisible)
@@ -672,8 +675,8 @@ public class ConfigurationFrame
             return;
 
         Object sService
-            = GuiActivator.bundleContext.getService(
-                    event.getServiceReference());
+                = GuiActivator.bundleContext.getService(
+                event.getServiceReference());
 
         // we don't care if the source service is not a configuration form
         if (!(sService instanceof ConfigurationForm))
@@ -849,7 +852,7 @@ public class ConfigurationFrame
      * Set the height of the center panel to be equal to the height of the
      * currently contained panel + all borders.
      */
-    private void updateCentralPanelSize()
+    public void updateCentralPanelSize()
     {
         // Reset the preferred size
         setPreferredSize(null);

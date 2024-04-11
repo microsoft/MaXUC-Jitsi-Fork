@@ -618,7 +618,8 @@ public interface UIService
      */
     SIPCommSnakeButton getCrmLaunchButton(
             final String searchName,
-            final String searchNumber);
+            final String searchNumber,
+            final boolean madeFromCall);
 
     /**
      * @return true if CRM is configured to always auto-launch, false

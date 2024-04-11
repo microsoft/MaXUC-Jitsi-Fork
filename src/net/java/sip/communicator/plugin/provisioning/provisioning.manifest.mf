@@ -12,6 +12,7 @@ Import-Package: org.apache.commons.text,
  org.jitsi.util,
  net.java.sip.communicator.service.analytics,
  net.java.sip.communicator.service.insights,
+ net.java.sip.communicator.service.insights.parameters,
  net.java.sip.communicator.service.gui,
  net.java.sip.communicator.service.gui.event,
  net.java.sip.communicator.service.httputil,
@@ -41,7 +42,6 @@ Import-Package: org.apache.commons.text,
  javax.swing.filechooser,
  javax.swing.tree,
  javax.swing.undo,
- javax.swing.border,
- com.metaswitch.maxanalytics.event
+ javax.swing.border
 Export-Package: net.java.sip.communicator.service.provisioning,
  net.java.sip.communicator.plugin.provisioning

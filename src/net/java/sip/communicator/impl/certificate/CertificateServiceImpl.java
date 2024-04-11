@@ -10,42 +10,68 @@ package net.java.sip.communicator.impl.certificate;
 import static java.nio.file.StandardWatchEventKinds.*;
 import static java.util.stream.Collectors.toList;
 
-import java.beans.*;
-import java.io.*;
-import java.lang.reflect.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.security.*;
-import java.security.KeyStore.*;
-import java.security.cert.*;
-import java.util.*;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.KeyStore.Builder;
+import java.security.Provider;
+import java.security.Security;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateParsingException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.net.ssl.*;
-import javax.security.auth.callback.*;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.KeyStoreBuilderParameters;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import org.jitsi.service.configuration.*;
-import org.jitsi.util.*;
-
-import net.java.sip.communicator.launcher.SIPCommunicator;
-import net.java.sip.communicator.plugin.desktoputil.*;
-import net.java.sip.communicator.plugin.desktoputil.AuthenticationWindow.*;
+import net.java.sip.communicator.launcher.ElectronUILauncher;
+import net.java.sip.communicator.plugin.desktoputil.AuthenticationWindow;
+import net.java.sip.communicator.plugin.desktoputil.AuthenticationWindow.AuthenticationWindowResult;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
 import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.analytics.AnalyticsService;
-import net.java.sip.communicator.service.certificate.*;
-import net.java.sip.communicator.service.credentialsstorage.*;
+import net.java.sip.communicator.service.certificate.CertificateConfigEntry;
+import net.java.sip.communicator.service.certificate.CertificateMatcher;
+import net.java.sip.communicator.service.certificate.CertificateService;
+import net.java.sip.communicator.service.certificate.KeyStoreType;
+import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.threading.ThreadFactoryBuilder;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.service.configuration.ConfigurationService;
+import org.jitsi.util.OSUtils;
 
 /**
  * Implementation of the CertificateService. It asks the user to trust a
@@ -255,7 +281,7 @@ public class CertificateServiceImpl
         Security.setProperty("ocsp.enable",
             config.global().getString(PNAME_OCSP_ENABLED, "false"));
 
-        if (System.getProperty(SIPCommunicator.WISPA_KEYS_DIR_PROPERTY) != null)
+        if (System.getProperty(ElectronUILauncher.WISPA_KEYS_DIR_PROPERTY) != null)
         {
             // Generate the certificates required for the WISPA interface.
             wispaCertificateInfo = new WISPACertificateInfo();

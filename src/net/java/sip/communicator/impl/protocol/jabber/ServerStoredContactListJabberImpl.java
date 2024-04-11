@@ -7,6 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.service.insights.parameters.JabberParameterInfo.CONTACT_ADD_COUNT;
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 import static org.jitsi.util.SanitiseUtils.sanitiseValuesInList;
@@ -15,21 +16,23 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.jivesoftware.smack.roster.Roster;
-import org.jivesoftware.smack.roster.RosterEntry;
-import org.jivesoftware.smack.roster.RosterGroup;
-import org.jivesoftware.smack.roster.RosterListener;
+
 import org.jivesoftware.smack.SmackException.NoResponseException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.jivesoftware.smack.SmackException.NotLoggedInException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jivesoftware.smack.XMPPException.XMPPErrorException;
+import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.roster.Roster;
+import org.jivesoftware.smack.roster.RosterEntry;
+import org.jivesoftware.smack.roster.RosterGroup;
+import org.jivesoftware.smack.roster.RosterListener;
+import org.jivesoftware.smack.roster.packet.RosterPacket;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.Jid;
@@ -42,6 +45,8 @@ import net.java.sip.communicator.impl.protocol.jabber.OperationSetPersistentPres
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.diagnostics.StateDumper;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.SipParameterInfo;
 import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.ContactGroup;
@@ -55,6 +60,7 @@ import net.java.sip.communicator.service.protocol.event.SubscriptionEvent;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
+import net.java.sip.communicator.util.AvatarCacheUtils;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.ContactLogger;
 import net.java.sip.communicator.util.Logger;
@@ -157,7 +163,8 @@ public class ServerStoredContactListJabberImpl implements StateDumper
      * Delay required between populating the roster and reading contacts from
      * it to avoid reading from a roster which is not fully populated. (SFR 479241)
      */
-    private final long rosterPopulationDelayMillis = 6000;
+    @VisibleForTesting
+    long rosterPopulationDelayMillis = 6000;
 
     /**
      * A simple enum to define the different types of roster changes that are
@@ -270,17 +277,6 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     public ContactGroup getRootGroup()
     {
         return mRootGroup;
-    }
-
-    /**
-     * Method may only be used outside this class in test code.
-     * @return the delay required between populating the roster and reading contacts from
-     *         it to avoid reading from a roster which is not fully populated. (SFR 479241)
-     */
-    @VisibleForTesting
-    long getRosterPopulationDelayMillis()
-    {
-        return rosterPopulationDelayMillis;
     }
 
     /**
@@ -565,18 +561,16 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     }
 
     /**
-     * Returns the ContactGroup containing the specified contact or null
-     * if no such group or contact exist.
+     * Returns the ContactGroup containing a contact with the specified Jid or null
+     * if no such group exists.
      *
-     * @param child the contact whose parent group we're looking for.
+     * @param contactAddress the address of the contact whose parent group we're looking for.
      * @return the <tt>ContactGroup</tt> containing the specified
-     * <tt>contact</tt> or <tt>null</tt> if no such groupo or contact
-     * exist.
+     * <tt>contactAddress</tt> or <tt>null</tt> if no such group exists.
      */
-    public ContactGroup findContactGroup(ContactJabberImpl child)
+    public ContactGroup findContactGroupFromJid(Jid contactAddress)
     {
         Iterator<ContactGroup> contactGroups = mRootGroup.subgroups();
-        Jid contactAddress = child.getAddressAsJid();
 
         while(contactGroups.hasNext())
         {
@@ -631,7 +625,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         {
             logger.debug("Contact " + loggableCompleteID
                             + " already exists in group "
-                            + findContactGroup(existingContact));
+                            + existingContact.getParentContactGroup());
             contactLogger.info("addContact - already exists");
             throw new OperationFailedException(
                 "Contact " + loggableCompleteID + " already exists.",
@@ -783,15 +777,16 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     ContactJabberImpl createUnresolvedContact(ContactGroup parentGroup,
                                               BareJid id)
     {
-        ContactJabberImpl newUnresolvedContact
-            = new ContactJabberImpl(id, this, false);
+        ContactJabberImpl newUnresolvedContact = new ContactJabberImpl(id, this, false);
 
-        if(parentGroup instanceof ContactGroupJabberImpl)
-            ((ContactGroupJabberImpl)parentGroup).
-                addContact(newUnresolvedContact);
-        else if(parentGroup instanceof RootContactGroupJabberImpl)
-            ((RootContactGroupJabberImpl)parentGroup).
-                addContact(newUnresolvedContact);
+        if (parentGroup instanceof ContactGroupJabberImpl)
+        {
+            ((ContactGroupJabberImpl)parentGroup).addContact(newUnresolvedContact);
+        }
+        else if (parentGroup instanceof RootContactGroupJabberImpl)
+        {
+            ((RootContactGroupJabberImpl)parentGroup).addContact(newUnresolvedContact);
+        }
 
         fireContactAdded(parentGroup, newUnresolvedContact);
 
@@ -893,9 +888,10 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     /**
      * Removes a contact from the serverside list
      * Event will come for successful operation
+     * We expect to remove the contact locally later off the back of receiving a RosterListener callback.
      * @param contactToRemove ContactJabberImpl
      */
-    void removeContact(ContactJabberImpl contactToRemove)
+    void removeContactFromServer(ContactJabberImpl contactToRemove)
         throws OperationFailedException
     {
         // No need to hash Contact, as its toString() method does that.
@@ -906,19 +902,18 @@ public class ServerStoredContactListJabberImpl implements StateDumper
 
             if (entry != null)
             {
-                // Delete this entry on the roster. Do not need to fire a
-                // contact removed event because the roster listeners take
-                // care of that.
+                // Delete this entry on the roster.
                 roster.removeEntry(entry);
+
+                JabberActivator.getInsightsService().logEvent(
+                    InsightsEventHint.JABBER_IM_DELETE_ROSTER_ENTRY.name(),
+                    null
+                );
             }
-            else
-            {
-                // There is no roster entry, but we still have a contact, so
-                // just fire a contact removed event.
-                contactLogger.info(contactToRemove, "removeContact - " +
-                                                             "already removed");
-                fireContactRemoved(getRootGroup(), contactToRemove);
-            }
+
+            // Removing this from the roster now will mean we mightn't hear about any "remove"
+            // stanza (via the handleEntryDeleted() callback), so we should remove it locally now.
+            removeContactLocally(contactToRemove);
         }
         catch (XMPPErrorException ex)
         {
@@ -965,9 +960,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
     public void moveContact(ContactJabberImpl contact,
                             AbstractContactGroupJabberImpl newParent)
     {
-        if ((contact.getParentContactGroup() != newParent) &&
-            !(contact.getParentContactGroup() instanceof VolatileContactGroupJabberImpl) &&
-            !(newParent instanceof VolatileContactGroupJabberImpl))
+        if (contact.getParentContactGroup() != newParent)
         {
             // No need to hash Contact, as its toString() method does that.
             logger.warn("Contact moving between groups: " + contact + " from " +
@@ -1043,7 +1036,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         // read contacts from it.
         try
         {
-            Thread.sleep(getRosterPopulationDelayMillis());
+            Thread.sleep(rosterPopulationDelayMillis);
         }
         catch (InterruptedException ex)
         {
@@ -1149,10 +1142,12 @@ public class ServerStoredContactListJabberImpl implements StateDumper
         // config.  We'll delete any that we don't find in the roster, as this
         // indicates that we've already left this chat room on another client.
         List<Jid> chatRoomIdsToRemove =
-            ConfigurationUtils.getAllChatRoomIds(jabberProvider);
+                ConfigurationUtils.getAllChatRoomIds(jabberProvider);
 
         if (roster.getEntryCount() > 0)
         {
+            int contactsAdded = 0;
+
             for (RosterEntry item : roster.getEntries())
             {
                 final BareJid userID = item.getJid();
@@ -1180,16 +1175,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     {
                         if (contact != null)
                         {
-                            ContactGroup parent = contact.getParentContactGroup();
-
-                            if (parent instanceof RootContactGroupJabberImpl)
-                                ((RootContactGroupJabberImpl)parent)
-                                    .removeContact(contact);
-                            else
-                                ((ContactGroupJabberImpl)parent)
-                                    .removeContact(contact);
-
-                            fireContactRemoved(parent, contact);
+                            removeContactLocally(contact);
                         }
                         continue;
                     }
@@ -1203,6 +1189,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                         contact = new ContactJabberImpl(item, this, true, true);
                         mRootGroup.addContact(contact);
 
+                        contactsAdded++;
                         fireContactAdded(mRootGroup, contact);
                     }
                     else
@@ -1232,6 +1219,13 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     }
                 }
             }
+
+            if (contactsAdded > 0)
+            {
+                JabberActivator.getInsightsService().logEvent(
+                        InsightsEventHint.CONTACT_IM_INSERT.name(),
+                        Map.of(CONTACT_ADD_COUNT.name(), contactsAdded));
+            }
         }
 
         // Any chat room ids that are still in the list were not found on the
@@ -1249,6 +1243,44 @@ public class ServerStoredContactListJabberImpl implements StateDumper
 
         // now search all root contacts for unresolved ones
         removeUnresolvedContacts();
+    }
+
+    /**
+     * Remove our local view of a contact - to be called when we are told by the server that it has
+     * removed the contact from its list, or we have a contact that doesn't (and shouldn't) exist on
+     * the server.  This function must only be called for contacts whose parent contact group is an
+     * AbstractContactGroupJabberImpl.
+     * @param contact
+     */
+    private void removeContactLocally(ContactJabberImpl contact)
+    {
+        // Remove the avatar from the cache before sending the contact removed event, as the latter will
+        // stop us being able to update the metacontact's avatar to blank.
+        AvatarCacheUtils.deleteCachedAvatar(contact);
+
+        AbstractContactGroupJabberImpl parent = (AbstractContactGroupJabberImpl) contact.getParentContactGroup();
+        if (parent == null)
+        {
+            logger.debug("Parent contact group not found, contact already removed");
+            return;
+        }
+
+        parent.removeContact(contact);
+        fireContactRemoved(parent, contact);
+
+        if (parent instanceof ContactGroupJabberImpl)
+        {
+            ContactGroupJabberImpl groupImpl = (ContactGroupJabberImpl) parent;
+
+            // if the group is empty remove it from
+            // root group. This group will be removed
+            // from server if empty
+            if (groupImpl.countContacts() == 0)
+            {
+                mRootGroup.removeSubGroup(groupImpl);
+                fireGroupEvent(groupImpl, ServerStoredGroupEvent.GROUP_REMOVED_EVENT);
+            }
+        }
     }
 
     /**
@@ -1281,14 +1313,19 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             }
         }
 
+        // Create a duplicate list with members cast to `Contact` to avoid casting Exceptions
+        List<Contact> contactsToRemoveDuplicate = new ArrayList<>(contactsToRemove);
+        JabberActivator
+                .getInsightsService()
+                .logEvent(InsightsEventHint.COMMON_HINT_CONTACT_DELETED.name(),
+                          Map.of(SipParameterInfo.CONTACTS_DELETED.name(),
+                                 contactsToRemoveDuplicate));
+
         for (ContactJabberImpl contact : contactsToRemove)
         {
             // No need to hash Contact, as its toString() method does that.
-            contactLogger.debug(
-                    "Removing unresolved jabber contact " + contact);
-            mRootGroup.removeContact(contact);
-
-            fireContactRemoved(mRootGroup, contact);
+            contactLogger.debug("Removing unresolved jabber contact " + contact);
+            removeContactLocally(contact);
         }
     }
 
@@ -1527,9 +1564,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                         contactLogger.debug(contact,
                             "Removing contact from parent group: " +
                             oldParentGroup);
-                        ((ContactGroupJabberImpl)oldParentGroup)
-                            .removeContact(contact);
-                        fireContactRemoved(oldParentGroup, contact);
+                        removeContactLocally(contact);
                     }
                     else
                     {
@@ -1690,12 +1725,10 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     {
                         // the contact is moved to another group
                         // first remove it from the original one
-                        if(contactGroup instanceof ContactGroupJabberImpl)
-                            ((ContactGroupJabberImpl)contactGroup).
-                                removeContact(contact);
-                        else if(contactGroup instanceof RootContactGroupJabberImpl)
-                            ((RootContactGroupJabberImpl)contactGroup).
-                                removeContact(contact);
+                        if (contactGroup instanceof AbstractContactGroupJabberImpl)
+                        {
+                            ((AbstractContactGroupJabberImpl)contactGroup).removeContact(contact);
+                        }
 
                         // the add it to the new one
                         ContactGroupJabberImpl newParentGroup =
@@ -1783,7 +1816,7 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     return;
                 }
 
-                ContactGroup group = findContactGroup(contact);
+                ContactGroup group = contact.getParentContactGroup();
 
                 if(group == null)
                 {
@@ -1792,33 +1825,9 @@ public class ServerStoredContactListJabberImpl implements StateDumper
                     return;
                 }
 
-                if(group instanceof ContactGroupJabberImpl)
+                if (group instanceof AbstractContactGroupJabberImpl)
                 {
-                    ContactGroupJabberImpl groupImpl
-                        = (ContactGroupJabberImpl)group;
-
-                    // remove the contact from parrent group
-                    groupImpl.removeContact(contact);
-
-                    // if the group is empty remove it from
-                    // root group. This group will be removed
-                    // from server if empty
-                    if (groupImpl.countContacts() == 0)
-                    {
-                        mRootGroup.removeSubGroup(groupImpl);
-
-                        fireContactRemoved(groupImpl, contact);
-                        fireGroupEvent(groupImpl,
-                                   ServerStoredGroupEvent.GROUP_REMOVED_EVENT);
-                    }
-                    else
-                        fireContactRemoved(groupImpl, contact);
-                }
-                else if(group instanceof RootContactGroupJabberImpl)
-                {
-                    mRootGroup.removeContact(contact);
-
-                    fireContactRemoved(mRootGroup, contact);
+                    removeContactLocally(contact);
                 }
             }
         }

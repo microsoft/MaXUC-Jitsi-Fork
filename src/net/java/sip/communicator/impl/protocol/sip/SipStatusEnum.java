@@ -228,7 +228,7 @@ public class SipStatusEnum
      * An implementation of <tt>PresenceStatus</tt> that enumerates all states
      * that a SIP contact can currently have.
      */
-    private static class SipPresenceStatus
+    static class SipPresenceStatus
         extends PresenceStatus
     {
         /**

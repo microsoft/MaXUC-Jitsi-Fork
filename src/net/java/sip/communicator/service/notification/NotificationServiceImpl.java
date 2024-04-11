@@ -17,6 +17,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
+
 import net.java.sip.communicator.plugin.notificationwiring.NotificationManager;
 import net.java.sip.communicator.service.notification.event.*;
 import net.java.sip.communicator.util.*;
@@ -85,17 +89,20 @@ class NotificationServiceImpl
                                           = new HashSet<>();
 
     /**
-     * The name of the property holding the URI of the user's custom ringtone,
-     * if any.
+     * The properties holding the URI of the user's custom ringtones, if any.
      */
-    private String CUSTOM_RINGTONE_URI_PROPNAME =
+    private static final String CUSTOM_RINGTONE_URI_PROPNAME =
             "net.java.sip.communicator.plugin.generalconfig.CUSTOM_RINGTONE_URI";
+    private static final String CUSTOM_BG_RINGTONE_URI_PROPNAME =
+            "net.java.sip.communicator.plugin.generalconfig.CUSTOM_BG_RINGTONE_URI";
 
     /**
-     * The name of the property holding the path of the currently active ringtone.
+     * The properties holding the path of the currently active ringtones.
      */
-    private String CURRENT_RINGTONE_PATH_PROPNAME =
+    private static final String CURRENT_RINGTONE_PATH_PROPNAME =
             "net.java.sip.communicator.plugin.generalconfig.CURRENT_RINGTONE_PATH";
+    private static final String CURRENT_BG_RINGTONE_PATH_PROPNAME =
+            "net.java.sip.communicator.plugin.generalconfig.CURRENT_BG_RINGTONE_PATH";
 
     /**
      * Creates an instance of <tt>NotificationServiceImpl</tt> by loading all
@@ -243,16 +250,20 @@ class NotificationServiceImpl
         String eventType = data.getEventType();
         Notification notification = notifications.get(eventType);
 
+        Object bgTagExtra = data.getExtra(NotificationData.NOTIFICATION_SERVICE_SOUND_BG_TAG_EXTRA);
+        SoundNotificationAction.BgTag bgTag = bgTagExtra != null ? (SoundNotificationAction.BgTag) bgTagExtra : null;
+
         if((notification == null) || !notification.isActive())
             return;
 
-        if (eventType.equals(NotificationManager.INCOMING_CALL)
-            || eventType.equals(NotificationManager.INCOMING_CONFERENCE))
+        if (eventType.equals(NotificationManager.INCOMING_CALL) ||
+            eventType.equals(NotificationManager.INCOMING_CONFERENCE) &&
+            bgTag != null)
         {
             // If we're about to play an incoming ringtone, check that if we
             // have a custom ringtone set that it's still accessible. If it's gone,
             // set to the default ringtone.
-            checkAndSetCustomRingtone();
+            checkAndSetCustomRingtone(bgTag);
         }
 
         for(NotificationAction action : notification.getActions().values())
@@ -303,8 +314,10 @@ class NotificationServiceImpl
                                 soundNotificationAction.isSoundPlaybackEnabled() ||
                                 soundNotificationAction.isSoundPCSpeakerEnabled())
                         {
+                            soundNotificationAction.selectSoundFileDescriptorByGroup(bgTag);
+
                             ((SoundNotificationHandler) handler).start(
-                                    (SoundNotificationAction) action,
+                                    soundNotificationAction,
                                     data);
                         }
                     }
@@ -702,6 +715,20 @@ class NotificationServiceImpl
                                 = configService.user().getString(
                                 actionPropName + ".soundFileDescriptor");
 
+                        Map<SoundNotificationAction.BgTag, String> soundFileDescriptorMap = null;
+                        Gson gson = new Gson();
+                        try
+                        {
+                            soundFileDescriptorMap
+                                    = gson.fromJson(configService.user().getString(
+                                                            actionPropName + ".soundFileDescriptorMap"),
+                                                    new TypeToken<Map<SoundNotificationAction.BgTag, String>>() {}.getType());
+                        }
+                        catch (JsonSyntaxException jsonSyntaxException)
+                        {
+                            logger.error("Descriptor map empty or malformed", jsonSyntaxException);
+                        }
+
                         String loopInterval
                                 = configService.user().getString(
                                 actionPropName + ".loopInterval");
@@ -727,6 +754,15 @@ class NotificationServiceImpl
                                 isSoundNotificationEnabled,
                                 isSoundPlaybackEnabled,
                                 isSoundPCSpeakerEnabled);
+
+                        if (soundFileDescriptorMap != null)
+                        {
+                            for (Map.Entry<SoundNotificationAction.BgTag, String> entry : soundFileDescriptorMap.entrySet())
+                            {
+                                ((SoundNotificationAction) action).setSoundFileDescriptorsMapEntry(entry.getKey(),
+                                                                                                   entry.getValue());
+                            }
+                        }
                         break;
                     case ACTION_POPUP_MESSAGE:
                         String defaultMessage
@@ -1159,6 +1195,10 @@ class NotificationServiceImpl
                 soundAction.getDescriptor());
 
             configProperties.put(
+                    actionTypeNodeName + ".soundFileDescriptorMap",
+                    new Gson().toJson(soundAction.getSoundFileDescriptorsMap()));
+
+            configProperties.put(
                 actionTypeNodeName + ".loopInterval",
                 soundAction.getLoopInterval());
 
@@ -1335,10 +1375,20 @@ class NotificationServiceImpl
     }
 
     @Override
-    public void checkAndSetCustomRingtone()
+    public void checkAndSetCustomRingtone(SoundNotificationAction.BgTag bgTag)
     {
-        String ringtoneURI =
-                configService.user().getString(CUSTOM_RINGTONE_URI_PROPNAME, "");
+        String ringtoneURI;
+        String currentRingtonePathProp;
+        if (bgTag == SoundNotificationAction.BgTag.BG_TAG_GENERIC)
+        {
+            currentRingtonePathProp = CURRENT_RINGTONE_PATH_PROPNAME;
+            ringtoneURI = configService.user().getString(CUSTOM_RINGTONE_URI_PROPNAME, "");
+        }
+        else
+        {
+            currentRingtonePathProp = CURRENT_BG_RINGTONE_PATH_PROPNAME;
+            ringtoneURI = configService.user().getString(CUSTOM_BG_RINGTONE_URI_PROPNAME, "");
+        }
 
         if (ringtoneURI.equals(""))
         {
@@ -1359,17 +1409,21 @@ class NotificationServiceImpl
 
         logger.info("Custom ringtone has been deleted.");
         String path = "resources/sounds/incomingCall.wav";
-        configService.user().setProperty(CURRENT_RINGTONE_PATH_PROPNAME, path);
 
-        registerNewRingtoneNotification(path);
+        configService.user().setProperty(currentRingtonePathProp, path);
+        configService.user().setProperty(ringtoneURI, "");
+
+        registerNewRingtoneNotification(path, bgTag);
     }
 
     /**
      * Register a new sound as the notification for incoming calls and meetings.
      *
      * @param ringtonePath The file path of the new ringtone
+     * @param bgTag tag which to associate the sound file with. <tt>BG_TAG_INTERNAL</tt> or
+     *              <tt>BG_TAG_EXTERNAL</tt> or "" are common values
      */
-    public void registerNewRingtoneNotification(String ringtonePath)
+    public void registerNewRingtoneNotification(String ringtonePath, SoundNotificationAction.BgTag bgTag)
     {
         logger.debug("Registering new ringtone for NotificationService");
 
@@ -1386,12 +1440,15 @@ class NotificationServiceImpl
                             action,
                             NotificationAction.ACTION_SOUND));
 
+            oldAction.getSoundFileDescriptorsMap().put(bgTag, ringtonePath);
+
             SoundNotificationAction newAction = new SoundNotificationAction(
-                    ringtonePath,
+                    oldAction.getSoundFileDescriptorsMap(),
                     oldAction.getLoopInterval(),
                     oldAction.isSoundNotificationEnabled(),
                     oldAction.isSoundPlaybackEnabled(),
                     oldAction.isSoundPCSpeakerEnabled());
+            newAction.setSoundFileDescriptorsMapEntry(bgTag, ringtonePath);
 
             registerNotificationForEvent(action, newAction);
         }

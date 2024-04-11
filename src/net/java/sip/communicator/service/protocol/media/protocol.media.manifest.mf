@@ -8,6 +8,7 @@ Import-Package: javax.xml.parsers,
  javax.media.control,
  net.java.sip.communicator.service.analytics,
  net.java.sip.communicator.service.insights,
+ net.java.sip.communicator.service.insights.parameters,
  net.java.sip.communicator.service.netaddr,
  net.java.sip.communicator.service.protocol,
  net.java.sip.communicator.service.protocol.event,
@@ -27,5 +28,6 @@ Import-Package: javax.xml.parsers,
  org.osgi.framework,
  org.w3c.dom,
  org.xml.sax,
- com.metaswitch.maxanalytics.event
+ org.json.simple,
+ org.json.simple.parser
 Export-Package: net.java.sip.communicator.service.protocol.media

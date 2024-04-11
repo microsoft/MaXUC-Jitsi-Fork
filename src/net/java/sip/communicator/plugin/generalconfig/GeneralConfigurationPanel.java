@@ -15,6 +15,7 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -23,6 +24,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.*;
 
+import net.java.sip.communicator.impl.gui.main.configforms.ConfigurationFrame;
 import net.java.sip.communicator.plugin.desktoputil.ConfigSectionPanel;
 import net.java.sip.communicator.plugin.desktoputil.CreateConferenceMenu;
 import net.java.sip.communicator.plugin.desktoputil.ErrorDialog;
@@ -32,6 +34,11 @@ import net.java.sip.communicator.plugin.desktoputil.SIPCommCheckBox;
 import net.java.sip.communicator.plugin.desktoputil.ScaleUtils;
 import net.java.sip.communicator.plugin.desktoputil.TransparentPanel;
 import net.java.sip.communicator.service.conference.ConferenceService;
+
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
+import net.java.sip.communicator.service.insights.parameters.GeneralConfigPluginParameterInfo;
+import net.java.sip.communicator.service.notification.SoundNotificationAction;
 import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.AccountManager;
 import net.java.sip.communicator.service.protocol.OperationFailedException;
@@ -91,11 +98,11 @@ public class GeneralConfigurationPanel
                         "service.gui.RINGTONE_NAME_";
 
     /**
-     * The button within the ringtones panel which is used to preview ringtones.
+     * The map of buttons within the ringtones panel which is used to preview ringtones.
      * We hold a reference to it so that we can halt any playing audio when we
      * are closed or are no longer the active tab in the configuration panel.
      */
-    private RingtonePreviewButton mPreviewButton;
+    private static final Map<SoundNotificationAction.BgTag, RingtonePreviewButton> mPreviewButtonMap = new HashMap<>();
 
     /**
      * Indicates if the device type configuration panel should be disabled, i.e.
@@ -133,6 +140,9 @@ public class GeneralConfigurationPanel
     private static final String PRIVACY_PROP =
         "net.java.sip.communicator.plugin.generalconfig.privacy.DISABLED";
 
+    private static final String BG_CONTACTS_ENABLED_PROP =
+                                "net.java.sip.communicator.BG_CONTACTS_ENABLED";
+
     /**
      * Indicates whether we should automatically log in when the application
      * starts (assuming we have valid log username and password).
@@ -165,10 +175,10 @@ public class GeneralConfigurationPanel
         "plugin.generalconfig.SYSTEM_LANGUAGE";
 
     /**
-     * The resource key for the langauge and country option text.
+     * The resource key for the language and country option text.
      */
     private static final String LANGUAGE_AND_COUNTRY =
-        "plugin.generalconfig.LANGUAGE_AND_COUNTRY";
+        "service.gui.LANGUAGE_AND_COUNTRY";
 
     /**
      * The maximum width, in pixels, of the dropdown used to select the folder
@@ -176,6 +186,9 @@ public class GeneralConfigurationPanel
      */
     private static final int CALL_RECORDING_SELECTOR_MAX_WIDTH =
                                                        ScaleUtils.scaleInt(150);
+
+    private static final String CONFIG_DISTINCT_RINGTONES_ENABLED_PROP =
+            "net.java.sip.communicator.plugin.generalconfig.ringtonesconfig.DISTINCT_ENABLED";
 
     /**
      * The configuration service
@@ -202,17 +215,11 @@ public class GeneralConfigurationPanel
     private Component recordingsPanel;
 
     /**
-     * A panel that allows the user to select the ringtone they want, or choose
-     * a custom one.
-     */
-    private Component mRingtoneConfigPanel;
-
-    /**
      * The panel with all of the general config displayed on it. This includes
      * ringtones, integration with Outlook and whether to launch the client on
      * startup, but not for example Contact settings or recording settings.
      */
-    private Component mGeneralConfigPanel;
+    private JPanel mGeneralConfigPanel;
 
     /**
      * This tracks whether a user has just clicked on the dropdown ringtone
@@ -230,6 +237,12 @@ public class GeneralConfigurationPanel
     static final AtomicBoolean mJustUpdatedRingtone = new AtomicBoolean(false);
 
     /**
+     * Distinct ringtone selector changes visibility according to the distinct ringing checkbox
+     * action event
+     */
+    private TransparentPanel distinctRingtoneSelector;
+
+    /**
      * Creates the general configuration panel.
      */
     public GeneralConfigurationPanel()
@@ -237,7 +250,7 @@ public class GeneralConfigurationPanel
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         // Add a new GeneralConfigPanel to the top.
-        createOrUpdateGeneralConfigPanel();
+        createGeneralConfigPanel();
 
         if (!configService.global().getBoolean(DEVICE_TYPE_CONFIG_DISABLED_PROP, false))
         {
@@ -269,10 +282,9 @@ public class GeneralConfigurationPanel
     }
 
     /**
-     * Creates or updates the panel for the general section of the general
-     * config panel
+     * Creates the panel for the general section of the general config panel
      */
-    private synchronized void createOrUpdateGeneralConfigPanel()
+    private synchronized void createGeneralConfigPanel()
     {
         if (mGeneralConfigPanel != null)
         {
@@ -306,12 +318,23 @@ public class GeneralConfigurationPanel
         if (!configService.global().getBoolean(RINGTONES_CONFIG_DISABLED_PROP, false) &&
             (ConfigurationUtils.isCallingEnabled() || meetingInvitesEnabled))
         {
-            createOrUpdateRingtonesConfigPanel();
+            TransparentPanel genericRingtoneSelector = createRingtoneSelector(
+                    Resources.getResources().getI18NString("service.gui.RINGTONE_SELECTOR_LABEL"),
+                    Resources.getResources().getI18NString("service.gui.RINGTONE_SELECTOR_LABEL_DESCRIPTION"),
+                    SoundNotificationAction.BgTag.BG_TAG_GENERIC);
+            generalConfigJPanel.add(genericRingtoneSelector);
 
-            // Then we add the ringtones panel if it is not null.
-            if (mRingtoneConfigPanel != null)
+            boolean bgContactsEnabled = configService.user().getBoolean(BG_CONTACTS_ENABLED_PROP, false);
+            if (bgContactsEnabled)
             {
-                generalConfigJPanel.add(mRingtoneConfigPanel);
+                JCheckBox checkBox = createDistinctRingingCheckbox();
+                generalConfigJPanel.add(checkBox);
+                distinctRingtoneSelector = createRingtoneSelector(
+                        Resources.getResources().getI18NString("service.gui.RINGTONE_SELECTOR_LABEL_BG"),
+                        Resources.getResources().getI18NString("service.gui.RINGTONE_SELECTOR_LABEL_BG_DESCRIPTION"),
+                        SoundNotificationAction.BgTag.BG_TAG_INTERNAL);
+                generalConfigJPanel.add(distinctRingtoneSelector);
+                distinctRingtoneSelector.setVisible(checkBox.isSelected());
             }
         }
 
@@ -333,49 +356,113 @@ public class GeneralConfigurationPanel
     }
 
     /**
-     * Creates or updates the panel used to select the current ringtone (which
+     * Creates the panel used to select the current ringtone (which
      * is used both for incoming calls and meeting invites).
      */
-    private void createOrUpdateRingtonesConfigPanel()
+    private TransparentPanel createRingtoneSelector(String labelText,
+                                                    String description,
+                                                    SoundNotificationAction.BgTag bgTag)
     {
         // The label text, dropdown selector, and preview button should all
         // appear on the same row, so we place them in a FlowLayout.
-        JPanel selectorPanel = new TransparentPanel();
+        TransparentPanel selectorPanel = new TransparentPanel();
         selectorPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
         // Create the label text for the row.
         JLabel ringtoneLabel = new JLabel();
-        ringtoneLabel.setText(Resources.getResources().getI18NString(
-                "service.gui.RINGTONE_SELECTOR_LABEL"));
+        ringtoneLabel.setText(labelText);
         ringtoneLabel.setForeground(TEXT_COLOR);
         ScaleUtils.scaleFontAsDefault(ringtoneLabel);
 
         // We don't want to create a new preview button when we update the panel
         // if one already exists. If we did this, we would not stop playing the
         // audio when the window lost focus.
-        if (mPreviewButton == null)
+        if (!mPreviewButtonMap.containsKey(bgTag))
         {
             // Create the button used to preview audio.
-            mPreviewButton = new RingtonePreviewButton();
+            RingtonePreviewButton button = new RingtonePreviewButton();
+            mPreviewButtonMap.put(bgTag, button);
+            button.addActionListener(l -> {
+                logger.debug("Preview button clicked, stopping audio from other buttons");
+
+                mPreviewButtonMap.values().stream()
+                        .filter(previewButton -> previewButton.isSelected() && previewButton != button)
+                        .forEach(RingtonePreviewButton::stopAudio);
+            });
         }
 
         // Create and populate the dropdown selector from which ringtones may be
         // selected. We need only provide the default ringtones here, as the
         // selector will handle custom ringtones itself.
         Map<String, String> defaultRingtones = getDefaultRingtones();
-        RingtoneSelectorComboBox ringtoneSelector =
-                new RingtoneSelectorComboBox(defaultRingtones,
-                                             mPreviewButton);
+        RingtoneSelectorComboBox ringtoneSelector = new RingtoneSelectorComboBox(bgTag,
+                                                                                 defaultRingtones,
+                                                                                 mPreviewButtonMap.get(bgTag));
+
+        ringtoneSelector.setAccessibilityNameAndDescription(labelText, description);
 
         // The preview button needs to hold a reference to the ringtone selector,
         // so we pass this now.
-        mPreviewButton.registerRingtoneSelector(ringtoneSelector);
+        mPreviewButtonMap.get(bgTag).registerRingtoneSelector(ringtoneSelector);
 
         selectorPanel.add(ringtoneLabel);
         selectorPanel.add(ringtoneSelector);
-        selectorPanel.add(mPreviewButton);
+        selectorPanel.add(mPreviewButtonMap.get(bgTag));
 
-        mRingtoneConfigPanel=selectorPanel;
+        return selectorPanel;
+    }
+
+    private JCheckBox createDistinctRingingCheckbox()
+    {
+        final JCheckBox distinctRingingCheckBox = new SIPCommCheckBox();
+
+        String label = Resources.getString("service.gui.DISTINCT_RINGING_CHECKBOX_LABEL");
+        distinctRingingCheckBox.setText(label);
+        distinctRingingCheckBox.setForeground(TEXT_COLOR);
+        distinctRingingCheckBox.addActionListener(actionEvent -> {
+            logger.user("Distinct ringing enabled prop set to: " +
+                        distinctRingingCheckBox.isSelected());
+
+            configService.user().setProperty(CONFIG_DISTINCT_RINGTONES_ENABLED_PROP, distinctRingingCheckBox.isSelected());
+
+            GeneralConfigPluginActivator
+                    .getInsightsService()
+                    .logEvent(InsightsEventHint.GENERAL_CONFIG_PLUGIN_RINGTONE_IS_DISTINCTIVE.name(),
+                              Map.of(GeneralConfigPluginParameterInfo.RINGTONE_IS_DISTINCTIVE.name(),
+                                     distinctRingingCheckBox.isSelected()));
+
+            // Stop audio when toggling the button.
+            mPreviewButtonMap.values().forEach(RingtonePreviewButton::stopAudio);
+
+            distinctRingtoneSelector.setVisible(distinctRingingCheckBox.isSelected());
+            mGeneralConfigPanel.updateUI();
+
+            findAndUpdateConfigurationFrame(this);
+        });
+
+        distinctRingingCheckBox.setSelected(configService.user().getBoolean(CONFIG_DISTINCT_RINGTONES_ENABLED_PROP, false));
+
+        return distinctRingingCheckBox;
+    }
+
+    /**
+     * Utility method for digging to the ConfigurationFrame holding the components. Once the parent ConfigurationFrame
+     * is found, the frame is resized accordingly, taking into account newly added or removed components. In case the
+     * component doesn't have ConfigurationFrame as a parent, the loop terminates naturally once the MainFrame, or
+     * the root frame, or first null parent is reached.
+     */
+    public static void findAndUpdateConfigurationFrame(Component component)
+    {
+        while (component != null)
+        {
+            if (component instanceof ConfigurationFrame)
+            {
+                ((ConfigurationFrame) component).updateCentralPanelSize();
+                logger.info("Resized central panel");
+                break;
+            }
+            component = component.getParent();
+        }
     }
 
     /**
@@ -967,6 +1054,13 @@ public class GeneralConfigurationPanel
         return localeConfigPanel;
     }
 
+    /**
+     * Should be aligned with
+     * LocaleSelectorComboBox.localeToDisplayString(Locale locale)
+     *
+     * @param locale from which the display language will be obtained
+     * @return display language
+     */
     private String localeToDisplayString(Locale locale)
     {
         String localeDisplayLanguage = locale.getDisplayLanguage(locale);
@@ -1152,13 +1246,38 @@ public class GeneralConfigurationPanel
             {
                 logger.user("Analytics opt-out checkbox toggled to: " +
                                     analyticsCheckBox.isSelected());
+                boolean isSelected = analyticsCheckBox.isSelected();
+                if(!isSelected)
+                {
+                    // If analytics is being disabled, send the event before actually disabling the feature
+                    sendAnalyticForAnalyticsEnabled(false);
+                }
                 configService.user().setProperty(name, analyticsCheckBox.isSelected());
+                if (isSelected)
+                {
+                    // If analytics is being enabled, send the event after actually enabling the feature
+                    sendAnalyticForAnalyticsEnabled(true);
+                }
             }
         });
 
         analyticsCheckBox.setSelected(configService.user().getBoolean(name, true));
 
         return analyticsCheckBox;
+    }
+
+    /**
+     * Sends an analytic event for enabling analytics
+     *
+     * @param value Whether the analytics is enabled
+     */
+    private void sendAnalyticForAnalyticsEnabled(boolean value)
+    {
+        GeneralConfigPluginActivator.getInsightsService().logEvent(
+                InsightsEventHint.GENERAL_CONFIG_PLUGIN_ANALYTICS_ENABLED.name(),
+                Map.of(
+                        CommonParameterInfo.NEW_VALUE.name(), value
+                ));
     }
 
     /**
@@ -1377,13 +1496,6 @@ public class GeneralConfigurationPanel
         // - the visibility of the recordings selector
         updateContactClickOptions();
         setRecordingsPanelVisibility();
-        // If we are refocusing on the window, and have not just updated the
-        // ringtone, we want to refresh the generalConfigPanel to catch any
-        // recent changes.
-        if (!mJustUpdatedRingtone.getAndSet(false))
-        {
-            createOrUpdateGeneralConfigPanel();
-        }
     }
 
     @Override
@@ -1391,12 +1503,6 @@ public class GeneralConfigurationPanel
     {
         // We don't want audio to keep playing after the config panel is no
         // longer visible, so force-stop it.
-        if (mPreviewButton != null)
-        {
-            mPreviewButton.stopAudio();
-        }
-        // Since we have left the window, we must have refocused on it after any
-        // changes to the ringtone.
-        mJustUpdatedRingtone.set(false);
+        mPreviewButtonMap.values().forEach(RingtonePreviewButton::stopAudio);
     }
 }

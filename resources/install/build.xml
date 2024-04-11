@@ -73,8 +73,7 @@
     <target name="ant-usage"
             description="simply execute 'ant' to discover the most useful targets.">
         <echo message="Useful ant commands for the Jitsi Build Installer..." />
-        <echo message="'ant build-installation-wix' for building Windows MSI installation file using WiX" />
-        <echo message="'ant build-installation-wix-64' for building Windows x64 MSI installation file using WiX" />
+        <echo message="'ant build-installation-wix' for building Windows x64 MSI installation file using WiX" />
     </target>
 
     <target name="clean-install-windows">
@@ -85,25 +84,10 @@
 
     <target name="build-installation-wix"
             depends="version,load-properties">
-        <property name="windows_native_path" value="${sc.basedir}\lib\native\windows"/>
-        <property name="windows.jre.arch.file" value="${windows.jre.file}"/>
+        <property name="windows_native_path" value="${sc.basedir}\lib\native\windows-64"/>
+        <property name="windows.jre.arch.file" value=""/>
         <condition property="windows.jre.arch.zip" value="${windows.jre.zip}">
             <isset property="windows.jre.zip" />
-        </condition>
-        <property name="windows.download.link" value="${link.download.windows32}"/>
-        <property name="windows.package.name.suffix" value="x86.exe"/>
-        <property name="windows.msi.package.name.suffix" value="x86.msi"/>
-        <property name="windows.arch" value="32"/>
-        <property name="mingw.home" value="C:/mingw/x86" />
-        <antcall target="build-installation-wix-base" />
-    </target>
-
-    <target name="build-installation-wix-64"
-            depends="version,load-properties">
-        <property name="windows_native_path" value="${sc.basedir}\lib\native\windows-64"/>
-        <property name="windows.jre.arch.file" value="${windows.jre64.file}"/>
-        <condition property="windows.jre.arch.zip" value="${windows.jre64.zip}">
-            <isset property="windows.jre64.zip" />
         </condition>
         <property name="windows.download.link" value="${link.download.windows64}"/>
         <property name="windows.package.name.suffix" value="x64.exe"/>
@@ -406,33 +390,12 @@
             <equals arg1="${windows.arch}" arg2="64" />
         </condition>
 
-        <!--
-          Build cleansweep.exe because it is to be included in the setup by
-          candle.exe
-        -->
-        <exec
-                dir="${src}/native/windows/setup/cleansweep"
-                executable="make.exe"
-                failonerror="true">
-            <env key="PATH" path="${mingw.home}/bin;${env.PATH}" />
-            <arg value="PRODUCTNAME=${application.name.ascii}" />
-            <arg value="MINGW_HOME=${mingw.home}" />
-            <arg value="TARGET_DIR=${light.dir}" />
-        </exec>
-        <delete>
-            <fileset dir="${light.dir}">
-                <include name="config.h" />
-                <include name="cleansweep.res" />
-            </fileset>
-        </delete>
-
         <path id="files-to-sign">
             <fileset dir="${light.dir}/native">
                 <include name="**/*.dll"/>
                 <include name="**/*.exe"/>
             </fileset>
             <file file="${light.dir}/${wix.app.launcher.name}.exe"/>
-            <file file="${light.dir}/cleansweep.exe"/>
             <fileset dir="${light.dir}/ui">
                 <include name="*.exe"/>
             </fileset>
@@ -599,6 +562,8 @@
                 dir="${light.dir}"
                 failonerror="true">
             <arg value="build" />
+            <arg value="-arch" />
+            <arg value="${candle.var.Platform}" />
             <arg value="-cc"/>
             <arg value="${light.dir}/cabcache"/>
             <arg value="${wix.light.additional.arg}" />
@@ -822,6 +787,8 @@
                     dir="${light.dir}"
                     failonerror="true">
                 <arg value="build" />
+                <arg value="-arch" />
+                <arg value="${candle.var.Platform}" />
                 <arg value="-cc"/>
                 <arg value="${light.dir}/cabcache"/>
                 <arg value="${wix.light.additional.arg}" />
@@ -1156,8 +1123,8 @@
         <echo message="Coverage enabled? ${env.ENABLE_COVERAGE}. Setting javaagent string to: ${coverage.option.string}"/>
 
         <!-- Unzip the jdk into dist/branding-name -->
-        <gunzip src="lib/OpenJDK11U-jdk_x64_mac_hotspot.tar.gz"/>
-        <untar src="lib/OpenJDK11U-jdk_x64_mac_hotspot.tar" dest="."/>
+        <gunzip src="lib/microsoft-jdk-17.0.10-macos-x64.tar.gz"/>
+        <untar src="lib/microsoft-jdk-17.0.10-macos-x64.tar" dest="."/>
         <!-- This creates the .app for MacOSX -->
         <bundleapp  outputdirectory="${macosx.app.dir}"
                     name="${application.name.ascii}"
@@ -1245,7 +1212,7 @@
         <property name="macosx.app.jre.dir" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/PlugIns/${macosx.jre.version}" />
         <delete file="${macosx.app.jre.dir}/Contents/MacOS/libjli.dylib" />
 
-        <copy file="${env.JRE_HOME}/lib/jli/libjli.dylib" tofile="${macosx.app.jre.dir}/Contents/MacOS/libjli.dylib" />
+        <copy file="${env.JRE_HOME}/lib/libjli.dylib" tofile="${macosx.app.jre.dir}/Contents/MacOS/libjli.dylib" />
 
         <!-- Bundle in the jacoco runtime agent if we're configured to get coverage from the built client -->
         <if>
@@ -1355,25 +1322,6 @@
                 preservelastmodified="true"
                 overwrite="true" filtering="yes">
           </move>
-          <move file="${macosx.resrc.dir}/libpltwrapper.dylib"
-                tofile="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/libpltwrapper.dylib"
-                preservelastmodified="true"
-                overwrite="true" filtering="yes">
-          </move>
-          <mkdir dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks"/>
-          <unzip src="${macosx.resrc.dir}/Spokes3GSDK.framework.zip"
-                dest="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks" overwrite="true"/>
-          <!-- Ant unzip task does not preserve symlinks, so we recreate them -->
-          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Versions/Current"
-                resource="./A" overwrite="true"/>
-          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Headers"
-                resource="Versions/Current/Headers" overwrite="true"/>
-          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Resources"
-                resource="Versions/Current/Resources" overwrite="true"/>
-          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/Spokes3GSDK"
-                resource="Versions/Current/Spokes3GSDK" overwrite="true"/>
-          <symlink link="${macosx.app.dir}/${application.name.ascii}.app/Contents/Frameworks/Spokes3GSDK.framework/PrivateHeaders"
-                resource="Versions/Current/PrivateHeaders" overwrite="true"/>
     </target>
 
     <!-- Create a MacOSX application package with Sparkle support.
@@ -2207,7 +2155,7 @@
         <exec executable="/usr/bin/security" os="Mac OS X" failonerror="true">
             <arg value="set-keychain-settings"/>
             <arg value="-t"/>
-            <arg value="1200"/>
+            <arg value="1800"/>
             <arg value="${macosx.sign.keychain}"/>
         </exec>
     </target>

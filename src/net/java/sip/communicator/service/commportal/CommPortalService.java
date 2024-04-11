@@ -24,11 +24,9 @@ public interface CommPortalService
      * @param callback the callback for the request
      * @param networkErrorCallback optional parameter which will handle network
      *        errors if present.  Otherwise, these are handled by the service
-     * @param isForeground If true then this will happen with high priority
      */
     void getAction(CPDataSenderCallback callback,
-                   CPOnNetworkErrorCallback networkErrorCallback,
-                   boolean isForeground);
+                   CPOnNetworkErrorCallback networkErrorCallback);
 
     /**
      * Request a token from CommPortal
@@ -95,11 +93,8 @@ public interface CommPortalService
      * Upload a file to CommPortal
      *
      * @param callback the callback for the request
-     * @param networkErrorCallback optional parameter which will handle network
-     *        errors if present.  Otherwise, these are handled by the service
      */
-    void uploadFile(CPFileUploadCallback callback,
-                    CPOnNetworkErrorCallback networkErrorCallback);
+    void uploadFile(CPFileUploadCallback callback);
 
     /**
      * Ask CommPortal to perform an action

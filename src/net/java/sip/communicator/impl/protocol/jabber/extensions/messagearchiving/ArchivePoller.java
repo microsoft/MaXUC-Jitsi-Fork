@@ -51,13 +51,13 @@ public class ArchivePoller implements RegistrationStateChangeListener,
     /**
      * The place in config where the currently selected tab is stored
      */
-    private static final String SELECTED_TAB_NAME =
+    static final String SELECTED_TAB_NAME =
                            "net.java.sip.communicator.service.gui.SELECTED_TAB";
 
     /**
      * How often to request the archive - 5 minutes
      */
-    private static final int ARCHIVE_REQUEST_TIME = 5 * 60 * 1000;
+    static final long ARCHIVE_REQUEST_TIME = 5 * 60 * 1000L;
 
     /**
      * Config service

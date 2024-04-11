@@ -1,13 +1,30 @@
 {
   "connectionStringConfiguredAtRuntime": true,
+
+  "selfDiagnostics": {
+    "destination": "file",
+    "level": "ERROR"
+  },
+
+  "role": {
+    "instance": "Insights"
+  },
+
   "instrumentation": {
     "logging": {
       "level": "OFF"
+    },
+    "micrometer": {
+      "enabled": false
+    },
+    "jms": {
+      "enabled": false
+    },
+    "azureSdk": {
+      "enabled": false
     }
   },
-  "role": {
-    "instance": "AccessionDesktop"
-  },
+
   "preview": {
     "sampling": {
       "overrides": [
@@ -18,9 +35,25 @@
         {
           "telemetryType": "request",
           "percentage": 0
+        },
+        {
+          "telemetryType": "trace",
+          "percentage": 0
+        },
+        {
+          "telemetryType": "exception",
+          "percentage": 0
         }
-
       ]
-    }
+    },
+    "processors": [
+      {
+        "type": "metric-filter",
+        "exclude":{
+          "matchType": "regexp",
+          "metricNames": [".*"]
+        }
+      }
+    ]
   }
 }

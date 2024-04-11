@@ -24,13 +24,7 @@ import java.util.Vector;
 
 import javax.imageio.ImageIO;
 
-import com.metaswitch.maxanalytics.event.AnalyticsResult;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.CommonKt;
-import com.metaswitch.maxanalytics.event.FileTransferFailureReason;
-import com.metaswitch.maxanalytics.event.FileTransferMethod;
-import com.metaswitch.maxanalytics.event.FileTransferType;
-import com.metaswitch.maxanalytics.event.ImKt;
+import com.google.common.annotations.VisibleForTesting;
 import org.jivesoftware.smack.ConnectionCreationListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
@@ -60,7 +54,8 @@ import net.java.sip.communicator.impl.protocol.jabber.extensions.thumbnail.Thumb
 import net.java.sip.communicator.impl.protocol.jabber.extensions.thumbnail.ThumbnailStreamInitiationProvider;
 import net.java.sip.communicator.plugin.desktoputil.ImageUtils;
 import net.java.sip.communicator.service.analytics.AnalyticsEventType;
-import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.JabberParameterInfo;
 import net.java.sip.communicator.service.protocol.AbstractFileTransfer;
 import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.ContactResource;
@@ -146,7 +141,8 @@ public class OperationSetFileTransferJabberImpl
     /**
      * String array to represent file transfer feature list.
      */
-    private static final String[] FILE_TRANSFER_FEATURES = {
+    @VisibleForTesting
+    public static final String[] FILE_TRANSFER_FEATURES = {
         "http://jabber.org/protocol/si",
         "http://jabber.org/protocol/si/profile/file-transfer"};
 
@@ -873,7 +869,7 @@ public class OperationSetFileTransferJabberImpl
                                                                           status == FileTransferStatusChangeEvent.COMPLETED ? "Success"
                                                                                                                             : "Cancelled");
                         }
-                        handleTransferForTelemetry(status, isOutgoing, fileTransfer);
+                        sendTelemetryFileTransfer(status, isOutgoing, fileTransfer);
                         break;
                     }
 
@@ -981,55 +977,25 @@ public class OperationSetFileTransferJabberImpl
     }
 
     /**
-     * Parses the file transfer event, and constructs and sends a telemetry event
-     */
-    private static void handleTransferForTelemetry(int status, boolean isOutgoing, AbstractFileTransfer fileTransfer)
-    {
-        Path filePath = fileTransfer.getLocalFile().toPath();
-        switch (status)
-        {
-            case FileTransferStatusChangeEvent.COMPLETED:
-                sendTelemetryFileTransfer(isOutgoing,
-                                          getFileType(filePath),
-                                          AnalyticsResult.Success.INSTANCE);
-                break;
-            case FileTransferStatusChangeEvent.CANCELED:
-                sendTelemetryFileTransfer(isOutgoing,
-                                          getFileType(filePath),
-                                          new AnalyticsResult.Failure(FileTransferFailureReason.CANCELLED));
-                break;
-            case FileTransferStatusChangeEvent.REFUSED:
-                sendTelemetryFileTransfer(isOutgoing,
-                                          getFileType(filePath),
-                                          new AnalyticsResult.Failure(FileTransferFailureReason.REJECTED));
-                break;
-        }
-    }
-
-    /**
      * Sends telemetry events when sending and receiving file transfer
      */
-    private static void sendTelemetryFileTransfer(boolean isOutgoing, String mimeType, AnalyticsResult result)
+    private static void sendTelemetryFileTransfer(int event,
+                                                  boolean isOutgoing, AbstractFileTransfer fileTransfer)
     {
-        JabberActivator.getInsightService().logEvent(
-                new InsightEvent(isOutgoing ?
-                                         ImKt.EVENT_FILE_TRANSFER_SEND :
-                                         ImKt.EVENT_FILE_TRANSFER_RECEIVE,
-                                 Map.of(
-                                         CommonKt.PARAM_TYPE,
-                                         mimeType,
-                                         ImKt.PARAM_TRANSFER_METHOD,
-                                         FileTransferMethod.IBB.getValue$maxanalytics(),
-                                         AnalyticsResultKt.PARAM_RESULT,
-                                         result.getValue()
-                                 )
+        Path filePath = fileTransfer.getLocalFile().toPath();
+        String mimeType =  getFileType(filePath);
+        JabberActivator.getInsightsService().logEvent(
+                        InsightsEventHint.JABBER_FILE_TRANSFER.name(),
+                Map.of(
+                        JabberParameterInfo.FILE_MIME_TYPE.name(), mimeType,
+                        JabberParameterInfo.FILE_TRANSFER_STATUS.name(), event,
+                        JabberParameterInfo.FILE_TRANSFER_DIRECTION.name(), isOutgoing
                 )
         );
     }
 
     /**
-     * Examines the MIME type of the file, and returns the appropriate
-     * equivalent in MaxAnalytics.
+     * Examines the MIME type of the file
      *
      * @param filePath - file path to be examined
      * @return - Video, Image, Document
@@ -1041,11 +1007,11 @@ public class OperationSetFileTransferJabberImpl
             String mimeType = Files.probeContentType(filePath);
             if (mimeType.contains("video"))
             {
-                return FileTransferType.VIDEO.getValue$maxanalytics();
+                return "Video";
             }
             else if (mimeType.contains("image"))
             {
-                return FileTransferType.IMAGE.getValue$maxanalytics();
+                return "Image";
             }
         }
         // Ignoring NPE because probeContentType will return null for `.lnk` files
@@ -1055,6 +1021,6 @@ public class OperationSetFileTransferJabberImpl
             logger.debug("Could not determine file MIME type");
         }
 
-        return FileTransferType.DOCUMENT.getValue$maxanalytics();
+        return "Document";
     }
 }

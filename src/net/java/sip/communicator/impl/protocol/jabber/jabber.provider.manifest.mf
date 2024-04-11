@@ -16,6 +16,8 @@ Import-Package: ch.imvs.sdes4j.srtp,
  net.java.sip.communicator.plugin.jabberaccregwizz,
  net.java.sip.communicator.service.analytics,
  net.java.sip.communicator.service.insights,
+ net.java.sip.communicator.service.insights.enums,
+ net.java.sip.communicator.service.insights.parameters,
  net.java.sip.communicator.service.argdelegation,
  net.java.sip.communicator.service.certificate,
  net.java.sip.communicator.service.conference,
@@ -135,6 +137,5 @@ Import-Package: ch.imvs.sdes4j.srtp,
  org.jxmpp.jid.parts,
  org.jxmpp.stringprep,
  org.osgi.framework,
- org.w3c.dom,
- com.metaswitch.maxanalytics.event
+ org.w3c.dom
 Export-Package: net.java.sip.communicator.impl.protocol.jabber

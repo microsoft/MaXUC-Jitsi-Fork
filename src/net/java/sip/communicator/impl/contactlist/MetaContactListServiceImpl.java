@@ -7,6 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.contactlist;
 
+import static net.java.sip.communicator.service.insights.parameters.ContactListParameterInfo.*;
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 
@@ -16,17 +17,13 @@ import org.jitsi.service.resources.*;
 import org.jitsi.util.CustomAnnotations.*;
 import org.jitsi.util.xml.*;
 
-import com.metaswitch.maxanalytics.event.AnalyticsResult;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.ContactsKt;
-import com.metaswitch.maxanalytics.event.SIFailureReason;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.contactlist.event.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.GenericDetail;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -96,6 +93,8 @@ public class MetaContactListServiceImpl
      * modifications before deciding to drop.
      */
     public static final int CONTACT_LIST_MODIFICATION_TIMEOUT = 10000;
+
+    private static final int EXCEPTION_CODE_OK = 0;
 
     /**
      * Listeners interested in events dispatched upon modification of the meta
@@ -423,27 +422,27 @@ public class MetaContactListServiceImpl
 
             //wait for a confirmation event
             listener.waitForEvent(CONTACT_LIST_MODIFICATION_TIMEOUT);
-            sendTelemetryContactAdd(AnalyticsResult.Success.INSTANCE);
+            sendTelemetryContactAdd(EXCEPTION_CODE_OK);
         }
         catch (OperationFailedException ex)
         {
             if (ex.getErrorCode() == OperationFailedException.SUBSCRIPTION_ALREADY_EXISTS)
             {
                 // Event does not exist
-                sendTelemetryContactAdd(new AnalyticsResult.Failure(SIFailureReason.UPDATE_ERROR));
+                sendTelemetryContactAdd(MetaContactListException.CODE_CONTACT_ALREADY_EXISTS_ERROR);
                 throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
                     ex,
                     MetaContactListException.CODE_CONTACT_ALREADY_EXISTS_ERROR);
             }
             else if (ex.getErrorCode() == OperationFailedException.NOT_SUPPORTED_OPERATION)
             {
-                sendTelemetryContactAdd(new AnalyticsResult.Failure(SIFailureReason.NOT_SUPPORTED_FOR_SUBSCRIBER));
+                sendTelemetryContactAdd(MetaContactListException.CODE_NOT_SUPPORTED_OPERATION);
                 throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
                     ex,
                     MetaContactListException.CODE_NOT_SUPPORTED_OPERATION);
             }
 
-            sendTelemetryContactAdd(AnalyticsResult.NetworkError.INSTANCE);
+            sendTelemetryContactAdd(MetaContactListException.CODE_NETWORK_ERROR);
             throw new MetaContactListException("failed to create contact " + sanitiseChatAddress(contactID),
                     ex,
                     MetaContactListException.CODE_NETWORK_ERROR);
@@ -468,7 +467,6 @@ public class MetaContactListServiceImpl
             int errorCode = MetaContactListException.CODE_NETWORK_ERROR;
             Contact srcContact = opSetPersPresence.findContactByID(contactID);
 
-            sendTelemetryContactAdd(new AnalyticsResult.Failure(SIFailureReason.UPDATE_ERROR));
             logger.debug("No contact add event retrieved for " + sanitiseChatAddress(contactID) +
                          ". Contact found on server = " + srcContact);
 
@@ -509,6 +507,8 @@ public class MetaContactListServiceImpl
                 }
             }
 
+            sendTelemetryContactAdd(errorCode);
+
             throw new MetaContactListException("Failed to create a contact with address: " +
                 sanitiseChatAddress(contactID),
                 null,
@@ -520,7 +520,7 @@ public class MetaContactListServiceImpl
             listener.evt.getEventID() ==
             SubscriptionEvent.SUBSCRIPTION_FAILED)
         {
-            sendTelemetryContactAdd(AnalyticsResult.FailureUnknown.INSTANCE);
+            sendTelemetryContactAdd(MetaContactListException.CODE_UNKNOWN_ERROR);
             throw new MetaContactListException(
                 "Failed to create a contact with address: " +
                 sanitiseChatAddress(contactID) + " " +
@@ -547,17 +547,25 @@ public class MetaContactListServiceImpl
         ((MetaContactGroupImpl) parentMetaGroup).addMetaContact((MetaContactImpl)metaContact);
     }
 
-    private static void sendTelemetryContactAdd(AnalyticsResult result)
+    private static void sendTelemetryContactAdd(int exceptionCode)
     {
-        ContactlistActivator.getInsightService().logEvent(
-                new InsightEvent(
-                        ContactsKt.EVENT_CONTACT_ADD,
-                        Map.of(
-                                AnalyticsResultKt.PARAM_RESULT,
-                                result.getValue()
-                        )
-                )
-        );
+        ContactlistActivator
+                .getInsightsService()
+                .logEvent(InsightsEventHint.CONTACT_LIST_ADD_CONTACT.name(),
+                          Map.of(CONTACT_LIST_META_EXCEPTION.name(), exceptionCode));
+    }
+
+    private static void sendTelemetryContactDelete(ContactType contactType, boolean success)
+    {
+        // Aligning with mobile which sends delete analytics only for CP and IM contacts
+        if (contactType == ContactType.COMMPORTAL || contactType == ContactType.JABBER)
+        {
+            ContactlistActivator
+                    .getInsightsService()
+                    .logEvent(InsightsEventHint.CONTACT_LIST_DELETE_CONTACT.name(),
+                              Map.of(CONTACT_LIST_META_RESULT.name(), success,
+                                     CONTACT_LIST_CONTACT_TYPE.name(), contactType));
+        }
     }
 
     /**
@@ -1359,9 +1367,12 @@ public class MetaContactListServiceImpl
             }
         }
 
+        boolean success = false;
+
         try
         {
             opSetPresence.unsubscribe(contact);
+            success = true;
         }
         catch (Exception ex)
         {
@@ -1375,6 +1386,10 @@ public class MetaContactListServiceImpl
                                                ex,
                                                MetaContactListException.
                                                CODE_NETWORK_ERROR);
+        }
+        finally
+        {
+            sendTelemetryContactDelete(contact.getContactType(), success);
         }
     }
 

@@ -165,10 +165,6 @@ public abstract class OperationSetPresenceSipImpl
      * created us.
      * @param presenceEnabled if we are activated or if we don't have to
      * handle the presence informations for contacts
-     * @param forceP2PMode if we should start in the p2p mode directly
-     * @param pollingPeriod the period between two poll for offline contacts
-     * @param subscriptionExpiration the default subscription expiration value
-     * to use
      * @param eventPackage the name of the event package the new instance is to
      * implement and carry in the Event and Allow-Events headers
      * @param contentSubType the sub-type of the content type of the NOTIFY
@@ -178,9 +174,6 @@ public abstract class OperationSetPresenceSipImpl
     public OperationSetPresenceSipImpl(
         ProtocolProviderServiceSipImpl provider,
         boolean presenceEnabled,
-        boolean forceP2PMode,
-        int pollingPeriod,
-        int subscriptionExpiration,
         String eventPackage,
         String contentSubType)
     {
@@ -188,27 +181,13 @@ public abstract class OperationSetPresenceSipImpl
 
         this.contentSubType = contentSubType;
         this.eventPackage = eventPackage;
+        this.ssContactList = new ServerStoredContactListSipImpl(provider, this);
 
-        // if xivo is enabled use it, otherwise keep old behaviour
-        // and enable xcap, it will check and see its not configure and will
-        // silently do nothing and leave local storage
-        if(provider.getAccountID().getAccountPropertyBoolean(
-            ServerStoredContactListXivoImpl.XIVO_ENABLE, false))
-        {
-            this.ssContactList = new ServerStoredContactListXivoImpl(
-                provider, this);
-        }
-        else
-        {
-            this.ssContactList = new ServerStoredContactListSipImpl(
-                provider, this);
+        provider.addSupportedOperationSet(
+            OperationSetContactTypeInfo.class,
+            new OperationSetContactTypeInfoImpl(this));
 
-            provider.addSupportedOperationSet(
-                OperationSetContactTypeInfo.class,
-                new OperationSetContactTypeInfoImpl(this));
-
-            subscribeForBasicLSM();
-        }
+        subscribeForBasicLSM();
 
         //add our registration listener
         this.parentProvider.addRegistrationStateChangeListener(this);
@@ -231,9 +210,6 @@ public abstract class OperationSetPresenceSipImpl
                 "SIP presence initialized with :"
                 + eventPackage + ", "
                 + presenceEnabled + ", "
-                + forceP2PMode + ", "
-                + pollingPeriod + ", "
-                + subscriptionExpiration
                 + " for " + logHasher(this.parentProvider.getOurDisplayName()));
     }
 
@@ -284,8 +260,7 @@ public abstract class OperationSetPresenceSipImpl
                                                    null,
                                                    true);
 
-            lsmContact.setPersistentData(MetaContact.IS_OWN_LINE +
-                                             "=" + Boolean.toString(isOwnLine));
+            lsmContact.setPersistentData(MetaContact.IS_OWN_LINE + "=" + isOwnLine);
         }
         catch (OperationFailedException ex)
         {
@@ -1217,8 +1192,7 @@ public abstract class OperationSetPresenceSipImpl
     {
         try
         {
-            Document doc = XMLUtils.createDocument(document);
-            return doc;//XMLUtils.createDocument(document);
+            return XMLUtils.createDocument(document);
         }
         catch (Exception e)
         {
@@ -1379,7 +1353,7 @@ public abstract class OperationSetPresenceSipImpl
       *  priority (highest priority first).
       *
       * @return a Vector containing a list of <contact, priority, status>
-      *  ordered by priority (highest first). Null if a parameter is null.
+      *  ordered by priority (highest first). Empty list if a parameter is null.
       */
      protected List<Object[]> setStatusForContacts(
          PresenceStatus presenceState,
@@ -1388,7 +1362,7 @@ public abstract class OperationSetPresenceSipImpl
      {
          // test parameters
          if (presenceState == null || contacts == null || curStatus == null)
-             return null;
+             return Collections.emptyList();
 
          // for each contact in the list
          for (Object[] tab : contacts)
@@ -1732,22 +1706,15 @@ public abstract class OperationSetPresenceSipImpl
      * created us.
      * @param presenceEnabled if we are activated or if we don't have to
      * handle the presence informations for contacts
-     * @param pollingPeriod the period between two poll for offline contacts
-     * @param subscriptionExpiration the default subscription expiration value
-     * to use
      * @return an operation set for the type of SIP presence being used.
      */
     public static OperationSetPersistentPresence createOperationSetPresenceSipImpl(
         ProtocolProviderServiceSipImpl provider,
-        boolean presenceEnabled,
-        int pollingPeriod,
-        int subscriptionExpiration)
+        boolean presenceEnabled)
     {
         return new OperationSetPresenceSipDialogImpl(
             provider,
-            presenceEnabled,
-            pollingPeriod,
-            subscriptionExpiration);
+            presenceEnabled);
     }
 
     /**
@@ -1923,17 +1890,6 @@ public abstract class OperationSetPresenceSipImpl
                 else if(SubscriptionStateHeader.ACTIVE
                         .equals(stateHeader.getState()))
                 {
-                    // if contact was in pending state
-                    // our authorization request was accepted
-                    if(SubscriptionStateHeader.PENDING
-                            .equals(contact.getSubscriptionState())
-                       && authorizationHandler != null)
-                    {
-                        authorizationHandler.processAuthorizationResponse(
-                                new AuthorizationResponse(
-                                        AuthorizationResponse.ACCEPT, ""),
-                                contact);
-                    }
                     contact.setSubscriptionState(
                             SubscriptionStateHeader.ACTIVE);
                 }
@@ -2058,15 +2014,6 @@ public abstract class OperationSetPresenceSipImpl
                 if(SubscriptionStateHeader.REJECTED
                         .equals(stateHeader.getReasonCode()))
                 {
-                    if(SubscriptionStateHeader.PENDING
-                        .equals(contact.getSubscriptionState()))
-                    {
-                        authorizationHandler.processAuthorizationResponse(
-                            new AuthorizationResponse(
-                                AuthorizationResponse.REJECT, ""),
-                                contact);
-                    }
-
                     // as this contact is rejected we mark it as not resolvable
                     // so we won't subscribe again (in offline poll task)
                     contact.setResolvable(false);

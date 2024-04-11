@@ -39,7 +39,6 @@ public class NotificationWiringActivator
     private static UIService uiService = null;
     private static MediaService mediaService;
     private static MetaContactListService contactListService;
-    private static ConferenceService conferenceService;
     private static AnalyticsService sAnalyticsService;
 
     public void start(BundleContext bc)
@@ -183,12 +182,6 @@ public class NotificationWiringActivator
      */
     public static ConferenceService getConfService()
     {
-        if (conferenceService == null)
-        {
-            conferenceService = ServiceUtils.getService(bundleContext,
-                                                        ConferenceService.class);
-        }
-
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 }

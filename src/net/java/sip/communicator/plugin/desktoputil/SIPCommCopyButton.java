@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
-import static org.jitsi.util.SanitiseUtils.sanitise;
-
 import java.awt.*;
 import java.awt.datatransfer.*;
 import java.awt.event.*;
-import java.util.regex.Pattern;
 
 import net.java.sip.communicator.util.*;
 
@@ -20,8 +17,6 @@ public class SIPCommCopyButton extends SIPCommButton
     private static final long serialVersionUID = 1L;
 
     private static final Logger sLog = Logger.getLogger(SIPCommCopyButton.class);
-
-    private static final Pattern MEETING_ID_PATTERN = Pattern.compile("[0-9]+");
 
     /**
      * The text to be copied to the clipboard when the button is pressed.
@@ -52,7 +47,7 @@ public class SIPCommCopyButton extends SIPCommButton
      */
     public void setCopyText(String copyText)
     {
-        sLog.debug("Setting copy text to: '" + sanitise(copyText, MEETING_ID_PATTERN) + "'");
+        sLog.debug("Setting copy text");
         mCopyText = copyText;
         setEnabled(mCopyText != null);
     }
@@ -60,7 +55,7 @@ public class SIPCommCopyButton extends SIPCommButton
     @Override
     public void actionPerformed(ActionEvent e)
     {
-        sLog.info("Copy button pressed to copy: '" + sanitise(mCopyText, MEETING_ID_PATTERN) + "'");
+        sLog.info("Copy button pressed");
         StringSelection selection = new StringSelection(mCopyText);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(selection, selection);

@@ -15,8 +15,11 @@ import org.jitsi.util.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.commportal.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.util.CommonConstants;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
 
@@ -40,21 +43,15 @@ public class ClickToDialPhonesPanel extends TransparentPanel
         "net.java.sip.communicator.impl.protocol.commportal.ctd.preferredPhone";
 
     /**
-     * Place in config where my phones are stored
-     */
-    private static final String MY_PHONES_CONFIG_STUB =
-              "net.java.sip.communicator.impl.protocol.commportal.ctd.myphones";
-
-    /**
      * The location of each my phone
      */
     private static final String[] MY_PHONE_CONFIG_LOCATIONS =
     {
-        MY_PHONES_CONFIG_STUB + ".1",
-        MY_PHONES_CONFIG_STUB + ".2",
-        MY_PHONES_CONFIG_STUB + ".3",
-        MY_PHONES_CONFIG_STUB + ".4",
-        MY_PHONES_CONFIG_STUB + ".5"
+        CommonConstants.OUTGOING_CTD_WITH_OTHER_NUMBER + ".1",
+        CommonConstants.OUTGOING_CTD_WITH_OTHER_NUMBER + ".2",
+        CommonConstants.OUTGOING_CTD_WITH_OTHER_NUMBER + ".3",
+        CommonConstants.OUTGOING_CTD_WITH_OTHER_NUMBER + ".4",
+        CommonConstants.OUTGOING_CTD_WITH_OTHER_NUMBER + ".5"
     };
 
     private static final ConfigurationService sConfig =
@@ -144,8 +141,8 @@ public class ClickToDialPhonesPanel extends TransparentPanel
         panelConstraints.gridy += 1;
 
         // 2: Manage my phones option
-        String text = sResources.getI18NString("impl.protocol.commportal.MY_PHONES");
-        final JLabel manageMyPhonesLabel = createLabel(text);
+        String myPhonesText = sResources.getI18NString("impl.protocol.commportal.MY_PHONES");
+        final JLabel manageMyPhonesLabel = createLabel(myPhonesText);
 
         mManageMyPhones = new TransparentPanel();
         mManageMyPhones.add(createManageMyPhonesPanel());
@@ -160,11 +157,10 @@ public class ClickToDialPhonesPanel extends TransparentPanel
         panelConstraints.gridy += 1;
 
         // 3: Number to use when making CTD calls
-        final JLabel whereCtdCallFromLabel = new JLabel(
-            sResources.getI18NString("impl.protocol.commportal.CALL_ME_ON"));
-        whereCtdCallFromLabel.setForeground(TEXT_COLOR);
-        ScaleUtils.scaleFontAsDefault(whereCtdCallFromLabel);
+        String callMeOnText = sResources.getI18NString("impl.protocol.commportal.CALL_ME_ON");
+        final JLabel whereCtdCallFromLabel = createLabel(callMeOnText);
         final Component whereCtdCallFromPanel = createWhereCtdCallFromPanel();
+
         labelConstraints.anchor = GridBagConstraints.LINE_END;
         labelConstraints.insets = new Insets(2, 0, 2, 0);
         panelConstraints.insets = new Insets(2, 10, 2, 0);
@@ -274,6 +270,7 @@ public class ClickToDialPhonesPanel extends TransparentPanel
     private JLabel createLabel(String text)
     {
         JLabel label = new JLabel(text);
+        label.setForeground(TEXT_COLOR);
         ScaleUtils.scaleFontAsDefault(label);
 
         if (ComponentUtils.getStringWidth(label, text) >
@@ -283,12 +280,11 @@ public class ClickToDialPhonesPanel extends TransparentPanel
             // so that it auto-wraps
             label.setText("<html><p align=\"right\">" + text + "</p></html>");
             label.setMaximumSize(new ScaledDimension(MAX_LABEL_WIDTH, 150));
-            label.setPreferredSize(new ScaledDimension(MAX_LABEL_WIDTH, 150));
+            label.setPreferredSize(new ScaledDimension(MAX_LABEL_WIDTH, 50));
             label.setVerticalAlignment(SwingConstants.TOP);
             label.setVerticalTextPosition(SwingConstants.TOP);
             label.setHorizontalAlignment(SwingConstants.RIGHT);
             label.setAlignmentX(Component.RIGHT_ALIGNMENT);
-            label.setForeground(TEXT_COLOR);
         }
 
         return label;
@@ -353,11 +349,28 @@ public class ClickToDialPhonesPanel extends TransparentPanel
                     sLog.user("Preferred phone changed to: " + selectedItem.getName());
                 }
 
+                String previousValueLocation = sConfig.user().getString(SELECTED_MY_PHONE_STUB + ".value", "");
+
                 // Store in config the config location of the preferred phone
                 sConfig.user().setProperty(SELECTED_MY_PHONE_STUB + ".value",
                                     selectedItem.getValueConfigLocation());
                 sConfig.user().setProperty(SELECTED_MY_PHONE_STUB + ".name",
                                     selectedItem.getNameConfigLocation());
+
+                if (ev.getStateChange() == 2)
+                {
+                    // Event state change is triggered twice on changing select item (DESELECT and SELECT),
+                    // send analytic only for first event (DESELECT) where previous and new values are different
+                    GeneralConfigPluginActivator.getInsightsService().logEvent(
+                            InsightsEventHint.GENERAL_CONFIG_PLUGIN_OUTGOING_CTD_WITH.name(),
+                            Map.of(
+                                    CommonParameterInfo.OLD_VALUE.name(),
+                                    previousValueLocation,
+                                    CommonParameterInfo.NEW_VALUE.name(),
+                                    selectedItem.getValueConfigLocation()
+                            )
+                    );
+                }
             }
         });
 
@@ -378,9 +391,12 @@ public class ClickToDialPhonesPanel extends TransparentPanel
 
         // Create the model that displays the choice
         final Map<String, String> displayValuesMap = new LinkedHashMap<>();
-        displayValuesMap.put(sResources.getI18NString("impl.protocol.commportal.SIP"), "SIP");
-        displayValuesMap.put(sResources.getI18NString("impl.protocol.commportal.CTD"), "CTD_CommPortal");
-        displayValuesMap.put(sResources.getI18NString("impl.protocol.commportal.ALWAYS_ASK"), "ask");
+        displayValuesMap.put(sResources.getI18NString("impl.protocol.commportal.SIP"),
+                             CommonConstants.OUTGOING_CALL_WITH_SIP);
+        displayValuesMap.put(sResources.getI18NString("impl.protocol.commportal.CTD"),
+                             CommonConstants.OUTGOING_CALL_WITH_CTD);
+        displayValuesMap.put(sResources.getI18NString("impl.protocol.commportal.ALWAYS_ASK"),
+                             CommonConstants.OUTGOING_CALL_WITH_ASK);
 
         ComboBoxModel<String> makeCallsWithComboBoxModel =
                 new DefaultComboBoxModel<>(displayValuesMap.keySet().toArray(new String[0]));
@@ -389,8 +405,8 @@ public class ClickToDialPhonesPanel extends TransparentPanel
         makeCallsWithComboBox.setModel(makeCallsWithComboBoxModel);
 
         // Set the selected item:
-        String configValue = sConfig.user().getString(makeCallConfig, "SIP");
-        mSelectedCallItem = "SIP";
+        String configValue = sConfig.user().getString(makeCallConfig, CommonConstants.OUTGOING_CALL_WITH_SIP);
+        mSelectedCallItem = CommonConstants.OUTGOING_CALL_WITH_SIP;
         sLog.info("Getting how to make call, config value is " + configValue);
 
         for (Entry<String, String> entry : displayValuesMap.entrySet())
@@ -412,6 +428,7 @@ public class ClickToDialPhonesPanel extends TransparentPanel
             {
                 String selectedItem = (String)
                                         makeCallsWithComboBox.getSelectedItem();
+                String previousItem = sConfig.user().getString(makeCallConfig, "");
 
                 // Update the config with the value that the user selected
                 if (System.currentTimeMillis() - settingTime > 5000)
@@ -422,9 +439,24 @@ public class ClickToDialPhonesPanel extends TransparentPanel
                 sConfig.user().setProperty(makeCallConfig,
                                     displayValuesMap.get(selectedItem));
 
+                if (ev.getStateChange() == 2)
+                {
+                    // Event state change is triggered twice on changing select item (DESELECT and SELECT),
+                    // send analytic only for first event (DESELECT) where previous and new values are different
+                    GeneralConfigPluginActivator.getInsightsService().logEvent(
+                            InsightsEventHint.GENERAL_CONFIG_PLUGIN_OUTGOING_CALL_WITH.name(),
+                            Map.of(
+                                    CommonParameterInfo.OLD_VALUE.name(),
+                                    previousItem,
+                                    CommonParameterInfo.NEW_VALUE.name(),
+                                    displayValuesMap.get(selectedItem)
+                            )
+                    );
+                }
+
                 // And disable all the CTD items if "SIP" were selected
                 boolean enableCtdItems =
-                              !"SIP".equals(displayValuesMap.get(selectedItem));
+                              !CommonConstants.OUTGOING_CALL_WITH_SIP.equals(displayValuesMap.get(selectedItem));
                 mWhereToCtdFromComboBox.setEnabled(enableCtdItems);
 
                 mSelectedCallItem = selectedItem;
@@ -467,8 +499,7 @@ public class ClickToDialPhonesPanel extends TransparentPanel
         List<MyPhone> myPhones = new ArrayList<>();
 
         // Add an entry for the account phone
-        final String valueLocation =
-                  "net.java.sip.communicator.plugin.provisioning.auth.USERNAME";
+        final String valueLocation = CommonConstants.OUTGOING_CTD_WITH_ACCOUNT;
         final String nameLocation = valueLocation + ".name";
 
         String name = sResources.getI18NString("impl.protocol.commportal.MY_PHONE");

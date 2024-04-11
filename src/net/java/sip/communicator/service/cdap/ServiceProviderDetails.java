@@ -1,5 +1,4 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Highly Confidential Material
 package net.java.sip.communicator.service.cdap;
 
 import java.io.*;
@@ -7,7 +6,6 @@ import java.io.*;
 /**
  * Class which contains the service provider details retrieved from CDAP.
  * <p>
- * This file has been copied verbatim from the AccessionAndroid source.
  */
 public class ServiceProviderDetails implements Serializable
 {
@@ -64,54 +62,5 @@ public class ServiceProviderDetails implements Serializable
     public boolean isHidden()
     {
         return mHidden;
-    }
-
-    @Override
-    public boolean equals(Object object)
-    {
-        boolean isEqual = false;
-
-        if (object == null)
-        {
-            // By definition not equal
-            isEqual = false;
-        }
-        else if (this == object)
-        {
-            // Refer to the same object, must be the same
-            isEqual = true;
-        }
-        else
-        {
-            try
-            {
-                ServiceProviderDetails serviceProviderDetails =
-                        (ServiceProviderDetails)object;
-
-                isEqual = mId.equals(serviceProviderDetails.getId()) &&
-                          mName.equals(serviceProviderDetails.getName()) &&
-                          mRegion.equals(serviceProviderDetails.getRegion()) &&
-                          mHidden == serviceProviderDetails.isHidden();
-            }
-            catch (ClassCastException e)
-            {
-                // Do nothing, they aren't the same type
-            }
-        }
-
-        return isEqual;
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder builder = new StringBuilder(128);
-
-        builder.append("\tmId=").append(mId)
-                .append("\n\tmName=").append(mName)
-                .append("\n\tmRegion=").append(mRegion)
-                .append("\n\tmHidden=").append(mHidden);
-
-        return builder.toString();
     }
 }

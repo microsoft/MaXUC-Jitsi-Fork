@@ -10,6 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jitsi.util.StringUtils;
 
 import net.java.sip.communicator.plugin.addressbook.*;
+import net.java.sip.communicator.util.ClockUtils;
 
 /**
  * A Java object representing an Outlook calendar appointment.
@@ -138,24 +139,6 @@ class ParsedOutlookMeeting
     }
 
     /**
-     * Constructor only to be used for UTs. Creates a one-hour meeting with the
-     * desired start time. Other values are sensible defaults or null.
-     * @param startDate the start time to use for the meeting.
-     */
-    ParsedOutlookMeeting(Date startDate)
-    {
-        mId = "testMeetingId";
-        mStartDate = startDate;
-        // Set end time one hour later than the start.
-        mEndDate = new Date(startDate.getTime() + 1000*60*60);
-        mBusyStatus = BusyStatusEnum.BUSY;
-        mResponseStatus = ResponseStatus.respAccepted;
-        mRecurringPattern = null;
-        mReadablePattern = "Test readable pattern";
-        mParentId = null;
-    }
-
-    /**
      * @return the date when this meeting starts
      */
     Date getStartDate()
@@ -209,14 +192,14 @@ class ParsedOutlookMeeting
      */
     boolean isFinished()
     {
-        return (!isRecurring() && getEndDate().before(new Date())) ||
-                (isRecurring() && (getRecurringPattern().getNextMeeting() == null));
+        return (!isRecurring() && getEndDate().before(ClockUtils.getDateNow())) ||
+               (isRecurring() && (getRecurringPattern().getNextMeeting() == null));
 
     }
 
     boolean isHappening()
     {
-        Date now = new Date();
+        Date now = ClockUtils.getDateNow();
 
         if (mStartDate.before(now) && mEndDate.after(now))
         {

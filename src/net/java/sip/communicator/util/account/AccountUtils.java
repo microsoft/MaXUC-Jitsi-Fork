@@ -251,19 +251,6 @@ public class AccountUtils
     }
 
     /**
-     * @return the provider that supports <tt>OperationSetGroupContacts</tt>.
-     */
-    public static ProtocolProviderService getGroupContactProvider()
-    {
-        List<ProtocolProviderService> providers =
-                          getAllProviders(OperationSetGroupContacts.class);
-
-        // Accession Desktop only supports one group contacts provider so just
-        // return the first one in the list.
-        return (providers.size() > 0) ? providers.get(0) : null;
-    }
-
-    /**
      * Get the account ID associated with the IM account.
      *
      * @return the IM account (even if it has been signed out) or null if there

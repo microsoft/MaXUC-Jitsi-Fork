@@ -4,6 +4,7 @@ package net.java.sip.communicator.impl.protocol.sip.security;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import gov.nist.javax.sip.header.ims.SecurityServerHeader;
 import gov.nist.javax.sip.header.ims.SecurityVerify;
 import gov.nist.javax.sip.header.ims.SecurityVerifyHeader;
@@ -70,7 +71,8 @@ public class SecurityServerCache
      *
      * @return A list of stored Security-Verify headers
      */
-    ArrayList<SecurityVerifyHeader> getHeaders()
+    @VisibleForTesting
+    public ArrayList<SecurityVerifyHeader> getHeaders()
     {
         synchronized (mHeaderLock)
         {

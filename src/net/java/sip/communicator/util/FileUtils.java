@@ -104,4 +104,55 @@ public class FileUtils
                                   "system.");
         }
     }
+
+    /**
+     * Creates a new File instance from a parent pathname and a child pathname.
+     * @param parent parent pathname
+     * @param child child pathname
+     * @throws NullPointerException If child is null
+     * @return newly created File
+     */
+    public static File createFile(String parent, String child) throws NullPointerException
+    {
+        return new File(parent, child);
+    }
+
+    /**
+     * Creates a new File instance from a parent File and a child pathname.
+     * @param parent parent File
+     * @param child child pathname
+     * @throws NullPointerException If child is null
+     * @return newly created File
+     */
+    public static File createFile(File parent, String child) throws NullPointerException
+    {
+        return new File(parent, child);
+    }
+
+    /**
+     * Creates a new <code>File</code> instance by converting the given
+     * pathname string into an abstract pathname.  If the given string is
+     * the empty string, then the result is the empty abstract pathname.
+     *
+     * @param   pathname  A pathname string
+     * @throws  NullPointerException
+     *          If the <code>pathname</code> argument is <code>null</code>
+     */
+    public static File createFile(String pathname) throws NullPointerException
+    {
+        return new File(pathname);
+    }
+
+    /**
+     * Wrapper method for deleting the file or directory denoted by this
+     * abstract pathname. Made for testing purposes.
+     *
+     * @param file a file to be deleted
+     * @return <tt>true</tt> if and only if the file or directory is
+     * successfully deleted; false otherwise
+     */
+    public static boolean deleteFile(File file)
+    {
+        return file.delete();
+    }
 }

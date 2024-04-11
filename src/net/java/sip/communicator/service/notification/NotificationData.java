@@ -57,6 +57,13 @@ public class NotificationData
         = "SoundNotificationHandler.loopCondition";
 
     /**
+     * The name/key of the <tt>NotificationData</tt> extra provided to {@link NotificationServiceImpl#fireNotification(NotificationData)}.
+     * The value associated with this key contains tag of the ringtone which should be played for an incoming call
+     * or conference.
+     */
+    public static final String NOTIFICATION_SERVICE_SOUND_BG_TAG_EXTRA
+            = "NotificationService.soundBgTag";
+    /**
      * The name/key of the <tt>NotificationData</tt> extra provided to
      * {@link UINotificationHandler#handleUINotification(NotificationData data)}. The value
      * associated with this key contains the number of messages waiting.

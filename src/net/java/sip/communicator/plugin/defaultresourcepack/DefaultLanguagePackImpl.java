@@ -57,8 +57,15 @@ public class DefaultLanguagePackImpl
                             localeIndex + 1,
                             fileName.indexOf('.', localeIndex));
 
-                    availableLocales.add(
-                        ResourceManagementServiceUtils.getLocale(localeId));
+                    // Add only locales that have a region (e.g. de_DE).
+                    // Otherwise, fallback localization resources without
+                    // a region ('generic_region_language_resources' generated in brand-client.py)
+                    // would cause duplicate languages in application language selection.
+                    if (localeId.contains("_"))
+                    {
+                        availableLocales.add(
+                                ResourceManagementServiceUtils.getLocale(localeId));
+                    }
                 }
             }
         }

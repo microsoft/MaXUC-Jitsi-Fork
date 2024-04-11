@@ -37,6 +37,9 @@ import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.Container;
 import net.java.sip.communicator.service.gui.event.*;
 import net.java.sip.communicator.service.imageloader.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.enums.InsightsResultCode;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
 import net.java.sip.communicator.service.managecontact.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.OperationSetExtendedAuthorizations.*;
@@ -353,7 +356,6 @@ public class MetaContactRightButtonMenu
         addSeparator();
         initRemoveMenu();
         initFavoritesMenuItem();
-        initGroupContactsMenu();
         initSendFileItem();
         initHistoryItem();
         initCrmItem();
@@ -687,11 +689,8 @@ public class MetaContactRightButtonMenu
     {
         if ((metaContact != null) && ConfigurationUtils.isImEnabled())
         {
-            String sendMessageText = (metaContact.getGroupContact() == null) ?
-                resources.getI18NString("service.gui.SEND_MESSAGE") :
-                    resources.getI18NString("service.gui.SEND_GROUP_CHAT_TO");
             ScaleUtils.scaleFontAsDefault(sendMessageItem);
-            sendMessageItem.setText(sendMessageText);
+            sendMessageItem.setText(resources.getI18NString("service.gui.SEND_MESSAGE"));
             sendMessageItem.setName("sendMessage");
             sendMessageItem.addActionListener(this);
             add(sendMessageItem);
@@ -814,12 +813,7 @@ public class MetaContactRightButtonMenu
         ImageIconFuture deleteIcon =
             imageLoaderService.getImage(ImageLoaderService.DELETE_16x16_ICON).getImageIcon();
 
-        String removeStringResource =
-            (metaContact.getGroupContact() == null) ?
-            "service.gui.REMOVE_CONTACT" :
-            "service.gui.groupcontact.MENU_ITEM_DELETE";
-
-        String removeString = resources.getI18NString(removeStringResource);
+        String removeString = resources.getI18NString("service.gui.REMOVE_CONTACT");
 
         // There are multiple contacts - create a delete-all menu item and a
         // move all menu item
@@ -881,38 +875,6 @@ public class MetaContactRightButtonMenu
             favoritesMenuItem.addActionListener(this);
             addSeparator();
             add(favoritesMenuItem);
-        }
-    }
-
-    /**
-     * Add the add to group contact menu item, and set it's text/enabled-ness
-     * and visibility appropriately
-     */
-    protected void initGroupContactsMenu()
-    {
-        if (ConfigurationUtils.groupContactsSupported())
-        {
-            List<ProtocolProviderService> opSetProviders =
-                AccountUtils.getRegisteredProviders(OperationSetGroupContacts.class);
-
-            if (metaContact.getIMContact() == null ||
-                opSetProviders == null ||
-                opSetProviders.isEmpty())
-            {
-                // No IM contact, so should be disabled and have no-IM text.
-                // Or no group contact OpSet
-                groupContactMenuItem = new ResMenuItem("service.gui.groupcontact.MENU_ITEM_ADD_NO_IM");
-                groupContactMenuItem.setEnabled(false);
-                groupContactMenuItem.setName("groupcontact");
-            }
-            else
-            {
-                // There is an IM contact, so should be enabled
-                groupContactMenuItem =
-                      GroupContactMenuUtils.createGroupContactMenu(metaContact);
-            }
-
-            add(groupContactMenuItem);
         }
     }
 
@@ -1477,7 +1439,8 @@ public class MetaContactRightButtonMenu
         else if ((crmItem != null) && itemName.equals(crmItem.getName()))
         {
             ServiceType.CRM.launchSelectedCrmService(contactName,
-                                                     metaContact.getPreferredPhoneNumber());
+                                                     metaContact.getPreferredPhoneNumber(),
+                                                     false);
         }
     }
 
@@ -1529,10 +1492,12 @@ public class MetaContactRightButtonMenu
                     sLog.warn("Failed to remove chat room member " +
                                 mChatRoomMember + " from chat room " + chatRoom, ex);
                     displayRemoveChatUserError(contactName);
+                    sendRemoveParticipantAnalytic(InsightsResultCode.XMPP_ERROR);
                 }
             }
             else
             {
+                sendRemoveParticipantAnalytic(InsightsResultCode.ROOM_JID_NOT_VALID);
                 // No need to hash mChatRoomMember, as its toString()
                 // method does that.
                 sLog.warn("Unable to remove chat room member " +
@@ -1540,6 +1505,21 @@ public class MetaContactRightButtonMenu
                 displayRemoveChatUserError(contactName);
             }
         }
+    }
+
+    /**
+     * Sends an analytic event for removing participant from group chat
+     *
+     * @param code Mapped value for parameter result
+     */
+    private void sendRemoveParticipantAnalytic(InsightsResultCode code)
+    {
+        GuiActivator.getInsightsService().logEvent(
+                InsightsEventHint.IM_REMOVE_PARTICIPANT.name(),
+                Map.of(
+                        CommonParameterInfo.INSIGHTS_RESULT_CODE.name(),
+                        code
+                ));
     }
 
     /**
@@ -1569,14 +1549,19 @@ public class MetaContactRightButtonMenu
         int returnCode = dialog.showDialog();
         if (returnCode == MessageDialog.OK_RETURN_CODE)
         {
-            sLog.info("Remove contact from group chat, ask again");
+            sLog.user("Remove contact from group chat, ask again");
             removeUser = true;
         }
         else if (returnCode == MessageDialog.OK_DONT_ASK_CODE)
         {
-            sLog.info("Remove contact from group chat, don't ask again");
+            sLog.user("Remove contact from group chat, don't ask again");
             removeUser = true;
             ConfigurationUtils.setDontAskRemoveFromChat(true);
+        }
+        else if (returnCode == MessageDialog.CANCEL_RETURN_CODE)
+        {
+            sLog.user("User cancelled removing participant from group chat");
+            sendRemoveParticipantAnalytic(InsightsResultCode.USER_CANCELLED);
         }
 
         return removeUser;

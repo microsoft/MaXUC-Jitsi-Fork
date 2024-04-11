@@ -64,12 +64,6 @@ public class NeomediaActivator
     private static BundleContext bundleContext;
 
     /**
-     * The current instance of the <tt>ConferenceService</tt> to suppress camera
-     * previews if video is in use by the conference service.
-     */
-    private static ConferenceService conferenceService;
-
-    /**
      * The <tt>ConfigurationService</tt> registered in {@link #bundleContext}
      * and used by the <tt>NeomediaActivator</tt> instance to read and write
      * configuration properties.
@@ -202,11 +196,7 @@ public class NeomediaActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-            conferenceService = ServiceUtils.getService(bundleContext,
-                                                        ConferenceService.class);
-
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**

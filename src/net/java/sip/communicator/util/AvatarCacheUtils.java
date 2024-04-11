@@ -7,8 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.util;
 
-import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
-import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+import static net.java.sip.communicator.util.PrivacyUtils.*;
 
 import java.awt.image.*;
 import java.io.*;
@@ -19,8 +18,11 @@ import org.jitsi.service.fileaccess.*;
 import org.jitsi.service.resources.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
+import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.service.protocol.*;
+import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 
 /**
  * The <tt>AvatarCacheUtils</tt> allows to cache an avatar or to obtain the
@@ -429,20 +431,37 @@ public class AvatarCacheUtils
      */
     public static void deleteCachedAvatar(ProtocolProviderService protocolProvider)
     {
-        deleteCachedAvatar(getAvatarPath(protocolProvider));
+        deleteCachedAvatar(getAvatarPath(protocolProvider), protocolProvider);
+    }
+
+    /**
+     * Deletes the cached avatar for the specified contact.
+     * @param protocolContact
+     */
+    public static void deleteCachedAvatar(Contact protocolContact)
+    {
+        deleteCachedAvatar(getAvatarPath(protocolContact), protocolContact.getProtocolProvider());
+        MetaContact metaContact = UtilActivator.getContactListService().findMetaContactByContact(protocolContact);
+        if (metaContact != null)
+        {
+            metaContact.clearCachedAvatar();
+            UtilActivator.getWISPAService().notify(WISPANamespace.CONTACTS, WISPAAction.DATA, metaContact);
+        }
     }
 
     /**
      * Deletes the cached avatar on the given path.
      * @param avatarPath
      */
-    private static void deleteCachedAvatar(String avatarPath)
+    private static void deleteCachedAvatar(String avatarPath, ProtocolProviderService protocolProviderService)
     {
-        File avatarFile = null;
+        String sanitisedPath = sanitiseAvatarPath(avatarPath, protocolProviderService);
+
+        logger.info("Delete avatar " + sanitisedPath + " from the cache");
 
         try
         {
-            avatarFile =
+            File avatarFile =
                     UtilActivator.getFileAccessService().
                         getPrivatePersistentActiveUserFile(avatarPath);
 
@@ -452,15 +471,13 @@ public class AvatarCacheUtils
 
                 if (!success)
                 {
-                    throw new IOException("Failed to delete file: "
-                        + sanitiseFilePath(avatarFile.getAbsolutePath()));
+                    throw new IOException("Failed to delete file: " + sanitisedPath);
                 }
             }
         }
         catch (IOException | SecurityException e)
         {
-            logger.error("Failed to delete avatar. File="
-                + sanitiseFilePath(avatarFile.getAbsolutePath()), e);
+            logger.error("Failed to delete avatar. File=" + sanitisedPath, e);
         }
     }
 
@@ -512,5 +529,20 @@ public class AvatarCacheUtils
                          sanitiseChatAddress(avatarPath), e);
             return false;
         }
+    }
+
+    /**
+     * We need to hash the two PIIs after "avatarcache/2/".
+     */
+    private static String sanitiseAvatarPath(String avatarPath, ProtocolProviderService protocolProviderService)
+    {
+        int lastSeparatorIndex = avatarPath.lastIndexOf(File.separator);
+        String protocolUniqueId = escapeSpecialCharacters(
+                protocolProviderService.getAccountID().getLoggableAccountID());
+        String accountUniqueId = avatarPath.substring(lastSeparatorIndex + 1);
+
+        return getAvatarDir() + File.separator +
+               protocolUniqueId + File.separator +
+               sanitisePeerId(accountUniqueId);
     }
 }

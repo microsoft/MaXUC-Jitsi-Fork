@@ -9,8 +9,6 @@ package net.java.sip.communicator.util;
 import static net.java.sip.communicator.util.ConfigFileSanitiser.*;
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
-import static org.jitsi.util.StringUtils.isEmailAddress;
-import static org.jitsi.util.StringUtils.isNumber;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -26,17 +24,13 @@ import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinNT;
 import org.jxmpp.jid.Jid;
 import org.jxmpp.jid.impl.JidCreate;
-import org.osgi.framework.ServiceReference;
 
 import net.java.sip.communicator.plugin.provisioning.ProvisioningServiceImpl;
 import net.java.sip.communicator.service.commportal.ClassOfServiceService;
 import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.conference.ConferenceService;
-import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService.HeadsetResponseState;
-import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.OperationSetMultiUserChat;
-import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.service.resources.ResourceManagementServiceUtils;
 import net.java.sip.communicator.util.account.AccountUtils;
@@ -121,7 +115,6 @@ public class ConfigurationUtils
 
     private static boolean isTransparentWindowEnabled;
     private static boolean isWindowDecorated;
-    private static boolean isShowSmileys;
     private static boolean isGroupRemoveDisabled;
     private static boolean isPresetStatusMessagesEnabled;
 
@@ -134,7 +127,6 @@ public class ConfigurationUtils
      */
     public static final String DEFAULT_SAVED_CALLS_PATH =
         System.getProperty("user.home") + File.separator + resources.getSettingsString("service.gui.APPLICATION_NAME");
-    private static ProtocolProviderService lastCallConferenceProvider = null;
 
     /**
      * Hide accounts from accounts status list.
@@ -161,7 +153,6 @@ public class ConfigurationUtils
     private static final String IM_CORRECTION_ENABLED_PROP = "net.java.sip.communicator.im.IM_CORRECTION_ENABLED";
     private static final String OPEN_WINDOW_ON_NEW_CHAT_PROP = "net.java.sip.communicator.im.OPEN_WINDOW_ON_NEW_CHAT";
     private static final String IM_PROVISION_SOURCE_PROP = "net.java.sip.communicator.im.IM_PROVISION_SOURCE";
-    private static final String SHOW_SMILEYS_PROPERTY = "net.java.sip.communicator.service.replacement.SMILEY.enable";
     private static final String CHAT_SHOW_CONTACT_PHOTO = "net.java.sip.communicator.service.gui.CHAT_SHOW_CONTACT_PHOTO";
     private static final String SINGLE_WINDOW_INTERFACE_ENABLED = "net.java.sip.communicator.service.gui.SINGLE_WINDOW_INTERFACE_ENABLED";
     private static final String CONTACT_FAVORITES_ENABLED_PROP = "net.java.sip.communicator.service.gui.CONTACT_FAVORITES_ENABLED";
@@ -172,7 +163,6 @@ public class ConfigurationUtils
     private static final String PHONE_NUMBER_DIALOUT_REGEX_PROP = "plugin.conference.accessionmeeting.PHONE_NUMBER_DIALOUT_REGEX";
     private static final String PHONE_NUMBER_IGNORE_REGEX_PROP = "net.java.sip.communicator.impl.protocol.sip.PHONE_NUMBER_IGNORE_REGEX";
     private static final String ALT_INCOMING_CALL_POPUP = "net.java.sip.communicator.impl.gui.main.call.ALT_INCOMING_CALL_POPUP";
-    private static final String ALLOW_GROUP_CONTACT_PROPERTY = "net.java.sip.communicator.impl.protocol.groupcontacts.SUPPORT_GROUP_CONTACTS";
 
     /**
      * The name of the ignore regex for removing odd formatting from login.
@@ -191,7 +181,7 @@ public class ConfigurationUtils
      * Property storing a string representation of the Locale used for Meeting email invitations.
      */
     private static final String EMAIL_INVITE_LANGUAGE = "net.java.sip.communicator.plugin.conference.impls.EMAIL_INVITE_LANGUAGE";
-    private static final String CALL_RATING_SHOW_PROP = "net.java.sip.communicator.impl.callrating.CALL_RATING_SHOW";
+    public static final String CALL_RATING_SHOW_PROP = "net.java.sip.communicator.impl.callrating.CALL_RATING_SHOW";
     private static final String CALL_RATING_SEND_ERROR_REPORT = "net.java.sip.communicator.impl.callrating.CALL_RATING_SEND_ERROR_REPORT";
     private static final String HEADSET_RESPONSE_SETTING = "net.java.sip.communicator.impl.neomedia.HEADSET_RESPONSE";
     private static final String HEADSET_LOGGING_ENABLED_SETTING = "plugin.headsetmanager.HEADSET_API_LOGGING_ENABLED";
@@ -242,7 +232,7 @@ public class ConfigurationUtils
      * MacOS theme for the UI
      */
     public static final String USE_NATIVE_MAC_THEME_PROP = "net.java.sip.communicator.impl.gui.USE_NATIVE_THEME_ON_MACOS";
-    private static final String PROPERTY_QA_MODE = "net.java.sip.communicator.QA_MODE";
+    public static final String PROPERTY_QA_MODE = "net.java.sip.communicator.QA_MODE";
 
     /**
      * Name of the provisioning username in the configuration service.
@@ -331,7 +321,6 @@ public class ConfigurationUtils
             isWindowDecorated = Boolean.parseBoolean(isWindowDecoratedString);
         }
 
-        isShowSmileys = configService.global().getBoolean(SHOW_SMILEYS_PROPERTY, true);
         isChatShowContact = configService.global().getBoolean(CHAT_SHOW_CONTACT_PHOTO, true);
         isGroupRemoveDisabled = configService.global().getBoolean(
             "net.java.sip.communicator.impl.gui.main.contactlist.GROUP_REMOVE_DISABLED", false);
@@ -738,36 +727,6 @@ public class ConfigurationUtils
         }
 
         return messageCommand;
-    }
-
-    /**
-     * Returns the protocol provider associated with the given
-     * <tt>accountId</tt>.
-     * @param savedAccountId the identifier of the account
-     * @return the protocol provider associated with the given
-     * <tt>accountId</tt>
-     */
-    private static ProtocolProviderService findProviderFromAccountId(String savedAccountId)
-    {
-        ProtocolProviderService protocolProvider = null;
-        for (ProtocolProviderFactory providerFactory : UtilActivator.getProtocolProviderFactories().values())
-        {
-            ServiceReference<?> serRef;
-
-            for (AccountID accountId : providerFactory.getRegisteredAccounts())
-            {
-                // We're interested only in the savedAccountId
-                if (!accountId.getAccountUniqueID().equals(savedAccountId))
-                {
-                    continue;
-                }
-
-                serRef = providerFactory.getProviderForAccount(accountId);
-                protocolProvider = (ProtocolProviderService) UtilActivator.bundleContext.getService(serRef);
-            }
-        }
-
-        return protocolProvider;
     }
 
     /**
@@ -1360,7 +1319,6 @@ public class ConfigurationUtils
                 return;
             }
 
-            String oldValue = (String) evt.getOldValue();
             String newValue = (String) evt.getNewValue();
             String propertyName = evt.getPropertyName();
 
@@ -1370,12 +1328,6 @@ public class ConfigurationUtils
                     if (newValue != null)
                     {
                         isTransparentWindowEnabled = Boolean.parseBoolean(newValue);
-                    }
-                    break;
-                case "net.java.sip.communicator.impl.gui.call.lastCallConferenceProvider":
-                    if (newValue != null)
-                    {
-                        lastCallConferenceProvider = findProviderFromAccountId(newValue);
                     }
                     break;
                 case "net.java.sip.communicator.plugin.provisioning.auth.USERNAME":
@@ -1393,32 +1345,9 @@ public class ConfigurationUtils
                         logger.info("ACTIVE_USER removed from config, remove sensitive info from config files");
                         removeSensitiveInformationFromConfigFiles();
                     }
-                    else if (isEmailAddress(oldValue) && isNumber(newValue))
-                    {
-                        activeUserChangedFromEmailAddressToDn(oldValue, newValue);
-                    }
                     break;
             }
         }
-    }
-
-    /**
-     * Called when we think that the ACTIVE_USER property has been changed from an email address to
-     * the DN of the same subscriber. This happens as part of first-time login with an email address
-     * and causes problems which we need to try to reverse here.
-     *
-     * @param oldValue old value of ACTIVE_USER property that we think is their email address
-     * @param newValue new value of ACTIVE_USER property that we think is their DN
-     */
-    private static void activeUserChangedFromEmailAddressToDn(String oldValue, String newValue)
-    {
-        logger.info("ACTIVE_USER changed from email address " + logHasher(oldValue) + " to DN " + logHasher(newValue));
-
-        // We need to make sure that if we have a master password stored under the email address,
-        // then we also have that same master password stored under the DN, as next time the client
-        // is restarted, it will be using the DN to find the saved master password.
-        CredentialsStorageService credService = UtilActivator.getCredentialsService();
-        credService.user().copyMasterPassword(oldValue, newValue);
     }
 
     /**
@@ -1621,22 +1550,6 @@ public class ConfigurationUtils
         }
 
         return cosEnabled && serverEnabled;
-    }
-
-    /**
-     * @return true if group contacts are supported
-     */
-    public static boolean groupContactsSupported()
-    {
-        // Currently the only actions that can be triggered from a group
-        // contact are launching a new group chat and sending a direct meeting
-        // invite.  Therefore, only support group contacts if at least one of
-        // those actions is enabled.  Both of those also require IM, so make
-        // sure IM is enabled too.
-        return configService.global().getBoolean(ALLOW_GROUP_CONTACT_PROPERTY, false) &&
-               isImEnabled() &&
-               (isMultiUserChatEnabled() ||
-                UtilActivator.getConferenceService().isFullServiceEnabled());
     }
 
     /**
@@ -2044,8 +1957,8 @@ public class ConfigurationUtils
         if (osVersion == null)
         {
             // If we are not on Windows 11 (including if we are on Mac)
-            osName = System.getProperty("os.name");
-            osVersion = System.getProperty("os.version");
+            osName = SystemUtils.getProperty("os.name");
+            osVersion = SystemUtils.getProperty("os.version");
         }
 
         configService.global().setProperty(OS_NAME_PROP, osName);
@@ -2053,11 +1966,12 @@ public class ConfigurationUtils
     }
 
     /**
-     * Clears config properties tied to the user - do this on logout.
+     * Clears config properties tied to the user to forces a logout. Essentially, we
+     * remove username/password from the configuration forcing the app to pre login state.
      * @param removeCustomStatusAndChatSubject true if CUSTOM_STATUS and chatRoomSubject
      *                                         properties should be cleared as well.
      */
-    public static void forgetUserCredentials(boolean removeCustomStatusAndChatSubject)
+    public static void clearCredentialsAndLogout(boolean removeCustomStatusAndChatSubject)
     {
         logger.debug("Logging out - remove active user");
         configService.global().removeProperty(PROPERTY_ACTIVE_USER);

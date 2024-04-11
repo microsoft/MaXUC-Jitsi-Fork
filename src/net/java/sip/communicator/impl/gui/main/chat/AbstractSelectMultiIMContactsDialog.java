@@ -37,7 +37,6 @@ import net.java.sip.communicator.service.gui.UIContact;
 import net.java.sip.communicator.service.gui.UIContactSource;
 import net.java.sip.communicator.service.protocol.Contact;
 import net.java.sip.communicator.service.protocol.OperationSetBasicInstantMessaging;
-import net.java.sip.communicator.service.protocol.OperationSetGroupContacts;
 import net.java.sip.communicator.service.protocol.OperationSetPresence;
 import net.java.sip.communicator.service.protocol.ProtocolNames;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
@@ -191,21 +190,6 @@ public abstract class AbstractSelectMultiIMContactsDialog
             new ProtocolContactSourceServiceImpl(imProvider,
                 OperationSetBasicInstantMessaging.class));
 
-        ProtocolProviderService grpContactProvider =
-                                         AccountUtils.getGroupContactProvider();
-        if (grpContactProvider == null)
-        {
-            // We don't need the group contact provider in order to continue,
-            // but it should be present.  Hence warn but no return.
-            sLog.warn("No group contact provider");
-        }
-        else
-        {
-            mContactList.addContactSource(
-                new ProtocolContactSourceServiceImpl(grpContactProvider,
-                    OperationSetGroupContacts.class));
-        }
-
         mContactList.setCurrentFilter(
             new ChatContactsFilter(mContactList, this, mCanSelectOffline));
         mContactList.applyCurrentFilter();
@@ -310,15 +294,6 @@ public abstract class AbstractSelectMultiIMContactsDialog
                                       String phoneNumber);
 
     /**
-     * @return true if GroupContacts should be displayed in the list of IM
-     * contacts in this dialog, false otherwise.  Default is true.
-     */
-    public boolean includeGroupContacts()
-    {
-        return true;
-    }
-
-    /**
      * @return true if the user is allowed to de-select contacts that are
      * preselected in the dialog, false otherwise. Default is false.  Note that
      * users are always allowed to select then de-select any contacts that were
@@ -361,12 +336,6 @@ public abstract class AbstractSelectMultiIMContactsDialog
 
             contactEnabled = (!isPreselected || allowDeselection()) &&
                              (mCanSelectOffline || isOnline);
-        }
-        else if (includeGroupContacts() &&
-                 metaContact.getGroupContact() != null)
-        {
-            // Group contacts are allowed, this is a group contact - enabled.
-            contactEnabled = true;
         }
 
         return contactEnabled;

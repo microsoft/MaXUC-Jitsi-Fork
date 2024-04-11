@@ -18,9 +18,6 @@ public class ConferenceConfigurationPanel extends ConfigurationPanel
      */
     private static final long serialVersionUID = 0L;
 
-    private static final ConferenceService sConferenceService =
-                                           GuiActivator.getConferenceService();
-
     private ConfigurationPanel mConferenceConfigPanel;
 
    /**
@@ -29,9 +26,12 @@ public class ConferenceConfigurationPanel extends ConfigurationPanel
     public ConferenceConfigurationPanel()
     {
         super(new BorderLayout());
-        if (sConferenceService != null)
+        // check whether this conference service is the teams impl, do not
+        // create the config form if it is
+        ConferenceService conferenceService = GuiActivator.getConferenceService();
+        if (conferenceService != null && conferenceService.isLegacyImplementation())
         {
-            mConferenceConfigPanel = sConferenceService.createConfigPanel();
+            mConferenceConfigPanel = conferenceService.createConfigPanel();
             add(mConferenceConfigPanel, BorderLayout.CENTER);
         }
     }

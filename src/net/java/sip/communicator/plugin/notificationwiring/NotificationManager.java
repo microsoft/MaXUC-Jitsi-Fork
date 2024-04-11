@@ -16,6 +16,7 @@ import org.jitsi.service.configuration.*;
 import org.jitsi.service.neomedia.*;
 import org.jitsi.service.protocol.event.*;
 import org.jitsi.service.resources.*;
+
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.conference.ConferenceService;
@@ -91,6 +92,12 @@ public class NotificationManager
     private static final Map<ImageID, BufferedImageFuture> images
         = new Hashtable<>();
 
+    private static final String BG_CONTACTS_ENABLED_PROP =
+            "net.java.sip.communicator.BG_CONTACTS_ENABLED";
+
+    private static final String CONFIG_DISTINCT_RINGTONES_ENABLED_PROP =
+            "net.java.sip.communicator.plugin.generalconfig.ringtonesconfig.DISTINCT_ENABLED";
+
     /**
      * Default event type for receiving calls (incoming calls).
      */
@@ -139,6 +146,8 @@ public class NotificationManager
      */
     private static final Logger logger
         = Logger.getLogger(NotificationManager.class);
+
+    private static final ConfigurationService configService = NotificationWiringActivator.getConfigurationService();
 
     /**
      * Default event type for outgoing calls.
@@ -315,7 +324,7 @@ public class NotificationManager
             String eventType,
             Callable<Boolean> loopCondition)
     {
-        return fireNotification(eventType, null, null, null, loopCondition);
+        return fireNotification(eventType, null, null, null, null, loopCondition);
     }
 
     /**
@@ -358,20 +367,22 @@ public class NotificationManager
      * Fires a message notification for the given event type through the
      * <tt>NotificationService</tt>.
      *
-     * @param eventType the event type for which we fire a notification
-     * @param messageTitle the title of the message
-     * @param message the content of the message
-     * @param cmdargs the value to be provided to
-     * {@link CommandNotificationHandler#execute(CommandNotificationAction,
-     * Map)} as the <tt>cmdargs</tt> argument
-     * @param loopCondition the method which will determine whether any sounds
-     * played as part of the specified notification will continue looping
+     * @param eventType     the event type for which we fire a notification
+     * @param messageTitle  the title of the message
+     * @param message       the content of the message
+     * @param bgTag         business group tag, or null depending on context
+     * @param cmdargs       the value to be provided to
+     *                      {@link CommandNotificationHandler#execute(CommandNotificationAction, Map)} as the
+     *                      <tt>cmdargs</tt> argument
+     * @param loopCondition the method which will determine whether any sounds played as part of the specified
+     *                      notification will continue looping
      * @return a reference to the fired notification to stop it.
      */
     private static NotificationData fireNotification(
             String eventType,
             String messageTitle,
             String message,
+            SoundNotificationAction.BgTag bgTag,
             Map<String,String> cmdargs,
             Callable<Boolean> loopCondition)
     {
@@ -386,18 +397,19 @@ public class NotificationManager
 
             if (cmdargs != null)
             {
-                extras.put(
-                        NotificationData
-                            .COMMAND_NOTIFICATION_HANDLER_CMDARGS_EXTRA,
-                        cmdargs);
+                extras.put(NotificationData.COMMAND_NOTIFICATION_HANDLER_CMDARGS_EXTRA, cmdargs);
             }
+
             if (loopCondition != null)
             {
-                extras.put(
-                        NotificationData
-                            .SOUND_NOTIFICATION_HANDLER_LOOP_CONDITION_EXTRA,
-                        loopCondition);
+                extras.put(NotificationData.SOUND_NOTIFICATION_HANDLER_LOOP_CONDITION_EXTRA, loopCondition);
             }
+
+            if (bgTag != null)
+            {
+                extras.put(NotificationData.NOTIFICATION_SERVICE_SOUND_BG_TAG_EXTRA, bgTag);
+            }
+
             return
                 notificationService.fireNotification(
                         eventType,
@@ -1007,6 +1019,29 @@ public class NotificationManager
                  * weakly reference the call.
                  */
                 final WeakReference<Call> weakCall = new WeakReference<>(call);
+
+                boolean isInSameBg = false;
+
+                // Anonymous users and abstract peers have no meta contact
+                if (peer.getMetaContact() != null)
+                {
+                    isInSameBg = peer.getMetaContact().getBGContact() != null;
+                }
+                boolean bgContactsEnabled = configService.user().getBoolean(BG_CONTACTS_ENABLED_PROP, false);
+
+                boolean isDistinctRingingEnabled = configService.user()
+                        .getBoolean(CONFIG_DISTINCT_RINGTONES_ENABLED_PROP, false);
+
+                SoundNotificationAction.BgTag businessGroupTag;
+                if (bgContactsEnabled && isDistinctRingingEnabled && isInSameBg)
+                {
+                    businessGroupTag = SoundNotificationAction.BgTag.BG_TAG_INTERNAL;
+                }
+                else
+                {
+                    businessGroupTag = SoundNotificationAction.BgTag.BG_TAG_GENERIC;
+                }
+
                 NotificationData notification
                     = fireNotification(
                             notificationType,
@@ -1015,6 +1050,7 @@ public class NotificationManager
                                     .getI18NString(
                                             "service.gui.INCOMING_CALL",
                                             new String[] { peerName }),
+                            businessGroupTag,
                             peerInfo,
                             new Callable<Boolean>()
                             {
@@ -1407,7 +1443,6 @@ public class NotificationManager
         if(notificationService == null)
             return;
 
-        ConfigurationService configService = NotificationWiringActivator.getConfigurationService();
         if (configService == null)
         {
             logger.fatal("Can't access config service in NotificationWiringActivator");

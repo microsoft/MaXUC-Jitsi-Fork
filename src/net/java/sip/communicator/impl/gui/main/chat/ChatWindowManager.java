@@ -620,18 +620,7 @@ public class ChatWindowManager
      */
     public void startChat(MetaContact metaContact)
     {
-        Contact groupContact = metaContact.getGroupContact();
-
-        if (groupContact != null)
-        {
-            groupContact.getProtocolProvider()
-                        .getOperationSet(OperationSetGroupContacts.class)
-                        .startGroupChat(groupContact);
-        }
-        else
-        {
-            SwingUtilities.invokeLater(new RunChatWindow(metaContact));
-        }
+        SwingUtilities.invokeLater(new RunChatWindow(metaContact));
     }
 
     /**
@@ -645,19 +634,8 @@ public class ChatWindowManager
                           Contact protocolContact,
                           boolean isSmsMessage)
     {
-        Contact groupContact = metaContact.getGroupContact();
-
-        if (groupContact != null)
-        {
-            groupContact.getProtocolProvider()
-                        .getOperationSet(OperationSetGroupContacts.class)
-                        .startGroupChat(groupContact);
-        }
-        else
-        {
-            SwingUtilities.invokeLater(new RunChatWindow(
-                            metaContact, protocolContact, null, isSmsMessage));
-        }
+        SwingUtilities.invokeLater(new RunChatWindow(
+                metaContact, protocolContact, null, isSmsMessage));
     }
 
     public void startChat(String contactString)

@@ -101,11 +101,6 @@ public class ProtocolProviderActivator
     private static ThreadingService threadingService;
 
     /**
-     * The conference service, used to manage conferences
-     */
-    private static ConferenceService conferenceService;
-
-    /**
      * The packet logging service, used to manage packet logging
      */
     private static PacketLoggingService packetLoggingService;
@@ -407,11 +402,7 @@ public class ProtocolProviderActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-            conferenceService =
-                ServiceUtils.getService(bundleContext, ConferenceService.class);
-
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**
@@ -440,5 +431,13 @@ public class ProtocolProviderActivator
                 ServiceUtils.getService(bundleContext, WISPAService.class);
 
         return wispaService;
+    }
+
+    /**
+     * @return the sBundleContext
+     */
+    public static BundleContext getBundleContext()
+    {
+        return bundleContext;
     }
 }

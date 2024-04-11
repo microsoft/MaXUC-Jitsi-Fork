@@ -20,10 +20,12 @@ import net.java.sip.communicator.plugin.desktoputil.event.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.UIService.*;
 import net.java.sip.communicator.service.gui.event.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 import net.java.sip.communicator.util.skin.*;
+import org.jitsi.util.StringUtils;
 
 /**
  * The field shown on the top of the main window, which allows the user to
@@ -92,6 +94,8 @@ public class SearchField
      * The current filter query.
      */
     private FilterQuery currentFilterQuery = null;
+
+    private boolean filterNoted = false;
 
     /**
      * Creates the <tt>SearchField</tt> with the default hint text.
@@ -187,11 +191,13 @@ public class SearchField
         String filterStringToLog = mQAMode ? filterString : REDACTED;
         sLog.info("Text inserted - user searching for string " + filterStringToLog);
 
-        if (filterString == null || filterString.length() <= 0)
+        if (StringUtils.isNullOrEmpty(filterString, false))
+        {
             return;
+        }
 
+        sendContactSearchAnalytics(filterString);
         updateContactListView();
-
         AccessibilityUtils.setName(this, filterString);
     }
 
@@ -204,8 +210,24 @@ public class SearchField
 
         String filterString = getText();
         sLog.info("Text removed - user searching for string " + filterString);
+
+        sendContactSearchAnalytics(filterString);
         updateContactListView();
         AccessibilityUtils.setName(this, filterString);
+    }
+
+    private void sendContactSearchAnalytics(String filterString)
+    {
+        if (StringUtils.isNullOrEmpty(filterString, false))
+        {
+            filterNoted = false;
+        }
+        else if (!filterNoted)
+        {
+            DesktopUtilActivator.getInsightsService().logEvent(InsightsEventHint.CONTACT_SEARCH.name(),
+                                                               null);
+            filterNoted = true;
+        }
     }
 
     /**

@@ -21,7 +21,7 @@ import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.imageloader.*;
-import net.java.sip.communicator.service.insights.InsightService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.keybindings.*;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.resources.*;
@@ -52,8 +52,6 @@ public class DesktopUtilActivator
 
     private static AnalyticsService analyticsService;
 
-    private static ConferenceService conferenceService;
-
     private static UIService uiService;
 
     private static ThreadingService threadingService;
@@ -68,7 +66,7 @@ public class DesktopUtilActivator
     private static CDAPService sCDAPService;
     private static CommPortalService sCommPortalService;
     private static CredentialsStorageService sCredService;
-    private static InsightService sInsightService;
+    private static InsightsService sInsightsService;
 
     /**
      * Calls <tt>Thread.setUncaughtExceptionHandler()</tt>
@@ -204,15 +202,15 @@ public class DesktopUtilActivator
         return sWISPAService;
     }
 
-    public static InsightService getInsightService()
+    public static InsightsService getInsightsService()
     {
-        if (sInsightService == null)
+        if (sInsightsService == null)
         {
-            sInsightService = ServiceUtils.getService(bundleContext,
-                                                      InsightService.class);
+            sInsightsService = ServiceUtils.getService(bundleContext,
+                                                      InsightsService.class);
         }
 
-        return sInsightService;
+        return sInsightsService;
     }
 
     /**
@@ -263,11 +261,7 @@ public class DesktopUtilActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-            conferenceService = ServiceUtils.getService(
-                bundleContext, ConferenceService.class);
-
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**
@@ -347,5 +341,15 @@ public class DesktopUtilActivator
         }
 
         return sCredService;
+    }
+
+    /**
+     * Returns a reference to the bundle context that we were started with.
+     * @return a reference to the BundleContext instance that we were started
+     * with.
+     */
+    public static BundleContext getBundleContext()
+    {
+        return bundleContext;
     }
 }

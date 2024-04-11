@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.GUI_CALL_CRM;
+import static net.java.sip.communicator.service.insights.parameters.GuiParameterInfo.GUI_CALL_CRM_RESULT;
 import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.Desktop;
@@ -11,6 +13,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JMenuItem;
 
@@ -309,7 +312,7 @@ public enum ServiceType
      *      default to DN if no name found.
      * @param number The DN of the contact to use as a parameter
      */
-    public void launchSelectedCrmService(@Nullable String name, @Nullable String number)
+    public void launchSelectedCrmService(@Nullable String name, @Nullable String number, boolean madeFromCall)
     {
         String url = UrlServiceTools.getUrlServiceTools().getSelectedServices(this).get(0).getURL();
 
@@ -343,11 +346,14 @@ public enum ServiceType
         {
             url = "";
         }
-
-        launchURLInternal(url);
+        boolean error = launchURLInternal(url);
+        if (madeFromCall)
+        {
+            GuiActivator.getInsightsService().logEvent(GUI_CALL_CRM.name(), Map.of(GUI_CALL_CRM_RESULT.name(), error));
+        }
     }
 
-    private void launchURLInternal(String url)
+    private boolean launchURLInternal(String url)
     {
         final String loggableUrl = logHasher(url);
         logger.info("Launch a " + getConfigName() + " session to: " + loggableUrl);
@@ -408,6 +414,7 @@ public enum ServiceType
         {
             new ErrorDialog(errorTitle, errorText).showDialog();
         }
+        return error;
     }
 
     /**

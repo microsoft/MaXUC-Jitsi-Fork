@@ -75,7 +75,7 @@ public class UpdateWindowsActivator
     /**
      * Reference to the <tt>ConfigurationService</tt>.
      */
-    private static ConfigurationService configuration;
+    protected static ConfigurationService configuration;
 
     /**
      * The update service.
@@ -85,7 +85,7 @@ public class UpdateWindowsActivator
     /**
      * The version service
      */
-    private static VersionService versionService;
+    protected static VersionService versionService;
 
     /**
      * The credentials service
@@ -95,7 +95,7 @@ public class UpdateWindowsActivator
     /**
      * The analytics service
      */
-    private static AnalyticsService analyticsService;
+    protected static AnalyticsService analyticsService;
 
     private static ThreadingService threadingService;
 

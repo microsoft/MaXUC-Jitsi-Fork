@@ -292,4 +292,10 @@ public class MockContact
     {
         return null;
     }
+
+    @Override
+    public ContactType getContactType()
+    {
+        return null;
+    }
 }

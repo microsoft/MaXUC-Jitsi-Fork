@@ -26,6 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -41,6 +46,7 @@ import net.java.sip.communicator.service.threading.ThreadingService;
 import net.java.sip.communicator.util.Logger;
 import net.java.sip.communicator.util.NetworkUtils;
 import org.jitsi.service.configuration.ConfigurationService;
+import org.jitsi.util.CustomAnnotations.Nullable;
 import org.jitsi.util.Hasher;
 import org.jitsi.util.OSUtils;
 
@@ -79,11 +85,6 @@ public class NetworkAddressManagerServiceImpl
      */
     public static final String BIND_RETRIES_PROPERTY_NAME
         = "net.java.sip.communicator.service.netaddr.BIND_RETRIES";
-
-    /**
-     * Default STUN server port.
-     */
-    public static final int DEFAULT_STUN_SERVER_PORT = 3478;
 
     /**
      * A map from an InetAddress to its NetworkConnectionInfo data structure.
@@ -230,12 +231,16 @@ public class NetworkAddressManagerServiceImpl
         }
 
         // Windows socket implementations return the any address so we need to find something else here ...
-        // InetAddress.getLocalHost seems to work better on Windows so let's hope it'll do the trick.
+        // InetAddress's getLocalHost() seems to work better on Windows so let's hope it'll do the trick.
         if (localHost == null)
         {
             try
             {
+                // CHECKSTYLE.OFF: Regexp
+                // Justified as we usually execute this only on Windows, as localHost is usually not set to null
+                // by the 'else' block above
                 localHost = InetAddress.getLocalHost();
+                // CHECKSTYLE.ON: Regexp
             }
             catch (UnknownHostException e)
             {
@@ -259,7 +264,10 @@ public class NetworkAddressManagerServiceImpl
                     // First try the easy way  but not on Mac as this won't work and will give us the wrong value.
                     if (!OSUtils.IS_MAC)
                     {
+                        // CHECKSTYLE.OFF: Regexp
+                        // Justified as we are not on a Mac here
                         localHost = InetAddress.getLocalHost();
+                        // CHECKSTYLE.ON: Regexp
                     }
 
                     // Make sure we got an IPv4 address.
@@ -292,6 +300,42 @@ public class NetworkAddressManagerServiceImpl
 
         logger.trace("Returning the localhost address '" + localHost + "'");
         return localHost;
+    }
+
+    @Nullable
+    @Override
+    public InetAddress getOsLocalHostWithTimeout(long timeout, TimeUnit unit)
+    {
+        Callable<InetAddress> worker = () -> {
+            try
+            {
+                // CHECKSTYLE.OFF: Regexp
+                // Justified as we have mitigated the potentially-bad timeout on Mac
+                return InetAddress.getLocalHost();
+                // CHECKSTYLE.ON: Regexp
+            }
+            catch (UnknownHostException e)
+            {
+                return null;
+            }
+        };
+
+        Future<InetAddress> futureLocalAddress = threadingService.submit("getOsLocalHostWithTimeout", worker);
+
+        try
+        {
+            return futureLocalAddress.get(timeout, unit);
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            logger.error("Exception in getLocalHost(), returning null", e);
+            return null;
+        }
+        catch (TimeoutException e)
+        {
+            logger.error("Timed out waiting for getLocalHost(), returning null");
+            return null;
+        }
     }
 
     /**
@@ -851,44 +895,40 @@ public class NetworkAddressManagerServiceImpl
     private void startNetworkLookupThread(final InetAddress address, boolean forceUpdate)
     {
         String threadName = "InetAddress lookup thread " + getLoggableAddress(address);
-        Thread networkLookupThread = new Thread(threadName)
-        {
-            public void run()
-            {
-                // This call will trigger us to cache the wireless info.
-                String loggableAddress = getLoggableAddress(address);
-                logger.debug("Looking up address: " + loggableAddress + ". Force update? " + forceUpdate);
-                NetworkConnectionInfo connectionInfo =
-                        getNetworkConnectionInfoForAddress(address, forceUpdate);
+        Runnable networkLookupThread = () -> {
+            // This call will trigger us to cache the wireless info.
+            String loggableAddress = getLoggableAddress(address);
+            logger.debug("Looking up address: " + loggableAddress + ". Force update? " + forceUpdate);
+            NetworkConnectionInfo connectionInfo =
+                    getNetworkConnectionInfoForAddress(address, forceUpdate);
 
-                // Determine the emergency location address
-                CommPortalService commPortalService = NetaddrActivator.getCommPortalService();
-                if (commPortalService != null && commPortalService.isEmergencyLocationSupportNeeded())
+            // Determine the emergency location address
+            CommPortalService commPortalService = NetaddrActivator.getCommPortalService();
+            if (commPortalService != null && commPortalService.isEmergencyLocationSupportNeeded())
+            {
+                // If we've been asked to force update, this means something may have changed
+                // about the network that we're not automatically notified about.  In that case,
+                // we run determineLocationAddress to check for emergency location for all
+                // addresses on the system.  Otherwise, we just check for the address we've
+                // been asked to lookup, as long as it is connected.
+                if (forceUpdate)
                 {
-                    // If we've been asked to force update, this means something may have changed
-                    // about the network that we're not automatically notified about.  In that case,
-                    // we run determineLocationAddress to check for emergency location for all
-                    // addresses on the system.  Otherwise, we just check for the address we've
-                    // been asked to lookup, as long as it is connected.
-                    if (forceUpdate)
-                    {
-                        commPortalService.determineLocationAddress();
-                    }
-                    else if (connectionInfo.mConnected)
-                    {
-                        logger.debug("Address is connected: " + loggableAddress);
-                        commPortalService.findLocationForAddress(address);
-                    }
-                    else
-                    {
-                        logger.debug("Address is not connected: " + loggableAddress +
-                                     ". Not looking for location info.");
-                    }
+                    commPortalService.determineLocationAddress();
+                }
+                else if (connectionInfo.mConnected)
+                {
+                    logger.debug("Address is connected: " + loggableAddress);
+                    commPortalService.findLocationForAddress(address);
                 }
                 else
                 {
-                    logger.debug("Emergency Location Support not needed");
+                    logger.debug("Address is not connected: " + loggableAddress +
+                                 ". Not looking for location info.");
                 }
+            }
+            else
+            {
+                logger.debug("Emergency Location Support not needed");
             }
         };
 

@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.*;
+import static net.java.sip.communicator.service.insights.parameters.GuiParameterInfo.*;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -17,6 +20,8 @@ import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPAMotion;
+import net.java.sip.communicator.service.wispaservice.WISPAMotionType;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.*;
@@ -345,6 +350,7 @@ class PeerPanel extends JPanel implements CallPeerListener, ActionListener
         // lower level restrictions).
         mCrmButtonSetter = new CrmButtonSetter(callPeer.getDisplayName(),
                                                peerAddress,
+                                               true,
                                                crmButtonPanel);
         mCrmButtonSetter.createButton();
 
@@ -601,8 +607,11 @@ class PeerPanel extends JPanel implements CallPeerListener, ActionListener
             public void actionPerformed(ActionEvent arg0)
             {
                 logger.user("Chat selected in call window");
+                GuiActivator.getInsightsService().logEvent(GUI_CALL_SEND_IM.name(), null);
+
                 MetaContact metaContact = callPeer.getMetaContact();
-                sWISPAService.notify(WISPANamespace.CONTACTS, WISPAAction.MOTION, metaContact);
+                WISPAMotion wispaMotion = new WISPAMotion(WISPAMotionType.DISPLAY_CONTACT, metaContact);
+                sWISPAService.notify(WISPANamespace.CONTACTS, WISPAAction.MOTION, wispaMotion);
             }
         });
 
@@ -704,6 +713,12 @@ class PeerPanel extends JPanel implements CallPeerListener, ActionListener
                     // Now toggle the state
                     logger.debug("Toggle peer hold state");
                     boolean setOnHold = !btnPeerOther.isSelected();
+                    GuiActivator.getInsightsService().logEvent(GUI_CALL_HOLD.name(),
+                                                               Map.of(GUI_CALL_TYPE.name(),
+                                                                      callFrame.isCallTypeVideo(),
+                                                                      GUI_CALL_HOLD_SELECTED.name(),
+                                                                      setOnHold));
+
                     setOnHold(setOnHold);
                     btnPeerOther.setSelected(setOnHold);
                 }

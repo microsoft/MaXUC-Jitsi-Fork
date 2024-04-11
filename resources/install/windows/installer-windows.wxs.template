@@ -141,7 +141,9 @@
       (ii) The previous version was installed in a non-default directory. -->
     <Custom Action="SetSHOW_UPGRADE_FULLUI" After="SetEXPECTED_INSTALLDIR" Condition="(IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; EXPECTED_INSTALLDIR)" />
     <!-- If it's an upgrade and the app name hasn't changed set INSTALLDIR to match the existing installation. -->
-    <Custom Action="SetINSTALLDIR" After="SetAPP_NAME_CHANGED" Condition="(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1)" />
+    <Custom Action="SetX86_INSTALLDIR" After="SetAPP_NAME_CHANGED" Condition="IS_AUTOUPDATE = 1" />
+    <!-- If it's an upgrade from x86 to x64 - if the app name hasn't changed, and the old install dir is Program Files (x86), we set INSTALLDIR to Program Files. -->
+    <Custom Action="SetINSTALLDIR" After="SetX86_INSTALLDIR" Condition="(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; X86_INSTALLDIR)" />
     <!-- Only set the CREATE_DESKTOP_SHORTCUT property if:
     - It's a fresh install, so that the checkbox is checked by default (UILevel = 5).
     - It's an upgrade and the previous version had the shortcut (UILevel = 5).
@@ -181,6 +183,7 @@
 <CustomAction Id="SetCREATE_START_MENU_SHORTCUT" Property="CREATE_START_MENU_SHORTCUT" Value="1" />
 <CustomAction Id="SetCREATE_STARTUP_REGISTRY" Property="CREATE_STARTUP_REGISTRY" Value="1" />
 <CustomAction Id="SetINSTALLDIR" Property="INSTALLDIR" Value="[SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR]" />
+<CustomAction Id="SetX86_INSTALLDIR" Property="X86_INSTALLDIR" Value="[ProgramFilesFolder][OLD_APP_NAME]" />
 <CustomAction Id="SetIS_AUTOUPDATE" Property="IS_AUTOUPDATE" Value="1" />
 <CustomAction Id="SetOLD_APP_NAMEfromBranding" Property="OLD_APP_NAME" Value="@@OLD_PRODUCT_NAME_ASCII@@" />
 <CustomAction Id="SetOLD_APP_NAMEfromApp" Property="OLD_APP_NAME" Value="[SIP_COMMUNICATOR_AUTOUPDATE_APP_NAME]" />
@@ -211,6 +214,9 @@
 <SetProperty Id="DeleteJreLibExt" Value="&quot;cmd.exe&quot; /C rmdir /S /Q &quot;[INSTALLDIR]\jre\lib\ext&quot;" After="SetINSTALLDIR" />
 <CustomAction Id="DeleteJreLibExt" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
+<SetProperty Id="DeleteApplicationInsightsLog" Value="&quot;cmd.exe&quot; /C del /Q &quot;[X86_INSTALLDIR]\lib\applicationinsights.log&quot;" After="SetX86_INSTALLDIR" />
+<CustomAction Id="DeleteApplicationInsightsLog" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
+
 <InstallExecuteSequence>
   <!-- We've seen upgrades break pinned taskbar icons so explicitly don't remove them -->
   <RemoveShortcuts Suppress="yes"></RemoveShortcuts>
@@ -228,7 +234,9 @@
       (ii) The previous version was installed in a non-default directory. -->
   <Custom Action="SetSHOW_UPGRADE_FULLUI" After="SetEXPECTED_INSTALLDIR" Condition="(IS_AUTOUPDATE = 1) AND (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; EXPECTED_INSTALLDIR)" />
   <!-- If it's an upgrade and the app name hasn't changed set INSTALLDIR to match the existing installation. -->
-  <Custom Action="SetINSTALLDIR" After="SetAPP_NAME_CHANGED" Condition="(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1)" />
+  <Custom Action="SetX86_INSTALLDIR" After="SetAPP_NAME_CHANGED" Condition="IS_AUTOUPDATE = 1" />
+  <!-- If it's an upgrade from x86 to x64 - if the app name hasn't changed, and the old install dir is Program Files (x86), we set INSTALLDIR to Program Files. -->
+  <Custom Action="SetINSTALLDIR" After="SetX86_INSTALLDIR" Condition="(IS_AUTOUPDATE = 1) AND NOT (APP_NAME_CHANGED = 1) AND (SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR &lt;&gt; X86_INSTALLDIR)" />
   <!-- The equivalent section above in InstallUISequence handles setting whether
        or not to create shortcuts if we're showing the UI and the user may have
        the chance to choose whether or not they want to create shortcuts.  Here
@@ -252,6 +260,7 @@
 <Custom Action="ClearUserConfig_Step2" After="ClearUserConfig_Step1" Condition="(NOT UPGRADINGPRODUCTCODE) AND (REMOVE=&quot;ALL&quot;)" />
 <Custom Action="ClearUserConfig_Step3" After="ClearUserConfig_Step2" Condition="(NOT UPGRADINGPRODUCTCODE) AND (REMOVE=&quot;ALL&quot;)" />
 <Custom Action="DeleteJreLibExt" After="ClearUserConfig_Step3"></Custom>
+<Custom Action="DeleteApplicationInsightsLog" After="DeleteJreLibExt"></Custom>
 
 </InstallExecuteSequence>
 
@@ -316,6 +325,7 @@
      old app name was branded in or if an old app name was passed in from Accession itself.-->
 <Property Id="OLD_APP_NAME" Value="@@PRODUCT_NAME_ASCII@@" />
 <Property Id="EXPECTED_INSTALLDIR" Value="0" />
+<Property Id="X86_INSTALLDIR" Value="0" />
 <Property Id="SHOW_UPGRADE_FULLUI" Value="0" />
 <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
 <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="!(loc.ExitDialogOptionaCheckBoxText)" />
@@ -331,7 +341,6 @@
 <?ifdef JRESetup ?>
 <Binary Id="JRESetup" SourceFile="$(var.JRESetup)" />
 <?endif?>
-<Binary Id="CleanSweepExe" SourceFile="cleansweep.exe" />
 
 <!-- Includes any default translated Error or ProgressText elements -->
 <UIRef Id="WixUI_ErrorProgressText" />

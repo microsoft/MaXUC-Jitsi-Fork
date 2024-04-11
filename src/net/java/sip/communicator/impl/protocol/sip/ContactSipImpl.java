@@ -594,4 +594,13 @@ public class ContactSipImpl
     {
         return null;
     }
+
+    /**
+     * Fetch the contact type as an alternative to <tt>instanceof</tt> checks
+     */
+    @Override
+    public ContactType getContactType()
+    {
+        return ContactType.SIP;
+    }
 }

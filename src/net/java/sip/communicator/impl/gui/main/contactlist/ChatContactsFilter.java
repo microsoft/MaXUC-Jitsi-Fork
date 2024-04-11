@@ -11,7 +11,6 @@ import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.event.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
-import net.java.sip.communicator.util.account.*;
 
 /**
  * The <tt>ChatContactsFilter</tt> is used to filter chat contacts only
@@ -148,11 +147,6 @@ public class ChatContactsFilter
             // We've got an IM contact - so it matches
             isMatching = true;
         }
-        else if (selectMultiIMContactsDialog.includeGroupContacts())
-        {
-            // This filter should match group contacts
-            isMatching = (metaContact.getGroupContact() != null);
-        }
         else
         {
             // Not a match.
@@ -286,31 +280,20 @@ public class ChatContactsFilter
      */
     private boolean isContactEnabled(MetaContact metaContact)
     {
-        // This MetaContact either has an IM contact, or it is a group contact
-        // (see isMatching which enforces this).
-        // If it is a group contact then it should be enabled if either offline
-        // group invitations are supported, or if the current IM account is
-        // online.
-        // If it is an IM contact, then disable it if it is offline and offline
-        // group invitations are not allowed.
+        // This MetaContact has an IM contact.
+        // We disable it if it is offline and offline.
         // Finally, if the contact is preselected, and the dialog does not allow
         // de-selection then it should be disabled.
         ArrayList<MetaContact> preselectedContacts =
                            selectMultiIMContactsDialog.getPreselectedContacts();
 
-            // Should be enabled if we allow deselection, or it's not selected
+        // Should be enabled if we allow deselection, or it's not selected.
         boolean enabled = selectMultiIMContactsDialog.allowDeselection() ||
                           !preselectedContacts.contains(metaContact);
 
         if (enabled)
         {
-            if (metaContact.getGroupContact() != null)
-            {
-                // Should be enabled if selecting an offline contact is
-                // supported, or if the IM account is online.
-                enabled = enableOfflineContacts || AccountUtils.isImProviderRegistered();
-            }
-            else if (metaContact.getIMContact() != null)
+            if (metaContact.getIMContact() != null)
             {
                 // Should be enabled if selecting an offline contact is
                 // supported, or if the IM contact is online.
@@ -320,7 +303,7 @@ public class ChatContactsFilter
             else
             {
                 // Shouldn't happen - should never have a matching contact which
-                // isn't a group contact or an IM contact
+                // isn't an IM contact
                 logger.error("Matched a contact we shouldn't " + metaContact);
             }
         }

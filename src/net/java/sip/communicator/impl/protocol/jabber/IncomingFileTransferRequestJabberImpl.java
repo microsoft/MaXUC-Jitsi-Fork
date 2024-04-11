@@ -9,6 +9,8 @@ package net.java.sip.communicator.impl.protocol.jabber;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.Date;
 
 import org.jivesoftware.smack.SmackException;
@@ -31,6 +33,7 @@ import net.java.sip.communicator.service.protocol.OperationSetPersistentPresence
 import net.java.sip.communicator.service.protocol.event.FileTransferCreatedEvent;
 import net.java.sip.communicator.service.protocol.event.FileTransferRequestEvent;
 import net.java.sip.communicator.util.Logger;
+import org.jitsi.util.OSUtils;
 
 /**
  * Jabber implementation of the incoming file transfer request
@@ -63,6 +66,16 @@ public class IncomingFileTransferRequestJabberImpl
     private String thumbnailCid;
 
     private byte[] thumbnail;
+
+    /**
+     * Mac specific fileName pattern that matches "." if it's at the start of a line and every ":", "/".
+     */
+    private static final String MAC_INVALID_CHARS = "(^\\.)|([:/])";
+
+    /**
+     * Windows specific fileName pattern that matches all reserved characters "<>:"/\|?*".
+     */
+    private static final String WIN_INVALID_CHARS = "[<>:\"/\\\\|?*]";
 
     /**
      * Creates an <tt>IncomingFileTransferRequestJabberImpl</tt> based on the
@@ -114,7 +127,23 @@ public class IncomingFileTransferRequestJabberImpl
      */
     public String getFileName()
     {
-        return fileTransferRequest.getFileName().replaceAll("[^ a-zA-Z0-9.-]", "_");
+        String fileName = fileTransferRequest.getFileName();
+
+        // OS specific file naming conventions
+        fileName = fileName.replaceAll(OSUtils.isWindows() ? WIN_INVALID_CHARS : MAC_INVALID_CHARS, "_");
+
+        // Just in case, validate the fileName and restrict it to a small range
+        // of ASCII characters if InvalidPathException is caught.
+        try
+        {
+            Paths.get(fileName);
+        }
+        catch (InvalidPathException e)
+        {
+            fileName = fileName.replaceAll("[^ a-zA-Z0-9.-]", "_");
+        }
+
+        return fileName;
     }
 
     /**

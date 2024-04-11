@@ -386,16 +386,7 @@ public class MetaUIContact
         // If there's no avatar we return the relevant silhouette image.
         if(avatarBytes == null)
         {
-            ImageIconFuture avatar;
-
-            if (mMetaContact.getGroupContact() != null)
-            {
-                avatar = isExtended ? EXT_GROUP_ICON : GROUP_ICON;
-            }
-            else
-            {
-                avatar = isExtended ? EXT_UNAUTH_ICON : UNAUTH_ICON;
-            }
+            ImageIconFuture avatar = isExtended ? EXT_UNAUTH_ICON : UNAUTH_ICON;
 
             return mMetaContact.addOverlayToAvatar(avatar);
         }
@@ -808,10 +799,6 @@ public class MetaUIContact
         {
             rightButtonMenu =
                 new ReducedMetaContactRightButtonMenu(mMetaContact, null);
-        }
-        else if (getMetaContact().getGroupContact() != null)
-        {
-            rightButtonMenu = new GroupContactRightButtonMenu(mMetaContact);
         }
         else
         {

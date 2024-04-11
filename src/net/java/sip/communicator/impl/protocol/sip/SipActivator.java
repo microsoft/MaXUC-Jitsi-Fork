@@ -24,7 +24,7 @@ import net.java.sip.communicator.service.commportal.ClassOfServiceService;
 import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.contactsource.ContactSourceService;
 import net.java.sip.communicator.service.gui.UIService;
-import net.java.sip.communicator.service.insights.InsightService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
 import net.java.sip.communicator.service.protocol.ProtocolNames;
@@ -89,7 +89,7 @@ public class SipActivator
 
     private static AnalyticsService analyticsService;
 
-    private static InsightService insightService;
+    private static InsightsService insightsService;
 
     /**
      * The threading service, used to schedule tasks
@@ -435,7 +435,7 @@ public class SipActivator
      *
      * @return the <tt>ClassOfServiceService</tt> obtained from the bundle context
      */
-    static ClassOfServiceService getClassOfServiceService()
+    public static ClassOfServiceService getClassOfServiceService()
     {
         if (classOfServiceService == null)
         {
@@ -496,14 +496,14 @@ public class SipActivator
         return analyticsService;
     }
 
-    public static InsightService getInsightService()
+    public static InsightsService getInsightsService()
     {
-        if (insightService == null)
+        if (insightsService == null)
         {
-            insightService = ServiceUtils.getService(bundleContext, InsightService.class);
+            insightsService = ServiceUtils.getService(bundleContext, InsightsService.class);
         }
 
-        return insightService;
+        return insightsService;
     }
 
     /**

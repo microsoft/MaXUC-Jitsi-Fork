@@ -66,7 +66,7 @@ public class DatabaseServiceImpl implements DatabaseService
 
         // Stop HSQLDB reconfiguring our logging - this would remove special
         // log handlers/formatters we create etc.
-        System.setProperty("hsqldb.reconfig_logging", "false");
+        SystemUtils.setProperty("hsqldb.reconfig_logging", "false");
 
         // Register the HSQLDB driver.
         Class.forName("org.hsqldb.jdbc.JDBCDriver");
@@ -86,7 +86,7 @@ public class DatabaseServiceImpl implements DatabaseService
         // We should have the DB shutdown as part of the Felix bundle shutdown processing. However,
         // sometimes that doesn't fire, and as closing the DB safely is very important we go for the
         // belt and braces approach of adding our own shutdown hook here.
-        Runtime.getRuntime().addShutdownHook(
+        RuntimeUtils.addShutdownHook(
             new Thread("DatabaseServiceImpl-ShutdownHook")
             {
                 public void run()

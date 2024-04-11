@@ -28,7 +28,7 @@ public interface AnalyticsService
 
     /**
      * There are cases where we want to send the analytics right away so they
-     * don't get lost (for example if OOM happens twice in less then 15
+     * don't get lost (for example if OOM happens twice in less than 15
      * minutes), so calling this method will do just that, send currently queued
      * analytics to the server.
      *

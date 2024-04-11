@@ -308,7 +308,8 @@ public class UrlServiceTools
      */
     public SIPCommSnakeButton createCrmLaunchButton(
             @Nullable final String searchName,
-            @Nullable final String searchNumber)
+            @Nullable final String searchNumber,
+            final boolean madeFromCall)
     {
         // Process the incoming name and number
         String name = ServiceType.processNameForCrm(searchName);
@@ -346,7 +347,7 @@ public class UrlServiceTools
             public void actionPerformed(ActionEvent e)
             {
                 logger.user("CRM button clicked to launch an CRM search");
-                ServiceType.CRM.launchSelectedCrmService(name, number);
+                ServiceType.CRM.launchSelectedCrmService(name, number, madeFromCall);
             }
         });
 

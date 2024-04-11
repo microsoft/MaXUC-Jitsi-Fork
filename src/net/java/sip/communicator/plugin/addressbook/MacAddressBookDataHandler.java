@@ -412,7 +412,7 @@ public class MacAddressBookDataHandler
             }
         }
 
-        fireContactUpdated(values, getAccessionID(id));
+        getAccessionID(id).ifPresent(accessionID -> fireContactUpdated(values, accessionID));
     }
 
     /**
@@ -421,9 +421,9 @@ public class MacAddressBookDataHandler
      * @param id the Mac Address Book ID for which to find the Accession ID
      * @return the Accession ID
      */
-    private String getAccessionID(String id)
+    private Optional<String> getAccessionID(String id)
     {
-        String accessionID = null;
+        Optional<String> accessionID = Optional.empty();
 
         synchronized (idMapLock)
         {
@@ -438,7 +438,7 @@ public class MacAddressBookDataHandler
                 }
                 else if (contactEntry.getValue().equals(id))
                 {
-                    accessionID = contactEntry.getKey();
+                    accessionID = Optional.of(contactEntry.getKey());
                     break;
                 }
             }
@@ -454,7 +454,7 @@ public class MacAddressBookDataHandler
      */
     private void contactDeleted(String id)
     {
-        String accessionID;
+        Optional<String> accessionID;
 
         synchronized (idMapLock)
         {
@@ -468,12 +468,14 @@ public class MacAddressBookDataHandler
             }
 
             accessionID = getAccessionID(id);
-            logger.debug("Got a deleted event for contact " + id);
-
-            idMap.remove(accessionID);
+            if (accessionID.isPresent())
+            {
+                logger.debug("Got a deleted event for contact " + id);
+                idMap.remove(accessionID.get());
+            }
         }
 
-        fireContactDeleted(accessionID);
+        accessionID.ifPresent(this::fireContactDeleted);
     }
 
     /**

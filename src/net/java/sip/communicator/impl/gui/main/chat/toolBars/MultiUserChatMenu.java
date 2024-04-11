@@ -26,6 +26,9 @@ import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.enums.InsightsResultCode;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
@@ -64,16 +67,6 @@ public class MultiUserChatMenu
      * The menu item for muting the group chat
      */
     private JMenuItem mMuteGroupChatItem;
-
-    /**
-     * The menu item for creating a group contact
-     */
-    private JMenuItem mCreateGroupContactItem;
-
-    /**
-     * The separator above the create group contact menu item
-     */
-    private JSeparator mCreateGroupContactItemSeparator;
 
     /**
      * The resource management service
@@ -148,32 +141,6 @@ public class MultiUserChatMenu
                 else
                 {
                     sLog.error("Hamburger menu displayed for non chat room");
-                }
-
-                // Update the create group contact menu item - it might be out
-                // of date (it converts the chatroom into a list of contacts
-                // when it is created, thus that list might be out of date).
-                if (mCreateGroupContactItem != null)
-                {
-                    remove(mCreateGroupContactItem);
-                    remove(mCreateGroupContactItemSeparator);
-                }
-
-                // Only add the create group contact menu item (and the
-                // separator above it) if group contacts are supported.  Note
-                // that we always check whether we need to remove them above,
-                // regardless of whether group contacts are currently
-                // supported, as it is possible for that to change so there
-                // always could be an existing menu item.
-                if (ConfigurationUtils.groupContactsSupported())
-                {
-                    mCreateGroupContactItemSeparator =
-                                              SIPCommMenuItem.createSeparator();
-                    mCreateGroupContactItem =
-                        GroupContactMenuUtils.createGroupContactSipCommMenu(
-                                                                 getChatRoom());
-                    add(mCreateGroupContactItemSeparator);
-                    add(mCreateGroupContactItem);
                 }
             }
 
@@ -305,6 +272,15 @@ public class MultiUserChatMenu
                 leaveChatRoom();
                 ConfigurationUtils.setDontAskLeaveGroupChat(true);
             }
+            else if (returnCode == MessageDialog.CANCEL_RETURN_CODE)
+            {
+                sLog.user("User cancelled leaving the chat room");
+                GuiActivator.getInsightsService().logEvent(
+                        InsightsEventHint.GUI_IM_LEAVE_ROOM.name(),
+                        Map.of(
+                                CommonParameterInfo.INSIGHTS_RESULT_CODE.name(), InsightsResultCode.USER_CANCELLED
+                        ));
+            }
         }
         else
         {
@@ -369,6 +345,7 @@ public class MultiUserChatMenu
                 @Override
                 public void actionPerformed(ActionEvent e)
                 {
+                    sendChangeSubjectAnalytic(InsightsResultCode.USER_CANCELLED);
                     // Nothing to do if cancel has been pressed
                     dispose();
                 }
@@ -410,9 +387,11 @@ public class MultiUserChatMenu
                         try
                         {
                             chatSession.setChatSubject(newName);
+                            sendChangeSubjectAnalytic(InsightsResultCode.SUCCESS);
                         }
                         catch (OperationFailedException ex)
                         {
+                            sendChangeSubjectAnalytic(InsightsResultCode.XMPP_ERROR);
                             sLog.error("Failed to set the chat room subject", ex);
                             String errorTitle = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_CHANGE_SUBJECT_TITLE");
                             String errorMessageChangeSubject = GuiActivator.getResources().getI18NString("service.gui.chat.FAILED_TO_CHANGE_SUBJECT_CHAT");
@@ -461,6 +440,20 @@ public class MultiUserChatMenu
             String text = mNameField.getText();
             int length = (text == null) ? 0 : text.length();
             mNameField.select(0, length);
+        }
+
+        /**
+         * Sends an analytic event for updating group chat subject
+         *
+         * @param code Mapped value for parameter result
+         */
+        private void sendChangeSubjectAnalytic(InsightsResultCode code)
+        {
+            GuiActivator.getInsightsService().logEvent(
+                    InsightsEventHint.GUI_IM_UPDATE_SUBJECT.name(),
+                    Map.of(
+                            CommonParameterInfo.INSIGHTS_RESULT_CODE.name(), code
+                    ));
         }
     }
 }

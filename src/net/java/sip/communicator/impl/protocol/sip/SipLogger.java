@@ -7,6 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
+import static gov.nist.core.Separators.NEWLINE;
 import static java.util.stream.Collectors.joining;
 import static org.jitsi.util.Hasher.logHasher;
 import static org.jitsi.util.SanitiseUtils.sanitise;
@@ -21,11 +22,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sip.SipStack;
 
 import gov.nist.core.ServerLogger;
 import gov.nist.core.StackLogger;
+import gov.nist.javax.sip.header.Via;
 import gov.nist.javax.sip.message.SIPMessage;
 import gov.nist.javax.sip.message.SIPRequest;
 
@@ -84,7 +87,9 @@ public class SipLogger
 
     private static final List<String> CONTACT_TAGS  = List.of("From",
                                                               "To",
-                                                              "Contact");
+                                                              "Contact",
+                                                              "Referred-By",
+                                                              "Diversion");
 
     private static final List<String> ROUTE_TAGS  = List.of("Call-ID",
                                                             "Call-Info",
@@ -112,10 +117,47 @@ public class SipLogger
             .compile("(?<=sip:)(.+)(?=@)");
 
     /**
+     * Regex for a domain labels alphanumeric part. A domain label may contain between 1 and 63 characters (octets, more
+     * precisely). That includes alphanumeric characters, hyphens, or unicode characters (for IDNs).
+     * NOTE: using the Pattern.UNICODE_CHARACTER_CLASS in this case is not valid because \w then also matches '_', and
+     * other unicode characters
+     *
+     * @see <a href=https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/regex/Pattern.html>Pattern
+     * Class javadoc</a>
+     * @see <a href=https://unicode.org/reports/tr18/#property_syntax>Unicode Regular Expressions</a>
+     */
+    private static final String DOMAIN_PART = "[A-Za-z0-9-\\p{L}\\p{N}]{1,63}";
+
+    /**
+     * Regex for a domain label The following regex uses a positive lookahead (?=) to count the length of the label, and
+     * then uses a non-capturing group to match it.
+     */
+    private static final String DOMAIN_LABEL = "(?=" + DOMAIN_PART + ")(?:" + DOMAIN_PART + ")";
+
+    /**
+     * Regex for domains in SIP headers, contacts, and SIP messages, depending on the terminator. Selects a domain
+     * consisting of domain labels delimited by a dot. The domain must start with @, realm=", uri=", sip: and be
+     * terminated with :, "", ; or \s. A FQDN may also include a trailing dot.
+     */
+    private static final Pattern DOMAIN_PATTERN = Pattern
+            .compile("(?<=@|uri=\"sip:|realm=\"|sip:)" + "((?:" + DOMAIN_LABEL + "\\.)*" + DOMAIN_LABEL + "\\.?)"
+                     + "(?=:|\"|;|>|\\s)");
+
+    /**
+     * Regex for the 'register_acc' field of the Contact header. This domain is underscore-delimited. It appears as
+     * register_acc=domain; or register_acc=domain>
+     */
+    private static final Pattern REGISTER_ACC_DOMAIN_PATTERN = Pattern
+            .compile("(?<=registering_acc=)((?:" + DOMAIN_LABEL + "_)*" + DOMAIN_LABEL + "_?)(?=>|;)");
+
+    /**
      * Regex for digest username in the authorisation SIP header.
+     * Valid matches: Digest username="+12345678", Digest username="12345678",
+     * where only the username is highlighted, with or without "+" prefix
+     * Note: "." character at the end of the matching part of the pattern seems like it could be a surplus.
      */
     private static final Pattern DIGEST_USER_PATTERN = Pattern
-            .compile("(?<=Digest username=\")[\\w]+.(?=\")");
+            .compile("(?<=Digest username=\")\\+?[\\w]+.(?=\")");
 
     /**
      * SIP messages with non-zero Content Length contain lines
@@ -136,11 +178,6 @@ public class SipLogger
      * "branch={branch_param} ..."
      */
     private static final Pattern VIA_BRANCH_PATTERN = Pattern.compile("(?<=branch=)(.+)(?=$)");
-
-    /**
-     * New line character.
-     */
-    private static final String NEWLINE = System.lineSeparator();
 
     /*
      * Implementation of StackLogger
@@ -435,6 +472,8 @@ public class SipLogger
      */
     private static String sanitiseSipMessage(SIPMessage message)
     {
+        // We are processing a SIP message.
+        // By definition, these use a fixed CR+LF separator, not an OS dependent value
         return Arrays.stream(message.toString().split(NEWLINE, -1))
                 .map(SipLogger::processSipMessageLines)
                 .collect(joining(NEWLINE));
@@ -474,6 +513,22 @@ public class SipLogger
     }
 
     /**
+     * Sanitises domains from the SIP messages.
+     */
+    private static String sanitiseDomain(String line)
+    {
+        return sanitise(line, DOMAIN_PATTERN);
+    }
+
+    /**
+     * Sanitises the register_acc field
+     */
+    private static String sanitiseRegisterAccDomain(String line)
+    {
+        return sanitise(line, REGISTER_ACC_DOMAIN_PATTERN);
+    }
+
+    /**
      * Sanitises lines of the form "o=0123456 ..." to "o=[HASHED DN] ...".
      */
     private static String sanitiseSubscriberDn(String line)
@@ -489,51 +544,120 @@ public class SipLogger
         return sanitise(line, VIA_BRANCH_PATTERN);
     }
 
+    private static String sanitiseContentId(String line)
+    {
+        return splitAndSanitize(line, "<");
+    }
+
+    private static String sanitiseGeolocation(String line)
+    {
+        return splitAndSanitize(line, "<cid:");
+    }
+
+    private static String splitAndSanitize(String line, String firstToken)
+    {
+        String[] parts = line.split(firstToken + "|@|>");
+        if (parts.length == 3)
+        {
+            line = parts[0] + firstToken + logHasher(parts[1]) + "@" + logHasher(parts[2]) + ">";
+        }
+        return line;
+    }
+
+    private static String sanitiseGeoXml(String line)
+    {
+        // The civic address used for the geolocation xml contains many individual
+        // elements each of which is private information.
+        // First we mask off the outer ca:civicAddress tags
+        final String CIVIC_ADDRESS = "ca:civicAddress";
+        final String CIVIC_ADDRESS_MASKED = CIVIC_ADDRESS.toUpperCase(Locale.ROOT);
+
+        line = line.replace(CIVIC_ADDRESS, CIVIC_ADDRESS_MASKED);
+
+        // Find all the remaining elements in the ca namespace
+        //  - a tag consisting of ca namespace and a word
+        //  - then the element contents
+        //  - then the matching closing tag using a back reference
+        final Pattern pattern = Pattern.compile("(<ca:(\\w+)>)(.+)(</ca:\\2>)");
+        final Matcher matcher = pattern.matcher(line);
+
+        // Hash the contents of each element - group 2 was a nested group so not needed
+        line = matcher.replaceAll(mr -> mr.group(1) + logHasher(mr.group(3)) + mr.group(4));
+
+        // Undo the masking of the outer civicAddress
+        line =  line.replace(CIVIC_ADDRESS_MASKED, CIVIC_ADDRESS);
+
+        // We also have personal info in some of the attributes
+        for (String first : List.of("entity=\"pres:", "id=\""))
+        {
+            line = Pattern.compile( first + "(.+?)@(.+?)(\")")
+                    .matcher(line)
+                    .replaceAll(mr -> first + logHasher(mr.group(1)) + "@" + logHasher(mr.group(2)) + mr.group(3));
+        }
+
+        return line;
+    }
+
     /**
      * Sanitises each line according to the specific Personal Data it could
      * contain.
      */
     private static String processSipMessageLines(String line)
     {
+        List<Function<String, String>> sanitisers = null;
         if (CONTACT_TAGS.stream().anyMatch(line::startsWith))
         {
-            return useMultipleSanitisers(List.of(SipLogger::sanitiseContactName,
-                                                 SipLogger::sanitiseIPv4Address,
-                                                 SipLogger::sanitiseSipUser))
-                    .apply(line);
+            sanitisers = List.of(SipLogger::sanitiseContactName,
+                                 SipLogger::sanitiseIPv4Address,
+                                 SipLogger::sanitiseSipUser,
+                                 SipLogger::sanitiseDomain,
+                                 SipLogger::sanitiseRegisterAccDomain);
         }
         else if (ROUTE_TAGS.stream().anyMatch(line::startsWith))
         {
-            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
-                                                 SipLogger::sanitiseViaBranch))
-                    .apply(line);
+            sanitisers = List.of(SipLogger::sanitiseIPv4Address,
+                                 SipLogger::sanitiseViaBranch,
+                                 SipLogger::sanitiseDomain);
         }
         else if (SIP_METHODS.stream().anyMatch(line::startsWith))
         {
-            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
-                                                 SipLogger::sanitiseSipUser))
-                    .apply(line);
+            sanitisers = List.of(SipLogger::sanitiseIPv4Address,
+                                 SipLogger::sanitiseSipUser,
+                                 SipLogger::sanitiseDomain);
         }
         else if (line.startsWith("Authorization"))
         {
-            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
-                                                 SipLogger::sanitiseSipUser,
-                                                 SipLogger::sanitiseDigestUser))
-                    .apply(line);
+            sanitisers = List.of(SipLogger::sanitiseIPv4Address,
+                                 SipLogger::sanitiseSipUser,
+                                 SipLogger::sanitiseDigestUser,
+                                 SipLogger::sanitiseDomain);
         }
         else if (line.startsWith("<dialog-info"))
         {
-            return sanitiseSipUser(line);
+            sanitisers = List.of(SipLogger::sanitiseSipUser,
+                                 SipLogger::sanitiseDomain);
         }
-
         else if (SENSITIVE_SIP_CONTENT_FIELDS.stream().anyMatch(line::startsWith))
         {
-            return useMultipleSanitisers(List.of(SipLogger::sanitiseIPv4Address,
-                                                 SipLogger::sanitiseSubscriberDn))
-                    .apply(line);
+            sanitisers = List.of(SipLogger::sanitiseIPv4Address,
+                                 SipLogger::sanitiseSubscriberDn,
+                                 SipLogger::sanitiseDomain);
+        }
+        else if (line.startsWith("Content-ID:"))
+        {
+            sanitisers = List.of(SipLogger::sanitiseContentId);
+        }
+        else if (line.startsWith("Geolocation:"))
+        {
+            sanitisers = List.of(SipLogger::sanitiseGeolocation);
+        }
+        else if (line.startsWith("<?xml"))
+        {
+            // We make the assumption than any xml is only going to be the geolocation one!
+            sanitisers = List.of(SipLogger::sanitiseGeoXml);
         }
 
-        return line;
+        return sanitisers == null ? line : useMultipleSanitisers(sanitisers).apply(line);
     }
 
     /**
@@ -570,20 +694,19 @@ public class SipLogger
         try
         {
             PacketLoggingService packetLogging = SipActivator.getPacketLogging();
-            if( packetLogging == null
+            if (packetLogging == null
                 || !packetLogging.isLoggingEnabled(
                         PacketLoggingService.ProtocolName.SIP))
                 return;
 
-            String transport;
-
-            if (message != null && message.isNullRequest())
+            String transport = message.getNullTransport();
+            if (!message.isNullRequest())
             {
-                transport = message.getNullTransport();
-            }
-            else
-            {
-                transport = message.getTopmostVia().getTransport();
+                Via via = message.getTopmostVia();
+                if (via != null)
+                {
+                    transport = via.getTransport();
+                }
             }
 
             boolean isTransportUDP = transport.equalsIgnoreCase("UDP");
@@ -627,17 +750,17 @@ public class SipLogger
             }
 
             byte[] msg = null;
-            if(message instanceof SIPRequest && !message.isNullRequest())
+            if (message instanceof SIPRequest && !message.isNullRequest())
             {
                 SIPRequest req = (SIPRequest)message;
-                if(req.getMethod().equals(SIPRequest.MESSAGE)
+                if (req.getMethod().equals(SIPRequest.MESSAGE)
                     && message.getContentTypeHeader() != null
                     && message.getContentTypeHeader()
                         .getContentType().equalsIgnoreCase("text"))
                 {
                     int len = req.getContentLength().getContentLength();
 
-                    if(len > 0)
+                    if (len > 0)
                     {
                         SIPRequest newReq = (SIPRequest)req.clone();
 
@@ -649,7 +772,7 @@ public class SipLogger
                 }
             }
 
-            if(msg == null)
+            if (msg == null)
             {
                 msg = message.toString().getBytes(StandardCharsets.UTF_8);
             }

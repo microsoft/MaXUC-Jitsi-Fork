@@ -26,6 +26,7 @@ import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.gui.AlertUIService;
 import net.java.sip.communicator.service.gui.UIService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.protocol.AccountManager;
 import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.resources.ResourceManagementServiceUtils;
@@ -74,8 +75,6 @@ public class UtilActivator
 
     private static DiagnosticsService diagnosticsService;
 
-    private static ConferenceService conferenceService;
-
     private static MetaContactListService metaCListService;
 
     private static WISPAService wispaService;
@@ -83,6 +82,7 @@ public class UtilActivator
     private static ShutdownService shutdownService;
 
     private static CommPortalService commPortalService;
+    private static InsightsService insightsService;
 
     private static PrintStream originalStdOut;
 
@@ -347,14 +347,7 @@ public class UtilActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-        {
-            conferenceService
-                = ServiceUtils.getService(
-                        bundleContext,
-                        ConferenceService.class);
-        }
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**
@@ -421,5 +414,31 @@ public class UtilActivator
                     CommPortalService.class);
         }
         return commPortalService;
+    }
+
+    /**
+     * @return the <tt>CommPortalService</tt> obtained from the bundle
+     * context
+     */
+    public static InsightsService getInsightsService()
+    {
+        if (insightsService == null)
+        {
+            insightsService
+                    = ServiceUtils.getService(
+                    bundleContext,
+                    InsightsService.class);
+        }
+        return insightsService;
+    }
+
+    /**
+     * Returns a reference to the bundle context that we were started with.
+     * @return a reference to the BundleContext instance that we were started
+     * with.
+     */
+    public static BundleContext getBundleContext()
+    {
+        return bundleContext;
     }
 }

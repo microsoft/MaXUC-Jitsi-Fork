@@ -1,5 +1,4 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Highly Confidential Material
 package net.java.sip.communicator.service.cdap;
 
 import java.io.IOException;
@@ -20,7 +19,7 @@ public interface CDAPService
      * Get branding information from the server and save it.
      *
      * @param serviceProviderID - the ID of the service provider to get branding
-     * info for e.g. 71001
+     * info for
      * @param forceRefresh - true if branding info should be fetched even if
      *                     we have it saved locally.
      * @throws Exception - exceptions are logged in the methods that throw them,

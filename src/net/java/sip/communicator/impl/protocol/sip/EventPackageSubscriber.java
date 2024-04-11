@@ -174,6 +174,11 @@ public class EventPackageSubscriber
         {
             Address toAddress = subscription.getAddress();
             HeaderFactory headerFactory = protocolProvider.getHeaderFactory();
+            if (headerFactory == null)
+            {
+                throw  new OperationFailedException("No header factory, cancelling operation",
+                                                    OperationFailedException.OPERATION_CANCELED);
+            }
 
             // Call ID
             CallIdHeader callIdHeader;
@@ -372,6 +377,11 @@ public class EventPackageSubscriber
         throws OperationFailedException
     {
         HeaderFactory headerFactory = protocolProvider.getHeaderFactory();
+        if (headerFactory == null)
+        {
+            throw  new OperationFailedException("No header factory, cancelling operation",
+                                                OperationFailedException.OPERATION_CANCELED);
+        }
 
         // Event
         EventHeader evHeader;
@@ -564,7 +574,7 @@ public class EventPackageSubscriber
                         .getHeaderFactory()
                             .createAcceptHeader("application", contentSubType);
             }
-            catch (ParseException e)
+            catch (ParseException | NullPointerException e)
             {
                 // should not happen
                 logger.error("failed to create the accept header", e);

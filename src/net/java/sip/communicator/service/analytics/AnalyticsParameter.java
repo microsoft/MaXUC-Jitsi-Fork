@@ -95,7 +95,6 @@ public abstract class AnalyticsParameter
     public static final String VALUE_ACC_MEET_FROM_SCRATCH = "Scratch";
     public static final String VALUE_ACC_MEET_FROM_CALL = "Call";
     public static final String VALUE_ACC_MEET_FROM_CONTACT = "Contact";
-    public static final String VALUE_ACC_MEET_FROM_GROUP_CONTACT = "Group Contact";
     public static final String VALUE_ACC_MEET_FROM_GRP_CHAT = "Group Chat";
     public static final String VALUE_ACC_MEET_FROM_CLIENT = "Accession Meeting Client";
     public static final String VALUE_ACC_MEET_FROM_EMAIL = "Email";
@@ -171,7 +170,6 @@ public abstract class AnalyticsParameter
     public static final String VALUE_NO_MATCH = "NO_MATCH";
 
     public static final String PARAM_AUTH_RESPONSE = "Response";
-    public static final String PARAM_AUTH_RESPONSE_REASON = "Reason";
     public static final String PARAM_EXTERNAL_CONTACT = "External Contact";
 
     // Update client params

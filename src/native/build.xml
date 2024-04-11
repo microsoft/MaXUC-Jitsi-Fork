@@ -49,7 +49,7 @@
   </condition>
 
   <!-- initialize destination directory -->
-  <condition property="native_install_dir" value="${native.libs}/windows">
+  <condition property="native_install_dir" value="${native.libs}/windows-64">
     <and>
       <isset property="is.running.windows"/>
       <equals arg1="${arch}" arg2="32" />
@@ -108,7 +108,7 @@
   </target>
 
   <!-- compile LocalhostRetriever library -->
-  <target name="localhostretriever" description="Build LocalhostRetriever shared library" if="is.running.windows"
+  <target name="localhostretriever" description="Build LocalhostRetriever 64 bit shared library" if="is.running.windows"
     depends="init-native">
     <cc outtype="shared" name="gcc" outfile="${native_install_dir}/LocalhostRetriever" objdir="${obj}">
       <compilerarg value="-Wall" />
@@ -116,12 +116,9 @@
       <compilerarg value="-D_JNI_IMPLEMENTATION_" />
       <compilerarg value="-I${system.JAVA_HOME}/include" />
       <compilerarg value="-I${system.JAVA_HOME}/include/win32" />
+      <compilerarg value="-m64" if="is.running.windows" />
 
-      <compilerarg value="-m32" if="cross_32" />
-      <compilerarg value="-m64" if="cross_64" />
-      <linkerarg value="-m32" if="cross_32" />
-      <linkerarg value="-m64" if="cross_64" />
-
+      <linkerarg value="-m64" if="is.running.windows" />
       <linkerarg value="-liphlpapi" location="end" />
       <linkerarg value="-Wl,--kill-at" if="is.running.windows" />
       <linkerarg value="-oLocalhostRetriever.dll" />
@@ -247,7 +244,9 @@
         <compilerarg value="-DWINVER=0x0502" if="is.running.windows" />
         <compilerarg value="-I${system.JAVA_HOME}/include" if="is.running.windows" />
         <compilerarg value="-I${system.JAVA_HOME}/include/win32" if="is.running.windows" />
+        <compilerarg value="-m64" if="is.running.windows" />
 
+        <linkerarg value="-m64" if="is.running.windows" />
         <linkerarg value="-osysactivitynotifications.dll" if="is.running.windows" />
         <linkerarg value="-liphlpapi" location="end" if="is.running.windows" />
         <linkerarg value="-luser32" location="end" if="is.running.windows" />
@@ -311,7 +310,9 @@
 
         <compilerarg value="-I${system.JAVA_HOME}/include" if="is.running.windows" />
         <compilerarg value="-I${system.JAVA_HOME}/include/win32" if="is.running.windows" />
+        <compilerarg value="-m64" if="is.running.windows" />
 
+        <linkerarg value="-m64" if="is.running.windows" />
         <linkerarg value="-liphlpapi" location="end" if="is.running.windows" />
         <linkerarg value="-static-libgcc" />
         <linkerarg value="-Wl,-Bstatic" location="end" if="is.running.windows" />
@@ -332,7 +333,7 @@
 
   <!-- Build all object files and shared libraries -->
   <target name="build-native" description="Build all object files and libraries."
-          depends="globalshortcut, sysactivity, localhostretriever, msoutlookaddrbook32, msoutlookaddrbookcomserver32,
+          depends="globalshortcut, sysactivity, localhostretriever, msoutlookaddrbook64, msoutlookaddrbookcomserver64,
           aegeturleventhandler, sparkle">
       <echo message="All object files and libraries have been built." />
   </target>
@@ -347,7 +348,7 @@
     <echo message="'ant localhostretriever' (Windows only) to compile LocalhostRetriever shared library" />
     <echo message="'ant aegeturleventhandler' (Mac OS X only) to compile AEGetURLEventHandler shared library" />
     <echo message="'ant sparkle' (Mac OS X only) to compile sparkle shared library" />
-    <echo message="'ant msoutlookaddrbook32' (Windows only) to compile the 32 bit jmsoutlookaddrbook shared library and the jmsoutlookaddrbook 32 bit COM server" />
+    <echo message="'ant msoutlookaddrbook64' (Windows only) to compile the 64 bit jmsoutlookaddrbook shared library and the jmsoutlookaddrbook 64 bit COM server" />
     <echo message="'ant msoutlookaddrbookcomserver32' (Windows only) to compile Accession Outlook Server for Windows 32 bit" />
     <echo message="'ant msoutlookaddrbookcomserver64' (Windows only) to compile Accession Outlook Server for Windows 64 bit" />
     <echo message="'ant sysactivity' to compile the sysactivitynotifications shared library" />
@@ -359,10 +360,10 @@
 
   <!-- compile jmsoutlookaddrbook library for Windows -->
   <target
-      name="msoutlookaddrbook32"
+      name="msoutlookaddrbook64"
       description="Build jmsoutlookaddrbook shared library for Windows"
       if="is.running.windows"
-      depends="init-native,msoutlookaddrbookcomserver32" >
+      depends="init-native,msoutlookaddrbookcomserver64" >
 
     <echo message="obj is ${obj}, native_install_dir is ${native_install_dir}, java home is ${system.JAVA_HOME}, src is ${src}"/>
     <cc
@@ -375,12 +376,12 @@
       <compilerarg value="-DWINVER=0x0502" />
       <compilerarg value="-I${system.JAVA_HOME}/include" />
       <compilerarg value="-I${system.JAVA_HOME}/include/win32" />
-      <compilerarg value="-m32"/>
+      <compilerarg value="-m64"/>
       <compilerarg value="-O2" />
       <compilerarg value="-Wall" />
 
       <linkerarg value="-ojmsoutlookaddrbook.dll" />
-      <linkerarg value="-m32"/>
+      <linkerarg value="-m64"/>
       <linkerarg value="-Wl,--kill-at" />
       <linkerarg value="-Wl,--subsystem,windows" />
       <linkerarg value="-static-libgcc" />
@@ -450,8 +451,6 @@
       if="is.running.windows"
       depends="init-native,productName,resolve-native-dependencies">
 
-      <mkdir dir="${native_install_dir}/${bitness}" />
-
       <echo file="${src}/native/addressbook/ProductName.h" append="false">// Created automatically by the build process
 
 #define PRODUCT_NAME "${productName}"
@@ -464,7 +463,7 @@
     </exec>
     -->
 
-    <echo message="Resources at ${src}/native/addressbook/server/Resources${bitness}.rc, output file is ${native_install_dir}/${bitness}/${productName}OutlookServer${bitness}"/>
+    <echo message="Resources at ${src}/native/addressbook/server/Resources${bitness}.rc, output file is ${native_install_dir}/${productName}OutlookServer${bitness}"/>
 
     <exec executable="windres">
       <arg value="--target=${restarget}" />
@@ -474,7 +473,7 @@
     <cc
         name="g++"
         objdir="${obj}"
-        outfile="${native_install_dir}/${bitness}/${productName}OutlookServer${bitness}">
+        outfile="${native_install_dir}/${productName}OutlookServer${bitness}">
       <compilerarg value="-I${system.JAVA_HOME}/include" />
       <compilerarg value="-I${system.JAVA_HOME}/include/win32" />
       <compilerarg value="-I${src}/native/addressbook/breakpad" />
@@ -502,7 +501,7 @@
     </cc>
 
     <antcall target="stripbinary">
-      <param name="executable" value="${native_install_dir}/${bitness}/${productName}OutlookServer${bitness}.exe" />
+      <param name="executable" value="${native_install_dir}/${productName}OutlookServer${bitness}.exe" />
     </antcall>
   </target>
 

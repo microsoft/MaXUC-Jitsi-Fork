@@ -304,7 +304,7 @@ public interface NotificationService
      * deleted. If the file can't be found, it sets the ringtone to the
      * default.
      */
-    void checkAndSetCustomRingtone();
+    void checkAndSetCustomRingtone(SoundNotificationAction.BgTag bgTag);
 
-    void registerNewRingtoneNotification(String ringtonePath);
+    void registerNewRingtoneNotification(String ringtonePath, SoundNotificationAction.BgTag bgTag);
 }

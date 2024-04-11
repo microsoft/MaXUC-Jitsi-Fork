@@ -31,6 +31,7 @@ import org.jxmpp.stringprep.XmppStringprepException;
 import net.java.sip.communicator.service.protocol.AbstractContact;
 import net.java.sip.communicator.service.protocol.ContactGroup;
 import net.java.sip.communicator.service.protocol.ContactResource;
+import net.java.sip.communicator.service.protocol.ContactType;
 import net.java.sip.communicator.service.protocol.PresenceStatus;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.service.protocol.event.ContactResourceEvent;
@@ -420,7 +421,7 @@ public class ContactJabberImpl
      */
     public ContactGroup getParentContactGroup()
     {
-        return ssclCallback.findContactGroup(this);
+        return ssclCallback.findContactGroupFromJid(this.getAddressAsJid());
     }
 
     /**
@@ -576,6 +577,16 @@ public class ContactJabberImpl
     public Collection<ContactResource> getResources()
     {
        return new ArrayList<>(resources.values());
+    }
+
+    /**
+     * Fetch the contact type as an alternative to <tt>instanceof</tt> checks.
+     * Used to differentiate between Jabber and Volatile Jabber.
+     */
+    @Override
+    public ContactType getContactType()
+    {
+        return ContactType.JABBER;
     }
 
     /**

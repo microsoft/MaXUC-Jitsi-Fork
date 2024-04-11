@@ -72,13 +72,7 @@ public class TransferActiveCallsMenu
         // (Unattended transfer).
         JMenuItem transferToMenuItem = new ResMenuItem("service.gui.TRANSFER_TO");
 
-        transferToMenuItem.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent event)
-            {
-                CallManager.openCallTransferDialog(initialPeer);
-            }
-        });
+        transferToMenuItem.addActionListener(event -> CallManager.openCallTransferDialog(initialPeer, CallTransferType.UNATTENDED));
 
         this.add(transferToMenuItem);
     }

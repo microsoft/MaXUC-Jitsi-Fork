@@ -322,6 +322,10 @@ public class OperationSetServerStoredAccountInfoSipImpl
             deleteImageDetail();
             accountImage = null;
         }
+        else if(DisplayNameDetail.class.isAssignableFrom(detail.getClass()))
+        {
+            displayNameDetail = null;
+        }
 
         if(fireChangeEvents)
             fireServerStoredDetailsChangeEvent(provider,

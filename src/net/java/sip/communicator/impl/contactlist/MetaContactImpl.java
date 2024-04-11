@@ -775,6 +775,12 @@ public class MetaContactImpl
         );
     }
 
+    @Override
+    public String getMicrosoftEmail()
+    {
+        return getDetail(AADEmailAddressDetail.class);
+    }
+
     /**
      * Gets a specific detail from this contact's stored contacts, so we may
      * expose it in top-level methods.
@@ -844,6 +850,12 @@ public class MetaContactImpl
         return null;
     }
 
+    public void clearCachedAvatar()
+    {
+        cachedAvatar = null;
+        avatarFileCacheAlreadyQueried = false;
+    }
+
     /**
      * Returns the avatar of this contact, that can be used when including this
      * <tt>MetaContact</tt> in user interface. The isLazy parameter would tell
@@ -889,8 +901,10 @@ public class MetaContactImpl
 
         //no cached avatar. let's try the file system for previously stored
         //ones. (unless we already did this)
-        if ( avatarFileCacheAlreadyQueried )
+        if (avatarFileCacheAlreadyQueried)
+        {
             return null;
+        }
         avatarFileCacheAlreadyQueried = true;
 
         Iterator<Contact> iter = this.getContacts();
@@ -905,7 +919,9 @@ public class MetaContactImpl
              * very useful.
              */
             if (cachedAvatar != null)
+            {
                 return cachedAvatar;
+            }
         }
 
         return null;
@@ -1664,12 +1680,6 @@ public class MetaContactImpl
     }
 
     @Override
-    public Contact getGroupContact()
-    {
-        return getSingleContactForOpSet(OperationSetGroupContacts.class);
-    }
-
-    @Override
     public Contact getPersonalContact()
     {
         return getSingleContactForOpSet(OperationSetServerStoredUpdatableContactInfo.class);
@@ -2042,20 +2052,6 @@ public class MetaContactImpl
             if (getIMContact() != null)
             {
                 isGroupImCapable = true;
-            }
-            else
-            {
-                // Group contacts can be uplifted to group chats as long as
-                // they have at least one member who is currently an IM contact.
-                Contact groupContact = getGroupContact();
-                if (groupContact != null)
-                {
-                    Set<Contact> groupMembers =
-                        groupContact.getProtocolProvider().
-                            getOperationSet(OperationSetGroupContacts.class).
-                                getIMContactMembers(groupContact);
-                    isGroupImCapable = groupMembers.size() > 0;
-                }
             }
         }
 

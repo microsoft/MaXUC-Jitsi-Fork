@@ -16,7 +16,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import javax.swing.*;
 
@@ -30,6 +29,7 @@ import net.java.sip.communicator.impl.gui.main.UrlServiceTools;
 import net.java.sip.communicator.impl.gui.main.account.AccountRegWizardContainerImpl;
 import net.java.sip.communicator.impl.gui.main.call.AddParticipantDialog;
 import net.java.sip.communicator.impl.gui.main.call.CallManager;
+import net.java.sip.communicator.impl.gui.main.call.CallTransferType;
 import net.java.sip.communicator.impl.gui.main.call.DTMFHandler;
 import net.java.sip.communicator.impl.gui.main.call.DTMFHandler.DTMFToneInfo;
 import net.java.sip.communicator.impl.gui.main.callpark.CallParkWindow;
@@ -38,8 +38,6 @@ import net.java.sip.communicator.impl.gui.main.chat.ChatPanel;
 import net.java.sip.communicator.impl.gui.main.chat.ChatSession;
 import net.java.sip.communicator.impl.gui.main.chat.ChatTransport;
 import net.java.sip.communicator.impl.gui.main.chat.ChatWindowManager;
-import net.java.sip.communicator.impl.gui.main.chat.EditGroupContactDialog;
-import net.java.sip.communicator.impl.gui.main.chat.ViewGroupContactDialog;
 import net.java.sip.communicator.impl.gui.main.chat.conference.ConferenceChatManager;
 import net.java.sip.communicator.impl.gui.main.chat.history.HistoryWindowManager;
 import net.java.sip.communicator.impl.gui.main.chat.toolBars.MultiUserChatMenu;
@@ -48,7 +46,6 @@ import net.java.sip.communicator.impl.gui.main.contactlist.ReducedMetaContactRig
 import net.java.sip.communicator.impl.gui.main.contactlist.TreeContactList;
 import net.java.sip.communicator.impl.gui.utils.ContactWithNumberSelectDialog;
 import net.java.sip.communicator.plugin.desktoputil.SIPCommSnakeButton;
-import net.java.sip.communicator.plugin.desktoputil.WindowCacher;
 import net.java.sip.communicator.plugin.desktoputil.WindowUtils;
 import net.java.sip.communicator.service.browserpanel.BrowserPanelDisplayer;
 import net.java.sip.communicator.service.browserpanel.BrowserPanelService;
@@ -554,90 +551,10 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
     }
 
     @Override
-    public JDialog createViewGroupContactDialog(Contact groupContact)
-    {
-        Window cachedWindow = WindowCacher.get(groupContact);
-        JDialog dialog;
-
-        if (!(cachedWindow instanceof JDialog))
-        {
-            // No cache, or cache is wrong object type (shouldn't happen but
-            // better to be safe).
-            // No need to hash Contact, as its toString() method does that.
-            logger.debug("Creating new dialog for " + groupContact);
-            dialog = new ViewGroupContactDialog(groupContact);
-            WindowCacher.put(groupContact, dialog);
-        }
-        else
-        {
-            // We're already showing a dialog, continue to use that.  Even if it
-            // is an edit contact window - we don't want to hide that and lose
-            // any changes that the user has made.
-            logger.debug("");
-            dialog = (JDialog) cachedWindow;
-            dialog.toFront();
-        }
-
-        return dialog;
-    }
-
-    @Override
-    public JDialog createEditGroupContactDialog(Contact groupContact,
-                                                String displayName,
-                                                Set<MetaContact> contacts,
-                                                boolean showViewOnCancel)
-    {
-        Window cachedWindow = WindowCacher.get(groupContact);
-        JDialog dialog = null;
-
-        // Note: (null instanceof Object) is false.
-        if (cachedWindow instanceof EditGroupContactDialog)
-        {
-            // No need to hash Contact, as its toString() method does that.
-            logger.debug("Updating edit contact dialog for " + groupContact);
-            EditGroupContactDialog editDialog =
-                                          (EditGroupContactDialog) cachedWindow;
-
-            if (contacts != null)
-            {
-                // Add the new contacts to the edit dialog
-                editDialog.addSelectedContacts(contacts);
-            }
-
-            // Save the current location.  Otherwise, when we set the dialog
-            // visible again, it might change location.
-            editDialog.saveSizeAndLocation();
-            dialog = editDialog;
-        }
-        else if (cachedWindow instanceof ViewGroupContactDialog)
-        {
-            // We had a cached view contact dialog.  Replace it with an edit.
-            // No need to hash Contact, as its toString() method does that.
-            logger.debug("Replacing view contact dialog for " + groupContact);
-            WindowCacher.remove(groupContact);
-            cachedWindow.dispose();
-        }
-
-        if (dialog == null)
-        {
-            // Either we don't have a cached window, or the one we do have needs
-            // to be recreated.  Do so now.
-            // No need to hash Contact, as its toString() method does that.
-            logger.debug("Creating new dialog for " + groupContact);
-            dialog = new EditGroupContactDialog(groupContact,
-                                                displayName,
-                                                contacts,
-                                                showViewOnCancel);
-            WindowCacher.put(groupContact, dialog);
-        }
-
-        return dialog;
-    }
-
-    @Override
     public SIPCommSnakeButton getCrmLaunchButton(
             @Nullable final String searchName,
-            @Nullable final String searchNumber)
+            @Nullable final String searchNumber,
+            final boolean madeFromCall)
     {
         SIPCommSnakeButton crmLaunchButton = null;
 
@@ -647,7 +564,7 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
             logger.debug(
                 "Creating CRM button for " + logHasher(searchName) +
                 ": " + sanitisePeerId(searchNumber));
-            crmLaunchButton = ust.createCrmLaunchButton(searchName, searchNumber);
+            crmLaunchButton = ust.createCrmLaunchButton(searchName, searchNumber, madeFromCall);
         }
 
         return crmLaunchButton;
@@ -797,7 +714,7 @@ public class StandardUIServiceImpl extends AbstractUIServiceImpl
 
     @Override
     public void showTransferCallWindow(CallPeer peer) {
-        CallManager.openCallTransferDialog(peer);
+        CallManager.openCallTransferDialog(peer, CallTransferType.UNATTENDED);
     }
 
     @Override

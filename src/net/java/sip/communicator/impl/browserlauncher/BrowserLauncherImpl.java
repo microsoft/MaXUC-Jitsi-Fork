@@ -61,47 +61,6 @@ public class BrowserLauncherImpl
             p.waitFor();
             ProcessUtils.dispose(p);
         }
-        else
-        {
-            String[] browsers
-                = new String[]
-                        {
-                            "google-chrome",
-                            "firefox",
-                            "iceweasel",
-                            "opera",
-                            "konqueror",
-                            "epiphany",
-                            "mozilla",
-                            "netscape",
-                            "gnome-open"
-                        };
-
-            Runtime runtime = Runtime.getRuntime();
-            String browser = null;
-
-            for (String b : browsers)
-            {
-                String[] command = new String[]{"which", b};
-                processLogger.traceExec(command);
-                if (runtime.exec(command).waitFor() == 0)
-                {
-                    browser = b;
-                    break;
-                }
-            }
-
-            if (browser == null)
-            {
-                throw new Exception("Could not find web browser");
-            }
-            else
-            {
-                String[] command = new String[]{browser, url};
-                processLogger.traceExec(command);
-                runtime.exec(command);
-            }
-        }
     }
 
     /**

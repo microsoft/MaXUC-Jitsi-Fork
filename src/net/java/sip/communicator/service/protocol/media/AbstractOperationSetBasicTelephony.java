@@ -7,16 +7,14 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.media;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.PROTOCOL_MEDIA_CALL_MUTE;
+import static net.java.sip.communicator.service.insights.parameters.ProtocolMediaParameterInfo.*;
+
 import java.text.*;
 import java.util.*;
 
-import com.metaswitch.maxanalytics.event.CallKt;
-import com.metaswitch.maxanalytics.event.CallType;
-import com.metaswitch.maxanalytics.event.CommonKt;
-
 import org.jitsi.service.neomedia.*;
 
-import net.java.sip.communicator.service.insights.InsightEvent;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.emergencylocation.EmergencyCallContext;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -249,16 +247,9 @@ public abstract class AbstractOperationSetBasicTelephony
             ((MediaAwareCall<?,?,?>) call).setMute(mute);
             boolean isVideoStreaming = ((MediaAwareCall<?, ?, ?>) call).isLocalVideoStreaming();
 
-            ProtocolMediaActivator.getInsightService().logEvent(
-                    new InsightEvent(
-                            CallKt.EVENT_CALL_MUTE,
-                            Map.of(
-                                    CommonKt.PARAM_TYPE,
-                                    isVideoStreaming ? CallType.VIDEO.getValue$maxanalytics() :
-                                            CallType.AUDIO.getValue$maxanalytics(),
-                                    CommonKt.PARAM_MUTE, String.valueOf(mute)
-                            )
-                    )
+            ProtocolMediaActivator.getInsightsService().logEvent(PROTOCOL_MEDIA_CALL_MUTE.name(),
+                                                                Map.of(TELEPHONY_CALL_IS_VIDEO.name(), isVideoStreaming,
+                                                                       TELEPHONY_CALL_IS_MUTED.name(), mute)
             );
         }
         else

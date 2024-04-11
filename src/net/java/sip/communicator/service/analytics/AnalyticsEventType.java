@@ -1,9 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.analytics;
 
-import com.metaswitch.maxanalytics.event.ImKt;
-import com.metaswitch.maxanalytics.event.RateAppKt;
-
 /**
  * The complete list of events that can be sent to the analytics server and
  * maybe also SAS.
@@ -116,6 +113,9 @@ public enum AnalyticsEventType
     ADD_CONTACT("User asked to add contact"),
     FAVORITES_ADD("User adding contact to favorites"),
     FAVORITES_REMOVE("User removing contact from favorites"),
+    STARTED_WATCHING_CONTACT_AVAILABILITY("User turned on Notify When Available for contact"),
+    STOPPED_WATCHING_CONTACT_AVAILABILITY("User turned off Notify When Available for contact"),
+    NWA_NOTIFICATION_CLICKED("User clicked Notify When Available notification"),
     USER_CHANGE_AVATAR("User changed their avatar"),
     LDAP_CONTACT_FOUND("LDAP search found a contact", true),
     LDAP_ENABLED("LDAP enabled"),
@@ -175,9 +175,7 @@ public enum AnalyticsEventType
     // CHECK_EMERGENCY_LOCATIONS("Event - Check emergency locations"),
     // LOCATION_SETTINGS_CHANGED("Setting changed"),
     // EMERGENCY_CALL_HANDLED_BY_OS("Feature - Emergency call handled by OS"),
-
-    EVENT_RATE_APP(RateAppKt.EVENT_RATE_APP),
-    EVENT_IM_WINDOW_LAUNCH(ImKt.EVENT_IM_WINDOW_LAUNCH),
+    EVENT_RATE_APP("User - Rate app"),
     ;
 
    /**

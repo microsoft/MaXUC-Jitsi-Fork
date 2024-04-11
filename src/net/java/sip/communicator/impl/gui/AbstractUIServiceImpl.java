@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import javax.swing.*;
 
 import org.jitsi.util.CustomAnnotations.*;
+
 import com.sun.jna.platform.WindowUtils;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
@@ -66,6 +67,9 @@ import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.gui.UrlCreatorEnum;
 import net.java.sip.communicator.service.gui.WindowID;
 import net.java.sip.communicator.service.gui.WizardContainer;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.InsightsService;
+import net.java.sip.communicator.service.insights.parameters.GuiParameterInfo;
 import net.java.sip.communicator.service.protocol.Call;
 import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.service.protocol.ChatRoom;
@@ -95,6 +99,10 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
      * instances for logging output.
      */
     private static final Logger logger = Logger.getLogger(AbstractUIServiceImpl.class);
+
+    /** Name of the app start timestamp property. */
+    private static final String PROPERTY_APP_START =
+            "net.java.sip.communicator.plugin.provisioning.APP_START";
 
     /**
      * The configuration service.
@@ -254,6 +262,18 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
             return;
         }
 
+        InsightsService insightsService = GuiActivator.getInsightsService();
+        if (sConfigService != null && insightsService != null)
+        {
+            long appStartTimestamp = sConfigService.global().getLong(PROPERTY_APP_START, 0);
+            long appRunningFor = (System.currentTimeMillis() - appStartTimestamp) / 1000;
+
+            insightsService.logEvent(
+                    InsightsEventHint.APP_TERMINATED.name(),
+                    Map.of(GuiParameterInfo.APP_SECONDS_RUNNING.name(), appRunningFor)
+            );
+        }
+
         // Note that it is possible that the client may need to shut down before
         // the ShutdownService is registered (e.g cancelling login or CoS check
         // failure on startup).  In that case the shutdownAll method in
@@ -303,7 +323,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
         // Check whether we need to quit the Meeting client before shutting
         // this client down.
         ConferenceService confService = GuiActivator.getConferenceService();
-        if ((confService != null) && waitForMeetingToQuit)
+        if (confService != null && confService.isLegacyImplementation() && waitForMeetingToQuit)
         {
             logger.info("Quit meeting client and wait for it");
             confService.quitMeetingClient(
@@ -373,7 +393,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
         if (logOut)
         {
             logger.debug("Logging out - remove active user");
-            ConfigurationUtils.forgetUserCredentials(true);
+            ConfigurationUtils.clearCredentialsAndLogout(true);
         }
 
         // If the user has asked to log out, restart the client to load the login screen.  If not, simply shut down.
@@ -1769,7 +1789,8 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
 
     @Override
     public SIPCommSnakeButton getCrmLaunchButton(String searchName,
-                                                 String searchNumber)
+                                                 String searchNumber,
+                                                 boolean madeFromCall)
     {
         return null;
     }

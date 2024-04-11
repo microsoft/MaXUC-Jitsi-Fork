@@ -6,30 +6,67 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.service.protocol.media;
 
-import java.awt.*;
-import java.beans.*;
-import java.net.*;
-import java.util.*;
-import java.util.List;
+import static net.java.sip.communicator.service.insights.parameters.ProtocolMediaParameterInfo.*;
 
-import org.jitsi.service.configuration.*;
-import org.jitsi.service.neomedia.*;
-import org.jitsi.service.neomedia.codec.*;
-import org.jitsi.service.neomedia.control.KeyFrameControl.*;
-import org.jitsi.service.neomedia.device.*;
-import org.jitsi.service.neomedia.event.*;
-import org.jitsi.service.neomedia.format.*;
-import org.jitsi.service.neomedia.rtp.RTCPExtendedReport.*;
-import org.jitsi.util.Hasher;
-import org.jitsi.util.OSUtils;
-import org.jitsi.util.event.*;
+import java.awt.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+
+import net.sf.fmj.media.rtp.RTCPFeedback;
+import net.sf.fmj.media.rtp.RTCPReport;
+import net.sf.fmj.media.rtp.RTCPSenderReport;
+import org.json.simple.JSONObject;
 
 import net.java.sip.communicator.impl.netaddr.NetworkAddressManagerServiceImpl;
-import net.java.sip.communicator.service.analytics.*;
-import net.java.sip.communicator.service.protocol.*;
-import net.java.sip.communicator.service.protocol.event.*;
-import net.java.sip.communicator.util.*;
-import net.sf.fmj.media.rtp.*;
+import net.java.sip.communicator.service.analytics.AnalyticsEventType;
+import net.java.sip.communicator.service.analytics.AnalyticsParameter;
+import net.java.sip.communicator.service.analytics.AnalyticsParameterComplex;
+import net.java.sip.communicator.service.analytics.AnalyticsParameterSimple;
+import net.java.sip.communicator.service.analytics.AnalyticsService;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.protocol.CallPeerState;
+import net.java.sip.communicator.service.protocol.OperationFailedException;
+import net.java.sip.communicator.service.protocol.OperationSetVideoTelephony;
+import net.java.sip.communicator.service.protocol.event.CallChangeEvent;
+import net.java.sip.communicator.service.protocol.event.SoundLevelListener;
+import net.java.sip.communicator.util.Logger;
+import org.jitsi.service.configuration.ConfigurationService;
+import org.jitsi.service.neomedia.AudioMediaStream;
+import org.jitsi.service.neomedia.MediaDirection;
+import org.jitsi.service.neomedia.MediaStream;
+import org.jitsi.service.neomedia.MediaStreamStats;
+import org.jitsi.service.neomedia.MediaStreamTarget;
+import org.jitsi.service.neomedia.MediaType;
+import org.jitsi.service.neomedia.MediaTypeSrtpControl;
+import org.jitsi.service.neomedia.QualityPreset;
+import org.jitsi.service.neomedia.RTPExtension;
+import org.jitsi.service.neomedia.SrtpControl;
+import org.jitsi.service.neomedia.SrtpControlType;
+import org.jitsi.service.neomedia.StreamConnector;
+import org.jitsi.service.neomedia.VideoMediaStream;
+import org.jitsi.service.neomedia.codec.Constants;
+import org.jitsi.service.neomedia.codec.EncodingConfiguration;
+import org.jitsi.service.neomedia.control.KeyFrameControl.KeyFrameRequester;
+import org.jitsi.service.neomedia.device.MediaDevice;
+import org.jitsi.service.neomedia.event.CsrcAudioLevelListener;
+import org.jitsi.service.neomedia.event.SimpleAudioLevelListener;
+import org.jitsi.service.neomedia.event.SrtpListener;
+import org.jitsi.service.neomedia.format.MediaFormat;
+import org.jitsi.service.neomedia.rtp.RTCPExtendedReport.VoIPMetricsReportBlock;
+import org.jitsi.util.Hasher;
+import org.jitsi.util.OSUtils;
+import org.jitsi.util.event.PropertyChangeNotifier;
+import org.jitsi.util.event.VideoEvent;
+import org.jitsi.util.event.VideoListener;
+import org.jitsi.util.event.VideoNotifierSupport;
 
 /**
  * A utility class implementing media control code shared between current
@@ -46,6 +83,21 @@ import net.sf.fmj.media.rtp.*;
 public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     extends PropertyChangeNotifier
 {
+    private enum ConnectionType {
+        WIRED(AnalyticsParameter.VALUE_WIRED, false),
+        WIRELESS(AnalyticsParameter.VALUE_WIFI, true),
+        UNKNOWN(AnalyticsParameter.VALUE_WIRED, true),
+        ;
+
+        private final String analyticsParam;
+        private final boolean useWirelessCodecs;
+
+        ConnectionType(String analyticsParam, boolean useWirelessCodecs) {
+            this.analyticsParam = analyticsParam;
+            this.useWirelessCodecs = useWirelessCodecs;
+        }
+    }
+
     private static final Logger logger =
                                    Logger.getLogger(CallPeerMediaHandler.class);
 
@@ -79,7 +131,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
      * The prefix that is used to store configuration for encodings preference
      * for WIRED devices.
      */
-    private static final String ENCODING_CONFIG_PROP_WIRED_PREFIX
+    public static final String ENCODING_CONFIG_PROP_WIRED_PREFIX
         = "net.java.sip.communicator.impl.neomedia.codec.EncodingConfiguration.WIRED";
 
     /**
@@ -340,10 +392,13 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
     /**
      * Whether this media stream is set up on a WiFi connection.  This is used
      * to determine which codec(s) to use for the media and raising analytics.
-     * !!!NOTE!!! this isn't 100% accurate, but is accurate enough for choosing
-     * codecs and raising analytics.
+     * !!!NOTE!!! this isn't 100% accurate, but is accurate enough for choosing codecs and raising analytics.
+     * <p>
+     * (Ways in which it can be inaccurate - we can hit an exception while
+     * calculating it, or timeout waiting for localhost info [on Mac], or possibly
+     * miscategorise network interfaces)
      */
-    private boolean mProbablyUsingWireless = false;
+    private ConnectionType mProbableConnectionType = ConnectionType.UNKNOWN;
 
     /**
      * If using Wireless, the SSID of the connection, if known.
@@ -430,29 +485,44 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             // the logic to calculate the local address on Mac, we use this
             // temporary solution to make a more educated guess at what our
             // local IP address is, for the purpose of raising analytics.
+            //
+            // However, separately there is an issue where InetAddress#getLocalHost()
+            // can take 5s+ to execute, thus blocking call setup. Hence,
+            // timeout if this is taking too long and take some guesses:
+            // 1) For analytics, guess 'wired' to preserve existing behaviour
+            // 2) For codec selection, guess 'wireless' as this list should be
+            //    suitable in a wider range of situations then wired codecs.
             if ((OSUtils.IS_MAC) &&
                 (localAddress.getHostAddress().equals(NetworkAddressManagerServiceImpl.DUMMY_ADDRESS_STRING)))
             {
-                localAddress = InetAddress.getLocalHost();
+                // N.B. returns null if this times out
+                localAddress = ProtocolMediaActivator.getNetworkAddressManagerService().getOsLocalHostWithTimeout(1,
+                                                                                                                  TimeUnit.SECONDS);
             }
 
-            mProbablyUsingWireless =
-                ProtocolMediaActivator.getNetworkAddressManagerService()
-                    .isAddressWifi(localAddress);
+            if (localAddress == null) {
+                // We timed out above
+                mProbableConnectionType = ConnectionType.UNKNOWN;
+            } else if (ProtocolMediaActivator.getNetworkAddressManagerService()
+                .isAddressWifi(localAddress)) {
+                mProbableConnectionType = ConnectionType.WIRELESS;
+            } else {
+                mProbableConnectionType = ConnectionType.WIRED;
+            }
 
-            if (mProbablyUsingWireless)
+            if (mProbableConnectionType == ConnectionType.WIRELESS)
             {
                 mWirelessSSID =
                     ProtocolMediaActivator.getNetworkAddressManagerService()
                     .getSSID(localAddress);
             }
 
-            logger.info("Using " + (mProbablyUsingWireless ? "WIRELESS": "WIRED") +
-                " codecs for interface");
+            logger.info("Connection type = " + mProbableConnectionType + ", using " +
+                        (mProbableConnectionType.useWirelessCodecs ? "WIRELESS": "WIRED") + " codecs for interface");
         }
         catch (Exception e)
         {
-            logger.error("Failed wired/wireless check - assume wired", e);
+            logger.error("Failed wired/wireless check, connection type = " + mProbableConnectionType, e);
         }
     }
 
@@ -560,6 +630,24 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                           paramsForMSW,
                           new int[]{AnalyticsParameter.SAS_MARKER_SUBSCRIBER_NUM},
                           new String[]{dn});
+
+        sendTelemetryOutgoingCallFailed(reasonCode);
+    }
+
+    private void sendTelemetryOutgoingCallFailed(int reasonCode)
+    {
+        if (peer == null)
+        {
+            return;
+        }
+
+        String networkType = mProbableConnectionType.analyticsParam;
+        boolean isConnected = peer.getState().equals(CallPeerState.CONNECTED);
+
+        ProtocolMediaActivator.getInsightsService().logEvent(InsightsEventHint.COMMON_OUTGOING_CALL_FAILED.name(),
+                                                             Map.of(NETWORK_TYPE.name(), networkType,
+                                                                    CALL_FAILED_REASON_CODE.name(), reasonCode,
+                                                                    CONNECTED.name(), isConnected));
     }
 
     /**
@@ -849,6 +937,15 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
                                     AnalyticsParameter.SAS_MARKER_CALLING_DN},
                           new String[]{mSIPCallID,
                                        dn});
+
+        JSONObject paramsJSON = new JSONObject();
+        for (AnalyticsParameter param : paramsForCP)
+        {
+            param.addToJSON(paramsJSON, 0);
+        }
+
+        ProtocolMediaActivator.getInsightsService().logEvent(InsightsEventHint.PROTOCOL_MEDIA_CALL_ENDED.name(),
+                                                             Map.of(NETWORK_AND_CALL_STATS_JSON.name(), paramsJSON));
         logger.debug("Sending end of call analytics end");
     }
 
@@ -863,15 +960,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         //          nw:wired
         //    }
         List<AnalyticsParameter> networkParams = new ArrayList<>();
-        String network = "";
-        if (mProbablyUsingWireless)
-        {
-            network = AnalyticsParameter.VALUE_WIFI;
-        }
-        else
-        {
-            network = AnalyticsParameter.VALUE_WIRED;
-        }
+        String network = mProbableConnectionType.analyticsParam;
 
         networkParams.add(new AnalyticsParameterSimple(AnalyticsParameter.NAME_NETWORK_TYPE,
                                                        network));
@@ -1357,8 +1446,8 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             return Collections.emptyList();
 
         // Check the address we're using to see if it corresponds to a wired or
-        // wireless interface and select the codec configuration accordingly.
-        EncodingConfiguration encodingConfiguration = mProbablyUsingWireless ?
+        // wireless interface and select the codec configuration accordingly
+        EncodingConfiguration encodingConfiguration = mProbableConnectionType.useWirelessCodecs ?
             EncodingConfiguration.getInstanceForPrefix(
                 ENCODING_CONFIG_PROP_WIRELESS_PREFIX) :
             EncodingConfiguration.getInstanceForPrefix(
@@ -2371,12 +2460,13 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             {
                 logger.debug("Start not called, setting start time");
                 audioStartTime = System.currentTimeMillis();
+                sendTelemetryCallConnected();
 
                 sendHolePunchPackets(stream, MediaType.AUDIO);
 
                 if (isLocalAudioTransmissionEnabled())
                 {
-                    asyncSetTrafficClass(stream.getTarget(), MediaType.AUDIO);
+                    asyncSetTrafficClass(MediaType.AUDIO);
                 }
             }
 
@@ -2405,7 +2495,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             if(!stream.isStarted())
             {
                 logger.info("Video stream present but not yet started.");
-                asyncSetTrafficClass(stream.getTarget(), MediaType.VIDEO);
+                asyncSetTrafficClass(MediaType.VIDEO);
                 stream.start();
 
                 if (stream instanceof VideoMediaStream)
@@ -2478,6 +2568,36 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
         startCalled = true;
     }
 
+    private void sendTelemetryCallConnected()
+    {
+        if (audioStream == null || peer == null) {
+            return;
+        }
+
+        MediaStreamStats audioStats = audioStream.getMediaStreamStats();
+
+        String codecName = audioStats.getEncoding();
+        String codecHz = audioStats.getEncodingClockRate();
+        int clockRate = 0;
+        try
+        {
+            clockRate = Integer.valueOf(codecHz) / 1000;
+        }
+        catch(NumberFormatException e)
+        {
+            logger.error("Unexpected codec clock rate: " + codecHz);
+        }
+
+        String networkType = mProbableConnectionType.analyticsParam;
+        boolean isConnected = peer.getState().equals(CallPeerState.CONNECTED);
+
+        ProtocolMediaActivator.getInsightsService().logEvent(InsightsEventHint.PROTOCOL_MEDIA_CALL_CONNECTED.name(),
+                                                             Map.of(NETWORK_TYPE.name(), networkType,
+                                                                    CONNECTED.name(), isConnected,
+                                                                    CODEC_NAME.name(), codecName,
+                                                                    CLOCK_RATE.name(), clockRate));
+    }
+
     /**
      * Sends an empty hole punch packet for the given media stream to unblock
      * some kinds of RTP proxies. This allows one-way video streams to reach the
@@ -2510,12 +2630,8 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
      * Sets the QoS traffic class for the given stream, according to its media
      * type.
      * We do this in a new thread so as to not block the SIP stack.
-     *
-     * @param streamTarget
-     * @param mediaType
      */
-    private void asyncSetTrafficClass(final MediaStreamTarget streamTarget,
-                                                      final MediaType mediaType)
+    private void asyncSetTrafficClass(final MediaType mediaType)
     {
         new Thread("TrafficClassSetter")
         {
@@ -2523,7 +2639,7 @@ public abstract class CallPeerMediaHandler<T extends MediaAwareCallPeer<?,?,?>>
             public void run()
             {
                 logger.debug("Setting traffic class for " + mediaType);
-                getTransportManager().setTrafficClass(streamTarget, mediaType);
+                getTransportManager().setTrafficClass(mediaType);
                 logger.debug("Successfully set traffic class for " + mediaType);
             }
         }.start();

@@ -47,6 +47,10 @@ import net.java.sip.communicator.service.commportal.ClassOfServiceService;
 import net.java.sip.communicator.service.contacteventhandler.ContactEventHandler;
 import net.java.sip.communicator.service.gui.ContactListContainer;
 import net.java.sip.communicator.service.gui.UIService.Reformatting;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.enums.InsightsPermissionAction;
+import net.java.sip.communicator.service.insights.enums.InsightsPermissionName;
+import net.java.sip.communicator.service.insights.parameters.GuiParameterInfo;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService.BSSIDAvailability;
 import net.java.sip.communicator.service.protocol.AccountID;
@@ -334,8 +338,9 @@ public class MainFrame
         {
             logger.info("BSSID availability changed to " + bssidAvailability.name());
 
+            boolean isPermissionGranted = bssidAvailability == BSSIDAvailability.AVAILABLE;
             String reported =
-                    bssidAvailability == BSSIDAvailability.AVAILABLE ? AnalyticsParameter.VALUE_PERMISSION_ACTION_TYPE_GRANTED :
+                    isPermissionGranted ? AnalyticsParameter.VALUE_PERMISSION_ACTION_TYPE_GRANTED :
                             AnalyticsParameter.VALUE_PERMISSION_ACTION_TYPE_DENIED;
             GuiActivator
                     .getAnalyticsService()
@@ -345,6 +350,17 @@ public class MainFrame
                                 AnalyticsParameter.PARAM_PERMISSION_ACTION_TYPE,
                                 reported);
 
+            GuiActivator
+                    .getInsightsService()
+                    .logEvent(
+                            InsightsEventHint.GUI_USER_PERMISSION.name(),
+                            Map.of(
+                                    GuiParameterInfo.GUI_PERMISSION_NAME.name(),
+                                    InsightsPermissionName.LOCATION,
+                                    GuiParameterInfo.GUI_PERMISSION_RESULT.name(),
+                                    isPermissionGranted ? InsightsPermissionAction.GRANTED : InsightsPermissionAction.DENIED
+                            )
+                    );
         }
 
         ResourceManagementService resources = GuiActivator.getResources();

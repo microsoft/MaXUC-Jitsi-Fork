@@ -7,6 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.jabber;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.JABBER_IM_LOG_IN;
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
 
 import java.math.BigInteger;
@@ -22,8 +23,10 @@ import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.net.ssl.SSLContext;
@@ -58,7 +61,6 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.PresenceBuilder;
 import org.jivesoftware.smack.packet.StreamError;
 import org.jivesoftware.smack.XMPPException.StreamErrorException;
-import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.carbons.CarbonManager;
@@ -74,8 +76,6 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 
 import net.java.sip.communicator.impl.protocol.jabber.debugger.SmackPacketDebugger;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.inputevt.InputEvtIQ;
-import net.java.sip.communicator.impl.protocol.jabber.extensions.inputevt.InputEvtIQProvider;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.keepalive.KeepAliveManager;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagearchiving.ArchiveManager;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtension;
@@ -89,6 +89,7 @@ import net.java.sip.communicator.service.certificate.CertificateService;
 import net.java.sip.communicator.service.gui.CreateAccountWindow;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.gui.WizardContainer;
+import net.java.sip.communicator.service.insights.parameters.JabberParameterInfo;
 import net.java.sip.communicator.service.netaddr.NetworkAddressManagerService;
 import net.java.sip.communicator.service.protocol.AbstractProtocolProviderService;
 import net.java.sip.communicator.service.protocol.AccountID;
@@ -151,11 +152,6 @@ public class ProtocolProviderServiceJabberImpl
      */
     private static final Logger sLog =
         Logger.getLogger(ProtocolProviderServiceJabberImpl.class);
-
-    /**
-     * URN for XEP-0077 inband registration
-     */
-    public static final String URN_REGISTER = "jabber:iq:register";
 
     /**
      * Roster requests can take longer than other messages to get a response, so use a custom
@@ -395,8 +391,10 @@ public class ProtocolProviderServiceJabberImpl
     {
         configService = JabberActivator.getConfigurationService();
         mAuthenticationBackoff = new ServerBackoff(
+            "ProtocolProviderServiceJabberImpl",
             configService.global().getInt(CONFIG_MAX_NUMBER_FAILURE_DOUBLES, DEFAULT_MAX_NUMBER_FAILURE_DOUBLES),
             configService.global().getLong(CONFIG_INITIAL_FAIL_BACKOFF, DEFAULT_INITIAL_FAIL_BACKOFF));
+        sLog.info("Created PPSJabberImpl " + this + " with backoff " + mAuthenticationBackoff);
     }
 
     /**
@@ -1715,11 +1713,6 @@ public class ProtocolProviderServiceJabberImpl
             mSupportedFeatures.add("http://jabber.org/protocol/muc#rooms");
             mSupportedFeatures.add("http://jabber.org/protocol/muc#traffic");
 
-            // register our input event provider
-            ProviderManager.addIQProvider(InputEvtIQ.ELEMENT_NAME,
-                                          InputEvtIQ.NAMESPACE,
-                                          new InputEvtIQProvider());
-
             // OperationSetContactCapabilities
             mOpsetContactCapabilities
                 = new OperationSetContactCapabilitiesJabberImpl(this);
@@ -1983,7 +1976,8 @@ public class ProtocolProviderServiceJabberImpl
 
                             if (mAuthenticationBackoff.shouldWait())
                             {
-                                sLog.debug("Waiting to reregister as there are server authentication problems");
+                                sLog.debug("Waiting to reregister as there are server authentication problems. Backoff " +
+                                    mAuthenticationBackoff.getBackOffTime());
                                 threadingService.schedule("ReregisterJabber",
                                                            getReregisterRunnable(SecurityAuthority.CONNECTION_FAILED),
                                                            mAuthenticationBackoff.getBackOffTime());
@@ -2001,6 +1995,11 @@ public class ProtocolProviderServiceJabberImpl
                             JabberActivator.getAnalyticsService().onEvent(
                                     AnalyticsEventType.XMPP_AUTHENTICATION_BACKOFF_HIT_MAX_FAILURES,
                                     AnalyticsParameter.NAME_FINAL_BACKOFF_MS, String.valueOf(mAuthenticationBackoff.getBackOffTime()));
+
+                            JabberActivator.getInsightsService().logEvent(
+                                    JABBER_IM_LOG_IN.name(),
+                                    Map.of(JabberParameterInfo.IM_LOGIN_EXCEPTION.name(), ex)
+                            );
                         }
                     }
                 }
@@ -2671,6 +2670,8 @@ public class ProtocolProviderServiceJabberImpl
                     AnalyticsParameter.NAME_FINAL_BACKOFF_MS, String.valueOf(mAuthenticationBackoff.getBackOffTime()));
         }
         mAuthenticationBackoff.onSuccess();
+
+        JabberActivator.getInsightsService().logEvent(JABBER_IM_LOG_IN.name(), Collections.emptyMap());
     }
 
     /**

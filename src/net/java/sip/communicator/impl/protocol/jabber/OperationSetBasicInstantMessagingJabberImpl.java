@@ -23,11 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 
-import com.metaswitch.maxanalytics.event.AnalyticsResult;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.CommonKt;
-import com.metaswitch.maxanalytics.event.ImKt;
-import com.metaswitch.maxanalytics.event.ImType;
 import org.jivesoftware.smack.chat2.Chat;
 import org.jivesoftware.smack.chat2.ChatManager;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
@@ -62,7 +57,8 @@ import net.java.sip.communicator.impl.protocol.jabber.JabberActivator.GroupMembe
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtension;
 import net.java.sip.communicator.impl.protocol.jabber.extensions.messagecorrection.MessageCorrectionExtensionProvider;
 import net.java.sip.communicator.service.contactlist.MetaContact;
-import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.JabberParameterInfo;
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
 import net.java.sip.communicator.service.protocol.AbstractOperationSetBasicInstantMessaging;
@@ -726,23 +722,16 @@ public class OperationSetBasicInstantMessagingJabberImpl
         MessageDeliveredEvent msgDelivered =
             sendMessage(to, toResource, smsNumber, message, new ExtensionElement[0]);
 
-        String imType = smsNumber != null ?
-                ImType.SMS.getValue$maxanalytics() : ImType.CHAT.getValue$maxanalytics();
-
         boolean delivered = msgDelivered != null && !msgDelivered.isFailed();
 
-        JabberActivator.getInsightService().logEvent(
-                new InsightEvent(
-                        ImKt.EVENT_IM_SEND_MESSAGE,
-                        Map.of(CommonKt.PARAM_TYPE,
-                               imType,
-                               AnalyticsResultKt.PARAM_RESULT,
-                               delivered ?
-                                       AnalyticsResult.Success.INSTANCE.getValue() :
-                                       AnalyticsResult.FailureUnknown.INSTANCE.getValue()
-                        ),
-                        Map.of(ImKt.PARAM_IM_LENGTH,
-                               (double) message.getContent().length())
+        JabberActivator.getInsightsService().logEvent(
+                InsightsEventHint.JABBER_IM_SEND_MESSAGE.name(),
+                Map.of(
+                        JabberParameterInfo.MESSAGE.name(), message,
+                        JabberParameterInfo.MESSAGE_DELIVERED.name(), delivered,
+
+                        JabberParameterInfo.MESSAGE_TYPE.name(),
+                        smsNumber != null ? MessageEvent.SMS_MESSAGE : MessageEvent.CHAT_MESSAGE
                 )
         );
 
@@ -1096,27 +1085,27 @@ public class OperationSetBasicInstantMessagingJabberImpl
         {
             logger.debug("Received a special message of type " + type);
 
-            SpecialMessageHandler handler =
-                opSetSpecialMsg.getSpecialMessageHandler(type);
+            List<SpecialMessageHandler> handlers =
+                opSetSpecialMsg.getSpecialMessageHandlers(type);
 
             // If there is a handler for this special message type, pass it
             // to the handler, unless it is an archive message (i.e. we've
             // been given a date when it was sent) or carbon message, as we
             // don't want to handle a special message more than once.
-            if (handler != null)
+            if (handlers != null)
             {
                 if ((date == null) && !isCarbon)
                 {
                     logger.debug("Passing special message of type " + type +
-                        " to handler " + handler);
-                    handler.handleSpecialMessage(content,
-                        DelayInformationManager.getDelayTimestamp(msg));
+                        " to handlers " + handlers);
+                    handlers.forEach(handler -> handler.handleSpecialMessage(content,
+                        DelayInformationManager.getDelayTimestamp(msg)));
                 }
                 else
                 {
                     logger.debug(
                         "Not passing archive/carbon special message of type " +
-                                           type + " to handler " + handler);
+                                           type + " to handler " + handlers);
                 }
             }
             else if (JabberActivator.CORRELATOR_ID.equals(type))

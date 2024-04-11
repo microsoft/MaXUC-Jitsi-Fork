@@ -39,8 +39,10 @@ lib/native/mac/libjnawtrenderer.jnilib
 lib/native/mac/libjndirectshow.jnilib
 lib/native/mac/libjng722.jnilib
 lib/native/mac/libjnidispatch.jnilib
+lib/native/mac/libjnlocation.jnilib
 lib/native/mac/libjnmaccoreaudio.jnilib
 lib/native/mac/libjnopus.jnilib
+lib/native/mac/libsparkle_init.dylib
 lib/native/mac/libjnspeex.jnilib
 lib/native/mac/libjnwasapi.jnilib
 lib/native/mac/libjnwincoreaudio.jnilib
@@ -60,20 +62,16 @@ lib/native/windows/jnopus.dll
 lib/native/windows/jnspeex.dll
 lib/native/windows/jnwasapi.dll
 lib/native/windows/jnwincoreaudio.dll
-lib/native/windows/libpltwrapper.dll
 lib/native/windows/org/bytedeco
 
 lib/native/windows/LocalhostRetriever.dll
-lib/native/windows/spokes.dll
 lib/native/windows/sysactivitynotifications.dll
 lib/native/windows-64
 lib/native/windows/*.dll
 
 resources/install/macosx/libjabra.dylib
 resources/install/macosx/libyealinkusbsdk.dylib
-resources/install/macosx/libpltwrapper.dylib
 resources/install/macosx/Sparkle.framework.zip
-resources/install/macosx/Spokes3GSDK.framework.zip
 lib/OpenJDK*.tar.gz
 resources/install/windows/xz.exe
 resources/install/windows/jre_windows.zip

@@ -76,8 +76,8 @@ HRESULT startServer(JavaLogger* logger, const char* logFile, int port, const cha
 HRESULT startServerBitness(JavaLogger* logger, const char* logFile, int port, const char* logDir, int bitness)
 {
     // Start the server executable service
-    char applicationName32[] = "32/" PRODUCT_NAME "OutlookServer32.exe";
-    char applicationName64[] = "64/" PRODUCT_NAME "OutlookServer64.exe";
+    char applicationName32[] = PRODUCT_NAME "OutlookServer32.exe";
+    char applicationName64[] = PRODUCT_NAME "OutlookServer64.exe";
     char * applicationName = applicationName32;
     if(bitness == 64)
     {
@@ -173,7 +173,7 @@ void stopServer(JavaLogger* logger)
  * @return true if it is still alive, false otherwise
  */
 JNIEXPORT jboolean JNICALL
-Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_CheckServerIsAlive
+Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_CheckServerIsAlive
     (JNIEnv *jniEnv, jclass clazz)
 {
     JavaLogger logger(jniEnv, clazz);
@@ -196,7 +196,7 @@ Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_CheckServer
  * Initializes the native libraries by creating the logger and starting the server
  */
 JNIEXPORT void JNICALL
-Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_Initialize
+Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_Initialize
     (JNIEnv *jniEnv, jclass clazz, jint port,
      jstring serverLogFile, jstring clientLogFile, jstring logDir)
 {
@@ -234,7 +234,7 @@ Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_Initialize
  * Unitializes the native libraries by stopping the server and closing the log files
  */
 JNIEXPORT void JNICALL
-Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_Uninitialize
+Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_Uninitialize
     (JNIEnv *jniEnv, jclass clazz)
 {
     JavaLogger logger(jniEnv, clazz);
@@ -251,7 +251,7 @@ Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_Uninitializ
  * version is installed. -1 otherwise.
  */
 JNIEXPORT int JNICALL
-Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_getOutlookBitnessVersion
+Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_getOutlookBitnessVersion
     (JNIEnv *jniEnv, jclass clazz)
 {
     JavaLogger logger(jniEnv, clazz);
@@ -266,7 +266,7 @@ Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_getOutlookB
  * 2007" or 2003 for "Outlook 2003". -1 otherwise.
  */
 JNIEXPORT int JNICALL
-Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_getOutlookVersion
+Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_getOutlookVersion
     (JNIEnv *jniEnv, jclass clazz)
 {
     JavaLogger logger(jniEnv, clazz);

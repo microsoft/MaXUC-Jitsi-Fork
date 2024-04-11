@@ -15,6 +15,7 @@ import javax.naming.*;
 import javax.naming.directory.*;
 
 import org.jitsi.util.StringUtils;
+import org.jitsi.util.ThreadUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -691,7 +692,7 @@ public class LdapDirectoryImpl
         // custom SocketFactory)
         searchThread.setContextClassLoader(getClass().getClassLoader());
         searchThread.setDaemon(true);
-        searchThread.start();
+        ThreadUtils.startThread(searchThread);
     }
 
     @VisibleForTesting

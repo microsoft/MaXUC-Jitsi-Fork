@@ -32,6 +32,7 @@ public class CrmButtonSetter
      */
     public CrmButtonSetter(@Nullable String searchName,
                            @Nullable String searchNumber,
+                           boolean madeFromCall,
                            JPanel crmButtonPanel)
     {
         mCrmButtonPanel = crmButtonPanel;
@@ -41,7 +42,9 @@ public class CrmButtonSetter
         {
             mCrmLaunchButton = uiService.getCrmLaunchButton(
                     searchName,
-                    searchNumber);
+                    searchNumber,
+                    madeFromCall
+            );
         }
     }
 

@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jitsi.util.Hasher;
+import org.jitsi.util.SanitiseUtils;
 
 /**
  * Class used to store variables and methods required to sanitise Personal Data from any data we
@@ -82,6 +83,13 @@ public final class PrivacyUtils
     public static final String NUMBER = "NUMBER";
     public static final String USERNAME = "USERNAME";
     public static final String USER_ID = "USER_ID";
+    public static final String VOICEMAIL_CHECK_URI = "VOICEMAIL_CHECK_URI";
+    public static final String VOICEMAIL_URI = "VOICEMAIL_URI";
+    public static final String SERVER_ADDRESS = "SERVER_ADDRESS";
+    public static final String PREVIOUS_USER_EDUCATION_CHECK = "PREVIOUS_USER_EDUCATION_CHECK";
+    public static final String RINGTONE_URI = "RINGTONE_URI";
+    public static final String RINGTONE_PATH = "RINGTONE_PATH";
+    public static final String SOUND_FILE_DESCRIPTOR = "soundFileDescriptor";
     /**
      * Subset of user (CommPortal) config options whose values expose Personal Data. Matching
      * is done based on simple logic to test if a config string contains any of the following
@@ -115,6 +123,10 @@ public final class PrivacyUtils
             GROUP_INFO,
             NUMBER,
             PASSWORD,
+            PREVIOUS_USER_EDUCATION_CHECK,
+            RINGTONE_PATH,
+            RINGTONE_URI,
+            SOUND_FILE_DESCRIPTOR,
             URL_SERVICES,
             USERNAME,
             USER_ID);
@@ -142,10 +154,14 @@ public final class PrivacyUtils
     public static final Pattern LINE_PATTERN = Pattern.compile("/line[0-9]+/");
     public static final Pattern SUBSCRIBER_DN_AND_ACC = Pattern.compile("(?<=acc)[0-9]+");
     public static final Pattern SUBSCRIBER_DN_ONLY = Pattern.compile("[0-9]+");
+    // Valid matches: SUCCESSFUL_CONNECTION.Jabber:+12345678@, SUCCESSFUL_CONNECTION.Jabber:12345678@
+    // where only the phone number is highlighted, with or without "+" prefix
     public static final Pattern SUCCESSFUL_JABBER_CONNECTION =
-                                            Pattern.compile("(?<=SUCCESSFUL\\_CONNECTION\\.Jabber:)([0-9]+)(?=@)");
+                                            Pattern.compile("(?<=SUCCESSFUL\\_CONNECTION\\.Jabber:)(\\+?[0-9]+)(?=@)");
+    // Valid matches: SUCCESSFUL_CONNECTION.SIP:+12345678@, SUCCESSFUL_CONNECTION.SIP:12345678@
+    // where only the phone number is highlighted, with or without "+" prefix
     public static final Pattern SUCCESSFUL_SIP_CONNECTION =
-                                            Pattern.compile("(?<=SUCCESSFUL\\_CONNECTION\\.SIP:)([0-9]+)(?=@)");
+                                            Pattern.compile("(?<=SUCCESSFUL\\_CONNECTION\\.SIP:)(\\+?[0-9]+)(?=@)");
     public static final Pattern BG_ACC = Pattern.compile("(?<=bg\\.acc)([0-9]+)");
     public static final Pattern CP_ACC = Pattern.compile("(?<=commportal\\.acc)([0-9]+)");
     public static final Pattern CTD_ACC = Pattern.compile("(?<=ctd\\.acc)([0-9]+)");
@@ -345,15 +361,7 @@ public final class PrivacyUtils
      */
     public static String sanitiseFilePath(String stringToSanitise)
     {
-        if (stringToSanitise == null) {
-            return null;
-        }
-        // replace anything following the string "users/" or "users\" (case
-        // insensitive) up to the next /\;:
-        // \\\\ makes one \ as you have to escape \ once in regex, and each \
-        // once in java
-        return stringToSanitise.replaceAll("(?i)(?<=users[/\\\\])[^/\\\\;:]+",
-            REDACTED);
+        return SanitiseUtils.sanitisePath(stringToSanitise);
     }
 
     /**

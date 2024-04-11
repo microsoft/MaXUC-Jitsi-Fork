@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.GUI_CALL_PUSH;
+import static net.java.sip.communicator.service.insights.parameters.GuiParameterInfo.GUI_CALL_TYPE;
+
 import java.util.*;
 import java.util.Timer;
 
@@ -68,6 +71,8 @@ class CallPushButton extends InCallButton implements CallJumpComponent
     {
         sLog.user("'Push Call' clicked in call window");
         GuiActivator.getAnalyticsService().onEvent(AnalyticsEventType.CALL_PUSHED);
+        GuiActivator.getInsightsService().logEvent(GUI_CALL_PUSH.name(),
+                                                   Map.of(GUI_CALL_TYPE.name(), mCallFrame.isCallTypeVideo()));
 
         sCallJumpService.push(mCallData, this);
         sCallJumpService.unRegisterForCallPushUpdates(this);

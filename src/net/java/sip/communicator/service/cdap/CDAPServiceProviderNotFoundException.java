@@ -1,5 +1,4 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Highly Confidential Material
 package net.java.sip.communicator.service.cdap;
 
 /**

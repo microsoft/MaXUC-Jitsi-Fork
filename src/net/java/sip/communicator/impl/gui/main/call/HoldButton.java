@@ -2,7 +2,11 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.GUI_CALL_HOLD;
+import static net.java.sip.communicator.service.insights.parameters.GuiParameterInfo.*;
+
 import java.awt.event.*;
+import java.util.Map;
 
 import net.java.sip.communicator.impl.gui.*;
 import net.java.sip.communicator.service.imageloader.*;
@@ -73,6 +77,13 @@ public class HoldButton
         // unless they were already locally on hold
         logger.debug("Toggle hold state");
         boolean putOnHold = (!isSelected());
+
+        GuiActivator.getInsightsService().logEvent(GUI_CALL_HOLD.name(),
+                                                   Map.of(GUI_CALL_TYPE.name(),
+                                                          parentFrame.isCallTypeVideo(),
+                                                          GUI_CALL_HOLD_SELECTED.name(),
+                                                          putOnHold));
+
         synchronized (parentFrame.callPeers)
         {
             for (PeerPanel peerPanel : parentFrame.callPeers.values())

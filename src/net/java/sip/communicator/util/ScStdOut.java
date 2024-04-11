@@ -21,12 +21,6 @@ public class ScStdOut extends PrintStream
 {
     private static boolean stdOutPrintingEnabled = false;
 
-    /**
-     * This PrintStream contains System.out when the class were initiated.
-     * Normally that would be the system default System.out
-     */
-    private PrintStream systemOut;
-
     public static void setStdOutPrintingEnabled(boolean enabled)
     {
         stdOutPrintingEnabled = enabled;
@@ -35,7 +29,6 @@ public class ScStdOut extends PrintStream
     public ScStdOut(PrintStream printStream)
     {
         super(printStream);
-        systemOut = System.out;
     }
 
     /**

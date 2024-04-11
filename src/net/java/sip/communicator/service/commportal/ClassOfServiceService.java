@@ -67,6 +67,12 @@ public interface ClassOfServiceService
          "provisioning.cos.EAS_BUSINESS_GROUP";
 
     /**
+     * Place in config where the OutgoingCallerIDType enum value is cached.
+     */
+    String CONFIG_CALLER_ID_FOR_OUTBOUND_CALLS =
+            "provisioning.cos.CONFIG_CALLER_ID_FOR_OUTBOUND_CALLS";
+
+    /**
      * Place in config where the CTD auto answer is cached
      */
     String CONFIG_CTD_AUTO_ANSWER =
@@ -77,6 +83,16 @@ public interface ClassOfServiceService
      */
     String CONFIG_IM_ENABLED =
             "net.java.sip.communicator.im.IM_ENABLED";
+
+    /**
+     * Place in config where the Teams Enabled is cached
+     */
+    String CONFERENCING_ENABLED = "provisioning.cos.CONFERENCING_ENABLED";
+
+    /**
+     * Place in config where the AAD Tenant ID is stored
+     */
+    String CONFIG_AAD_TENANT_ID = "provisioning.cos.AAD_TENANT_ID";
 
     /**
      * Place in config where the SMS Enabled is cached

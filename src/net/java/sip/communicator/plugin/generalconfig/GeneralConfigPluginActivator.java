@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.generalconfig;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
@@ -28,12 +30,15 @@ import net.java.sip.communicator.service.analytics.AnalyticsService;
 import net.java.sip.communicator.service.commportal.ClassOfServiceService;
 import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.conference.ConferenceService;
+import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.gui.ConfigurationForm;
 import net.java.sip.communicator.service.gui.LazyConfigurationForm;
 import net.java.sip.communicator.service.gui.UIService;
 import net.java.sip.communicator.service.headsetmanager.HeadsetManagerService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.notification.NotificationService;
+import net.java.sip.communicator.service.notification.SoundNotificationAction;
 import net.java.sip.communicator.service.phonenumberutils.PhoneNumberUtilsService;
 import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.AccountManager;
@@ -157,14 +162,19 @@ public class GeneralConfigPluginActivator
     private static GlobalStatusService globalStatusService;
 
     /**
-     * The conference service
-     */
-    private static ConferenceService conferenceService;
-
-    /**
      * The headset manager service
      */
     private static HeadsetManagerService headsetManagerService;
+
+    /**
+     * The insight service
+     */
+    private static InsightsService insightsService;
+
+    /**
+     * Meta contact list service
+     */
+    private static MetaContactListService sContactListService;
 
     /**
      * Indicates if the general configuration form should be disabled, i.e.
@@ -414,15 +424,15 @@ public class GeneralConfigPluginActivator
         {
             logger.debug("Name has changed, check if need to update path" +
                                  " to custom ringtone");
-            String ringtonePath = ringtonePathUpdater.updateRingtonePaths(oldName,
-                                                                          newName);
+            String ringtonePath = ringtonePathUpdater.updateRingtonePaths(oldName, newName, SoundNotificationAction.BgTag.BG_TAG_GENERIC);
+            String bgRingtonePath = ringtonePathUpdater.updateRingtonePaths(oldName, newName, SoundNotificationAction.BgTag.BG_TAG_INTERNAL);
 
             // The ringtone path will be null if the user has never changed it.
             // We do not want to register a notification with a null value.
             if (!StringUtils.isNullOrEmpty(ringtonePath))
             {
                 logger.debug("Ringtone path is not empty, so register " +
-                        "a new notification for " + ringtonePath);
+                             "a new notification for " + sanitiseFilePath(ringtonePath));
                 // Wait until the NotificationService has started and register
                 // the ringtone as a notification sound.
                 ServiceUtils.getService(GeneralConfigPluginActivator.bundleContext,
@@ -435,9 +445,16 @@ public class GeneralConfigPluginActivator
                                             {
                                                 GeneralConfigPluginActivator
                                                         .getNotificationService();
+
                                                 GeneralConfigPluginActivator
                                                         .notificationService.registerNewRingtoneNotification(
-                                                                ringtonePath);
+                                                                ringtonePath,
+                                                                SoundNotificationAction.BgTag.BG_TAG_GENERIC);
+
+                                                GeneralConfigPluginActivator
+                                                        .notificationService.registerNewRingtoneNotification(
+                                                                bgRingtonePath,
+                                                                SoundNotificationAction.BgTag.BG_TAG_INTERNAL);
                                             }
                                         });
             }
@@ -476,7 +493,7 @@ public class GeneralConfigPluginActivator
         if (! configService.user().getBoolean(DEFAULT_AUTO_LOG_IN, true))
         {
             logger.info("No auto log in - remove passwords etc.");
-            ConfigurationUtils.forgetUserCredentials(false);
+            ConfigurationUtils.clearCredentialsAndLogout(false);
         }
         stopThread();
     }
@@ -809,13 +826,7 @@ public class GeneralConfigPluginActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (conferenceService == null)
-        {
-            conferenceService = ServiceUtils.getService(bundleContext,
-                                                     ConferenceService.class);
-        }
-
-        return conferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**
@@ -830,5 +841,41 @@ public class GeneralConfigPluginActivator
         }
 
         return headsetManagerService;
+    }
+
+    /**
+     * @return the Insight service
+     */
+    public static InsightsService getInsightsService()
+    {
+        if (insightsService == null)
+        {
+            insightsService =
+                    ServiceUtils.getService(bundleContext, InsightsService.class);
+        }
+
+        return insightsService;
+    }
+
+    /** Get the contact list service from OSGi. */
+    public static MetaContactListService getMetaContactListService()
+    {
+        if (sContactListService == null)
+        {
+            sContactListService = ServiceUtils.getService(bundleContext,
+                                                          MetaContactListService.class);
+        }
+
+        return sContactListService;
+    }
+
+    /**
+     * Returns a reference to the bundle context that we were started with.
+     * @return a reference to the BundleContext instance that we were started
+     * with.
+     */
+    public static BundleContext getBundleContext()
+    {
+        return bundleContext;
     }
 }

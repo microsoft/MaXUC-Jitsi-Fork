@@ -6,7 +6,12 @@ import static org.jitsi.util.Hasher.logHasher;
 import java.awt.*;
 import java.io.*;
 import java.net.*;
+import java.util.Map;
 import java.util.regex.*;
+
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.enums.InsightsResultCode;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
 
 import org.apache.http.client.utils.*;
 import org.jitsi.util.*;
@@ -109,16 +114,31 @@ public class EmailUtils
             uri = URI.create(uriString);
             Desktop.getDesktop().browse(uri);
             success = true;
+
+            sendEmailComposeAnalytic(InsightsResultCode.SUCCESS);
         }
         catch (URISyntaxException e)
         {
+            sendEmailComposeAnalytic(InsightsResultCode.FAILURE_UNKNOWN);
             sLog.error("Unable to create uri " , e);
         }
         catch (IOException e)
         {
+            sendEmailComposeAnalytic(InsightsResultCode.FAILURE_UNKNOWN);
             sLog.error("Unable to browse to " + uri, e);
         }
 
         return success;
+    }
+
+    private static void sendEmailComposeAnalytic(InsightsResultCode resultCode)
+    {
+        DesktopUtilActivator.getInsightsService().logEvent(
+                InsightsEventHint.DESKTOP_UTIL_EMAIL_COMPOSE.name(),
+                Map.of(
+                        CommonParameterInfo.INSIGHTS_RESULT_CODE.name(),
+                        resultCode
+                )
+        );
     }
 }

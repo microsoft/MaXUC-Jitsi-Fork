@@ -59,7 +59,8 @@ public class ConfigFileSanitiser
             "Department",
             "MetaSwitchName",
             "PersistentProfile",
-            "line"
+            "line",
+            "CallingPartyNumber"
     );
 
     /**
@@ -295,6 +296,12 @@ public class ConfigFileSanitiser
         {
             String[] values = value.substring(1, value.length()-1).split(", ");
             sanitisedValue = "[" + sanitiseValuesInList(List.of(values), Hasher::logHasher) + "]";
+        }
+        else if (propertyName.contains(RINGTONE_PATH) ||
+                 propertyName.contains(RINGTONE_URI) ||
+                 propertyName.contains(SOUND_FILE_DESCRIPTOR))
+        {
+            sanitisedValue = sanitiseFilePath(value);
         }
         else
         {

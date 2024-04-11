@@ -4,6 +4,8 @@ package net.java.sip.communicator.plugin.addressbook;
 import java.util.*;
 
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.AddressBookParameterInfo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.ServerStoredDetails.*;
 import net.java.sip.communicator.util.*;
@@ -174,11 +176,23 @@ public abstract class AbstractAddressBookDataHandler
 
     public void setDetailsForContact(Contact contact,
                                      ArrayList<GenericDetail> details,
+                                     boolean isCreateOp,
                                      ContactUpdateResultListener listener)
     {
-        parentProvider.setContactDetails(contact,
-                                         details,
-                                         listener);
+        long startTimestamp = System.currentTimeMillis();
+        parentProvider.setContactDetails(contact, details, listener);
+        long updateDuration = System.currentTimeMillis() - startTimestamp;
+
+        String countParam = isCreateOp ?
+                AddressBookParameterInfo.INSERT_COUNT.name() :
+                AddressBookParameterInfo.UPDATE_COUNT.name();
+        AddressBookProtocolActivator.getInsightsService().logEvent(
+                InsightsEventHint.CONTACT_SYNC_TO_NATIVE.name(),
+                Map.of(
+                        AddressBookParameterInfo.PARAM_DURATION_MS.name(), updateDuration,
+                        countParam, 1
+                )
+        );
     }
 
     //-------------------------------------------------------------------------

@@ -230,7 +230,12 @@ public class SparkleActivator
 
         PropertyChangeListener listener = evt -> {
             logger.debug("Config changed: " + evt);
-            updateLink();
+            if (evt.getNewValue() != null)
+            {
+                // We don't want to trigger the update if username/password/update
+                // link gets removed.
+                updateLink();
+            }
         };
 
         ConfigurationService cfg = getConfigurationService();

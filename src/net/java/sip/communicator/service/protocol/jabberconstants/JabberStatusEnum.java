@@ -8,6 +8,8 @@ package net.java.sip.communicator.service.protocol.jabberconstants;
 
 import java.util.*;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import net.java.sip.communicator.service.imageloader.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
@@ -142,7 +144,7 @@ public class JabberStatusEnum
      * communicate. <br/>
      * Base (English) string, for use when inter-operating with the IM server.
      */
-    private static final String AVAILABLE_BASE = "Online";
+    public static final String AVAILABLE_BASE = "Online";
 
     /**
      * The available for calls status. Indicate that the user is available for
@@ -405,7 +407,8 @@ public class JabberStatusEnum
      */
     private JabberPresenceStatus unknownStatus;
 
-    private static final Map<String, JabberStatusEnum> existingEnums =
+    @VisibleForTesting
+    public static final Map<String, JabberStatusEnum> existingEnums =
             new Hashtable<>();
 
     /**
@@ -664,7 +667,8 @@ public class JabberStatusEnum
          * on the wire.
          * @param statusIcon the icon associated with this status
          */
-        private JabberPresenceStatus(int status,
+        @VisibleForTesting
+        public JabberPresenceStatus(int status,
                                      boolean onlyValidForLsm,
                                      String statusName,
                                      String baseStatusName,

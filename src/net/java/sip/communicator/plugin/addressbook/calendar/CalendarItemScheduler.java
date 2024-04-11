@@ -14,6 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import net.java.sip.communicator.plugin.addressbook.AddressBookProtocolActivator;
 import net.java.sip.communicator.service.threading.CancellableRunnable;
 import net.java.sip.communicator.service.threading.ThreadingService;
+import net.java.sip.communicator.util.ClockUtils;
 import net.java.sip.communicator.util.Logger;
 
 /**
@@ -49,14 +50,14 @@ public class CalendarItemScheduler
         outlookCalendarLogger.info("Scheduling " + ((recurringPattern != null) ? "recurring " : "") +
                   " meeting " + meetingID + " start at " + startDate + " end at " + endDate);
 
-        Date now = new Date();
+        Date now = ClockUtils.getDateNow();
 
         if (startDate.after(endDate))
         {
             // Should never happen.  Log if it does
             outlookCalendarLogger.error("Start time after end time! " + meetingID);
         }
-        else if (endDate.before(new Date()))
+        else if (endDate.before(ClockUtils.getDateNow()))
         {
             // Should never happen.  Log if it does
             outlookCalendarLogger.error("End time before now! " + meetingID);

@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.Date;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.impl.callhistory.network.*;
@@ -57,7 +58,8 @@ public class CallHistoryServiceImpl
 
     private final DatabaseService mDatabaseService;
 
-    private final List<CallRecordImpl> mCurrentCallRecords =
+    @VisibleForTesting
+    final List<CallRecordImpl> mCurrentCallRecords =
             new Vector<>();
 
     private final CallChangeListener mHistoryCallChangeListener =

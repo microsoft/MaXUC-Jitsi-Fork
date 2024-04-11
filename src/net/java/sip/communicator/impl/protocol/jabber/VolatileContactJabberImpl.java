@@ -12,6 +12,7 @@ import static org.jitsi.util.Hasher.logHasher;
 import org.jxmpp.jid.BareJid;
 import org.jxmpp.jid.impl.JidCreate;
 
+import net.java.sip.communicator.service.protocol.ContactType;
 import net.java.sip.communicator.util.Logger;
 
 /**
@@ -132,5 +133,15 @@ public class VolatileContactJabberImpl
     public boolean canBeMerged()
     {
         return true;
+    }
+
+    /**
+     * Fetch the contact type as an alternative to <tt>instanceof</tt> checks.
+     * Used to differentiate between Jabber and Volatile Jabber.
+     */
+    @Override
+    public ContactType getContactType()
+    {
+        return ContactType.VOLATILE_JABBER;
     }
 }

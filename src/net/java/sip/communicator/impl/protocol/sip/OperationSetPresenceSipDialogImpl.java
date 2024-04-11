@@ -12,6 +12,7 @@ import java.util.*;
 import javax.sip.*;
 import javax.sip.address.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.w3c.dom.*;
 
 import net.java.sip.communicator.service.protocol.*;
@@ -36,12 +37,12 @@ public class OperationSetPresenceSipDialogImpl
     private static final String DIALOG_PKG      = "dialog";
 
     // dialog-info elements and attributes
-    private static final String DIALOG_INFO_ELEMENT = "dialog-info";
-    private static final String DIALOG_ELEMENT      = "dialog";
-    private static final String STATE_ELEMENT       = "state";
-    private static final String CONFIRMED_STATUS    = "confirmed";
-    private static final String EARLY_STATUS        = "early";
-    private static final String NO_DIALOG_STATUS    = "nodialog";
+    static final String DIALOG_INFO_ELEMENT = "dialog-info";
+    static final String DIALOG_ELEMENT      = "dialog";
+    static final String STATE_ELEMENT       = "state";
+    static final String CONFIRMED_STATUS    = "confirmed";
+    static final String EARLY_STATUS        = "early";
+    static final String NO_DIALOG_STATUS    = "nodialog";
 
     /**
      * Creates an instance of this operation set keeping a reference to the
@@ -51,21 +52,13 @@ public class OperationSetPresenceSipDialogImpl
      * @param presenceEnabled if we are activated or if we don't have to
      * handle the presence informations for contacts
     // * @param forceP2PMode if we should start in the p2p mode directly
-     * @param pollingPeriod the period between two poll for offline contacts
-     * @param subscriptionExpiration the default subscription expiration value
-     * to use
      */
     public OperationSetPresenceSipDialogImpl(
         ProtocolProviderServiceSipImpl provider,
-        boolean presenceEnabled,
-        int pollingPeriod,
-        int subscriptionExpiration)
+        boolean presenceEnabled)
     {
         super(provider,
             presenceEnabled,
-            false,
-            pollingPeriod,
-            subscriptionExpiration,
             DIALOG_PKG,
             DIALOG_XML);
 
@@ -405,9 +398,10 @@ public class OperationSetPresenceSipDialogImpl
       * for a call:
       * <li>call status - ringing / active</li>
       */
-    private class PresenceSubscriberCallState
+     class PresenceSubscriberCallState
     {
-        private String status;
+        @VisibleForTesting
+        public String status;
 
         PresenceSubscriberCallState()
         {

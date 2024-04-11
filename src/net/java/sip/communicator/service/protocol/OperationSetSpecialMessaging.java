@@ -37,12 +37,12 @@ public interface OperationSetSpecialMessaging extends OperationSet
     void removeSpecialMessageHandler(String... types);
 
     /**
-     * Get the handler for a particular special message
+     * Get the handlers for a particular special message
      *
      * @param type the type of the message
-     * @return the handler for that type
+     * @return the handlers for that type
      */
-    SpecialMessageHandler getSpecialMessageHandler(String type);
+    List<SpecialMessageHandler> getSpecialMessageHandlers(String type);
 
     /**
      * Interface implemented by objects that wish to be informed of special

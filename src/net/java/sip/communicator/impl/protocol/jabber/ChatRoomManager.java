@@ -6,6 +6,7 @@ import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatRoom;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -63,7 +64,7 @@ public class ChatRoomManager
     /**
      * Set of chat room Ids that the roster has told us we need to join.
      */
-    private final Set<Jid> chatRoomIdsToJoin = new HashSet<>();
+    private final Set<Jid> chatRoomIdsToJoin = new LinkedHashSet<>();
 
     /**
      * Set of chat room Ids that the roster has told us we need to leave.
@@ -479,10 +480,10 @@ public class ChatRoomManager
         {
             public void run()
             {
-                boolean success = false;
+                boolean retry = false;
                 try
                 {
-                    success = addAndJoinChatRoom(chatRoomId, joinDate);
+                    retry = addAndJoinChatRoom(chatRoomId, joinDate);
                 }
                 catch (Throwable th)
                 {
@@ -491,7 +492,7 @@ public class ChatRoomManager
                     logger.debug("addAndJoinChatRoom ended unexpectedly!: ", th);
                 }
 
-                if (!success)
+                if (retry)
                 {
                     // Setting this as debug log as this pollutes the error logs to the
                     // point where it makes them obsolete. Will fix in follow-up work.
@@ -509,7 +510,8 @@ public class ChatRoomManager
      * @param chatRoomId the id of the chat room to join and add to config.
      * @param joinDate the date at which we joined the chat room, possibly on
      * another client.
-     * @return success Whether we successfully joined the group chat or not.
+     * @return retry Whether we should retry this operation - i.e. it failed in a manner
+     * that means it's worth retrying at a later point (e.g. no response from server).
      */
     private boolean addAndJoinChatRoom(Jid chatRoomId, Date joinDate)
     {
@@ -546,22 +548,24 @@ public class ChatRoomManager
             }
             else
             {
-                // Setting this as debug log as this pollutes the error logs to the
-                // point where it makes them obsolete. Will fix in follow-up work.
                 logger.debug("Failed to find or create chat room with id: " + sanitisedChatRoomIdString);
                 return false;
             }
         }
-        catch (OperationFailedException | OperationNotSupportedException e)
+        catch (OperationFailedException e)
         {
-            // Setting this as debug log as this pollutes the error logs to the
-            // point where it makes them obsolete. Will fix in follow-up work.
-            logger.debug("Failed to find or create chat room with id: "
-                + sanitisedChatRoomIdString, e);
+            // We only want to retry joining if we get an OperationFailedException of type GENERAL_ERROR.
+            // All other error types are for scenarios where we don't expect retrying to help.
+            logger.debug("Failed to find or create chat room with id: " + sanitisedChatRoomIdString, e);
+            return (e.getErrorCode() == OperationFailedException.GENERAL_ERROR);
+        }
+        catch (OperationNotSupportedException e)
+        {
+            logger.debug("Failed to find or create chat room with id: " + sanitisedChatRoomIdString, e);
             return false;
         }
 
-        return true;
+        return false;
     }
 
     /**

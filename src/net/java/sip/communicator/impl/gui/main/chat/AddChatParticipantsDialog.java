@@ -14,6 +14,7 @@ import net.java.sip.communicator.impl.gui.main.chat.conference.*;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
@@ -222,6 +223,9 @@ public class AddChatParticipantsDialog
                                          createNew,
                                          subject);
             }
+            GuiActivator.getInsightsService().logEvent(
+                    InsightsEventHint.GUI_IM_ADD_PARTICIPANTS.name(),
+                    null);
         }
     }
 
@@ -235,30 +239,7 @@ public class AddChatParticipantsDialog
 
         for (MetaContact metaContact : mSelectedContacts)
         {
-            // Group contacts
-            Contact groupContact = metaContact.getGroupContact();
-            if (groupContact != null)
-            {
-                ProtocolProviderService pps = groupContact.getProtocolProvider();
-                OperationSetGroupContacts opSet =
-                            pps.getOperationSet(OperationSetGroupContacts.class);
-
-                if (opSet == null)
-                {
-                    logger.warn("Could not get opSet for groupContact " + metaContact);
-                    continue;
-                }
-
-                for (Contact contact : opSet.getIMContactMembers(groupContact))
-                {
-                    contactsToInvite.add(contact.getAddress());
-                }
-
-                // A MetaContact should not contain anything else.
-                continue;
-            }
-
-            // IM Contacts - should exist given that there is no group contact
+            // IM Contacts - should exist
             Contact imContact = metaContact.getIMContact();
             if (imContact == null)
             {

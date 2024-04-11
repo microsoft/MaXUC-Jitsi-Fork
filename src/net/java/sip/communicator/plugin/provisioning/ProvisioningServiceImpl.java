@@ -7,6 +7,7 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.provisioning;
 
+import static net.java.sip.communicator.service.insights.parameters.ProvisioningParameterInfo.*;
 import static net.java.sip.communicator.util.PrivacyUtils.*;
 import static org.jitsi.util.Hasher.logHasher;
 import static org.jitsi.util.SanitiseUtils.sanitiseFirstPatternMatch;
@@ -26,6 +27,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -39,12 +41,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.metaswitch.maxanalytics.event.AnalyticsResult;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.CommonKt;
-import com.metaswitch.maxanalytics.event.OpenIdProvider;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.Credentials;
@@ -65,9 +64,10 @@ import net.java.sip.communicator.service.httputil.HttpUtils;
 import net.java.sip.communicator.service.httputil.HttpUtils.HttpMethod;
 import net.java.sip.communicator.service.httputil.HttpUrlParams;
 import net.java.sip.communicator.service.httputil.SSOCredentials;
-import net.java.sip.communicator.service.insights.InsightEvent;
-import net.java.sip.communicator.service.insights.InsightService;
-import com.metaswitch.maxanalytics.event.LogInKt;
+import net.java.sip.communicator.service.insights.InsightsService;
+
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.ProvisioningParameterInfo;
 import net.java.sip.communicator.service.protocol.OperationSetCallPark;
 import net.java.sip.communicator.service.provisioning.ProvisioningService;
 import net.java.sip.communicator.service.threading.CancellableRunnable;
@@ -211,6 +211,12 @@ public class ProvisioningServiceImpl implements ProvisioningService
         = "net.java.sip.communicator.impl.neomedia.codec.EncodingConfiguration.WIRE";
 
     /**
+     * A config value that tracks the last logged in CDAP provider.
+     */
+    static final String PROPERTY_LAST_CDAP_SP_ID =
+            "net.java.sip.communicator.plugin.provisioning.LAST_CDAP_SP_ID";
+
+    /**
      * Config prefix for WIRED codecs.
      */
     private static final String ENCODING_CONFIG_PROP_WIRED
@@ -235,7 +241,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
         = "net.java.sip.communicator.impl.gui.DISABLE_VIDEO_UI";
 
     /** Name of the service provider name in the config. */
-    private static final String PROPERTY_SERVICE_PROVIDER_NAME
+    static final String PROPERTY_SERVICE_PROVIDER_NAME
         = "net.java.sip.communicator.plugin.provisioning.SERVICE_PROVIDER_NAME";
 
     /**
@@ -257,27 +263,6 @@ public class ProvisioningServiceImpl implements ProvisioningService
     private static final String REMEMBERED_PASSWORD = "net.java.sip.communicator.plugin.desktoputil.credentials";
 
     /**
-     * List of config entries that expose personal data as their values (the part following
-     * the "=" sign); these regex statements allow us to pick out the values associated with
-     * these entries and apply sanitisation methods on them.
-     *
-     * The URL_SERVICES regex is to address lines like these:
-     * net.java.sip.communicator.impl.gui.main.urlservices.crm.2.url=https
-     *
-     * In this case, only the part after the "=" sign (the "https") would be picked out for hashing.
-     */
-    private static final List<Pattern> SANITISE_CONFIG_PATTERN_LIST = List.of(
-            Pattern.compile(ACCOUNT_UID + "=(.*)"),
-            Pattern.compile(AUTHORIZATION_NAME + "=(.*)"),
-            Pattern.compile(DISPLAY_NAME + "=(.*)"),
-            Pattern.compile(GLOBAL_DISPLAY_NAME + "=(.*)"),
-            Pattern.compile(NUMBER + "=(.*)"),
-            Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.name=(.*)"),
-            Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.url=(.*)"),
-            Pattern.compile(USER_ID + "=(.*)")
-    );
-
-    /**
      * List of config properties whose values expose personal data.
      *
      * The URL_SERVICES regex is to address lines like these:
@@ -295,8 +280,26 @@ public class ProvisioningServiceImpl implements ProvisioningService
             Pattern.compile(NUMBER),
             Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.name"),
             Pattern.compile(URL_SERVICES + "\\.[^.]+\\.[0-9]+\\.url"),
-            Pattern.compile(USER_ID)
+            Pattern.compile(USER_ID),
+            Pattern.compile(VOICEMAIL_CHECK_URI),
+            Pattern.compile(VOICEMAIL_URI),
+            Pattern.compile(SERVER_ADDRESS)
     );
+
+    /**
+     * List of config entries that expose personal data as their values (the part following
+     * the "=" sign); these regex statements allow us to pick out the values associated with
+     * these entries and apply sanitisation methods on them.
+     *
+     * The URL_SERVICES regex is to address lines like these:
+     * net.java.sip.communicator.impl.gui.main.urlservices.crm.2.url=https
+     *
+     * In this case, only the part after the "=" sign (the "https") would be picked out for hashing.
+     */
+    private static final List<Pattern> SANITISE_CONFIG_PATTERN_LIST = SANITISE_CONFIG_PROPERTY_PATTERN_LIST
+            .stream()
+            .map(entry -> Pattern.compile(entry.pattern() + "=(.*)"))
+            .collect(Collectors.toList());
 
     /**
      * List of allowed configuration prefixes.
@@ -329,7 +332,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
      */
     private final AnalyticsService mAnalyticsService;
 
-    private final InsightService mInsightService;
+    private final InsightsService mInsightsService;
 
     /**
      * Access to the threading service
@@ -418,7 +421,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
       *  - SIP-OS V2 (endpoint packs):
       *    http://edinsvn/repos/ucp/trunk/sipps/src/dcl/sipps/prh/userdata/DataStore.java
       */
-     private enum ErrorResponse
+     public enum ErrorResponse
      {
          AuthFailed("plugin.provisioning.ERROR_AUTH_FAILED", true, true),
          SubNotFound("plugin.provisioning.ERROR_AUTH_FAILED", true, true),
@@ -545,9 +548,12 @@ public class ProvisioningServiceImpl implements ProvisioningService
     {
         return (evt) ->
         {
-            logger.debug("Username now written to config. " +
-                         "Begin scheduler to check for config updates via SIP-PS");
-            scheduleTaskToPollPPSConfig();
+            if (evt.getNewValue() != null)
+            {
+                logger.debug("Username now written to config. " +
+                             "Begin scheduler to check for config updates via SIP-PS");
+                scheduleTaskToPollPPSConfig();
+            }
         };
     }
 
@@ -565,7 +571,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
              PreLoginUtils.awaitEvent(PreLoginUtils.EventType.SERVICE_PROVIDER);
          }
          mAnalyticsService = ProvisioningActivator.getAnalyticsService();
-         mInsightService = ProvisioningActivator.getInsightService();
+         mInsightsService = ProvisioningActivator.getInsightsService();
          mCredsService = ProvisioningActivator.getCredentialsStorageService();
          mThreadingService = ProvisioningActivator.getThreadingService();
 
@@ -637,10 +643,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
          /// Now we (probably) have the config, it's reasonable to start the
          // timer that sends the analytic that reports we are running
          mAnalyticsService.startSysRunningTimer();
-
-         // Start the insight service
-         // Data collection will begin as soon as the user accepts the eula
-         mInsightService.start();
+         mInsightsService.startCollection();
 
          if (!mTerminalError &&
              mConfig.global().getProperty(PROPERTY_PROVISIONING_USERNAME) != null)
@@ -1070,10 +1073,9 @@ public class ProvisioningServiceImpl implements ProvisioningService
                         fallBackToGetRequest = true;
                         continue;
                     }
-                    logLoginAnalytics(res != null ?
-                                         new AnalyticsResult.HttpError(res.getStatusCode()) :
-                                         AnalyticsResult.FailureUnknown.INSTANCE
-                            );
+
+                    logLoginAnalytics(res);
+
                     retrieveConfigurationFileFailed(false);
                     return null;
                 }
@@ -1115,7 +1117,8 @@ public class ProvisioningServiceImpl implements ProvisioningService
                             fallBackToGetRequest = true;
                             continue;
                         }
-                        logLoginAnalytics(AnalyticsResult.InvalidData.INSTANCE);
+                        logLoginAnalytics(new Exception("Unrecognized configuration"));
+
                         retrieveConfigurationFileFailed(false);
                         return null;
                     }
@@ -1123,7 +1126,25 @@ public class ProvisioningServiceImpl implements ProvisioningService
                     // The returned config from SIP PS is not just an error response so process it now.
                     logger.debug("Successfully retrieved config from server");
                     hitAuthFailedError = false;
+                    String lastCdapSpId = mConfig.global().getString(PROPERTY_LAST_CDAP_SP_ID, "");
                     String processedConfig = processConfigFromServer(configFromServer);
+
+                    String cdapSpID = mConfig.global().getString(PROPERTY_CDAP_SP_ID, "");
+                    if (!cdapSpID.equals(lastCdapSpId) && !cdapSpID.isEmpty())
+                    {
+                        // User has logged into CDAP for the first time (or after changing the
+                        // service provider) - log the event.
+                        String providerName = mConfig.global().getString(PROPERTY_SERVICE_PROVIDER_NAME);
+                        mInsightsService.logEvent(
+                                InsightsEventHint.USER_CDAP_CONFIRM_PROVIDER.name(),
+                                Map.of(ProvisioningParameterInfo.CDAP_NAME.name(), providerName)
+                        );
+
+                        // We are now successfully logged into CDAP version of the app, save the provider id
+                        // so we can don't send a analytic EVENT_USER_CDAP_CONFIRM_PROVIDER next time
+                        // user logs out and then logs in without changing the service provider.
+                        mConfig.global().setProperty(PROPERTY_LAST_CDAP_SP_ID, cdapSpID);
+                    }
 
                     if (mConfig.user() != null &&
                         mConfig.user().getBoolean(IM_ENABLED_PROP, true))
@@ -1142,13 +1163,14 @@ public class ProvisioningServiceImpl implements ProvisioningService
                     // Successful login - clear login data.
                     PreLoginUtils.clearManualLoginData();
                     ProvisioningParams.clear();
-                    logLoginAnalytics(AnalyticsResult.Success.INSTANCE);
+
+                    logLoginAnalytics(res);
 
                     return processedConfig;
                 }
                 catch (Exception e)
                 {
-                    logLoginAnalytics(AnalyticsResult.FailureUnknown.INSTANCE);
+                    logLoginAnalytics(e);
                     logger.error("Error updating config", e);
                     return null;
                 }
@@ -1157,7 +1179,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
         catch (IOException e)
         {
             // Almost certainly a network error.
-            logLoginAnalytics(AnalyticsResult.NetworkError.INSTANCE);
+            logLoginAnalytics(e);
             logger.warn("Network error: ", e);
             retrieveConfigurationFileFailed(true);
             return null;
@@ -1165,28 +1187,59 @@ public class ProvisioningServiceImpl implements ProvisioningService
         catch (Exception e)
         {
             // Some other error; probably not network.
-            logLoginAnalytics(AnalyticsResult.FailureUnknown.INSTANCE);
+            logLoginAnalytics(e);
             logger.warn("Config retrieval failed: ", e);
             retrieveConfigurationFileFailed(false);
             return null;
         }
     }
 
-    private void logLoginAnalytics(AnalyticsResult result)
+    private void logLoginAnalytics(Exception exception)
+    {
+        logLoginAnalytics(null, exception, null);
+    }
+
+    private void logLoginAnalytics(ErrorResponse errorResponse)
+    {
+        logLoginAnalytics(null, null, errorResponse);
+    }
+
+    private void logLoginAnalytics(HTTPResponseResult responseResult)
+    {
+        logLoginAnalytics(responseResult, null, null);
+    }
+
+    private void logLoginAnalytics(
+            HTTPResponseResult responseResult,
+            Exception exception,
+            ErrorResponse errorResponse
+    )
     {
         String rememberedPassword = mConfig.global().getString(REMEMBERED_PASSWORD);
-        mInsightService.logEvent(new InsightEvent(LogInKt.EVENT_LOG_IN, Map.of(
-                AnalyticsResultKt.PARAM_RESULT,
-                result.getValue(),
-                LogInKt.PARAM_LOG_IN_REMEMBER_PASSWORD,
-                String.valueOf(rememberedPassword != null),
-                LogInKt.PARAM_LOG_IN_ACCOUNT_CHANGED,
-                String.valueOf(PreLoginUtils.currentUsername != null),
-                CommonKt.PARAM_SSO_IDP,
-                PreLoginUtils.isLoggedInViaSSO() ?
-                        OpenIdProvider.MICROSOFT.getProvider() : OpenIdProvider.NONE.getProvider()
-                                 ))
-        );
+        Principal userPrincipal = savedCredentials != null ? savedCredentials.getUserPrincipal() : null;
+        String username = userPrincipal != null ? userPrincipal.getName() : "";
+
+        Map<String, Object> parameterInfoObjectMap = new HashMap<>();
+        parameterInfoObjectMap.put(USER_NAME.name(), username);
+        parameterInfoObjectMap.put(USER_REMEMBERED_PASSWORD.name(), rememberedPassword);
+
+        if (responseResult != null)
+        {
+            parameterInfoObjectMap.put(ProvisioningParameterInfo.LOG_IN_RESPONSE.name(), responseResult);
+        }
+
+        if (exception != null)
+        {
+            parameterInfoObjectMap.put(ProvisioningParameterInfo.LOG_IN_EXCEPTION.name(), exception);
+        }
+
+        if (errorResponse != null)
+        {
+            parameterInfoObjectMap.put(ProvisioningParameterInfo.LOG_IN_ERROR_RESPONSE.name(), errorResponse);
+        }
+
+        mInsightsService.logEvent(InsightsEventHint.PROVISIONING_LOG_IN.name(),
+                                parameterInfoObjectMap);
     }
 
     /**
@@ -1206,6 +1259,8 @@ public class ProvisioningServiceImpl implements ProvisioningService
         // If there is a mapping between the error message returned by the server and a string to display to
         // the user, use that string as the error message.
         ErrorResponse errorResponse = ErrorResponse.fromServerError(errorMessage);
+
+        logLoginAnalytics(errorResponse);
 
         if (errorResponse == ErrorResponse.ClientOutOfDate &&
             ProvisioningActivator.getUpdateService() != null)
@@ -1494,7 +1549,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
      * @param res the result to convert
      * @return The contents of the result
      */
-    private String convertResultToString(HTTPResponseResult res)
+    public static String convertResultToString(HTTPResponseResult res)
                                        throws IllegalStateException, IOException
     {
         InputStream in = res.getContent();
@@ -2186,7 +2241,7 @@ public class ProvisioningServiceImpl implements ProvisioningService
     private void forgetCredentials(boolean resetCdap)
     {
         logger.info("Removing username from config");
-        ConfigurationUtils.forgetUserCredentials(false);
+        ConfigurationUtils.clearCredentialsAndLogout(false);
 
         // If we're forgetting the credentials then we should forget the ones
         // we may have just received on a login URI, if we didn't clear them

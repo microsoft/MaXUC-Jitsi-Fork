@@ -2097,24 +2097,6 @@ public class DefaultContactListTreeCellRenderer
     }
 
     /**
-     * Whether the contact is a Group Contact
-     * @param uiContact the contact to check against
-     * @return whether the contact is a Group Contact
-     */
-    protected boolean isGroupContact(UIContact uiContact)
-    {
-        boolean isGroupContact = false;
-
-        if ((uiContact.getDescriptor() instanceof MetaContact) &&
-            ((MetaContact)uiContact.getDescriptor()).getGroupContact() != null)
-        {
-            isGroupContact = true;
-        }
-
-        return isGroupContact;
-    }
-
-    /**
      * Removes all action buttons for a cell
      */
     protected void removeActionButtons(boolean includeRolloverButtons)

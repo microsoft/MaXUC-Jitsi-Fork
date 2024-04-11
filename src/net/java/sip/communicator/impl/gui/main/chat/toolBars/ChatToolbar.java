@@ -8,7 +8,6 @@
 package net.java.sip.communicator.impl.gui.main.chat.toolBars;
 
 import static net.java.sip.communicator.util.PrivacyUtils.*;
-import static org.jitsi.util.Hasher.logHasher;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -18,9 +17,6 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-
-import org.jitsi.util.CustomAnnotations.*;
 
 import org.jitsi.service.resources.*;
 
@@ -90,25 +86,6 @@ public class ChatToolbar
      */
     private static final ImageLoaderService sImageLoaderService =
         GuiActivator.getImageLoaderService();
-
-    /**
-     * The conference service
-     */
-    private static final ConferenceService sConferenceService =
-        GuiActivator.getConferenceService();
-
-    /**
-     * The notify when available service
-     */
-    private static final NotifyWhenAvailableService nwaService =
-        GuiActivator.getNotifyWhenAvailableService();
-
-    /**
-     * 'Notify when available' toggleable button, enabled in a one-to-one chat
-     * if the contact is not available for calls.
-     */
-    private NotifyWhenAvailableButton notifyWhenAvailableButton =
-        new NotifyWhenAvailableButton();
 
     /**
      * The history button.
@@ -401,13 +378,6 @@ public class ChatToolbar
         mButtonsPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 3, 0));
         mButtonsPanel.setOpaque(false);
 
-        if(ConfigurationUtils.isImEnabled())
-        {
-            sLog.debug("IM is enabled - adding 'Notify when available' button");
-            mButtonsPanel.add(notifyWhenAvailableButton);
-            nwaService.addWatchingStateListener(notifyWhenAvailableButton);
-        }
-
         if (CreateConferenceMenu.isConferenceServiceEnabled())
         {
             mButtonsPanel.add(mWebConferenceButton);
@@ -550,8 +520,6 @@ public class ChatToolbar
             if (presenceOpSet != null)
                 presenceOpSet.removeContactPresenceStatusListener(this);
         }
-
-        nwaService.removeWatchingStateListener(notifyWhenAvailableButton);
     }
 
     /**
@@ -583,10 +551,6 @@ public class ChatToolbar
                 // We definitely want to disable the add participant button if
                 // chat is offline.
                 boolean disableAddParticipantButton = !chatOnline;
-
-                // Disable 'notify when available' button unless chatting with a
-                // one-to-one contact that is not available to call
-                boolean notifyWhenAvailableEnabled = false;
 
                 if (mChatSession instanceof ConferenceChatSession)
                 {
@@ -751,9 +715,6 @@ public class ChatToolbar
                             if (imContact != null)
                             {
                                 contactStatusMsg = imContact.getStatusMessage();
-
-                                notifyWhenAvailableButton.setImContact(imContact);
-                                notifyWhenAvailableEnabled = !imContact.getPresenceStatus().isAvailableForCalls();
                             }
                         }
 
@@ -788,9 +749,6 @@ public class ChatToolbar
                     // This field has some content, so ensure that accessibility users can navigate to it
                     mPresenceDescription.setFocusable(true);
                 }
-
-                // Enable/disable the notify when available button
-                notifyWhenAvailableButton.setEnabled(notifyWhenAvailableEnabled);
 
                 // If we concluded that we needed to disable the add
                 // participant button, do so now.  Otherwise, pass in the
@@ -1344,7 +1302,8 @@ public class ChatToolbar
             sLog.info("Creating audio conference for chat room: " +
                       sanitiseChatRoom(chatRoom.getIdentifier()));
 
-            sConferenceService.createOrAdd(chatRoom, true);
+            ConferenceService conferenceService = GuiActivator.getConferenceService();
+            conferenceService.createOrAdd(chatRoom, true);
         }
         else if (mDefaultPhoneNumber != null)
         {
@@ -2017,104 +1976,6 @@ public class ChatToolbar
         {
             if (ProtocolNames.JABBER.equals(evt.getProtoContact().getProtocolProvider()))
                 updateChatParticipant(null, evt.getProtoContact().getAddress());
-        }
-    }
-
-    /**
-     * Notify when available button that toggles when clicked. Extends the
-     * InCallButton class since these have the same toggleable UI style.
-     */
-    private static class NotifyWhenAvailableButton extends InCallButton
-    {
-        private static final long serialVersionUID = 1L;
-
-        private static final String toolTipText =
-                sResources.getI18NString("service.gui.contactavailable.NOTIFY_WHEN_AVAILABLE");
-        private static final String stopToolTipText =
-                sResources.getI18NString("service.gui.contactavailable.STOP_NOTIFY_WHEN_AVAILABLE");
-
-        /**
-         * The IM contact with whom this button is currently associated.
-         */
-        private Contact contact;
-
-        NotifyWhenAvailableButton()
-        {
-            super(ImageLoaderService.NOTIFY_WHEN_AVAILABLE,
-                  ImageLoaderService.NOTIFY_WHEN_AVAILABLE_ROLLOVER,
-                  null,
-                  ImageLoaderService.NOTIFY_WHEN_AVAILABLE_PRESSED,
-                  ImageLoaderService.NOTIFY_WHEN_AVAILABLE_ON,
-                  ImageLoaderService.NOTIFY_WHEN_AVAILABLE_ON_ROLLOVER,
-                  null,
-                  ImageLoaderService.NOTIFY_WHEN_AVAILABLE_DISABLED,
-                  toolTipText);
-
-            this.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    if (contact != null)
-                    {
-                        sLog.user("Clicked on 'Notify when available' for IM contact "
-                                  + logHasher(contact.getDisplayName()) + " in the chat window");
-
-                        if (isSelected())
-                        {
-                            nwaService.stopWatchingContact(contact);
-                        }
-                        else
-                        {
-                            nwaService.startWatchingContact(contact);
-                        }
-                    }
-                }
-            });
-        }
-
-        /**
-         * Set the IM contact that this button is associated with.
-         */
-        public void setImContact(@NotNull Contact contact)
-        {
-            this.contact = contact;
-            setSelected(nwaService.isContactBeingWatched(contact));
-        }
-
-        @Override
-        public void stateChanged(ChangeEvent evt)
-        {
-            if (evt.getSource() instanceof Contact && evt.getSource().equals(contact))
-            {
-                // Select/deselect this button if we started/stopped watching
-                // the contact somewhere else.
-                setSelected(nwaService.isContactBeingWatched(contact));
-            }
-            else
-            {
-                super.stateChanged(evt);
-
-                // Change tooltip text depending on button state.
-                if (this.equals(evt.getSource()))
-                {
-                    String newToolTipText;
-                    if (isEnabled() && isSelected())
-                    {
-                        // Notify when available can be de-selected
-                        newToolTipText = stopToolTipText;
-                    }
-                    else
-                    {
-                        newToolTipText = toolTipText;
-                    }
-
-                    if (!newToolTipText.equals(getToolTipText()))
-                    {
-                        sLog.debug("Notify when available tooltip changed to: " + newToolTipText);
-                        setToolTipText(newToolTipText);
-                    }
-                }
-            }
         }
     }
 }

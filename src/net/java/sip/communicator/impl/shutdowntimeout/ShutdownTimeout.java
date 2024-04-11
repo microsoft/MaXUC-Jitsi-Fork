@@ -11,6 +11,8 @@ import java.io.*;
 import java.util.*;
 
 import org.jitsi.service.configuration.*;
+import org.jitsi.util.ThreadUtils;
+
 import org.osgi.framework.*;
 
 import net.java.sip.communicator.service.analytics.*;
@@ -33,7 +35,7 @@ import net.java.sip.communicator.util.*;
 public class ShutdownTimeout
     implements BundleActivator
 {
-    private static final Logger sLog
+    private final Logger sLog
         = Logger.getLogger(ShutdownTimeout.class);
 
     /**
@@ -74,22 +76,22 @@ public class ShutdownTimeout
     /**
      * A reference to the analytics service
      */
-    private static AnalyticsService sAnalyticsService;
+    private AnalyticsService sAnalyticsService;
 
     /**
      * A reference to the bundle context
      */
-    private static BundleContext sContext;
+    private BundleContext sContext;
 
     /**
      * A reference to the config service
      */
-    private static ConfigurationService sConfigService;
+    private ConfigurationService sConfigService;
 
     /**
      * A reference to the diagnostics service
      */
-    private static DiagnosticsService sDiagnosticsService;
+    private DiagnosticsService sDiagnosticsService;
 
     /**
      * The shutdown timeout
@@ -123,7 +125,7 @@ public class ShutdownTimeout
                             sLog.info("Starting shutdown countdown of "
                                                     + mShutDownTimeout + "ms.");
 
-                            wait(mShutDownTimeout);
+                            ThreadUtils.wait(this, mShutDownTimeout);
 
                             sLog.error("Failed to gently shutdown. Forcing exit.");
 
@@ -135,7 +137,7 @@ public class ShutdownTimeout
                         }
                         finally
                         {
-                            Runtime.getRuntime().halt(mSystemExitCode);
+                            RuntimeUtils.halt(mSystemExitCode);
                         }
                     }
                 }
@@ -145,7 +147,7 @@ public class ShutdownTimeout
                     shutdownTimeoutThread);
 
             shutdownTimeoutThread.setDaemon(true);
-            shutdownTimeoutThread.start();
+            ThreadUtils.startThread(shutdownTimeoutThread);
         }
     };
 
@@ -161,7 +163,7 @@ public class ShutdownTimeout
         sContext = context;
 
         // Add a shutdown hook to detect client hangs
-        Runtime.getRuntime().addShutdownHook(mShutdownHook);
+        RuntimeUtils.addShutdownHook(mShutdownHook);
 
         sConfigService = ServiceUtils
             .getService(context, ConfigurationService.class);
@@ -201,9 +203,9 @@ public class ShutdownTimeout
      */
     private void checkForShutdownHang()
     {
-        File shutdownHangMarker = new File(mShutdownHangMarker);
+        File shutdownHangMarker = FileUtils.createFile(mShutdownHangMarker);
 
-        if (! shutdownHangMarker.exists())
+        if (!shutdownHangMarker.exists())
         {
             return;
         }
@@ -302,7 +304,7 @@ public class ShutdownTimeout
     /**
      * @return a reference to the analytics service
      */
-    static AnalyticsService getAnalyticsService()
+    private AnalyticsService getAnalyticsService()
     {
         if (sAnalyticsService == null)
         {
@@ -316,7 +318,7 @@ public class ShutdownTimeout
     /**
      * @return a reference to the diagnostics service
      */
-    static DiagnosticsService getDiagnosticsService()
+    private DiagnosticsService getDiagnosticsService()
     {
         if (sDiagnosticsService == null)
         {

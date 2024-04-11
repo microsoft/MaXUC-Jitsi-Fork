@@ -26,4 +26,6 @@ public abstract class AbstractContactGroupJabberImpl
     implements ContactGroup
 {
     abstract void addContact(ContactJabberImpl contact);
+
+    abstract void removeContact(ContactJabberImpl contact);
 }

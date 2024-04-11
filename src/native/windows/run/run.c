@@ -589,6 +589,7 @@ Run_getJavaVMOptionStrings
                 _T("lib\\bundle\\metaswitch-protobuf.jar"),
                 _T("lib\\bundle\\protobuf-java.jar"),
                 _T("lib\\bundle\\maxanalytics-desktop.jar"),
+                _T("lib\\bundle\\kotlin-stdlib.jar"),
                 _T("sc-bundles\\sc-launcher.jar"),
                 _T("sc-bundles\\json.jar"),
                 _T("sc-bundles\\util.jar"),

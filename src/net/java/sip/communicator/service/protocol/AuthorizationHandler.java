@@ -71,14 +71,4 @@ public interface AuthorizationHandler
      */
     AuthorizationRequest createAuthorizationRequest(
             Contact contact);
-
-    /**
-     * Called by the protocol provider, this method should be implemented by the
-     * user interface. The method will be called any whenever someone acts
-     * upone an authorization request that we have previously sent.
-     * @param response the <tt>AuthorizationResponse</tt> that we have received.
-     * @param sourceContact a reference to the Contact demanding authorization
-     */
-    void processAuthorizationResponse(
-            AuthorizationResponse response, Contact sourceContact);
 }

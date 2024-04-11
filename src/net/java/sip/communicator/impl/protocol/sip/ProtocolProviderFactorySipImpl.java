@@ -156,7 +156,7 @@ public class ProtocolProviderFactorySipImpl
      * When we don't have all the config required to perform a SIP register, we
      * inform the user to contact their service provider.
      */
-    protected void noSIPConfigErrorDialog()
+    private void noSIPConfigErrorDialog()
     {
         logger.error("Missing SIP config - inform user to contact SP");
         String message = mResourceService.getI18NString(

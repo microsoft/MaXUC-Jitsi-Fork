@@ -15,7 +15,7 @@ import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.service.insights.InsightService;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
@@ -38,7 +38,7 @@ public class ContactlistActivator
 
     private static BundleContext bundleContext;
 
-    private static InsightService insightService;
+    private static InsightsService insightsService;
 
     /**
      * A reference to the ConfigurationService implementation instance that
@@ -49,8 +49,6 @@ public class ContactlistActivator
     private static PhoneNumberUtilsService sPhoneNumberUtils;
 
     private static UIService sUiService;
-
-    private static ConferenceService sConferenceService;
 
     /**
      * Reference to the WISPA interface, used for sending and receiving data via
@@ -179,13 +177,7 @@ public class ContactlistActivator
      */
     public static ConferenceService getConferenceService()
     {
-        if (sConferenceService == null)
-        {
-            sConferenceService = ServiceUtils.getService(bundleContext,
-                                                         ConferenceService.class);
-        }
-
-        return sConferenceService;
+        return ServiceUtils.getConferenceService(bundleContext);
     }
 
     /**
@@ -211,14 +203,14 @@ public class ContactlistActivator
         return mclServiceImpl;
     }
 
-    public static InsightService getInsightService()
+    public static InsightsService getInsightsService()
     {
-        if (insightService == null)
+        if (insightsService == null)
         {
-            insightService = ServiceUtils.getService(bundleContext,
-                                                    InsightService.class);
+            insightsService = ServiceUtils.getService(bundleContext,
+                                                    InsightsService.class);
         }
 
-        return insightService;
+        return insightsService;
     }
 }

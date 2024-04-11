@@ -45,7 +45,7 @@ public abstract class AccountID
      */
     private static final Logger logger = Logger.getLogger(AccountID.class);
 
-    private static final ConfigurationService configService =
+    private final ConfigurationService configService =
                             ProtocolProviderActivator.getConfigurationService();
 
     /**
@@ -258,13 +258,7 @@ public abstract class AccountID
      */
     public String getLoggableAccountID()
     {
-        String rc = "null";
-        if (accountUID != null)
-        {
-            final String userID = getUserID();
-            rc = accountUID.replace(userID, sanitisePeerId(userID));
-        }
-        return rc;
+        return sanitisePeerId(accountUID);
     }
 
     /**
@@ -752,7 +746,7 @@ public abstract class AccountID
         // config, and disable it, so that the reconnect plugin stops trying to
         // restart the account.
         logger.info("Deleting config for and disabling account for " +
-                                    protocolName + ", accountID " + accountUID);
+                                    protocolName + ", accountID " + getLoggableAccountID());
         configService.user().removeAccountConfigForProtocol(protocolName, true);
         putAccountProperty(
             ProtocolProviderFactory.IS_ACCOUNT_DISABLED, String.valueOf(true));
@@ -762,7 +756,7 @@ public abstract class AccountID
         AccountManager accountManager = ProtocolProviderActivator.getAccountManager();
         if (accountManager != null)
         {
-            logger.debug("Unloading account: " + userID);
+            logger.debug("Unloading account: " + sanitisePeerId(userID));
             accountManager.accountsChanged();
         }
 
@@ -773,7 +767,7 @@ public abstract class AccountID
 
             if (providerFactory != null)
             {
-                logger.debug("Uninstalling account: " + accountUID);
+                logger.debug("Uninstalling account: " + getLoggableAccountID());
                 providerFactory.uninstallAccount(this);
             }
         }

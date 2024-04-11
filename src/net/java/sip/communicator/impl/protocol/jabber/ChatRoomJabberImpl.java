@@ -25,16 +25,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.metaswitch.maxanalytics.event.AnalyticsResult;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.CommonKt;
-import com.metaswitch.maxanalytics.event.ImKt;
-import com.metaswitch.maxanalytics.event.ImType;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.SmackException.NoResponseException;
@@ -74,7 +68,10 @@ import net.java.sip.communicator.service.analytics.AnalyticsParameter;
 import net.java.sip.communicator.service.analytics.AnalyticsParameterSimple;
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.contactlist.MetaContactListService;
-import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.enums.InsightsResultCode;
+import net.java.sip.communicator.service.insights.parameters.CommonParameterInfo;
+import net.java.sip.communicator.service.insights.parameters.JabberParameterInfo;
 import net.java.sip.communicator.service.msghistory.MessageHistoryService;
 import net.java.sip.communicator.service.protocol.ChatRoom;
 import net.java.sip.communicator.service.protocol.ChatRoomConfigurationForm;
@@ -119,9 +116,9 @@ import org.jitsi.service.resources.ResourceManagementService;
 public class ChatRoomJabberImpl implements ChatRoom
 {
     private static final Logger logger = Logger.getLogger(ChatRoomJabberImpl.class);
-    private static final ResourceManagementService resources = JabberActivator.getResources();
-    private static final MessageHistoryService messageHistoryService = JabberActivator.getMessageHistoryService();
-    private static final MetaContactListService contactListService = JabberActivator.getMetaContactListService();
+    private final ResourceManagementService resources = JabberActivator.getResources();
+    private final MessageHistoryService messageHistoryService = JabberActivator.getMessageHistoryService();
+    private final MetaContactListService contactListService = JabberActivator.getMetaContactListService();
 
     /**
      * The multi user chat smack object that we encapsulate in this room.
@@ -244,13 +241,6 @@ public class ChatRoomJabberImpl implements ChatRoom
      * configuration service.
      */
     private static final String MUTE_PROPERTY_NAME = "chatRoomMuted";
-
-    /**
-     * If true, we have already displayed a toast for new historical messages
-     * in this chat room so we should not display another toast until a new
-     * non-historical message is received.
-     */
-    private final AtomicBoolean historyNotificationDisplayed = new AtomicBoolean();
 
     /**
      * The property we use to store the value of subject in the configuration
@@ -1145,6 +1135,23 @@ public class ChatRoomJabberImpl implements ChatRoom
                     ex);
             }
             else if(ex.getStanzaError().getCondition() ==
+                StanzaError.Condition.conflict)
+            {
+                errorMessage
+                    = "Failed to join chat room "
+                      + sanitiseChatRoom(chatRoomJid)
+                      + " with nickname: "
+                      + sanitisePeerId(nickname)
+                      + ". There was a conflict.";
+
+                logger.error(errorMessage, ex);
+
+                throw new OperationFailedException(
+                    errorMessage,
+                    OperationFailedException.IDENTIFICATION_CONFLICT,
+                    ex);
+            }
+            else if(ex.getStanzaError().getCondition() ==
                 StanzaError.Condition.not_authorized)
             {
                 errorMessage
@@ -1204,7 +1211,8 @@ public class ChatRoomJabberImpl implements ChatRoom
                     = "Failed to join room "
                       + sanitiseChatRoom(chatRoomJid)
                       + " with nickname: "
-                      + sanitisePeerId(nickname);
+                      + sanitisePeerId(nickname)
+                      + " and stanza error " + ex.getStanzaError();
 
                 logger.error(errorMessage, ex);
 
@@ -1695,7 +1703,7 @@ public class ChatRoomJabberImpl implements ChatRoom
 
                  fireMessageEvent(msgDeliveredEvt);
              }
-             sendTelemetryImSendMessage(true, message.getSize());
+             sendTelemetryImSendMessage(true, message);
          }
          catch (NotConnectedException | InterruptedException ex)
          {
@@ -1713,7 +1721,7 @@ public class ChatRoomJabberImpl implements ChatRoom
                          false,
                          MessageEvent.GROUP_MESSAGE);
                  msgDeliveredEvt.setFailed(true);
-                 sendTelemetryImSendMessage(false, message.getSize());
+                 sendTelemetryImSendMessage(false, message);
                  fireMessageEvent(msgDeliveredEvt);
              }
 
@@ -1727,20 +1735,15 @@ public class ChatRoomJabberImpl implements ChatRoom
     /**
      * Sends an IM_SEND_MESSAGE telemetry event to Azure
      */
-    private void sendTelemetryImSendMessage(boolean delivered, int contentLength)
+    private void sendTelemetryImSendMessage(boolean delivered, ImMessage message)
     {
-        JabberActivator.getInsightService().logEvent(
-                new InsightEvent(
-                        ImKt.EVENT_IM_SEND_MESSAGE,
-                        Map.of(CommonKt.PARAM_TYPE,
-                               ImType.GROUP_CHAT.getValue$maxanalytics(),
-                               AnalyticsResultKt.PARAM_RESULT,
-                               delivered ?
-                                AnalyticsResult.Success.INSTANCE.getValue():
-                                AnalyticsResult.FailureUnknown.INSTANCE.getValue()
-                        ),
-                        Map.of(ImKt.PARAM_IM_LENGTH, (double) contentLength)
-                )
+        JabberActivator.getInsightsService().logEvent(
+                InsightsEventHint.JABBER_IM_SEND_MESSAGE.name(),
+                Map.of(
+                        JabberParameterInfo.MESSAGE.name(), message,
+                        JabberParameterInfo.MESSAGE_DELIVERED.name(), delivered,
+                        JabberParameterInfo.MESSAGE_TYPE.name(), MessageEvent.GROUP_MESSAGE
+                        )
         );
     }
 
@@ -2252,6 +2255,7 @@ public class ChatRoomJabberImpl implements ChatRoom
         try
         {
             multiUserChat.banUser(contactAddress, reason);
+            sendRemoveParticipantAnalytic(InsightsResultCode.SUCCESS);
         }
         catch (XMPPErrorException | NotConnectedException | InterruptedException |
             NoResponseException ex)
@@ -2262,6 +2266,7 @@ public class ChatRoomJabberImpl implements ChatRoom
             // into a consistent state.
             invite(contactAddress.toString(), null, true);
 
+            sendRemoveParticipantAnalytic(InsightsResultCode.XMPP_ERROR);
             if (ex instanceof XMPPErrorException)
             {
                 StanzaError stanzaError = ((XMPPErrorException) ex).getStanzaError();
@@ -2282,6 +2287,19 @@ public class ChatRoomJabberImpl implements ChatRoom
                 "An error occured while trying to kick the participant.",
                 OperationFailedException.GENERAL_ERROR);
         }
+    }
+
+    /**
+     * Sends an analytic event for removing participant from group chat
+     *
+     * @param code Mapped value for parameter result
+     */
+    private void sendRemoveParticipantAnalytic(InsightsResultCode code)
+    {
+        JabberActivator.getInsightsService().logEvent(
+                InsightsEventHint.IM_REMOVE_PARTICIPANT.name(),
+                                 Map.of(CommonParameterInfo.INSIGHTS_RESULT_CODE.name(),
+                                        code));
     }
 
     /**
@@ -2554,19 +2572,19 @@ public class ChatRoomJabberImpl implements ChatRoom
                 // Get the message content.
                 String content = match.group(2);
 
-                SpecialMessageHandler handler =
-                    opSetSpecialMsg.getSpecialMessageHandler(type);
+                List<SpecialMessageHandler> handlers =
+                    opSetSpecialMsg.getSpecialMessageHandlers(type);
 
                 // If there is a handler for this special message type, pass it
                 // to the handler, unless it is a historical message, as we
                 // don't want to handle a special message more than once.  In
                 // any case, return so that we don't also process the message
                 // as a normal message.
-                if (handler != null)
+                if (handlers != null)
                 {
                     logger.debug("Passing special message of type " + type +
-                        " to handler " + handler + " with delay: " + delay);
-                    handler.handleSpecialMessage(content, delay, ChatRoomJabberImpl.this);
+                        " to handlers " + handlers + " with delay: " + delay);
+                    handlers.forEach((handler) -> handler.handleSpecialMessage(content, delay, ChatRoomJabberImpl.this));
                     return;
                 }
 

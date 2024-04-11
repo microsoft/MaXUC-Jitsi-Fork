@@ -83,12 +83,12 @@ public class OutlookCalendarDataHandler
         sLog.info("Got default calendar folder: " + mDefaultCalendarFolder);
 
         mUpdateExecutor = new Timer("OutlookCalendarDataHandler.updateExecutor");
-        backoff = new ServerBackoff(MAX_NUMBER_FAILURE_DOUBLES, INITIAL_FAIL_BACKOFF);
+        backoff = new ServerBackoff("OutlookCalendarDataHandler", MAX_NUMBER_FAILURE_DOUBLES, INITIAL_FAIL_BACKOFF);
         mClient.queryCalendar();
 
         BundleContext context = AddressBookProtocolActivator.getBundleContext();
         DiagnosticsServiceRegistrar.registerStateDumper(this, context);
-        sLog.info("Start complete");
+        sLog.info("Start complete. Backoff " + backoff);
     }
 
     /**
@@ -203,7 +203,7 @@ public class OutlookCalendarDataHandler
             return;
         }
 
-        Date currentDate = new Date();
+        Date currentDate = ClockUtils.getDateNow();
 
         // Nothing to do if it isn't recurring and has already happened
         RecurringPattern pattern = meeting.getRecurringPattern();
@@ -322,7 +322,7 @@ public class OutlookCalendarDataHandler
                         {
                             // Backoff because there has been some previous problem communicating with AOS.
                             long backOffTime = backoff.getBackOffTime();
-                            sLog.debug("Waiting as AOS problems: " + backOffTime + "ms");
+                            sLog.debug("Waiting as AOS problems: " + backOffTime + "ms. Backoff " + backoff);
 
                             // Check for the window where the backoff is reset by another thread between shouldWait() returning
                             // true and calling getBackOffTime().

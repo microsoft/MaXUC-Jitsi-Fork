@@ -41,4 +41,13 @@ public class AddressBookContactOutlookImpl
                                 isFavourite);
         this.isFavourite = isFavourite;
     }
+
+    /**
+     * Fetch the contact type as an alternative to <tt>instanceof</tt> checks.
+     */
+    @Override
+    public ContactType getContactType()
+    {
+        return ContactType.NATIVE_OUTLOOK;
+    }
 }

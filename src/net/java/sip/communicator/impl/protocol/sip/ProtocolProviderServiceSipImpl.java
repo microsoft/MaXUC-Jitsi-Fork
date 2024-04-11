@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.protocol.sip;
 
+import static org.jitsi.util.Hasher.logHasher;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.text.ParseException;
@@ -189,7 +191,7 @@ public class ProtocolProviderServiceSipImpl
       * The class in charge of event dispatching and managing common JAIN-SIP
       * resources
       */
-    private static SipStackSharing sipStackSharing = null;
+    private SipStackSharing sipStackSharing = null;
 
     /**
      * Class holding information on the current reregister.  The purpose
@@ -717,7 +719,7 @@ public class ProtocolProviderServiceSipImpl
                         if (!"IndividualLine".equals(classOfService.getSubscriberType()))
                         {
                             logger.info("CoS allows presence");
-                            createPresenceOpSets(accountID, opSetBasicTelephonySipImpl);
+                            createPresenceOpSets(opSetBasicTelephonySipImpl);
                         }
                         else
                         {
@@ -800,28 +802,16 @@ public class ProtocolProviderServiceSipImpl
     /**
      * Create the operation sets for presence.
      *
-     * @param accountID The account to create the op sets for
      * @param opSetBasicTelephonySipImpl The telephony op set
      */
-    private void createPresenceOpSets(SipAccountID accountID,
-        OperationSetBasicTelephonySipImpl opSetBasicTelephonySipImpl)
+    private void createPresenceOpSets(OperationSetBasicTelephonySipImpl opSetBasicTelephonySipImpl)
     {
-        int pollingValue =
-            accountID.getAccountPropertyInt(
-                ProtocolProviderFactory.POLLING_PERIOD, 30);
-
-        int subscriptionExpiration =
-            accountID.getAccountPropertyInt(
-                ProtocolProviderFactory.SUBSCRIPTION_EXPIRATION, 3600);
-
         //init presence op set.
         OperationSetPersistentPresence opSetPersPresence
             = OperationSetPresenceSipImpl
                 .createOperationSetPresenceSipImpl(
                     this,
-                    true,
-                    pollingValue,
-                    subscriptionExpiration);
+                    true);
 
         addSupportedOperationSet(
             OperationSetPersistentPresence.class,
@@ -1476,6 +1466,13 @@ public class ProtocolProviderServiceSipImpl
                                     targetAddress.getPort(),
                                     localAddress,
                                     transport);
+
+                if (localSockAddr == null)
+                {
+                    logger.error("Failed to get local address while creating Via Headers!");
+                    throw new OperationFailedException("Failed to get local address while creating Via Headers!",
+                        OperationFailedException.INTERNAL_ERROR);
+                }
                 localPort = localSockAddr.getPort();
             }
 
@@ -2829,12 +2826,12 @@ public class ProtocolProviderServiceSipImpl
         //address with that of the proxy.(report by Dan Bogos)
         InetSocketAddress outboundProxy = connection.getAddress();
 
-        if(outboundProxy != null)
+        if (outboundProxy != null)
         {
             // To avoid log spam, only log at most every 60 seconds, unless the
             // host or proxy change.
             logger.interval(60, host,
-                            "Will use proxy address", outboundProxy);
+                            "Will use proxy address", logHasher(outboundProxy));
             destinationInetAddress = outboundProxy;
         }
         else
@@ -2852,12 +2849,12 @@ public class ProtocolProviderServiceSipImpl
             {
                 // Note that getNextAddress returning false can be because of network problems causing DNS
                 // queries to fail, not necessarily due to an invalid domain.
-                throw new IllegalArgumentException(host + " could not be resolved to an internet address.");
+                throw new IllegalArgumentException(logHasher(host) + " could not be resolved to an internet address.");
             }
         }
 
-        logger.debug("Returning address " + destinationInetAddress
-             + " for destination " + host);
+        logger.debug("Returning address " + logHasher(destinationInetAddress)
+             + " for destination " + logHasher(host));
 
         return destinationInetAddress;
     }

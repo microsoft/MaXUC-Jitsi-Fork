@@ -10,7 +10,10 @@ package net.java.sip.communicator.service.netaddr;
 import java.io.IOException;
 import java.net.*;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import net.java.sip.communicator.service.netaddr.event.NetworkConfigurationChangeListener;
+import org.jitsi.util.CustomAnnotations.Nullable;
 
 /**
  * The NetworkAddressManagerService
@@ -51,7 +54,7 @@ public interface NetworkAddressManagerService
      * a socket can bind upon or distribute to peers as a contact address.
      * <p>
      * This method tries to make for the ambiguity in the implementation of the
-     * InetAddress.getLocalHost() method.
+     * {@link InetAddress#getLocalHost()} method.
      * (see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4665037).
      * <p>
      * To put it briefly, the issue is about choosing a local source
@@ -76,6 +79,32 @@ public interface NetworkAddressManagerService
      * a socket can bind upon or distribute to peers as a contact address.
      */
     InetAddress getLocalHost(InetAddress intendedDestination);
+
+    /**
+     * This functions blocks for at most <code>timeout</code> period of time (with time units as specified), and if
+     * the JRE's {@link InetAddress#getLocalHost()} has not returned by then, then this function returns null.
+     * If {@link InetAddress#getLocalHost()} returns
+     * before the timeout expires, then this function will return at that time rather than waiting for the timeout to
+     * expire.
+     * <p>
+     * The rationale for this function's existence is that there are known problems on MacOS where
+     * {@link InetAddress#getLocalHost()} may take 5s+ to load in certain hard-to-reproduce circumstances. Most of the time,
+     * however, it seems to take of the order of 70ms. e.g. see <a
+     * href="https://stackoverflow.com/questions/10064581/how-can-i-eliminate-slow-resolving-loading-of-localhost-virtualhost-a-2-3-secon">this
+     * Stack Overflow post</a>
+     * <p>
+     * This can be very damaging if this happens during call setup on incoming calls.
+     * <p>
+     * The mitigations suggested online - namely, editing the /etc/hosts file - are not suitable for
+     * our use case, as we can't ask all our users to do that, nor is it practical for us to programmatically make such
+     * edits.
+     *
+     * @param timeout timeout
+     * @param unit    time unit for timeout
+     * @return nullable InetAddress
+     */
+    @Nullable
+    InetAddress getOsLocalHostWithTimeout(long timeout, TimeUnit unit);
 
     /**
      * Returns the hardware address (i.e. MAC address) of the specified

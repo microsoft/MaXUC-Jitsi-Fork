@@ -9,29 +9,29 @@ extern "C" {
 #endif
 
 /*
- * Class:     net_java_sip_communicator_plugin_addressbook_OutlookDataHandler
+ * Class:     net_java_sip_communicator_plugin_addressbook_OutlookServerNative
  * Method:    Initialize
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL
-    Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_Initialize
+    Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_Initialize
   (JNIEnv *, jclass, jint, jstring, jstring, jstring);
 
 /*
- * Class:     net_java_sip_communicator_plugin_addressbook_OutlookDataHandler
+ * Class:     net_java_sip_communicator_plugin_addressbook_OutlookServerNative
  * Method:    MAPIUninitialize
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_Uninitialize
+JNIEXPORT void JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_Uninitialize
   (JNIEnv *, jclass);
 
-JNIEXPORT jboolean JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_CheckServerIsAlive
+JNIEXPORT jboolean JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_CheckServerIsAlive
   (JNIEnv *, jclass);
 
-JNIEXPORT int JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_getOutlookBitnessVersion
+JNIEXPORT int JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_getOutlookBitnessVersion
     (JNIEnv *jniEnv, jclass clazz);
 
-JNIEXPORT int JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookDataHandler_getOutlookVersion
+JNIEXPORT int JNICALL Java_net_java_sip_communicator_plugin_addressbook_OutlookServerNative_getOutlookVersion
     (JNIEnv *jniEnv, jclass clazz);
 
 #ifdef __cplusplus

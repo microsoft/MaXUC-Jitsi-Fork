@@ -1,5 +1,4 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Highly Confidential Material
 package net.java.sip.communicator.service.conference;
 
 import java.util.Set;
@@ -11,11 +10,8 @@ import net.java.sip.communicator.service.protocol.ChatRoom;
 import org.jitsi.util.CustomAnnotations.Nullable;
 
 /**
- * An shell abstract implementation of the conference service.
+ * A shell abstract implementation of the conference service.
  *
- * DO NOT REMOVE ANYTHING FROM THIS IMPLEMENTATION, YOU CAN ONLY ADD!
- * We have hidden plugin implementations which rely on this class, which
- * you may not have access to.
  */
 public abstract class AbstractConferenceServiceImpl
         implements ConferenceService
@@ -41,6 +37,48 @@ public abstract class AbstractConferenceServiceImpl
     {
         // Default to false
         return false;
+    }
+
+    @Override
+    public void confirmFirstTimeUseEducation()
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void downloadConferenceApp()
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void useInBrowser()
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void confirmDontShowConfAppDownload()
+    {
+        // Do nothing
+    }
+
+    @Override
+    public boolean isLegacyImplementation()
+    {
+        return true;
+    }
+
+    @Override
+    public void startCall(String email)
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void openChat(String email)
+    {
+        // Do nothing
     }
 
     @Override

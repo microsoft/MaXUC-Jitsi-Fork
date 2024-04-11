@@ -33,6 +33,11 @@ public interface CPCos
     String getBGName();
 
     /**
+     * @return the value of the "AADTenantID" field
+     */
+    String getAADTenantID();
+
+    /**
      * @return the value of the "BCMSubscribed" field
      */
     boolean getBCMSubscribed();
@@ -134,6 +139,35 @@ public interface CPCos
     boolean getIsPasswordAged();
 
     /**
+     * Logged-in user has an option to "override" their default number with one of the
+     * configured numbers which will be displayed to the callees during
+     * outgoing calls. One example of this is Calling party number (CPN).
+     * @return True, if subscriber is allowed to override with a configured
+     * calling party number, otherwise false.
+     */
+    boolean isAllowedToOverrideOutgoingCallerID();
+
+    /**
+     * Returns configured calling party number (CPN) of the business group
+     * if it is configured. Can be used to "override" default
+     * directory number (DN) of a user when initiating calls.
+     * @return overridable calling party number
+     */
+    String getOverridableCPN();
+
+    /**
+     * Returns OutgoingCallerIDType enum value indicating which caller ID
+     * will be used and displayed to the callees in outgoing calls.
+     * @return outgoing caller id type
+     */
+    OutgoingCallerIDType getCallerIDForOutboundCalls();
+
+    /**
+     * @return Logged-in user's default phone number.
+     */
+    String getPhoneNumber();
+
+    /**
      * @return an object that contains the information parsed from the CoS
      */
     SubscribedMashups getSubscribedMashups();
@@ -165,6 +199,11 @@ public interface CPCos
          *         no phone service (i.e. the DN is just an arbitrary user ID).
          */
         boolean hasPhoneService();
+
+        /**
+         * @return true if the subscribed mashups indicate that Teams is enabled
+         */
+        boolean isConferencingAllowed();
 
         /**
          * @return true if conferencing is allowed

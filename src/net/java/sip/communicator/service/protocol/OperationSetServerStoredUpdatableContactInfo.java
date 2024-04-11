@@ -33,11 +33,13 @@ public interface OperationSetServerStoredUpdatableContactInfo
      * @param details The details to set on the subscriber. After this operation
      *                the contact will have exactly these details.  Any details
      *                that are not in this list will be deleted
+     * @param isCreateOp Whether the contact is being created or edited.
      * @param listener Listener to listen for results to the change to the
      *                 contact
      */
     void setDetailsForContact(Contact contact,
                               ArrayList<GenericDetail> details,
+                              boolean isCreateOp,
                               ContactUpdateResultListener listener);
 
     /**

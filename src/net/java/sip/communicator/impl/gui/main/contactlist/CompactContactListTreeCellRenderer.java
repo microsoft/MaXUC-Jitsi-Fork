@@ -320,7 +320,6 @@ public class CompactContactListTreeCellRenderer
             if (imProvider != null)
             {
                 // We have an IM account, so add the chat button
-                boolean isGroupContact = isGroupContact(uiContact);
                 boolean isImOnline = imProvider.isRegistered();
 
                 boolean isViewableChatRoom = false;
@@ -337,16 +336,13 @@ public class CompactContactListTreeCellRenderer
                 //  - It is an IM contact.
                 //  - It is a message history contact that represents a chat
                 //    room that the user should be able to view.
-                //  - It is a group contact and group chat is enabled.
                 boolean isSuitableContact =
                     isIMContact(uiContact, hasPhone) ||
-                    isViewableChatRoom ||
-                    (isGroupContact && ConfigurationUtils.isMultiUserChatEnabled());
+                    isViewableChatRoom;
 
                 String toolTipRes =
                     !isSuitableContact ? "service.gui.SEND_MESSAGE_NO_ADDRESS" :
                         !isImOnline ? "service.gui.SEND_MESSAGE_NO_SERVICE" :
-                            isGroupContact ? "service.gui.SEND_GROUP_CHAT_TO" :
                                 "service.gui.SEND_MESSAGE";
 
                 // Finally, we only actually enable the chat button if all of

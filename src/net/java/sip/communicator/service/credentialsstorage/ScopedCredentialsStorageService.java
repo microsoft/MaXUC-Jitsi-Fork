@@ -62,10 +62,4 @@ public interface ScopedCredentialsStorageService
      * changing their password as that may indicate a credentials leak.
      */
     void rotateMasterPassword();
-
-    /**
-     * Trigger copying a master password from one key (if one exists under it) to a second key
-     * (blatting over any password already stored under that key).
-     */
-    void copyMasterPassword(String from, String to);
 }

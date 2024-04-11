@@ -221,6 +221,8 @@ public class RingtonePreviewButton extends SIPCommButton
             sLog.user("Ringtone preview button clicked");
             isSelected = !isSelected;
 
+            setSelected(isSelected);
+
             /* Fire a state property change event as the button's state has changed */
             if (isSelected)
             {

@@ -18,6 +18,7 @@ import org.osgi.framework.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.gui.*;
+import net.java.sip.communicator.service.insights.InsightsService;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.globalstatus.*;
 import net.java.sip.communicator.service.resources.*;
@@ -103,6 +104,8 @@ public class AddressBookProtocolActivator
      * The threading service used to schedule background tasks
      */
     private static ThreadingService threadingService;
+
+    private static InsightsService insightsService;
 
     /**
      * Starts the bundle.
@@ -359,5 +362,16 @@ public class AddressBookProtocolActivator
         }
 
         return threadingService;
+    }
+
+    public static InsightsService getInsightsService()
+    {
+        if (insightsService == null)
+        {
+            insightsService = ServiceUtils.getService(bundleContext,
+                                                     InsightsService.class);
+        }
+
+        return insightsService;
     }
 }

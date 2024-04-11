@@ -42,11 +42,6 @@ import javax.sip.message.Request;
 import javax.sip.message.Response;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.metaswitch.maxanalytics.event.AnalyticsResultKt;
-import com.metaswitch.maxanalytics.event.CallAction;
-import com.metaswitch.maxanalytics.event.CallKt;
-import com.metaswitch.maxanalytics.event.CallType;
-import com.metaswitch.maxanalytics.event.CommonKt;
 import gov.nist.javax.sip.header.ContentLength;
 import gov.nist.javax.sip.header.ContentType;
 import gov.nist.javax.sip.message.Content;
@@ -67,7 +62,8 @@ import net.java.sip.communicator.service.contactsource.ContactRemovedEvent;
 import net.java.sip.communicator.service.contactsource.ContactSourceService;
 import net.java.sip.communicator.service.contactsource.ExtendedContactSourceService;
 import net.java.sip.communicator.service.contactsource.SourceContact;
-import net.java.sip.communicator.service.insights.InsightEvent;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.SipParameterInfo;
 import net.java.sip.communicator.service.protocol.Call;
 import net.java.sip.communicator.service.protocol.CallPeerState;
 import net.java.sip.communicator.service.protocol.Contact;
@@ -217,6 +213,13 @@ public class CallPeerSipImpl
      * execution of {@link #requestKeyFrame()}).
      */
     private boolean sendPictureFastUpdate = true;
+
+    /**
+     * The flag which indicates whether the client is dialing in E.164 format
+     */
+    private static final boolean dialAsE164 = SipActivator.getConfigurationService().global().getBoolean(
+            "net.java.sip.communicator.plugin.contactdetails.DIAL_AS_E164",
+            true);
 
     /**
      * Creates a new call peer with address <tt>peerAddress</tt>.
@@ -570,6 +573,15 @@ public class CallPeerSipImpl
         if (name == null)
         {
             name = getPeerUserName();
+
+            // If dialing in E.164 format, format the display names of outgoing
+            // calls to local or E.164 format to avoid displaying local numbers
+            // in E.164 format
+            if (dialAsE164 && CallPeerState.INITIATING_CALL.equals(getState()))
+            {
+                name = SipActivator.getPhoneNumberUtils().formatNumberToLocalOrE164(name);
+            }
+
             logger.debug("Got name from SIP username.");
         }
 
@@ -1903,8 +1915,8 @@ public class CallPeerSipImpl
 
         try
         {
-            sendTelemetryIncomingCall(CallAction.DECLINED);
             serverTransaction.sendResponse(rejectResponse);
+            sendTelemetryIncomingCall(Response.DECLINE);
             logger.debug("sent response");
         }
         catch (Exception ex)
@@ -2228,8 +2240,8 @@ public class CallPeerSipImpl
             {
                 // We're answering an SDP offer so media can start flowing now
                 // - no need to wait for the ACK.
-                sendTelemetryIncomingCall(CallAction.ACCEPTED);
                 setState(CallPeerState.CONNECTED);
+                sendTelemetryIncomingCall(Response.OK);
                 getMediaHandler().start();
 
                 // Set initial mute status to correspond with call mute status.
@@ -2847,25 +2859,19 @@ public class CallPeerSipImpl
         }
     }
 
-    private void sendTelemetryIncomingCall(CallAction action)
+    private void sendTelemetryIncomingCall(int responseCode)
     {
-        SipActivator.getInsightService().logEvent(new InsightEvent(CallKt.EVENT_INCOMING_CALL,
-                                                                   Map.of(AnalyticsResultKt.PARAM_RESULT,
-                                                                          action.getValue$maxanalytics(),
-                                                                          CallKt.PARAM_CALL_DIVERTED,
-                                                                          "false")));
+        SipActivator.getInsightsService().logEvent(InsightsEventHint.SIP_INCOMING_CALL.name(),
+                                                  Map.of(SipParameterInfo.INCOMING_CALL_RESPONSE.name(), responseCode));
     }
 
     private void sendTelemetryCallEnd()
     {
-        SipActivator.getInsightService().logEvent(
-                new InsightEvent(CallKt.EVENT_CALL_END,
-                                 Map.of(
-                                         CommonKt.PARAM_TYPE,
-                                         isLocalVideoStreaming() ?
-                                                 CallType.VIDEO.getValue$maxanalytics() :
-                                                 CallType.AUDIO.getValue$maxanalytics()
-                                 )
+        SipActivator.getInsightsService().logEvent(
+                InsightsEventHint.SIP_CALL_ENDED.name(),
+                Map.of(
+                    SipParameterInfo.CALL_MEDIA_TYPE.name(),
+                    isLocalVideoStreaming() ? "Video" : "Audio"
                 )
         );
     }

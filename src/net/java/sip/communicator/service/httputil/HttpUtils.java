@@ -37,6 +37,7 @@ import org.apache.http.auth.Credentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -589,6 +590,78 @@ public class HttpUtils
         HttpResponse response = httpClient.execute(new HttpGet(url));
         HttpEntity entity = response.getEntity();
         return EntityUtils.toString(entity);
+    }
+
+    /**
+     * A simple helper method for executing a GET request by including
+     * Authorization header with access token value.
+     *
+     * @param url string to execute GET request on
+     * @param token value for Authorization header
+     * @return A response from the GET call
+     * @throws IOException In case fetch fails
+     */
+    public static String executeGetWithAuthorization(String url, String token) throws IOException
+    {
+        logger.debug("Executing GET with authorization");
+        HttpClient httpClient = HttpUtils.getHttpClient();
+        HttpGet httpGet = new HttpGet(url);
+        httpGet.addHeader("Authorization", token);
+        HttpResponse response = httpClient.execute(httpGet);
+        HttpEntity entity = response.getEntity();
+        return EntityUtils.toString(entity);
+    }
+
+    /**
+     * A simple helper method for executing a POST request by including
+     * Authorization header with access token value.
+     *
+     * @param url string to execute POST request on
+     * @param token value for Authorization header
+     * @param meetingDetailsJson details for the meeting we're creating
+     * @return A response from the POST call
+     * @throws IOException In case fetch fails
+     * @throws AuthenticationException In case authentication fails
+     */
+    public static String executePostWithAuthorization(String url, String token, String meetingDetailsJson)
+            throws AuthenticationException, IOException
+    {
+        logger.debug("Executing POST with authorization");
+        HttpClient httpClient = getHttpClient();
+        HttpPost postMethod = new HttpPost(url);
+        StringEntity params = new StringEntity(meetingDetailsJson);
+        postMethod.setHeader("Content-Type", "application/json");
+        postMethod.setHeader("Authorization", token);
+        postMethod.setEntity(params);
+        HttpResponse response = executeMethod(httpClient, postMethod);
+        HttpEntity entity = response.getEntity();
+        return EntityUtils.toString(entity);
+    }
+
+    /**
+     * A simple helper method for executing a DELETE request by including
+     * Authorization header with access token value.
+     *
+     * @param url string to execute DELETE request on
+     * @param token value for Authorization header
+     * @throws IOException In case fetch fails
+     */
+    public static void executeDeleteWithAuthorization(String url, String token) throws IOException
+    {
+        logger.debug("Executing DELETE with authorization");
+        HttpClient httpClient = HttpUtils.getHttpClient();
+        HttpDelete httpDelete = new HttpDelete(url);
+        httpDelete.addHeader("Authorization", token);
+        HttpResponse response = httpClient.execute(httpDelete);
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode == HttpStatus.SC_NO_CONTENT)
+        {
+            logger.debug("Delete request successful");
+        }
+        else
+        {
+            logger.warn("Delete request failed with status code: " + statusCode);
+        }
     }
 
     /**

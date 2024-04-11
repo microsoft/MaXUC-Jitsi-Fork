@@ -67,13 +67,13 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
     /**
      * RTP audio DSCP configuration property name.
      */
-    private static final String RTP_AUDIO_DSCP_PROPERTY =
+    public static final String RTP_AUDIO_DSCP_PROPERTY =
         "net.java.sip.communicator.impl.protocol.RTP_AUDIO_DSCP";
 
     /**
      * RTP video DSCP configuration property name.
      */
-    private static final String RTP_VIDEO_DSCP_PROPERTY =
+    public static final String RTP_VIDEO_DSCP_PROPERTY =
         "net.java.sip.communicator.impl.protocol.RTP_VIDEO_DSCP";
 
     /**
@@ -362,11 +362,10 @@ public abstract class TransportManager<U extends MediaAwareCallPeer<?, ?, ?>>
     /**
      * Set traffic class (QoS) for the RTP socket.
      *
-     * @param target <tt>MediaStreamTarget</tt>
      * @param type the {@link MediaType} of the connector we'd like to set
      * traffic class
      */
-    protected void setTrafficClass(MediaStreamTarget target, MediaType type)
+    public void setTrafficClass(MediaType type)
     {
         // get traffic class value for RTP audio/video
         int trafficClass = getDSCP(type);

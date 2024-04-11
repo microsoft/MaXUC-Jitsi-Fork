@@ -13,6 +13,8 @@ import org.jitsi.util.*;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
+import net.java.sip.communicator.service.wispaservice.WISPAMotion;
+import net.java.sip.communicator.service.wispaservice.WISPAMotionType;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.AccessibilityUtils;
@@ -216,7 +218,8 @@ public class RejectWithImButton extends TransparentPanel implements ActionListen
                     // method of the listener that was passed in when creating
                     // this button.
                     mActionListener.actionPerformed(e);
-                    sWISPAService.notify(WISPANamespace.CONTACTS, WISPAAction.MOTION, mMetaContact);
+                    WISPAMotion wispaMotion = new WISPAMotion(WISPAMotionType.DISPLAY_CONTACT, mMetaContact);
+                    sWISPAService.notify(WISPANamespace.CONTACTS, WISPAAction.MOTION, wispaMotion);
                 }
             });
 

@@ -53,6 +53,7 @@ public class CallRecordingDirSelectorComboBox
               resourceService.getI18NString(
                       "service.gui.CALL_RECORDING_CHOOSE_FOLDER_FAILURE_TEXT"),
               null, true);
+        selectDefaultItem();
         setTooltipsEnabled(true);
         ScaleUtils.scaleFontAsDefault(this);
     }

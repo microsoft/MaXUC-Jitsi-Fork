@@ -10,6 +10,7 @@ import javax.swing.event.*;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.util.*;
+import org.jitsi.util.OSUtils;
 
 /**
  * The PathSelectorComboBox allows the user to select from one or more paths
@@ -169,18 +170,17 @@ public abstract class PathSelectorComboBox extends JComboBox<String>
         mSelectionMode = selectionMode;
         mFileFilter = filter;
         mUseAllFilesFilter = useAllFilesFilter;
-
         addKeyListener(this);
 
         mPaths = new ArrayList<>();
-        ArrayList<String> pathNames = new ArrayList<>();
-
         // Store all the default paths.
         for (String label : defaultPaths.keySet())
         {
             mPaths.add(new LabelledPath(label, defaultPaths.get(label)));
-            pathNames.add(label);
         }
+
+        mPathSelectorModel = new DefaultComboBoxModel<>();
+        setModel(mPathSelectorModel);
 
         // Show either 'Choose file...' or 'Choose folder...' at the end of the
         // dropdown list, depending on which selection mode we are in.
@@ -191,6 +191,18 @@ public abstract class PathSelectorComboBox extends JComboBox<String>
         // Default to titling the path selector dialog with the same text as the
         // 'Choose x...' entry in the dropdown.
         mPathSelectorDialogTitle = mSelectPathText;
+
+        // Listen for changes in the currently selected item, as well as for
+        // the dropdown menu being shown and hidden.
+        addItemListener(mDropdownListener);
+        addPopupMenuListener(mDropdownListener);
+    }
+
+    public void selectDefaultItem()
+    {
+
+        ArrayList<String> pathNames = new ArrayList<>();
+        mPaths.forEach(labelledPath -> pathNames.add(labelledPath.mLabel));
 
         if (checkCustomPathsAllowed())
         {
@@ -211,22 +223,14 @@ public abstract class PathSelectorComboBox extends JComboBox<String>
             pathNames.add(mSelectPathText);
         }
 
-        // Populate the dropdown selector.
-        mPathSelectorModel
-               = new DefaultComboBoxModel<>(pathNames.toArray(
-                new String[pathNames.size()]));
-        setModel(mPathSelectorModel);
+        // Purge and populate the dropdown selector
+        mPathSelectorModel.addAll(pathNames);
 
         // Determine which entry in the list should be initially selected, and
         // select it.
         LabelledPath defaultItem = mPaths.get(getDefaultIndex());
         mCurrentPath = defaultItem;
         mPathSelectorModel.setSelectedItem(defaultItem.mLabel);
-
-        // Listen for changes in the currently selected item, as well as for
-        // the dropdown menu being shown and hidden.
-        addItemListener(mDropdownListener);
-        addPopupMenuListener(mDropdownListener);
     }
 
     /**
@@ -532,6 +536,13 @@ public abstract class PathSelectorComboBox extends JComboBox<String>
     @Override
     public void keyPressed(KeyEvent e)
     {
+        if (OSUtils.IS_WINDOWS && !isPopupVisible() &&
+            (e.getKeyCode() == KeyEvent.VK_UP ||
+            e.getKeyCode() == KeyEvent.VK_DOWN ))
+        {
+            this.showPopup();
+        }
+
         if (e.getKeyCode() == KeyEvent.VK_SPACE ||
             e.getKeyCode() == KeyEvent.VK_ENTER)
         {

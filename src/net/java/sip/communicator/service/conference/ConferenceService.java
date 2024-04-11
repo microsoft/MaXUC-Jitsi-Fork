@@ -36,6 +36,45 @@ public interface ConferenceService
     boolean isConfAppInstalled();
 
     /**
+     * Returns true if the legacy implementation is enabled.
+     */
+    boolean isLegacyImplementation();
+
+    /**
+     * Informs that first time use education popup is confirmed
+     */
+    void confirmFirstTimeUseEducation();
+
+    /**
+     * Opens the link to download the conference app
+     */
+    void downloadConferenceApp();
+
+    /**
+     * Opens the deep link in browser after the download popup has been displayed
+     */
+    void useInBrowser();
+
+    /**
+     * Informs that don't show app download again popup is confirmed
+     */
+    void confirmDontShowConfAppDownload();
+
+    /**
+     * Starts a call to specified contact
+     *
+     * @param email receiving the call
+     */
+    void startCall(String email);
+
+    /**
+     * Starts a chat with specified contact
+     *
+     * @param email of chat participant
+     */
+    void openChat(String email);
+
+    /**
      * Create a conference from scratch
      * @param openOtherTab Decides which tab we should open on.
      */

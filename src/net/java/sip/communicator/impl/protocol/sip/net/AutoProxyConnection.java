@@ -18,6 +18,8 @@ import java.text.*;
 
 import javax.sip.*;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import net.java.sip.communicator.impl.protocol.sip.*;
 import net.java.sip.communicator.util.*;
 
@@ -45,8 +47,10 @@ public class AutoProxyConnection extends ProxyConnection
 
     private static final Logger logger = Logger.getLogger(AutoProxyConnection.class);
 
-    private State state;
-    private String address;
+    @VisibleForTesting
+    public State state;
+    @VisibleForTesting
+    public String address;
     private final String defaultTransport;
 
     private static final String[] transports = new String[]

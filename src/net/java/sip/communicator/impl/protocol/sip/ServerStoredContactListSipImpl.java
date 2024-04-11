@@ -104,7 +104,7 @@ public class ServerStoredContactListSipImpl
     /**
      * The contact type element name used in xcap documents.
      */
-    private static final String CONTACT_TYPE_ELEMENT_NAME = "contact-type";
+    static final String CONTACT_TYPE_ELEMENT_NAME = "contact-type";
 
     /**
      * The namespace used for contact type.
@@ -221,7 +221,7 @@ public class ServerStoredContactListSipImpl
         parentGroup.addContact(newContact);
         if (newContact.isPersistent())
         {
-            // Update resoure-lists
+            // Update resource-lists
             try
             {
                 updateResourceLists();
@@ -875,52 +875,6 @@ public class ServerStoredContactListSipImpl
     }
 
     /**
-     * Creates "block" rule.
-     *
-     * @return created rule.
-     */
-    private static RuleType createBlockRule()
-    {
-        RuleType blockList = new RuleType();
-        blockList.setId(DEFAULT_BLOCK_RULE_ID);
-
-        ConditionsType conditions = new ConditionsType();
-        blockList.setConditions(conditions);
-
-        ActionsType actions = new ActionsType();
-        actions.setSubHandling(SubHandlingType.Block);
-        blockList.setActions(actions);
-
-        TransformationsType transformations = new TransformationsType();
-        blockList.setTransformations(transformations);
-
-        return blockList;
-    }
-
-    /**
-     * Creates "polite block" rule.
-     *
-     * @return created rule.
-     */
-    private static RuleType createPoliteBlockRule()
-    {
-        RuleType blockList = new RuleType();
-        blockList.setId(DEFAULT_POLITE_BLOCK_RULE_ID);
-
-        ConditionsType conditions = new ConditionsType();
-        blockList.setConditions(conditions);
-
-        ActionsType actions = new ActionsType();
-        actions.setSubHandling(SubHandlingType.PoliteBlock);
-        blockList.setActions(actions);
-
-        TransformationsType transformations = new TransformationsType();
-        blockList.setTransformations(transformations);
-
-        return blockList;
-    }
-
-    /**
      * Finds the rule with the given action type.
      * @param type the action type to search for.
      * @return the rule if any or null.
@@ -1015,7 +969,7 @@ public class ServerStoredContactListSipImpl
     private static boolean removeContactFromRule(
             RuleType rule, ContactSipImpl contact)
     {
-        if(rule.getConditions().getIdentities().size() == 0)
+        if (rule.getConditions().getIdentities().isEmpty())
             return false;
 
         IdentityType identity =
@@ -1034,7 +988,7 @@ public class ServerStoredContactListSipImpl
         {
             identity.getOneList().remove(contactOne);
         }
-        if (identity.getOneList().size() == 0)
+        if (identity.getOneList().isEmpty())
         {
             rule.getConditions().getIdentities().remove(identity);
             rule.getConditions().getIdentities().remove(identity);
@@ -1077,72 +1031,12 @@ public class ServerStoredContactListSipImpl
     }
 
     /**
-     * Adds contact to the "block" rule.
-     *
-     * @param contact the contact to add.
-     */
-    boolean addContactToBlockList(ContactSipImpl contact)
-        throws XCapException
-    {
-        RuleType allowRule = getRule(SubHandlingType.Allow);
-        RuleType blockRule = getRule(SubHandlingType.Block);
-        RuleType politeBlockRule = getRule(SubHandlingType.PoliteBlock);
-
-        if(blockRule == null)
-        {
-            blockRule = createBlockRule();
-            presRules.getRules().add(blockRule);
-        }
-
-        boolean updateRule =
-            addContactToRule(blockRule, contact);
-        if(allowRule != null)
-            updateRule = removeContactFromRule(allowRule, contact)
-                    || updateRule;
-        if(politeBlockRule != null)
-            updateRule = removeContactFromRule(politeBlockRule, contact)
-                    || updateRule;
-
-        return updateRule;
-    }
-
-     /**
-     * Adds contact to the "polite block" rule.
-     *
-     * @param contact the contact to add.
-     */
-    boolean addContactToPoliteBlockList(ContactSipImpl contact)
-        throws XCapException
-    {
-        RuleType allowRule = getRule(SubHandlingType.Allow);
-        RuleType blockRule = getRule(SubHandlingType.Block);
-        RuleType politeBlockRule = getRule(SubHandlingType.PoliteBlock);
-
-        if(politeBlockRule == null)
-        {
-            politeBlockRule = createPoliteBlockRule();
-            presRules.getRules().add(politeBlockRule);
-        }
-
-        boolean updateRule =
-            addContactToRule(politeBlockRule, contact);
-        if(allowRule != null)
-            updateRule = removeContactFromRule(allowRule, contact)
-                    || updateRule;
-        if(blockRule != null)
-            updateRule = removeContactFromRule(blockRule, contact)
-                    || updateRule;
-
-        return updateRule;
-    }
-
-    /**
      * Indicates whether or not contact is exists in the "allow" rule.
      *
      * @param contactUri the contact uri.
      * @return true if contact is exists, false if not.
      */
-    private boolean isContactInAllowRule(String contactUri)
+    public boolean isContactInAllowRule(String contactUri)
         throws XCapException
     {
         RuleType allowRule = getRule(SubHandlingType.Allow);
@@ -1500,33 +1394,6 @@ public class ServerStoredContactListSipImpl
             throw new OperationFailedException("Cannot put image detail",
                     OperationFailedException.NETWORK_FAILURE);
         }
-    }
-
-    /**
-     * Access the contact type. If none specified null is returned.
-     * @param contact the contact to be queried for type.
-     * @return the contact type or null if missing.
-     */
-    public String getContactType(Contact contact)
-    {
-        if (!(contact instanceof ContactSipImpl))
-        {
-            String errorMessage = String.format(
-                "Contact %1s does not seem to belong to this protocol's " +
-                    "contact list", contact.getAddress());
-            throw new IllegalArgumentException(errorMessage);
-        }
-
-        ContactSipImpl contactSip = (ContactSipImpl)contact;
-
-        List<Element> anyElements = contactSip.getAny();
-        for(Element e : anyElements)
-        {
-            if(e.getNodeName().equals(CONTACT_TYPE_ELEMENT_NAME))
-                return XMLUtils.getText(e);
-        }
-
-        return null;
     }
 
     /**

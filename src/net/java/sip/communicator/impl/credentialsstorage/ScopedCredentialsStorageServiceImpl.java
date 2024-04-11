@@ -65,7 +65,7 @@ public class ScopedCredentialsStorageServiceImpl
     private Crypto mCrypto;
 
     /** The secure OS storage */
-    private static SecretStore<StoredToken> sTokenStorage;
+    private SecretStore<StoredToken> mTokenStorage;
 
     /**
      * Initializes the credentials service by fetching the configuration service
@@ -77,14 +77,7 @@ public class ScopedCredentialsStorageServiceImpl
     ScopedCredentialsStorageServiceImpl(ScopedConfigurationService configurationService)
     {
         this.mConfigurationService = configurationService;
-
-        synchronized (ScopedCredentialsStorageServiceImpl.class)
-        {
-            if (sTokenStorage == null)
-            {
-                sTokenStorage = StorageProvider.getTokenStorage(true, SecureOption.REQUIRED);
-            }
-        }
+        mTokenStorage = StorageProvider.getTokenStorage(true, SecureOption.REQUIRED);
     }
 
     /**
@@ -446,7 +439,7 @@ public class ScopedCredentialsStorageServiceImpl
     {
         // Retrieve an existing token from the store if there
         String tokenName = OS_ACCESS_TOKEN_STEM + key;
-        StoredToken storedToken = sTokenStorage.get(tokenName);
+        StoredToken storedToken = mTokenStorage.get(tokenName);
         sLog.info("Retrieved token under " + logHasher(tokenName) + ": " + (storedToken != null));
         return storedToken != null ? storedToken.getValue() : null;
     }
@@ -470,7 +463,7 @@ public class ScopedCredentialsStorageServiceImpl
         {
             // Save the token to the store
             String tokenName = OS_ACCESS_TOKEN_STEM + key;
-            sTokenStorage.add(tokenName, token);
+            mTokenStorage.add(tokenName, token);
             sLog.info("Added/Updated token to OS Credential Manager under the key: " + logHasher(tokenName));
         }
         finally
@@ -561,27 +554,5 @@ public class ScopedCredentialsStorageServiceImpl
         }
 
         return result;
-    }
-
-    /**
-     * Trigger copying a master password from one key (if one exists under it) to a second key
-     * (blatting over any password already stored under that key).
-     */
-    @Override
-    public void copyMasterPassword(String from, String to)
-    {
-        synchronized (ScopedCredentialsStorageServiceImpl.class)
-        {
-            char[] masterPassword = getMasterPasswordFromOS(from);
-            if (masterPassword != null)
-            {
-                sLog.info("Copy master password from " + logHasher(from) + " to " + logHasher(to));
-                storeMasterPasswordInOS(masterPassword, to);
-            }
-            else
-            {
-                sLog.info("No master password found for " + logHasher(from));
-            }
-        }
     }
 }

@@ -9,7 +9,7 @@ package net.java.sip.communicator.util;
  */
 public class ServerBackoff
 {
-    private final Logger logger = Logger.getLogger(getClass());
+    private final Logger logger;
 
     /**
      * The maximum number of times that we double the backoff.
@@ -37,8 +37,10 @@ public class ServerBackoff
      */
     protected boolean mHasHitMaxDoubles = false;
 
-    public ServerBackoff(int maxNumberFailureDoubles, long initialFailBackoff)
+    public ServerBackoff(String logTagPrefix, int maxNumberFailureDoubles, long initialFailBackoff)
     {
+        logger = Logger.getLogger(getClass(),
+            "ServerBackoff@" + Integer.toHexString(System.identityHashCode(this)) + "/" + logTagPrefix);
         mMaxNumberFailureDoubles = maxNumberFailureDoubles;
         mInitialFailBackoff = initialFailBackoff;
 

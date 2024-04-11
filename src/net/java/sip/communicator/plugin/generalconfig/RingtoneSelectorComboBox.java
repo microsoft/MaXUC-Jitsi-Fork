@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.generalconfig;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseFilePath;
+
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +23,8 @@ import org.jitsi.util.StringUtils;
 
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.plugin.notificationwiring.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.GeneralConfigPluginParameterInfo;
 import net.java.sip.communicator.service.notification.*;
 import net.java.sip.communicator.util.*;
 
@@ -96,10 +100,12 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
               "net.java.sip.communicator.plugin.generalconfig.CURRENT_RINGTONE";
 
     /**
-     * The name of the property holding the path of the currently active ringtone.
+     * The name of the properties holding the path of the currently active ringtones.
      */
     private static final String CURRENT_RINGTONE_PATH_PROPNAME =
          "net.java.sip.communicator.plugin.generalconfig.CURRENT_RINGTONE_PATH";
+    private static final String CURRENT_BG_RINGTONE_PATH_PROPNAME =
+            "net.java.sip.communicator.plugin.generalconfig.CURRENT_BG_RINGTONE_PATH";
 
     /**
      * The name of the property indicating that choosing custom ringtones from
@@ -109,24 +115,26 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
      "net.java.sip.communicator.plugin.generalconfig.CUSTOM_RINGTONES_DISABLED";
 
     /**
-     * The name of the property holding the URI of the user's custom ringtone,
-     * if any.
+     * The properties holding the URI of the user's custom ringtones, if any.
      */
     private static final String CUSTOM_RINGTONE_URI_PROPNAME =
            "net.java.sip.communicator.plugin.generalconfig.CUSTOM_RINGTONE_URI";
+    private static final String CUSTOM_BG_RINGTONE_URI_PROPNAME =
+            "net.java.sip.communicator.plugin.generalconfig.CUSTOM_BG_RINGTONE_URI";
 
     /**
-     * The name of the property holding the user-visible display name of the
-     * user's custom ringtone, if any.
+     * The properties holding the user-visible display name of the user's custom ringtones, if any.
      */
     private static final String CUSTOM_RINGTONE_NAME_PROPNAME =
           "net.java.sip.communicator.plugin.generalconfig.CUSTOM_RINGTONE_NAME";
+    private static final String CUSTOM_BG_RINGTONE_NAME_PROPNAME =
+          "net.java.sip.communicator.plugin.generalconfig.CUSTOM_BG_RINGTONE_NAME";
 
     /**
-     * The filename to use for our copy of the audio file provided by the user
-     * as a custom ringtone.
+     * The filenames to use for our copy of the audio files provided by the user as custom ringtone.
      */
     private static final String CUSTOM_RINGTONE_FILENAME = "customRingtone.wav";
+    private static final String CUSTOM_BG_RINGTONE_FILENAME = "customRingtoneBg.wav";
 
     /**
      * The service used to handle notification events. We use this to register
@@ -184,13 +192,12 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
     private RingtonePreviewButton mPreviewButton;
 
     /**
-     * Dropdown selector which allows the user to select the active ringtone
-     * used by the app. Default options from the bundled resources are presented
-     * along with the option to choose a wav file from the hard drive.
-     *
-     * @param defaultRingtones
+     * String describing which BG the ringtone selector belongs to.
      */
-    public RingtoneSelectorComboBox(Map<String, String> defaultRingtones,
+    private final SoundNotificationAction.BgTag bgTag;
+
+    public RingtoneSelectorComboBox(SoundNotificationAction.BgTag bgTag,
+                                    Map<String, String> defaultRingtones,
                                     RingtonePreviewButton previewButton)
     {
         super(defaultRingtones,
@@ -202,15 +209,12 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
 
         ScaleUtils.scaleFontAsDefault(this);
 
+        this.bgTag = bgTag;
         mPreviewButton = previewButton;
-
-        AccessibilityUtils.setNameAndDescription(
-            this,
-            Resources.getResources().getI18NString("service.gui.RINGTONE_SELECTOR_LABEL"),
-            Resources.getResources().getI18NString("service.gui.RINGTONE_SELECTOR_LABEL_DESCRIPTION"));
 
         setPathSelectorDialogTitle(Resources.getResources().getI18NString(
                                               "service.gui.CHOOSE_SOUND_FILE"));
+        selectDefaultItem();
     }
 
     @Override
@@ -230,10 +234,11 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
     @Override
     protected LabelledPath getExistingCustomPath()
     {
-        String ringtoneURI =
-                      configService.user().getString(CUSTOM_RINGTONE_URI_PROPNAME, "");
-        String ringtoneName =
-                     configService.user().getString(CUSTOM_RINGTONE_NAME_PROPNAME, "");
+        boolean isGenericRingtone = bgTag == SoundNotificationAction.BgTag.BG_TAG_GENERIC;
+        String ringtoneNameProp = isGenericRingtone ? CUSTOM_RINGTONE_NAME_PROPNAME : CUSTOM_BG_RINGTONE_NAME_PROPNAME;
+        String ringtoneURIProp = isGenericRingtone ? CUSTOM_RINGTONE_URI_PROPNAME : CUSTOM_BG_RINGTONE_URI_PROPNAME;
+        String ringtoneName = configService.user().getString(ringtoneNameProp, "");
+        String ringtoneURI = configService.user().getString(ringtoneURIProp, "");
 
         if (ringtoneURI.isEmpty())
         {
@@ -248,7 +253,7 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
 
         LabelledPath customRingtone;
 
-        logger.debug("The ringtoneURI was: " + ringtoneURI);
+        logger.debug("The ringtoneURI was: " + sanitiseFilePath(ringtoneURI));
         // We've already checked the URI is not empty, so we now remove the
         // 'file:' from the front of the string to give the file location.
         File ringtoneFile = new File(URLDecoder.decode(ringtoneURI.substring(5),
@@ -256,7 +261,7 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
         if (ringtoneFile.exists() && ringtoneFileRendersSuccessfully(ringtoneURI))
         {
             customRingtone = new LabelledPath(ringtoneName, ringtoneURI);
-            logger.debug("Loaded custom ringtone " + customRingtone.mPath +
+            logger.debug("Loaded custom ringtone " + sanitiseFilePath(customRingtone.mPath) +
                          " successfully from config.");
         }
         else
@@ -265,9 +270,10 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
             // exists, else it is the first ringtone alphabetically from our
             // list of default ringtones.
             String path = getPaths().get(getDefaultIndex()).mPath;
-            logger.info("The custom ringtone is invalid: replacing by ringtone with path " + path);
-            configService.user().setProperty(CURRENT_RINGTONE_PATH_PROPNAME, path);
-            notificationService.registerNewRingtoneNotification(path);
+            String currentRingtonePathProp = getCurrentRingtonePathProp(bgTag);
+            logger.info("The custom ringtone is invalid: replacing by ringtone with path " + sanitiseFilePath(path));
+            configService.user().setProperty(currentRingtonePathProp, path);
+            notificationService.registerNewRingtoneNotification(path, bgTag);
             customRingtone = null;
         }
 
@@ -304,7 +310,8 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
         // ringtones are added).  To cope with upgrade therefore we must consider
         // the index if there is no stored path.
         // First look to the path:
-        String ringtonePath = configService.user().getString(CURRENT_RINGTONE_PATH_PROPNAME);
+        String currentRingtonePathProp = getCurrentRingtonePathProp(bgTag);
+        String ringtonePath = configService.user().getString(currentRingtonePathProp);
 
         if (ringtonePath == null)
         {
@@ -323,21 +330,24 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
             if (incomingCallHdlr != null)
             {
                 ringtonePath = incomingCallHdlr.getDescriptor();
-                logger.warn("No stored ringtone path; got " + ringtonePath +
+                logger.warn("No stored ringtone path; got " + sanitiseFilePath(ringtonePath) +
                             " from the notification service");
 
                 if (ringtonePath != null)
                 {
-                    configService.user().setProperty(CURRENT_RINGTONE_PATH_PROPNAME,
-                                              ringtonePath);
+                    configService.user().setProperty(currentRingtonePathProp,
+                                                     ringtonePath);
+                    notificationService.registerNewRingtoneNotification(ringtonePath, bgTag);
                 }
             }
         }
 
         if (ringtonePath != null)
         {
+            String sanitisedRingtonePath = sanitiseFilePath(ringtonePath);
+
             // Got a stored ringtone path - use it
-            logger.debug("Selected ringtone path: " + ringtonePath);
+            logger.debug("Selected ringtone path: " + sanitisedRingtonePath);
             List<LabelledPath> paths = getPaths();
 
             ringtoneIdx = -1;
@@ -354,7 +364,7 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
             if (ringtoneIdx == -1)
             {
                 // We've not found the index matching the wav file, it's an error:
-                logger.warn("Selected ringtone path not available " + ringtonePath);
+                logger.warn("Selected ringtone path not available " + sanitisedRingtonePath);
                 ringtoneIdx = getDefaultRingtoneIndex();
             }
         }
@@ -382,8 +392,12 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
                 String path = getPaths().get(ringtoneIdx).mPath;
                 logger.debug("Ringtone index is valid: " + ringtoneIdx +
                              "; path is " + path);
-                configService.user().setProperty(CURRENT_RINGTONE_PATH_PROPNAME,
-                                          path);
+                configService.user().setProperty(currentRingtonePathProp,
+                                                 path);
+                if (notificationService != null)
+                {
+                    notificationService.registerNewRingtoneNotification(ringtonePath, bgTag);
+                }
             }
         }
 
@@ -398,11 +412,12 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
     private void changeRingtone(LabelledPath ringtone)
     {
         String ringtonePath = ringtone.mPath;
-        configService.user().setProperty(CURRENT_RINGTONE_PATH_PROPNAME, ringtonePath);
+        String currentRingtonePathProp = getCurrentRingtonePathProp(bgTag);
+        configService.user().setProperty(currentRingtonePathProp, ringtonePath);
 
         if (notificationService != null)
         {
-            notificationService.registerNewRingtoneNotification(ringtonePath);
+            notificationService.registerNewRingtoneNotification(ringtonePath, bgTag);
         }
     }
 
@@ -560,11 +575,15 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
         // even if the original is tampered with.
         String homeDirLocation = configService.user().getScHomeDirLocation();
         String homeDirName = configService.user().getScHomeDirName();
+
+        boolean isGenericRingtone = bgTag == SoundNotificationAction.BgTag.BG_TAG_GENERIC;
+        String ringtoneFileName = isGenericRingtone ? CUSTOM_RINGTONE_FILENAME : CUSTOM_BG_RINGTONE_FILENAME;
+
         File target = new File(homeDirLocation +
                                File.separator +
                                homeDirName +
                                File.separator +
-                               CUSTOM_RINGTONE_FILENAME);
+                               ringtoneFileName);
 
         try
         {
@@ -589,8 +608,10 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
 
         LabelledPath userTone = new LabelledPath(ringtoneName, targetPath);
 
-        configService.user().setProperty(CUSTOM_RINGTONE_URI_PROPNAME, targetPath);
-        configService.user().setProperty(CUSTOM_RINGTONE_NAME_PROPNAME, ringtoneName);
+        String ringtoneNameProp = isGenericRingtone ? CUSTOM_RINGTONE_NAME_PROPNAME : CUSTOM_BG_RINGTONE_NAME_PROPNAME;
+        String ringtoneURIProp = isGenericRingtone ? CUSTOM_RINGTONE_URI_PROPNAME : CUSTOM_BG_RINGTONE_URI_PROPNAME;
+        configService.user().setProperty(ringtoneNameProp, ringtoneName);
+        configService.user().setProperty(ringtoneURIProp, targetPath);
 
         logger.info("Ringtone " + ringtoneName + " loaded successfully.");
         return userTone;
@@ -605,8 +626,19 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
         // playing any audio previews.
         mPreviewButton.stopAudio();
 
-        logger.user("Ringtone changed from " + oldValue + " to " + newValue);
+        logger.user("Ringtone changed from " + sanitiseFilePath(oldValue.mPath)
+                    + " to " + sanitiseFilePath(newValue.mPath));
         changeRingtone(newValue);
+
+        boolean isInternal = bgTag == SoundNotificationAction.BgTag.BG_TAG_INTERNAL;
+
+        GeneralConfigPluginActivator
+                .getInsightsService()
+                .logEvent(InsightsEventHint.GENERAL_CONFIG_PLUGIN_RINGTONE_SETTING.name(),
+                          Map.of(
+                                  GeneralConfigPluginParameterInfo.RINGTONE_IS_INTERNAL.name(),
+                                  isInternal
+                          ));
     }
 
     /**
@@ -656,5 +688,22 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
     {
         super.onPopupMenuWillBecomeVisible();
         GeneralConfigurationPanel.mJustUpdatedRingtone.set(true);
+    }
+
+    public void setAccessibilityNameAndDescription(String name, String description)
+    {
+        AccessibilityUtils.setNameAndDescription(this, name, description);
+    }
+
+    private String getCurrentRingtonePathProp(SoundNotificationAction.BgTag bgTag)
+    {
+        if (bgTag == SoundNotificationAction.BgTag.BG_TAG_GENERIC)
+        {
+            return CURRENT_RINGTONE_PATH_PROPNAME;
+        }
+        else
+        {
+            return CURRENT_BG_RINGTONE_PATH_PROPNAME;
+        }
     }
 }

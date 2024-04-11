@@ -67,6 +67,7 @@ public class AccountInfoActivator
         catch (InvalidSyntaxException e)
         {
             logger.error("LoginManager : " + e);
+            return providerFactoriesMap;
         }
 
         for (ServiceReference<?> ref : serRefs)

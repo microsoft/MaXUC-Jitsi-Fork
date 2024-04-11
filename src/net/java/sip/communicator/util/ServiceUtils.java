@@ -10,22 +10,29 @@ package net.java.sip.communicator.util;
 import static net.java.sip.communicator.util.UtilActivator.bundleContext;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 
 import net.java.sip.communicator.plugin.desktoputil.PreLoginUtils;
+import net.java.sip.communicator.service.conference.ConferenceService;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.InsightsService;
+import net.java.sip.communicator.service.insights.parameters.GuiParameterInfo;
 import net.java.sip.communicator.service.shutdown.ShutdownService;
 import net.java.sip.communicator.service.wispaservice.WISPAAction;
 import net.java.sip.communicator.service.wispaservice.WISPAMotion;
 import net.java.sip.communicator.service.wispaservice.WISPAMotionType;
 import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
+import org.jitsi.service.configuration.ConfigurationService;
 
 /**
  * Gathers utility functions related to OSGi services such as getting a service
@@ -36,6 +43,11 @@ import net.java.sip.communicator.service.wispaservice.WISPAService;
 public class ServiceUtils
 {
     private static final Logger logger = Logger.getLogger(ServiceUtils.class);
+    private static final String CONFERENCE_TYPE_TEAMS = "Conference";
+
+    /** Name of the app start timestamp property. */
+    private static final String PROPERTY_APP_START =
+            "net.java.sip.communicator.plugin.provisioning.APP_START";
 
     /** Prevents the creation of <tt>ServiceUtils</tt> instances. */
     private ServiceUtils() {}
@@ -251,6 +263,56 @@ public class ServiceUtils
     }
 
     /**
+     * Util method for deciding which conference service to get
+     */
+    public static ConferenceService getConferenceService(BundleContext context)
+    {
+        ServiceReference<?>[] serviceReference;
+        try
+        {
+            // Get all the ConferenceService references
+            serviceReference = context.getServiceReferences(ConferenceService.class.getName(), null);
+        }
+        catch (InvalidSyntaxException e)
+        {
+            logger.error("Failed to get conference service.", e);
+            return null;
+        }
+
+        if (serviceReference == null)
+        {
+            return null;
+        }
+
+        ConferenceService teamsService = null;
+        ConferenceService legacyService = null;
+        for (ServiceReference<?> ref : serviceReference)
+        {
+            // Get the Teams service
+            if ((CONFERENCE_TYPE_TEAMS).equals(ref.getProperty("type")))
+            {
+                teamsService = (ConferenceService) context.getService(ref);
+            }
+            // Get the legacy service
+            else
+            {
+                legacyService = (ConferenceService) context.getService(ref);
+            }
+        }
+
+        // If the Teams service is enabled, use it
+        if (teamsService != null && teamsService.isFullServiceEnabled())
+        {
+            return teamsService;
+        }
+        // Otherwise, use the legacy service
+        else
+        {
+            return legacyService;
+        }
+    }
+
+    /**
      * Cleanly shuts down the application.
      *
      * This should be used for shutdown in places where we cannot be certain
@@ -299,6 +361,19 @@ public class ServiceUtils
         {
             logger.info("Shutdown service not registered - " +
                          "shutting down bundles via BundleContext");
+
+            InsightsService insightsService = UtilActivator.getInsightsService();
+            ConfigurationService configService = UtilActivator.getConfigurationService();
+            if (configService != null && insightsService != null)
+            {
+                long appStartTimestamp = configService.global().getLong(PROPERTY_APP_START, 0);
+                long appRunningFor = (System.currentTimeMillis() - appStartTimestamp) / 1000;
+
+                insightsService.logEvent(
+                        InsightsEventHint.APP_TERMINATED.name(),
+                        Map.of(GuiParameterInfo.APP_SECONDS_RUNNING.name(), appRunningFor)
+                );
+            }
 
             // If we are in the pre-login state, the Java might be blocked waiting
             // for Electron response in a few places/bundles. In order to allow

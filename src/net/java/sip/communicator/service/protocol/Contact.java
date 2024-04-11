@@ -186,4 +186,9 @@ public interface Contact
      * @param l the <tt>ContactResourceListener</tt> to rmove
      */
     void removeResourceListener(ContactResourceListener l);
+
+    /**
+     * Get the contact type based on implementation e.g. Jabber, Sip, Volatile
+     */
+    ContactType getContactType();
 }

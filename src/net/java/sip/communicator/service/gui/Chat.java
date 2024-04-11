@@ -61,14 +61,6 @@ public interface Chat
     int MAX_CHAT_ROOM_SUBJECT_LENGTH = 60;
 
     /**
-     * The maximum permitted number of characters in a group contact name.
-     * This must be longer than the maximum chat room subject length, as if a
-     * group contact is created from a group chat, its default subject will be
-     * <chat_room_subject>-<date>.
-     */
-    int MAX_GROUP_CONTACT_NAME_LENGTH = 70;
-
-    /**
      * Checks if this <tt>Chat</tt> is currently focused.
      *
      * @return TRUE if the chat is focused, FALSE - otherwise

@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
+import static net.java.sip.communicator.service.insights.InsightsEventHint.*;
+import static net.java.sip.communicator.service.insights.parameters.GuiParameterInfo.*;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,9 +15,11 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.accessibility.AccessibleContext;
@@ -30,6 +35,7 @@ import net.java.sip.communicator.impl.gui.utils.IOKitLibrary;
 import net.java.sip.communicator.plugin.desktoputil.*;
 import net.java.sip.communicator.service.diagnostics.*;
 import net.java.sip.communicator.service.imageloader.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
 import net.java.sip.communicator.service.phonenumberutils.*;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.CallConference.*;
@@ -738,6 +744,9 @@ public class CallFrame extends SIPCommFrame implements ActionListener
             {
                 logger.user("Merge button clicked in call: " +
                                     callConference);
+
+                sendCallAnalytics(InsightsEventHint.GUI_CALL_MERGE.name(), false);
+
                 CallManager.mergeExistingCalls(
                         callConference,
                         CallManager.getInProgressCalls());
@@ -801,6 +810,8 @@ public class CallFrame extends SIPCommFrame implements ActionListener
                 btnDialpad.setSelected(!btnDialpad.isSelected());
 
                 dialpadDialog.setVisible(!dialpadDialog.isVisible());
+
+                sendCallAnalytics(GUI_CALL_KEYPAD.name(), true);
             }
         });
     }
@@ -933,6 +944,22 @@ public class CallFrame extends SIPCommFrame implements ActionListener
                 createMenu.getJPopupMenu(webConfButton).setVisible(true);
             }
         });
+    }
+
+    boolean isCallTypeVideo()
+    {
+        return localVideoComponent != null || remoteVideoComponent != null;
+    }
+
+    void sendCallAnalytics(String eventName, boolean sendDialPadParam)
+    {
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put(GUI_CALL_TYPE.name(), isCallTypeVideo());
+        if (sendDialPadParam)
+        {
+            parameters.put(GUI_CALL_KEYPAD_SELECTED.name(), btnDialpad.isSelected());
+        }
+        GuiActivator.getInsightsService().logEvent(eventName, parameters);
     }
 
     private void initializeLayeredCallPeersPane()
@@ -1654,6 +1681,9 @@ public class CallFrame extends SIPCommFrame implements ActionListener
 
         remoteVideoComponent = component;
 
+        GuiActivator.getInsightsService().logEvent(InsightsEventHint.GUI_CALL_RECEIVE_VIDEO.name(),
+                                                   Map.of(GUI_RECEIVE_VIDEO.name(), true));
+
         // For some reason Mac's appear to reverse the order of the JLayered
         // pane. This is the workaround
         if (OSUtils.IS_MAC)
@@ -1690,6 +1720,8 @@ public class CallFrame extends SIPCommFrame implements ActionListener
             logger.info("Removing remote video component from call frame");
             videoComponent = remoteVideoComponent;
             remoteVideoComponent = null;
+            GuiActivator.getInsightsService().logEvent(InsightsEventHint.GUI_CALL_RECEIVE_VIDEO.name(),
+                                                       Map.of(GUI_RECEIVE_VIDEO.name(), false));
         }
         else
         {
@@ -2064,10 +2096,18 @@ public class CallFrame extends SIPCommFrame implements ActionListener
             {
                 // Move the mouse 1 pixel to prevent the screensaver
                 // from activating.
-                Robot robot = new Robot();
-                Point point = MouseInfo.getPointerInfo().getLocation();
-                robot.mouseMove(point.x + 1, point.y);
-                robot.mouseMove(point.x, point.y);
+                PointerInfo pointerInfo = MouseInfo.getPointerInfo();
+                if ( pointerInfo != null)
+                {
+                    Robot robot = new Robot();
+                    Point point = pointerInfo.getLocation();
+                    robot.mouseMove(point.x + 1, point.y);
+                    robot.mouseMove(point.x, point.y);
+                }
+                else
+                {
+                    logger.debug("Could not find mouse pointer info.");
+                }
             }
             catch (AWTException ex)
             {
@@ -2258,6 +2298,7 @@ public class CallFrame extends SIPCommFrame implements ActionListener
     {
         logger.user("Add participant button clicked in call: " +
                             callConference);
+        sendCallAnalytics(GUI_CALL_ADD.name(), false);
         if (addParticipantDialog == null)
         {
             // We know there will only be one call in the call

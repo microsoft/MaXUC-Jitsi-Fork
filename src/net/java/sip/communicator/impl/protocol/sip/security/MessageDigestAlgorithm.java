@@ -63,7 +63,7 @@ public class MessageDigestAlgorithm
     {
         logger.debug("trying to authenticate using : " + algorithm + ", " +
             logHasher(username_value) + ", " +
-            realm_value + ", " +
+            logHasher(realm_value) + ", " +
             (passwd != null && passwd.trim().length() > 0) + ", "
             + nonce_value + ", " +
             nc_value + ", " +

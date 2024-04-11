@@ -44,13 +44,13 @@
         <dependency org="ca.weblite" name="java-objc-bridge" rev="1.2" conf="runtime,instexcl->default" >
             <!-- Provides java-objc-bridge.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="com.drewnoakes" name="metadata-extractor" rev="2.18.0" conf="runtime,instexcl->default" >
+        <dependency org="com.drewnoakes" name="metadata-extractor" rev="2.19.0" conf="runtime,instexcl->default" >
             <!-- Provides metadata-extractor.jar and transitive dependency xmpcore.jar in jitsi/lib/installer-exclude -->
         </dependency>
         <dependency org="com.google.code.gson" name="gson" rev="2.10.1" conf="runtime,instexcl->default" >
             <!-- Provides gson.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="com.google.guava" name="guava" rev="32.0.1-jre" conf="runtime,instexcl->default" >
+        <dependency org="com.google.guava" name="guava" rev="33.0.0-jre" conf="runtime,instexcl->default" >
             <!-- Provides guava.jar and transitive dependencies checker-qual.jar, error_prone_annotations.jar, failureaccess.jar, j2objc-annotations.jar and jsr305.jar in jitsi/lib/installer-exclude.
             com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava is a dummy library, so we don't want it - more info at https://repo1.maven.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom -->
             <exclude org="com.google.guava" module="listenablefuture" />
@@ -59,7 +59,7 @@
             <!-- Provides json-simple.jar in jitsi/lib/installer-exclude.
             transitive="false" to exclude junit, which json-simple's POM file erroneously declares as a compile dependency. -->
         </dependency>
-        <dependency org="com.google.protobuf" name="protobuf-java" rev="3.21.10" conf="runtime,bundle->default" >
+        <dependency org="com.google.protobuf" name="protobuf-java" rev="3.25.2" conf="runtime,bundle->default" >
             <!-- This version should be kept in sync with the version used to create protobuf-wispa here:
             https://git.datcon.co.uk/accession/Desktop/protobuf-wispa/-/blob/master/.gitlab-ci.yml -->
             <!-- Provides protobuf-java.jar in jitsi/lib/bundle -->
@@ -70,22 +70,22 @@
         <dependency org="commons-codec" name="commons-codec" rev="1.16.0" conf="runtime,instexcl->default" >
             <!-- Provides commons-codec.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="commons-io" name="commons-io" rev="2.13.0" conf="runtime,instexcl->default" >
+        <dependency org="commons-io" name="commons-io" rev="2.15.1" conf="runtime,instexcl->default" >
             <!-- Provides commons-io.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="org.apache.commons" name="commons-text" rev="1.10.0" conf="runtime,instexcl->default" >
+        <dependency org="org.apache.commons" name="commons-text" rev="1.11.0" conf="runtime,instexcl->default" >
             <!-- Provides commons-text.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="dnsjava" name="dnsjava" rev="3.5.2" conf="runtime,instexcl->default" >
+        <dependency org="dnsjava" name="dnsjava" rev="3.5.3" conf="runtime,instexcl->default" >
             <!-- Provides dnsjava.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="net.java.dev.jna" name="jna-platform" rev="5.13.0" conf="runtime,instexcl->default" >
+        <dependency org="net.java.dev.jna" name="jna-platform" rev="5.14.0" conf="runtime,instexcl->default" >
             <!-- Provides jna-platform.jar and transitive dependency jna.jar in jitsi/lib/installer-exclude -->
         </dependency>
         <dependency org="org.apache.commons" name="commons-collections4" rev="4.4" conf="runtime,instexcl->default" >
             <!-- Provides commons-collections4.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="org.apache.commons" name="commons-lang3" rev="3.12.0" conf="runtime,instexcl->default" >
+        <dependency org="org.apache.commons" name="commons-lang3" rev="3.14.0" conf="runtime,instexcl->default" >
             <!-- Provides commons-lang3.jar in jitsi/lib/installer-exclude -->
         </dependency>
         <dependency org="org.apache.commons" name="commons-math3" rev="3.6.1" conf="runtime,instexcl->default" >
@@ -111,24 +111,24 @@
             <!-- Provides httpmime.jar and httpclient.jar in jitsi/lib/installer-exclude.
             This jar is bundled along with commons-codec@1.15 & httpclient@4.5.13 to make up httpclient-osgi jar. -->
         </dependency>
-        <dependency org="org.bouncycastle" name="bcpkix-jdk18on" rev="1.75" conf="runtime,instexcl->default" >
+        <dependency org="org.bouncycastle" name="bcpkix-jdk18on" rev="1.77" conf="runtime,instexcl->default" >
             <!-- Provides bcpkix-jdk18on.jar and transitive dependency bcprov-jdk18on.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="org.bouncycastle" name="bcutil-jdk18on" rev="1.75" conf="runtime,instexcl->default" >
+        <dependency org="org.bouncycastle" name="bcutil-jdk18on" rev="1.77" conf="runtime,instexcl->default" >
             <!-- Provides bcutil-jdk18on.jar in jitsi/lib/installer-exclude -->
         </dependency>
 
         <dependency org="org.bytedeco" name="ffmpeg" rev="4.4-1.5.6" transitive="false" conf="runtime,osspecific->default" >
-            <!-- Provides ffmpeg-windows-x86.jar and ffmpeg-macosx-x86_64.jar in jitsi/lib/installer-exclude/os-specific.
+            <!-- Provides ffmpeg-windows-x86_64.jar and ffmpeg-macosx-x86_64.jar in jitsi/lib/installer-exclude/os-specific.
             Set transitive="false" because classifiers don't work transitively.  The transitive dependencies with the same classifiers
             within org.bytedeco:javacpp are downloaded explicitly using a separate dependency declaration. -->
             <artifact name="ffmpeg" type="jar" ext="jar" e:classifier="macosx-x86_64" />
-            <artifact name="ffmpeg" type="jar" ext="jar" e:classifier="windows-x86" />
+            <artifact name="ffmpeg" type="jar" ext="jar" e:classifier="windows-x86_64" />
         </dependency>
         <dependency org="org.bytedeco" name="javacpp" rev="1.5.6" conf="runtime,osspecific->default" >
-            <!-- Provides javacpp-windows-x86.jar and javacpp-macosx-x86_64.jar in jitsi/lib/installer-exclude/os-specific -->
+            <!-- Provides javacpp-windows-x86_64.jar and javacpp-macosx-x86_64.jar in jitsi/lib/installer-exclude/os-specific -->
             <artifact name="javacpp" type="jar" ext="jar" e:classifier="macosx-x86_64" />
-            <artifact name="javacpp" type="jar" ext="jar" e:classifier="windows-x86" />
+            <artifact name="javacpp" type="jar" ext="jar" e:classifier="windows-x86_64" />
         </dependency>
         <dependency org="org.hsqldb" name="hsqldb" rev="2.7.2" conf="runtime,instexcl->default" >
             <!-- Provides hsqldb.jar in jitsi/lib/installer-exclude -->

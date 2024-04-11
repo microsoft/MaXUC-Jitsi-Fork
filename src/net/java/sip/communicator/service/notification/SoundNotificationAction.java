@@ -6,6 +6,9 @@
  */
 package net.java.sip.communicator.service.notification;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * An implementation of the <tt>SoundNotificationHandlerImpl</tt> interface.
  *
@@ -26,6 +29,12 @@ public class SoundNotificationAction
     private String soundFileDescriptor;
 
     /**
+     * Descriptor map that may hold multiple ringtones. Only used for incoming conference and calls.
+     * The Format is "tagKey = descriptorValue". The descriptor is a relative path to the sound file.
+     */
+    private final Map<BgTag, String> soundFileDescriptorsMap = new HashMap<>();
+
+    /**
      * The boolean telling if this sound is to be played on notification device.
      */
     private boolean isSoundNotificationEnabled;
@@ -39,6 +48,30 @@ public class SoundNotificationAction
      * Is sound to be played on pc speaker device.
      */
     private boolean isSoundPCSpeakerEnabled;
+
+    /**
+     * Tags depicting whether an incoming call is internal or external. Used in
+     * selecting the ringtone of the incoming call.
+     */
+    public enum BgTag
+    {
+        BG_TAG_INTERNAL("Internal"),
+        BG_TAG_GENERIC("External"),
+        ;
+
+        private final String tag;
+
+        BgTag(String tag)
+        {
+            this.tag = tag;
+        }
+
+        @Override
+        public String toString()
+        {
+            return tag;
+        }
+    }
 
     /**
      * Creates an instance of <tt>SoundNotification</tt> by
@@ -56,6 +89,29 @@ public class SoundNotificationAction
             false,
             false,
             false);
+    }
+
+    /**
+     * Creates an instance of <tt>SoundNotification</tt> by specifying the sound file descriptor and the loop interval.
+     *
+     * @param taggedSoundDescriptors map of tagged sound file descriptors. Preferably tagged with BG_TAG_INTERNAL or
+     *                               BG_TAG_GENERIC
+     * @param loopInterval the loop interval
+     * @param isSoundNotificationEnabled True if this sound is activated. False Otherwise.
+     * @param isSoundPlaybackEnabled True if this sound is activated. False Otherwise.
+     * @param isSoundPCSpeakerEnabled True if this sound is activated. False Otherwise.
+     */
+    public SoundNotificationAction(Map<BgTag, String> taggedSoundDescriptors,
+                                   int loopInterval,
+                                   boolean isSoundNotificationEnabled,
+                                   boolean isSoundPlaybackEnabled,
+                                   boolean isSoundPCSpeakerEnabled)
+    {
+        this("", loopInterval, isSoundNotificationEnabled, isSoundPlaybackEnabled, isSoundPCSpeakerEnabled);
+        soundFileDescriptorsMap.putAll(taggedSoundDescriptors);
+
+        // Take the first entry as default
+        soundFileDescriptor = (String) soundFileDescriptorsMap.values().toArray()[0];
     }
 
     /**
@@ -113,6 +169,25 @@ public class SoundNotificationAction
     public String getDescriptor()
     {
         return soundFileDescriptor;
+    }
+
+    public Map<BgTag, String> getSoundFileDescriptorsMap()
+    {
+        return soundFileDescriptorsMap;
+    }
+
+    public void setSoundFileDescriptorsMapEntry(BgTag key, String soundFileDescriptor)
+    {
+        soundFileDescriptorsMap.put(key, soundFileDescriptor);
+    }
+
+    /**
+     * Sets the soundFileDescriptor for the selected tag. If the tag doesn't exist then the soundFileDescriptor remains
+     * unchanged.
+     */
+    public void selectSoundFileDescriptorByGroup(BgTag key)
+    {
+        soundFileDescriptor = soundFileDescriptorsMap.getOrDefault(key, soundFileDescriptor);
     }
 
     /**

@@ -1,27 +1,26 @@
-ï»¿<WixLocalization
+<?xml version="1.0" encoding="windows-1252" ?>
+<!-- Do not convert this file to another encoding and do not remove "encoding" attribute above.
+     brand-client.py script (populateAndSaveTemplate) reads the attribute
+     and uses it to encode branding values before replacing them in this file. -->
+<WixLocalization
     xmlns="http://wixtoolset.org/schemas/v4/wxl"
     Culture="fr-fr"
     Language="1036">
 
-  <String Id="CleanSweepDlg_Title" Overridable="yes" Value="Installation de @@PRODUCT_NAME_TITLECASE@@" />
-  <String Id="CleanSweepDlgBannerBitmap" Overridable="yes" Value="WixUI_Bmp_Banner" />
-  <String Id="CleanSweepDlgDescription" Overridable="yes" Value="Quelles options souhaitez-vous ajouter ?" />
-  <String Id="CleanSweepDlgTitle" Overridable="yes" Value="{\WixUI_Font_Title}Options supplÃ©mentaires" />
-
   <String Id="ShortcutsAndRegistryDlg_Title" Overridable="yes" Value="[ProductName] Installation" />
   <String Id="ShortcutsAndRegistryDlgBannerBitmap" Overridable="yes" Value="WixUI_Bmp_Banner" />
   <String Id="ShortcutsAndRegistryDlgDescription" Overridable="yes" Value="Quelles options souhaitez-vous ajouter ?" />
-  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes" Value="{\WixUI_Font_Title}Options supplÃ©mentaires" />
+  <String Id="ShortcutsAndRegistryDlgTitle" Overridable="yes" Value="{\WixUI_Font_Title}Options supplémentaires" />
 
-  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes" Value="CrÃ©er des Raccourcis" />
-  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes" Value="CrÃ©er un raccourci dans le Menu &quot;DÃ©marrer&quot;" />
-  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes" Value="&amp;CrÃ©er un raccourci sur le bureau" />
+  <String Id="ShortcutsAndRegistryDlg_CreateShortcuts" Overridable="yes" Value="Créer des Raccourcis" />
+  <String Id="ShortcutsAndRegistryDlg_CreateStartMenu" Overridable="yes" Value="Créer un raccourci dans le Menu &quot;Démarrer&quot;" />
+  <String Id="ShortcutsAndRegistryDlg_CreateDesktop" Overridable="yes" Value="&amp;Créer un raccourci sur le bureau" />
   <String Id="ShortcutsAndRegistryDlg_OtherActions" Overridable="yes" Value="D'autres actions" />
-  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes" Value="&amp;Lancer @@PRODUCT_NAME_TITLECASE@@ lors du dÃ©marrage" />
-  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes" Value="&amp;Protocoles associÃ©s" />
+  <String Id="ShortcutsAndRegistryDlg_CreateAutoStart" Overridable="yes" Value="&amp;Lancer @@PRODUCT_NAME_TITLECASE@@ lors du démarrage" />
+  <String Id="ShortcutsAndRegistryDlg_AssociateProtocols" Overridable="yes" Value="&amp;Protocoles associés" />
 
-  <String Id="WelcomeText1" Overridable="yes" Value="Ce logiciel est developpÃ© par @@COMPANY_NAME_LEGAL@@" />
-  <String Id="WelcomeText2" Overridable="yes" Value="La page d'accueil est Ã : @@WEB_PAGE@@" />
+  <String Id="WelcomeText1" Overridable="yes" Value="Ce logiciel est developpé par @@COMPANY_NAME_LEGAL@@" />
+  <String Id="WelcomeText2" Overridable="yes" Value="La page d'accueil est à: @@WEB_PAGE@@" />
   <String Id="WelcomeText3" Overridable="yes" Value="{\GreyText}Fourni par jitsi.org" />
 
   <String Id="SysReqError" Overridable="yes" Value="@@PRODUCT_NAME_TITLECASE@@ n'est pas pris en charge par cette version de Windows. Il faut au moins Windows 10." />

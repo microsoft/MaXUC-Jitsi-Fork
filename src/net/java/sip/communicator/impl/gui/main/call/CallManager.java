@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import javax.swing.*;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.metaswitch.maxanalytics.event.CallKt;
 
 import org.jitsi.service.configuration.*;
 import org.jitsi.service.neomedia.*;
@@ -28,6 +27,8 @@ import org.jitsi.service.neomedia.device.*;
 import org.jitsi.service.neomedia.format.*;
 import org.jitsi.service.resources.*;
 import org.jitsi.util.*;
+
+import static net.java.sip.communicator.service.insights.parameters.GuiParameterInfo.*;
 import static org.jitsi.util.Hasher.logHasher;
 
 import net.java.sip.communicator.impl.gui.*;
@@ -37,8 +38,8 @@ import net.java.sip.communicator.service.commportal.CommPortalService;
 import net.java.sip.communicator.service.contactlist.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.gui.UIService.*;
-import net.java.sip.communicator.service.insights.InsightEvent;
-import net.java.sip.communicator.service.phonenumberutils.*;
+import net.java.sip.communicator.service.insights.InsightsEventHint;
+import net.java.sip.communicator.service.insights.parameters.GuiParameterInfo;
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.emergencylocation.EmergencyCallContext;
 import net.java.sip.communicator.service.protocol.event.*;
@@ -107,12 +108,6 @@ public class CallManager
      */
     private static final String PHONE_NUMBER_IGNORE_REGEX =
                                 ConfigurationUtils.getPhoneNumberIgnoreRegex();
-
-    /**
-     * The PhoneNumberUtilsService
-     */
-    private static final PhoneNumberUtilsService phoneNumberUtils =
-                                            GuiActivator.getPhoneNumberUtils();
 
     /**
      * Keeps track of the CallDialogs that are currently active, so that we can
@@ -898,11 +893,8 @@ public class CallManager
             analytics.onEventWithIncrementingCount(AnalyticsEventType.ENABLE_VIDEO, new ArrayList<>());
         }
 
-        GuiActivator.getInsightService().logEvent(
-                new InsightEvent(CallKt.EVENT_CALL_SEND_VIDEO,
-                                 CallKt.PARAM_CALL_SEND_VIDEO,
-                                 String.valueOf(enable))
-        );
+        GuiActivator.getInsightsService().logEvent(InsightsEventHint.GUI_ENABLE_VIDEO.name(),
+                                                  Map.of(GUI_VIDEO_ENABLED.name(), enable));
 
         new EnableLocalVideoThread(call, enable).start();
     }
@@ -1021,6 +1013,7 @@ public class CallManager
 
     /**
      * Transfers the given <tt>peer</tt> to the given <tt>target</tt>.
+     * Used only for attended call transfer.
      * @param peer the <tt>CallPeer</tt> to transfer
      * @param target the <tt>CallPeer</tt> target to transfer to
      */
@@ -1029,6 +1022,7 @@ public class CallManager
         OperationSetAdvancedTelephony<?> telephony
             = peer.getCall().getProtocolProvider()
                 .getOperationSet(OperationSetAdvancedTelephony.class);
+        OperationFailedException exception = null;
 
         if (telephony != null)
         {
@@ -1040,12 +1034,16 @@ public class CallManager
             {
                 logger.error("Failed to transfer " + peer.getAddress()
                     + " to " + target, ex);
+                exception = ex;
             }
+
+            sendCallTransferAnalytics(true, exception, peer);
         }
     }
 
     /**
      * Transfers the given <tt>peer</tt> to the given <tt>target</tt>.
+     * Used only for an unattended call transfer.
      * @param peer the <tt>CallPeer</tt> to transfer
      * @param target the target of the transfer
      * @param reformattingNeeded whether the peer address should be reformatted
@@ -1058,6 +1056,7 @@ public class CallManager
         OperationSetAdvancedTelephony<?> telephony
             = peer.getCall().getProtocolProvider()
                 .getOperationSet(OperationSetAdvancedTelephony.class);
+        OperationFailedException exception = null;
 
         if (telephony != null)
         {
@@ -1073,7 +1072,7 @@ public class CallManager
                 if ((target.startsWith("+")) ||
                     (reformattingNeeded == Reformatting.NEEDED))
                 {
-                    target = phoneNumberUtils.formatNumberForRefer(target);
+                    target = GuiActivator.getPhoneNumberUtils().formatNumberForRefer(target);
                 }
 
                 telephony.transfer(peer, target);
@@ -1084,8 +1083,28 @@ public class CallManager
             {
                 logger.error("Failed to transfer " + peer.getAddress()
                     + " to " + target, ex);
+                exception = ex;
             }
+
+            sendCallTransferAnalytics(false, exception, peer);
         }
+    }
+
+    /**
+     * Send analytics for call transfer
+     */
+    private static void sendCallTransferAnalytics(boolean attended, OperationFailedException exception, CallPeer peer)
+    {
+        Map<String, Object> parameters = new HashMap<>();
+
+        parameters.put(GUI_CALL_ATTENDED.name(), attended);
+        parameters.put(GUI_VIDEO_ENABLED.name(), isLocalVideoEnabled(peer.getCall()));
+        if (exception != null)
+        {
+            parameters.put(GUI_CALL_EXCEPTION.name(), exception);
+        }
+
+        GuiActivator.getInsightsService().logEvent(InsightsEventHint.GUI_CALL_TRANSFER.name(), parameters);
     }
 
     /**
@@ -1392,12 +1411,15 @@ public class CallManager
     }
 
     /**
-     * Opens a call transfer dialog to transfer the given <tt>peer</tt>.
+     * Opens a corresponding call transfer dialog to transfer the given <tt>peer</tt>.
+     *
      * @param peer the <tt>CallPeer</tt> to transfer
+     * @param callTransferType call transfer type
      */
-    public static void openCallTransferDialog(CallPeer peer)
+    public static void openCallTransferDialog(CallPeer peer,
+                                              CallTransferType callTransferType)
     {
-        final TransferCallDialog dialog = new TransferCallDialog(peer);
+        final TransferCallDialog dialog = new TransferCallDialog(peer, callTransferType);
         final Call call = peer.getCall();
 
         /*
@@ -1415,8 +1437,8 @@ public class CallManager
             public void callStateChanged(CallChangeEvent evt)
             {
                 // we are interested only in CALL_STATE_CHANGEs
-                if(!evt.getEventType().equals(
-                    CallChangeEvent.CALL_STATE_CHANGE))
+                if(!CallChangeEvent.CALL_STATE_CHANGE.equals(
+                        evt.getEventType()))
                     return;
 
                 if (!CallState.CALL_IN_PROGRESS.equals(call.getCallState()))
@@ -1677,6 +1699,14 @@ public class CallManager
                                 .onEvent(AnalyticsEventType.EMERGENCY_CALL_HANDLED_BY_APP,
                                          AnalyticsParameter.PARAM_EMERGENCY_CALL_LOCATION_SENT,
                                          "" + (emergencyCallContext != null));
+
+                        GuiActivator.getInsightsService().logEvent(
+                                InsightsEventHint.EMERGENCY_CALL_HANDLED_BY_CLIENT.name(),
+                                Map.of(
+                                        GuiParameterInfo.EMERGENCY_CALL_LOCATION_SENT.name(),
+                                        emergencyCallContext != null
+                                )
+                        );
                     }
 
                     Call call = call(protocolProvider,
@@ -1801,6 +1831,16 @@ public class CallManager
                             GuiActivator
                                     .getAnalyticsService()
                                     .onEvent(AnalyticsEventType.EMERGENCY_CALL_RETRY);
+
+                            GuiActivator
+                                    .getInsightsService()
+                                    .logEvent(
+                                            InsightsEventHint.GUI_EMERGENCY_CALL_RETRY.name(),
+                                            Map.of(
+                                                    GuiParameterInfo.EMERGENCY_CALL_FIRST_ATTEMPT_RESULT.name(),
+                                                    evt.getReasonCode()
+                                            )
+                                    );
                         }
                         catch (Exception e)
                         {
@@ -1953,7 +1993,7 @@ public class CallManager
             {
                 stringContact = contact.getAddress();
             }
-            stringContact = phoneNumberUtils.formatNumberForDialing(stringContact);
+            stringContact = GuiActivator.getPhoneNumberUtils().formatNumberForDialing(stringContact);
         }
 
         if (resourceTelephony != null && contactResource != null)
@@ -2670,7 +2710,7 @@ public class CallManager
     {
         for (int ii=0; ii<callees.length; ii++)
         {
-            callees[ii] = phoneNumberUtils.formatNumberForDialing(callees[ii]);
+            callees[ii] = GuiActivator.getPhoneNumberUtils().formatNumberForDialing(callees[ii]);
         }
     }
 
