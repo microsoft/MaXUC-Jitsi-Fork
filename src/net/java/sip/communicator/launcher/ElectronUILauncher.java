@@ -144,7 +144,7 @@ public class ElectronUILauncher
                 File electronApp = new File("../Frameworks/", electronAppName + ".app");
                 String electronAppAbsolutePath = electronApp.getAbsolutePath();
                 logger.info("Starting Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
-                new ProcessBuilder("open", electronAppAbsolutePath).start();
+                new ProcessBuilder("open", electronAppAbsolutePath).start(); // CodeQL [SM00679] Not Exploitable. The command is not user provided.
                 logger.info("Started Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
             }
             catch (Exception e)
@@ -153,14 +153,14 @@ public class ElectronUILauncher
                 // We hit errors trying to start the electron UI, so re-enable
                 // the Java dock and menu icon so that the user has something
                 // they can interact with.
-                // TODO: ROBUSTNESS https://jira.metaswitch.com/browse/ACM-4440
+                // TODO: ROBUSTNESS https://[indeterminate link]
                 // For GA we will need better error checking, specific Exception
                 // handling, probably a retry mechanism for starting the Electron
                 // client and monitoring to check that it is (still) running.
                 //
                 // This code is copied directly from OSUtils.showMacDockAndMenu(). We
                 // can't use OSUtils from here as it blocks some logs from appearing
-                // (see https://jira.metaswitch.com/browse/BUG-4558).
+                // (see https://[indeterminate link]
                 //
                 // DUIR-509 may mean that we can retire this snippet below now that
                 // we have better fallback behaviour.
@@ -184,12 +184,12 @@ public class ElectronUILauncher
                 File electronApp = new File("ui/", electronAppName + ".exe");
                 String electronAppAbsolutePath = electronApp.getAbsolutePath();
                 logger.info("Starting Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
-                new ProcessBuilder(electronAppAbsolutePath).start();
+                new ProcessBuilder(electronAppAbsolutePath).start(); // CodeQL [SM00679] Not Exploitable. The command is not user provided.
                 logger.info("Started Electron UI at: " + sanitiseFilePath(electronAppAbsolutePath));
             }
             catch (Exception e)
             {
-                // TODO: ROBUSTNESS https://jira.metaswitch.com/browse/ACM-4440
+                // TODO: ROBUSTNESS https://[indeterminate link]
                 // This kind of error logging will not be acceptable for GA. We will
                 // return to improve this error messaging under the work done to improve
                 // client robustness.

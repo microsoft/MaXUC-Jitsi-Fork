@@ -1,3 +1,4 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.plugin.desktoputil;
 
 import static net.java.sip.communicator.service.insights.parameters.DesktopUtilParameterInfo.SSO_TOKEN_REFRESHED;
@@ -61,7 +62,7 @@ public class PreLoginUtils
     public static String currentGraphAPIToken = "";
     public static String currentPassword = "";
     public static boolean didSSOLoginFail = false;
-    @VisibleForTesting static boolean isShutdownInitiated = false;
+    @VisibleForTesting public static boolean isShutdownInitiated = false;
     private static final Object shutdownLock = new Object();
     @VisibleForTesting static Object loginLock = new Object();
     @VisibleForTesting static Object serviceProviderLock = new Object();

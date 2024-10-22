@@ -33,7 +33,7 @@ public class ClientCapabilities
      * The <tt>Logger</tt> used by the <tt>ClientCapabilities</tt> class and its
      * instances for logging output.
      */
-    private static final Logger logger
+    private final Logger logger
         = Logger.getLogger(ClientCapabilities.class);
 
     /**

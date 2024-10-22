@@ -7,12 +7,15 @@ import java.sql.*;
 
 import net.java.sip.communicator.service.database.*;
 import net.java.sip.communicator.service.database.schema.*;
+import net.java.sip.communicator.util.Logger;
 
 /**
  * Utility class that exposes a method to make life easier.
  */
 public class DatabaseUtils
 {
+    private static final Logger sLog = Logger.getLogger(DatabaseUtils.class);
+
     /** Strings to use to replace message text in logs. */
     private static final String DUMMY_MESSAGE_TEXT = "XXX";
     private static final String DUMMY_SUBJECT = "YYY";
@@ -30,8 +33,9 @@ public class DatabaseUtils
                 connection.close();
             }
         }
-        catch (SQLException e)
+        catch (Exception e)
         {
+            sLog.error("Failed to close DB connection: ", e);
         }
     }
 

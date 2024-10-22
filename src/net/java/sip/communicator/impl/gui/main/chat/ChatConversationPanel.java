@@ -1481,7 +1481,7 @@ public class ChatConversationPanel
                 File avatarFile = AvatarCacheUtils.getCachedAvatarFile(
                     protocolProvider, contactAddress);
 
-                if (avatarFile.exists() && avatarFile.length() > 0)
+                if (avatarFile.exists() && avatarFile.length() > 0) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 {
                     avatarPath = "file:" + avatarFile.getAbsolutePath();
                 }

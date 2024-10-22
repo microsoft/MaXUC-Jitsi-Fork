@@ -399,7 +399,7 @@ public class OperationSetFileTransferJabberImpl
         // Create file in the location we want to download to (Downloads folder)
         File downloadsFolder = JabberActivator.getFileAccessService().getDefaultDownloadDirectory();
         // Create downloads folder if it doesn't exist
-        if (!downloadsFolder.exists())
+        if (!downloadsFolder.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             if (!downloadsFolder.mkdirs())
             {
@@ -414,7 +414,7 @@ public class OperationSetFileTransferJabberImpl
         // If a file with the given name already exists, add an index to the
         // file name.
         int index = 0;
-        while (downloadFile.exists())
+        while (downloadFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             int lastDot = fileName.lastIndexOf(".");
             String newFileName;
@@ -1004,7 +1004,7 @@ public class OperationSetFileTransferJabberImpl
     {
         try
         {
-            String mimeType = Files.probeContentType(filePath);
+            String mimeType = Files.probeContentType(filePath); // CodeQL [SM00697] Not Exploitable. We're just looking at the content type.
             if (mimeType.contains("video"))
             {
                 return "Video";

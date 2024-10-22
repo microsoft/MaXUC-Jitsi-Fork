@@ -123,7 +123,7 @@ public class WISPACertificateInfo
         try
         {
             // Ensure that the WISPA directory exists
-            Files.createDirectories(Paths.get(wispaDir));
+            Files.createDirectories(Paths.get(wispaDir)); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         }
         catch (IOException e)
         {
@@ -393,7 +393,7 @@ public class WISPACertificateInfo
         }
 
         // Write the key store to disk.
-        FileOutputStream stream = new FileOutputStream(keyStoreName);
+        FileOutputStream stream = new FileOutputStream(keyStoreName); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         try
         {
             keyStore.store(stream, pwdArray);
@@ -406,7 +406,7 @@ public class WISPACertificateInfo
 
     private void writePEMToFile(Object pemObj, String filename) throws IOException
     {
-        JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter(filename));
+        JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter(filename)); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         pemWriter.writeObject(pemObj);
         pemWriter.flush();
         pemWriter.close();

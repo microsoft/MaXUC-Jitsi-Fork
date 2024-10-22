@@ -46,7 +46,7 @@ public final class ProvisioningParams
     private static volatile String sPassword;
 
     @VisibleForTesting
-    static SubmissionPublisher<Boolean> publisher = new SubmissionPublisher<>();
+    public static SubmissionPublisher<Boolean> publisher = new SubmissionPublisher<>();
 
     /**
      * Suppress the constructor so that we can only use this class via the

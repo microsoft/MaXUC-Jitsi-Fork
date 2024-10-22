@@ -38,6 +38,9 @@ public class RejectWithImButton extends TransparentPanel implements ActionListen
     private static final String REJECT_HINT_RES = "service.gui.REJECT_CALL_HINT";
     private static final String REJECT_REASON_STUB = "service.gui.REJECT_CALL_";
 
+    private final BufferedImageFuture mRejectNormalImage;
+    private final BufferedImageFuture mRejectRolloverImage;
+
     /**
      * The MetaContact who caused this button to be created.
      */
@@ -89,6 +92,8 @@ public class RejectWithImButton extends TransparentPanel implements ActionListen
         String imageResourcePrefix = "service.gui.button." + rejectResourcePrefix;
         mMetaContact = metaContact;
         mActionListener = actionListener;
+        mRejectNormalImage = sRes.getBufferedImage(imageResourcePrefix + ".IM.NORMAL");
+        mRejectRolloverImage = sRes.getBufferedImage(imageResourcePrefix + ".IM.ROLLOVER");
 
         boolean imAvailable = mMetaContact != null &&
                               mMetaContact.canBeMessaged() &&
@@ -118,14 +123,27 @@ public class RejectWithImButton extends TransparentPanel implements ActionListen
             add(mRejectButton);
 
             mRejectImButton = new SIPCommButton();
-            mRejectImButton.setBackgroundImage(sRes.getBufferedImage(
-                    imageResourcePrefix + ".IM.NORMAL"));
-            mRejectImButton.setRolloverImage(sRes.getBufferedImage(
-                    imageResourcePrefix + ".IM.ROLLOVER"));
+            mRejectImButton.setBackgroundImage(mRejectNormalImage);
+            mRejectImButton.setRolloverImage(mRejectRolloverImage);
             mRejectImButton.setPressedImage(sRes.getBufferedImage(
                     imageResourcePrefix + ".IM.PRESSED"));
             mRejectImButton.addActionListener(this);
             mRejectImButton.setForeground(Color.WHITE);
+            // Add a listener, so we can update the images according to keyboard focus
+            mRejectImButton.addFocusListener(new FocusListener()
+            {
+                @Override
+                public void focusGained(FocusEvent e)
+                {
+                    mRejectImButton.setImage(mRejectRolloverImage);
+                }
+
+                @Override
+                public void focusLost(FocusEvent e)
+                {
+                    mRejectImButton.setImage(mRejectNormalImage);
+                }
+            });
 
             AccessibilityUtils.setName(mRejectImButton, sRes.getI18NString(REJECT_HINT_RES));
             add(mRejectImButton);

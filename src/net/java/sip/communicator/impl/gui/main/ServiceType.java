@@ -370,7 +370,7 @@ public enum ServiceType
             }
             catch (IOException e)
             {
-                logger.warn("Exception using URL: " + loggableUrl);
+                logger.warn("IOException using URL: " + loggableUrl, e);
                 error = true;
                 errorTitle = GuiActivator.getResources().getI18NString(
                     "service.gui.UC_SERVICES.URL_ERROR.FAILED.TITLE");

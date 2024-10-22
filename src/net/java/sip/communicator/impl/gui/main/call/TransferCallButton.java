@@ -7,7 +7,6 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
-import java.awt.event.*;
 import java.util.*;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -80,29 +79,20 @@ public class TransferCallButton extends InCallButton
         conference.addCallChangeListener(this);
 
         // Initialize as disabled unless the call is already connected, it
-        // will become enabled when the call connects.
+        // will become enabled when the call connects. Call can be connected
+        // but on hold, in which case we allow transfers.
         for (CallPeer peer : conference.getCallPeers())
         {
-            if (!CallPeerState.CONNECTED.equals(peer.getState()))
+            if (!CallPeerState.CONNECTED.equals(peer.getState())
+                && !CallPeerState.isOnHold(peer.getState()))
             {
                 this.setEnabled(false);
             }
         }
 
-        addActionListener(new ActionListener()
-        {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param evt the <tt>ActionEvent</tt> instance containing the
-             *            data associated with the action and the act of its
-             *            performing
-             */
-            public void actionPerformed(ActionEvent evt)
-            {
-                logger.user("Call transfer button clicked in call window");
-                transferCall();
-            }
+        addActionListener(evt -> {
+            logger.user("Call transfer button clicked in call window");
+            transferCall();
         });
     }
 

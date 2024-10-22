@@ -20,4 +20,11 @@ public class SystemUtils
     public static String getProperty(String key) {
         return System.getProperty(key);
     }
+
+    /**
+     * Just proxies the call to System.exit.
+     */
+    public static void exit(int status) {
+        System.exit(status);
+    }
 }

@@ -32,22 +32,22 @@ sc-bundles
 # Libraries now stored on artifactory
 lib/native/mac/com/sun/jna
 lib/native/mac/libAEGetURLEventHandlerAgent.dylib
-lib/native/mac/libglobalshortcut.jnilib
+lib/native/mac/libglobalshortcut.dylib
 lib/native/mac/libjmacosxaddrbook.jnilib
-lib/native/mac/libjnavfoundation.jnilib
-lib/native/mac/libjnawtrenderer.jnilib
+lib/native/mac/libjnavfoundation.dylib
+lib/native/mac/libjnawtrenderer.dylib
 lib/native/mac/libjndirectshow.jnilib
-lib/native/mac/libjng722.jnilib
+lib/native/mac/libjng722.dylib
 lib/native/mac/libjnidispatch.jnilib
-lib/native/mac/libjnlocation.jnilib
-lib/native/mac/libjnmaccoreaudio.jnilib
-lib/native/mac/libjnopus.jnilib
+lib/native/mac/libjnlocation.dylib
+lib/native/mac/libjnmaccoreaudio.dylib
+lib/native/mac/libjnopus.dylib
 lib/native/mac/libsparkle_init.dylib
-lib/native/mac/libjnspeex.jnilib
+lib/native/mac/libjnspeex.dylib
 lib/native/mac/libjnwasapi.jnilib
 lib/native/mac/libjnwincoreaudio.jnilib
 lib/native/mac/libLocalhostRetriever.jnilib
-lib/native/mac/libsysactivitynotifications.jnilib
+lib/native/mac/libsysactivitynotifications.dylib
 lib/native/mac/org/bytedeco
 
 lib/native/windows/32/*.exe

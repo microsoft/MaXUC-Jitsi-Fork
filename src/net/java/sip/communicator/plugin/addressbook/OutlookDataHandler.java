@@ -443,7 +443,7 @@ public class OutlookDataHandler
     {
         try
         {
-            Files.move(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.move(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         }
         catch (IOException e)
         {
@@ -452,7 +452,7 @@ public class OutlookDataHandler
                 // It's possible that when AOS has just died, Windows hasn't had time to realise
                 // that the handle on the main log file has gone. Sleep 100ms and try again.
                 TimeUnit.MILLISECONDS.sleep(100);
-                Files.move(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.move(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             }
             catch (InterruptedException | IOException e1)
             {

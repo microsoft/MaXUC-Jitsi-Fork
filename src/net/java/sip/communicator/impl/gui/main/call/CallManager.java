@@ -663,7 +663,7 @@ public class CallManager
             String uri = ConfigurationUtils.getDesktopUriScheme();
             if (uri != null)
             {
-                Runtime.getRuntime().exec("open " + uri + ":///");
+                Runtime.getRuntime().exec("open " + uri + ":///"); // CodeQL [SM00680] Not Exploitable. The command is not user provided.
             }
         }
         catch (IOException e)
@@ -1978,10 +1978,6 @@ public class CallManager
 
         Call call = null;
 
-        // Under DUIR-4210, we detect External Line Codes (ELCs) added to numbers of
-        // saved contacts. The existing code does not currently handle ELCs that
-        // start with a hash "#" or an asterisk "*".
-        //
         // A check needs to be made whether the number needs to be formatted
         // as phone numbers dialed through the keypad should be dialed as is.
         // This covers a special case with Italian numbers where fixed lines

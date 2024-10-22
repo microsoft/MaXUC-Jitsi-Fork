@@ -6,14 +6,14 @@
 #
 # Portions (c) Microsoft Corporation. All rights reserved.
 
-MINGW_HOME ?= C:/mingw
+MINGW_HOME ?= C:/msys64/mingw64
 PRODUCTNAME ?= Jitsi
 PRODUCTBUILDVERSION ?= 1.0.0.0
 TARGET_BASENAME ?= run
 TARGET_DIR ?= ../../../../release/windows/tmp
 JAVA_HOME ?= C:/Program Files/Microsoft/jdk-17.0.10+7
 
-ifeq ($(wildcard /bin/cygpath.*),/bin/cygpath.exe)
+ifneq ($(shell which cygpath),)
     target.dir := $(shell cygpath --mixed "$(TARGET_DIR)")
     cygwin.target.dir := $(shell cygpath --unix "$(TARGET_DIR)")
 else
@@ -53,7 +53,7 @@ $(cygwin.target.dir)/$(TARGET_BASENAME).exe: $(cygwin.target.dir)/config.h regis
 
 $(cygwin.target.dir)/config.h:
 	-rm.exe -f ../../../../resources/install/windows/config.h
-	echo.exe -e '$(CONFIG)' > $(cygwin.target.dir)/config.h
+	echo -e '$(CONFIG)' > $(cygwin.target.dir)/config.h
 
 $(cygwin.target.dir)/run.res: $(cygwin.target.dir)/config.h run.rc
 	$(WINDRES) -I../../../../resources/install/windows -I$(target.dir) run.rc -O coff -o $(target.dir)/run.res

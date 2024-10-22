@@ -1149,7 +1149,7 @@ public class GeneralConfigurationPanel
                                    ConfigurationUtils.DEFAULT_SAVED_CALLS_PATH);
                File recordingsFolder = new File(savedCallsPath);
 
-               if (!recordingsFolder.exists())
+               if (!recordingsFolder.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                {
                    logger.debug("Recordings folder " +
                                 " does not exist, so it will now be created.");

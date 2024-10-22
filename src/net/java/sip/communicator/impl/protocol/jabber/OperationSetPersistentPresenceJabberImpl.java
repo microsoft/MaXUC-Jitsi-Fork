@@ -2335,9 +2335,17 @@ public class OperationSetPersistentPresenceJabberImpl
                 rosterLoaded = false;
             }
 
+            XMPPConnection connection = parentProvider.getConnection();
+            // No point doing any of this processing if the connection has already gone.
+            if (connection == null)
+            {
+                sLog.info("Connection already gone, don't initialise roster");
+                return;
+            }
+
             // we are already notified lets remove us from the packet
             // listener
-            parentProvider.getConnection().removeStanzaListener(this);
+            connection.removeStanzaListener(this);
 
             // init ssList
             contactChangesListener = new ContactChangesListener();

@@ -587,7 +587,7 @@ public class RingtoneSelectorComboBox extends PathSelectorComboBox
 
         try
         {
-            Files.copy(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING); // CodeQL [SM00698] Not Exploitable. The file/path is not user provided. // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         }
         catch (IOException e)
         {

@@ -53,7 +53,7 @@ public class OsDependentActivator
         {
             // Adds a MacOSX specific dock icon listener in order to show main
             // contact list window on dock icon click.
-            if (OSUtils.IS_MAC)
+            if (OSUtils.isMac())
                 MacOSXDockIcon.addDockIconListener();
         }
         finally

@@ -353,7 +353,9 @@
 
     <target name="resolve-dependencies" description="Get our dependencies." unless="skip-resolve-dependencies" >
         <ivy:settings file="${sc.basedir}/ivysettings.xml" />
-        <ivy:resolve file="${sc.basedir}/ivy.xml" transitive="true" />
+        <retry retrycount="3" retrydelay="5000">
+            <ivy:resolve file="${sc.basedir}/ivy.xml" transitive="true" />
+        </retry>
         <ivy:retrieve conf="bundle" pattern="${sc.basedir}/lib/bundle/[artifact](-[classifier]).[ext]" overwriteMode="different" />
         <ivy:retrieve conf="instexcl" pattern="${lib.noinst}/[artifact](-[classifier]).[ext]" overwriteMode="different" />
         <mkdir dir="${lib.noinst}/os-specific" />

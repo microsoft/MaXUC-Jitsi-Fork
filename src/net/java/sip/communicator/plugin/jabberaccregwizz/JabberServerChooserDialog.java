@@ -213,11 +213,11 @@ public class JabberServerChooserDialog
                 .getPrivatePersistentFile(DEFAULT_FILE_NAME);
 
             // Get the file containing the servers list.
-            if (!localServersListFile.exists())
+            if (!localServersListFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 try
                 {
-                    localServersListFile.createNewFile();
+                    localServersListFile.createNewFile(); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 }
                 catch (IOException e)
                 {
@@ -238,7 +238,7 @@ public class JabberServerChooserDialog
                     if (stream.available() > 0)
                     {
                         FileOutputStream fos
-                                = new FileOutputStream(localServersListFile);
+                                = new FileOutputStream(localServersListFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
 
                         while ((len = stream.read(buf)) > 0)
                         {
@@ -253,7 +253,7 @@ public class JabberServerChooserDialog
                 logger.error("");
             }
 
-            FileInputStream fis = new FileInputStream(localServersListFile);
+            FileInputStream fis = new FileInputStream(localServersListFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             DocumentBuilderFactory factory = DocumentBuilderFactory
                 .newInstance();
             DocumentBuilder constructor = factory.newDocumentBuilder();

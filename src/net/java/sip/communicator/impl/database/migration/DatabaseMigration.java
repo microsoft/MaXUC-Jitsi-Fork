@@ -257,7 +257,7 @@ public abstract class DatabaseMigration
 
         // The directory won't exist if none of that type of history record
         // have ever been created.
-        if (histDir.exists())
+        if (histDir.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             // First get a list of all directories which contain a dat file.
             List<File> listOfDirs = new ArrayList<>();

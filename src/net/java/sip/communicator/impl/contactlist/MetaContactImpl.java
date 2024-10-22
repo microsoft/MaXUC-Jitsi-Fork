@@ -352,12 +352,27 @@ public class MetaContactImpl
         // Convert the input number into E164 format - that way we can compare
         // two strings and say they represent the same number even if one is in
         // a different format to the other.
-        phoneNumber = utils.formatNumberToE164(phoneNumber);
+        String phoneNumberE164 = utils.formatNumberToE164(phoneNumber);
+
         ArrayList<Class<? extends GenericDetail>> detailClasses =
                 new ArrayList<>();
         detailClasses.add(PhoneNumberDetail.class);
 
-        return getContactByValue(phoneNumber, detailClasses);
+        if (utils.getEASRegion().equals("IT"))
+        {
+            // This is a workaround for Italian numbers which are saved without
+            // ELC number prefixed, in which case we don't find a match by default.
+            // For example if a contact is saved as 390324812345, and we search
+            // by 0390324812345 (as that's how we receive it from SIP, with ELC
+            // prefixed), we wouldn't have a match. So here we strip the ELC number
+            // first and then format to E164 and try searching with that as well.
+            String numberWithoutElc = utils.stripELC(phoneNumber);
+            numberWithoutElc = utils.formatNumberToE164(numberWithoutElc);
+            logger.info("Searching with ELC stripped: " + logHasher(numberWithoutElc));
+            return getContactByValues(detailClasses, phoneNumberE164, numberWithoutElc);
+        }
+
+        return getContactByValues(detailClasses, phoneNumberE164);
     }
 
     @Override
@@ -368,18 +383,19 @@ public class MetaContactImpl
         detailClasses.add(EmailAddressDetail.class);
         detailClasses.add(PersonalContactDetails.IMDetail.class);
 
-        return getContactByValue(emailAddress, detailClasses);
+        return getContactByValues(detailClasses, emailAddress);
     }
 
     /**
-     * Return the contacts that match the input value
+     * Return the contacts that match the input values
      *
-     * @param value The value to search on
+     * @param values The values to search on
      * @param detailClasses The type of values that we are interested in
      * @return The matching contacts
      */
-    private List<Contact> getContactByValue(String value,
-                              List<Class<? extends GenericDetail>> detailClasses)
+    private List<Contact> getContactByValues(
+            List<Class<? extends GenericDetail>> detailClasses,
+            String... values)
     {
         List<Contact> contactList = new LinkedList<>();
 
@@ -417,12 +433,15 @@ public class MetaContactImpl
                                 String detailNumber =
                                     utils.formatNumberToE164(detail.toString());
 
-                                if (value.equalsIgnoreCase(detailNumber))
+                                for (String value : values)
                                 {
-                                    // Found a contact match, add this to the list of
-                                    // contact matches
-                                    contactList.add(contact);
-                                    break contactLoop;
+                                    if (value.equalsIgnoreCase(detailNumber))
+                                    {
+                                        // Found a contact match, add this to the list of
+                                        // contact matches
+                                        contactList.add(contact);
+                                        break contactLoop;
+                                    }
                                 }
                             }
                         }

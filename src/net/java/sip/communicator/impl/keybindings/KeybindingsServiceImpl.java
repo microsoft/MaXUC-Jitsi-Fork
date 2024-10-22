@@ -143,7 +143,7 @@ class KeybindingsServiceImpl
                 File customDir =
                     faService
                         .getPrivatePersistentDirectory(CUSTOM_KEYBINDING_DIR);
-                if (!customDir.exists())
+                if (!customDir.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                     customDir.mkdir();
 
                 // Gets file access service to reference persistent storage
@@ -164,11 +164,11 @@ class KeybindingsServiceImpl
             }
 
             LinkedHashMap<KeyStroke, String> customBindings = null;
-            if (customFile.exists())
+            if (customFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 try
                 {
-                    FileInputStream in = new FileInputStream(customFile);
+                    FileInputStream in = new FileInputStream(customFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                     customBindings = format.load(in);
                     in.close();
                 }
@@ -225,7 +225,7 @@ class KeybindingsServiceImpl
             {
                 try
                 {
-                    FileOutputStream out = new FileOutputStream(customFile);
+                    FileOutputStream out = new FileOutputStream(customFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                     format.save(out, merged);
                     out.close();
                 }

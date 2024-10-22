@@ -1017,7 +1017,16 @@ public class ServerStoredContactListJabberImpl implements StateDumper
             mPresenceChangeListener.storeEvents();
         }
 
-        roster = Roster.getInstanceFor(jabberProvider.getConnection());
+        XMPPConnection connection = jabberProvider.getConnection();
+
+        if (connection != null)
+        {
+            roster = Roster.getInstanceFor(connection);
+        }
+        else
+        {
+            logger.warn("XMPP connection is null - not setting roster");
+        }
 
         // We don't set imageRetriever to null in cleanup, to stop further calls to addContactForImageUpdate from creating a new
         // Thread with an object that mightn't be used again.  Set it to null here, so we can create a new one from this point.

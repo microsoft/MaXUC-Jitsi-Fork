@@ -444,7 +444,7 @@ public class CallSipImpl
             else
             {
                 logger.info("Rejecting call as VoIP not allowed in CoS/user config");
-                response = messageFactory.createResponse(Response.BUSY_HERE, invite);
+                response = rejectCall(invite);
             }
 
             serverTran.sendResponse(response);
@@ -608,9 +608,7 @@ public class CallSipImpl
     {
         try
         {
-            Response response;
-            response = messageFactory.createResponse(Response.BUSY_HERE,
-                                                     invite);
+            Response response = rejectCall(invite);
             serverTransaction.sendResponse(response);
         }
         catch(ParseException e)
@@ -650,6 +648,27 @@ public class CallSipImpl
         if (state.equals(CallState.CALL_ENDED))
         {
             getProtocolProvider().removeRegistrationStateChangeListener(this);
+        }
+    }
+
+    private Response rejectCall(Request invite) throws ParseException
+    {
+        // Determine the response code to reject the call with
+        boolean sendDeclineOnCallRejection = getProtocolProvider()
+                .getAccountID()
+                .getAccountPropertyBoolean(
+                        ProtocolProviderFactory.SEND_DECLINE_ON_CALL_REJECTION,
+                        false);
+
+        if (sendDeclineOnCallRejection)
+        {
+            logger.info("Reject call with 603 Decline");
+            return messageFactory.createResponse(Response.DECLINE, invite);
+        }
+        else
+        {
+            logger.info("Reject call with 486 Busy Here");
+            return messageFactory.createResponse(Response.BUSY_HERE, invite);
         }
     }
 

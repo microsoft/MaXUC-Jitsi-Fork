@@ -11,6 +11,7 @@ import java.io.*;
 import java.util.*;
 
 import org.jitsi.service.configuration.*;
+import org.jitsi.util.RuntimeUtils;
 import org.jitsi.util.ThreadUtils;
 
 import org.osgi.framework.*;
@@ -205,7 +206,7 @@ public class ShutdownTimeout
     {
         File shutdownHangMarker = FileUtils.createFile(mShutdownHangMarker);
 
-        if (!shutdownHangMarker.exists())
+        if (!shutdownHangMarker.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             return;
         }
@@ -216,7 +217,7 @@ public class ShutdownTimeout
         BufferedReader br = null;
         try
         {
-            fr = new FileReader(shutdownHangMarker);
+            fr = new FileReader(shutdownHangMarker); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             br = new BufferedReader(fr);
             time = br.readLine();
         }

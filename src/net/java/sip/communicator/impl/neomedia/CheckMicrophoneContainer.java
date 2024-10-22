@@ -59,7 +59,7 @@ public class CheckMicrophoneContainer
      * The <tt>MediaService</tt> implementation used by
      * CheckMicrophoneContainer.
      */
-    private static final MediaServiceImpl sMediaService
+    private final MediaServiceImpl mediaService
         = NeomediaActivator.getMediaServiceImpl();
 
     /**
@@ -404,14 +404,14 @@ public class CheckMicrophoneContainer
             return false;
         }
 
-        MediaDevice device = sMediaService.getDefaultDevice(
+        MediaDevice device = mediaService.getDefaultDevice(
             MediaType.AUDIO, MediaUseCase.CALL);
         if (device != null)
         {
             try
             {
-                MediaDevice mixer = sMediaService.createMixer(device);
-                mRecorder = (RecorderImpl) sMediaService.createRecorder(mixer);
+                MediaDevice mixer = mediaService.createMixer(device);
+                mRecorder = (RecorderImpl) mediaService.createRecorder(mixer);
             }
             catch (IllegalArgumentException ex)
             {

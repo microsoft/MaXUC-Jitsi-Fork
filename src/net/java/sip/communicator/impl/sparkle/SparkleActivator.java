@@ -308,7 +308,7 @@ public class SparkleActivator
                              "~/Library/Preferences/" + identifier);
                 String command = DELETE_COMMAND + " " + identifier + " " + FEED_URL_NAME;
                 processLogger.traceExec(command);
-                Runtime.getRuntime().exec(command);
+                Runtime.getRuntime().exec(command); // CodeQL [SM00679] Not Exploitable. The command is not user provided. // CodeQL [SM00680] Not Exploitable. The command is not user provided.
             }
             catch (IOException e)
             {

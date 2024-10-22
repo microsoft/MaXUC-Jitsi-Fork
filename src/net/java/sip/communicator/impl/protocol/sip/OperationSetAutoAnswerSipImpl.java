@@ -229,19 +229,6 @@ public class OperationSetAutoAnswerSipImpl
     }
 
     /**
-     * Checks if the call satisfy the auto answer conditions.
-     *
-     * @param call The new incoming call to auto-answer if needed.
-     *
-     * @return <tt>true</tt> if the call satisfy the auto answer conditions.
-     * <tt>False</tt> otherwise.
-     */
-    protected boolean satisfyAutoAnswerConditions(Call call)
-    {
-        return satisfyAutoAnswerConditions(call, null);
-    }
-
-    /**
      * Checks if the call satisfies the auto answer conditions.
      *
      * @param call The new incoming call to auto-answer if needed.

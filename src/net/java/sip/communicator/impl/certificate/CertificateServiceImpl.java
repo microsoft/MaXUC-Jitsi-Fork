@@ -421,7 +421,7 @@ public class CertificateServiceImpl
             if (System.getProperty("javax.net.ssl.keyStore") != null)
             {
                 ks.load(
-                    new FileInputStream(System
+                    new FileInputStream(System // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                         .getProperty("javax.net.ssl.keyStore")), null);
             }
             else

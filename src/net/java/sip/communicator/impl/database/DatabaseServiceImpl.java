@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.hsqldb.jdbc.*;
 import org.jitsi.service.fileaccess.*;
+import org.jitsi.util.RuntimeUtils;
 
 import net.java.sip.communicator.impl.database.migration.*;
 import net.java.sip.communicator.service.database.*;
@@ -92,7 +93,7 @@ public class DatabaseServiceImpl implements DatabaseService
                 public void run()
                 {
                     sLog.info("Running shutdown hook for DatabaseServiceImpl");
-                    shutdown();
+                    shutdownImmediately();
                 }
             });
 
@@ -115,7 +116,7 @@ public class DatabaseServiceImpl implements DatabaseService
 
         // Log out the contents of database.properties if it exists - it contains info on the state of the DB
         File propertiesFile = new File(databaseDirectory, "database.properties");
-        try (FileInputStream inputStream = new FileInputStream(propertiesFile))
+        try (FileInputStream inputStream = new FileInputStream(propertiesFile)) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             Properties databaseProperties = new Properties();
             databaseProperties.load(inputStream);
@@ -147,12 +148,40 @@ public class DatabaseServiceImpl implements DatabaseService
     }
 
     /**
-     * Shutdown the database.  Only safe to call after all connections have
-     * been closed.
+     * Shutdown the database.
      */
     public void shutdown()
     {
-        sLog.info("DatabaseService: shutdown start");
+        executeShutdownCommand("SHUTDOWN");
+    }
+
+    /**
+     * Shutdown the database immediately.
+     */
+    void shutdownImmediately()
+    {
+        executeShutdownCommand("SHUTDOWN IMMEDIATELY");
+    }
+
+    /**
+     * There are several options to the SHUTDOWN command documented at
+     * http://hsqldb.org/doc/guide/management-chapt.html. It is recommended to use just "SHUTDOWN"
+     * and we have seen database corruption previously with "SHUTDOWN COMPACT".  Our suspicion
+     * (never proved) was that shutting down with compaction took too long and Accession got killed
+     * with the database files open part way through compacting them. We also have seen occasional
+     * DB corruption with SHUTDOWN, and again the suspicion is that when the DB is closed through
+     * Java shutdown hooks, or Felix bundle stop() methods (which rely on Java shutdown hooks), Java
+     * doesn't give us enough time to finish the SHUTDOWN, leaving a corrupt database. Therefore we
+     * take the belts-and-braces approach of an explicit call (from AbstractUIServiceImpl) to
+     * SHUTDOWN before Java begins shutting down), but as a backup we try a SHUTDOWN IMMEDIATELY if
+     * we bypass that codepath (as is the case when e.g. the user just shuts down their PC without
+     * quitting the client).
+     *
+     * @param shutdownCommand Which HSQLDB shutdown command to run
+     */
+    private void executeShutdownCommand(String shutdownCommand)
+    {
+        sLog.info("DatabaseService: shutdown start with command " + shutdownCommand);
 
         synchronized (connectionPoolLock)
         {
@@ -161,17 +190,13 @@ public class DatabaseServiceImpl implements DatabaseService
                 DatabaseConnection connection = null;
                 try
                 {
-                    // There are several options to the SHUTDOWN command documented at
-                    // http://hsqldb.org/doc/guide/management-chapt.html
-                    // It is recommended to use just "SHUTDOWN" and we have seen
-                    // database corruption previously with "SHUTDOWN COMPACT".  Our
-                    // suspicion (never proved) was that shutting down with compaction
-                    // took too long and Accession got killed with the database files
-                    // open part way through compacting them.
+                    sLog.info("Shutdown connection pool " + mConnectionPool);
                     connection = connect();
-                    connection.execute("SHUTDOWN");
+                    sLog.info("Shutdown connection " + connection);
+                    connection.execute(shutdownCommand);
+                    sLog.info("Executed " + shutdownCommand);
                 }
-                catch (SQLException e)
+                catch (Exception e)
                 {
                     sLog.error("Failed to shutdown database: ", e);
                 }
@@ -179,6 +204,7 @@ public class DatabaseServiceImpl implements DatabaseService
                 {
                     mConnectionPool = null;
                     DatabaseUtils.safeClose(connection);
+                    sLog.info("safeClose complete");
                 }
             }
         }

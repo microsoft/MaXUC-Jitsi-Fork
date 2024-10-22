@@ -1681,7 +1681,7 @@ public class MessageHistoryServiceImpl
         String keyword)
     {
         String loggableKeyword = mQAMode ? keyword : REDACTED;
-        sLog.debug("keyword: " + loggableKeyword + ", jids: " + remoteJids);
+        sLog.debug("keyword: " + loggableKeyword + ", jids: " + sanitiseRemoteJids(remoteJids));
         DatabaseConnection connection = null;
         ResultSet rs = null;
         List<MessageEvent> result = new ArrayList<>();
@@ -2088,7 +2088,7 @@ public class MessageHistoryServiceImpl
     {
         List<String> matches = new ArrayList<>();
 
-        sLog.debug("room: " + roomJid + " msgUids: " + msgUids);
+        sLog.debug("room: " + sanitisePeerId(roomJid) + " msgUids: " + msgUids);
         DatabaseConnection connection = null;
         ResultSet rs = null;
 
@@ -2167,9 +2167,15 @@ public class MessageHistoryServiceImpl
     {
         // We don't know if we're looking for a group message or a one-to-one
         // IM/SMS, so check both tables until we find a result.
+        // Check for one-to-one IM message with chat address
         MessageEvent msgEvt = findById(
             remoteJid, xmppId, MessageHistoryTable.COL_MSG_ID);
-
+        // If there is no IM message, check for SMS message with national number
+        if (msgEvt == null && remoteJid.contains("@"))
+        {
+            msgEvt = findById(formatToNationalNumber(remoteJid.split("@")[0]),
+                              xmppId, MessageHistoryTable.COL_MSG_ID);
+        }
         if (msgEvt == null)
         {
             msgEvt = findByIdRoom(
@@ -2177,7 +2183,7 @@ public class MessageHistoryServiceImpl
         }
 
         return msgEvt;
-     }
+    }
 
     @Override
     public MessageEvent findBySmppId(String remoteJid, String smppId)
@@ -2213,7 +2219,7 @@ public class MessageHistoryServiceImpl
                                         MessageHistoryTable.COL_LOCAL_JID,
                                         getImAccountJid(),
                                         MessageHistoryTable.COL_REMOTE_JID,
-                                        formatToNationalNumber(remoteJid),
+                                        remoteJid,
                                         idColumn,
                                         messageId);
             if (rs.next())
@@ -2561,7 +2567,7 @@ public class MessageHistoryServiceImpl
                     MessageEvent evt = convertDatabaseRecordToGroupMessageEvent(rs, room, null);
                     if (evt != null)
                     {
-                        sLog.debug("Group chat with no messages, use first status message for room " + room +
+                        sLog.debug("Group chat with no messages, use first status message for room " + sanitisePeerId(room) +
                             " with timestamp " + evt.getTimestamp());
                         results.add(evt);
                     }
@@ -2702,9 +2708,7 @@ public class MessageHistoryServiceImpl
 
         /**
          * Analytic to track how much we hit
-         * https://[indeterminate link]
          *
-         * A proper fix is tracked under https://[indeterminate link]
          */
         if (accountJid == "unknown")
         {
@@ -2894,7 +2898,7 @@ public class MessageHistoryServiceImpl
         {
             MessageEvent event = messagesAsList.get(i);
             String id = event.getPeerIdentifier();
-            sLog.debug("Chat room to be deleted: " + id +
+            sLog.debug("Chat room to be deleted: " + sanitisePeerId(id) +
                          ", last active " + event.getTimestamp());
             results.add(id);
         }
@@ -3100,7 +3104,7 @@ public class MessageHistoryServiceImpl
         }
         catch (SQLException e)
         {
-            sLog.error("Can't read/write message history for " + remoteJid, e);
+            sLog.error("Can't read/write message history for " + sanitisePeerId(remoteJid), e);
         }
         finally
         {
@@ -3495,7 +3499,6 @@ public class MessageHistoryServiceImpl
             sLog.error("No IM provider found, likely a race condition between accessing " +
                        "and registering IM provider. Database queries using Jid 'unknown' " +
                        "will return unexpected results. ");
-            // See latest comments on DUIR-5717 for more information on this race condition
             return "unknown";
         }
         return provider.getAccountID().getUserID().toLowerCase();

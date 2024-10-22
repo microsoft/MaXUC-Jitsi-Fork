@@ -7,6 +7,8 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.gui.main.call;
 
+import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -28,9 +30,7 @@ import org.jitsi.service.resources.*;
  * @author Yana Stamcheva
  * @author Adam Netocny
  */
-public class TransferActiveCallsMenu
-    extends SIPCommPopupMenu
-    implements Skinnable
+public class TransferActiveCallsMenu extends AbstractTransferCallMenu
 {
     /**
      * Serial version UID.
@@ -150,6 +150,25 @@ public class TransferActiveCallsMenu
                 Skinnable skinnableComponent = (Skinnable) component;
                 skinnableComponent.loadSkin();
             }
+        }
+    }
+
+    @Override
+    protected void callMenuItemPressed(JMenuItem item)
+    {
+        if (item instanceof CallPeerMenuItem callPeerMenuItem)
+        {
+            CallPeer peer = callPeerMenuItem.callPeer;
+            logger.user("Pressed key to initiate active call transfer for peer " +
+                        sanitiseChatAddress(initialPeer.getAddress()) + " to peer " +
+                        sanitiseChatAddress(peer.getAddress()));
+            CallManager.transferCall(initialPeer, peer);
+        }
+        else
+        {
+            logger.user("Pressed key to open unattended active call transfer dialog for peer: " +
+                        sanitiseChatAddress(initialPeer.getAddress()));
+            CallManager.openCallTransferDialog(initialPeer, CallTransferType.UNATTENDED);
         }
     }
 

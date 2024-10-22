@@ -11,6 +11,7 @@ import java.util.*;
 
 import net.java.sip.communicator.service.protocol.event.*;
 import net.java.sip.communicator.util.*;
+import org.jitsi.util.ThreadUtils;
 
 /**
  * An Abstract Operation Set defining option to unconditionally auto answer
@@ -149,7 +150,7 @@ public abstract class AbstractOperationSetBasicAutoAnswer
 
             if (peer.getState() == CallPeerState.INCOMING_CALL)
             {
-                new Thread(this, "AutoAnswerThread").start();
+                ThreadUtils.createAndStartThread(this, "AutoAnswerThread");
             }
             else
             {

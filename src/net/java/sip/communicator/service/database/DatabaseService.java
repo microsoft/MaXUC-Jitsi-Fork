@@ -18,11 +18,7 @@ public interface DatabaseService
         throws SQLException;
 
     /**
-     * Shutdown the database.  Only safe to call after all connections have
-     * been closed.
-     *
-     * @throws SQLException on SQL error.
+     * Shutdown the database.
      */
-    void shutdown()
-        throws SQLException;
+    void shutdown();
 }

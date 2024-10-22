@@ -34,6 +34,7 @@ public class ConfigFileSanitiser
      * for logging purposes.
      */
     private static final Set<String> BASE_INFO_HASHED_PROPERTIES = Set.of(
+            "CompanyName",
             "DisplayName",
             "PhoneNumber"
     );
@@ -127,7 +128,7 @@ public class ConfigFileSanitiser
         boolean writeOutput = outputFile != null;
         boolean wasDirty = false;
 
-        if (inputFile == null || !inputFile.exists())
+        if (inputFile == null || !inputFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             sLog.error("Failed to find input config file: " +
                        (inputFile != null ? inputFile.getName() : "null"));
@@ -135,7 +136,7 @@ public class ConfigFileSanitiser
             return false;
         }
 
-        if (writeOutput && outputFile.exists())
+        if (writeOutput && outputFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             // Need to remove the existing output file in order to write the new one.
             // This shouldn't happen as we should tidy-up each time we write a safe file.
@@ -143,8 +144,8 @@ public class ConfigFileSanitiser
             outputFile.delete();
         }
 
-        try(BufferedReader inputBufferedReader  = new BufferedReader(new FileReader(inputFile));
-            BufferedWriter outputBufferedWriter = writeOutput ? new BufferedWriter(new FileWriter(outputFile)) : null;)
+        try(BufferedReader inputBufferedReader  = new BufferedReader(new FileReader(inputFile)); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
+            BufferedWriter outputBufferedWriter = writeOutput ? new BufferedWriter(new FileWriter(outputFile)) : null;) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             for (String line; (line = inputBufferedReader.readLine()) != null; )
             {

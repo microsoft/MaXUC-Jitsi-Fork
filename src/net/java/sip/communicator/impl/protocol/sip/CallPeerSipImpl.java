@@ -212,7 +212,7 @@ public class CallPeerSipImpl
      * <tt>picture_fast_update</tt> to this remote peer (as part of the
      * execution of {@link #requestKeyFrame()}).
      */
-    private boolean sendPictureFastUpdate = true;
+    boolean sendPictureFastUpdate = true;
 
     /**
      * The flag which indicates whether the client is dialing in E.164 format
@@ -239,15 +239,7 @@ public class CallPeerSipImpl
         this.peerAddress = peerAddress;
         this.messageFactory = getProtocolProvider().getMessageFactory();
 
-        super.setMediaHandler(
-                new CallPeerMediaHandlerSipImpl(this)
-                {
-                    @Override
-                    protected boolean requestKeyFrame()
-                    {
-                        return CallPeerSipImpl.this.requestKeyFrame();
-                    }
-                });
+        super.setMediaHandler(new CallPeerMediaHandlerSip(this));
 
         setDialog(containingTransaction.getDialog());
         setLatestInviteTransaction(containingTransaction);
@@ -2874,5 +2866,23 @@ public class CallPeerSipImpl
                     isLocalVideoStreaming() ? "Video" : "Audio"
                 )
         );
+    }
+
+    /**
+     * Need a custom CallPeerMediaHandlerSipImpl here in order to override requestKeyFrame.
+     * We cannot make it an Anonymous Inner Class since Mockito cannot mock it in that case.
+     */
+    public class CallPeerMediaHandlerSip extends CallPeerMediaHandlerSipImpl
+    {
+        public CallPeerMediaHandlerSip(CallPeerSipImpl peer)
+        {
+            super(peer);
+        }
+
+        @Override
+        protected boolean requestKeyFrame()
+        {
+            return CallPeerSipImpl.this.requestKeyFrame();
+        }
     }
 }

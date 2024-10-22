@@ -2051,12 +2051,12 @@ public class ConfigurationUtils
                 // sanitise it, just not worth it.
                 userBackupConfigFile.delete();
 
-                if (userConfigFile.exists() || userBackupConfigFile.exists())
+                if (userConfigFile.exists() || userBackupConfigFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 {
                     logger.error("Failed to delete old user config containing stored credentials.");
                 }
 
-                if (!safeUserConfigFile.renameTo(userConfigFile))
+                if (!safeUserConfigFile.renameTo(userConfigFile)) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 {
                     logger.warn("Failed to move sanitised config, just tidy-up");
                     safeUserConfigFile.delete();

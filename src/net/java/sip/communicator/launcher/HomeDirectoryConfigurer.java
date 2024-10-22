@@ -275,14 +275,14 @@ public class HomeDirectoryConfigurer
         File logDirectory = new File(homeDirectory, appName + File.separator + "log");
         File flagLogDirectoryClean = new File(homeDirectory, appName + File.separator + ".log-dir-clean");
 
-        if (!flagLogDirectoryClean.exists())
+        if (!flagLogDirectoryClean.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             mCleaningLogsLogMessage = "Log directory is unclean.";
             if (cleanDirectory(logDirectory))
             {
                 try
                 {
-                    flagLogDirectoryClean.createNewFile();
+                    flagLogDirectoryClean.createNewFile(); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                     mCleaningLogsLogMessage += " Marked log directory as clean.";
                 }
                 catch (IOException ex)
@@ -346,7 +346,7 @@ public class HomeDirectoryConfigurer
         String location = System.getProperty("user.home");
         if (!StringUtils.isNullOrEmpty(oldAppName) &&
             !(oldAppName.equals(appName)) &&
-            (new File(location, oldAppName)).exists() &&
+            (new File(location, oldAppName)).exists() && // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             !(new File(location, appName).isDirectory()))
         {
             migrateExistingUserFolder(location, oldAppName, appName,
@@ -370,7 +370,7 @@ public class HomeDirectoryConfigurer
         {
             for (String legacyConfigurationFileName : legacyConfigurationFileNames)
             {
-                if (new File(new File(parent, name), legacyConfigurationFileName).exists())
+                if (new File(new File(parent, name), legacyConfigurationFileName).exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 {
                     return true;
                 }
@@ -410,7 +410,7 @@ public class HomeDirectoryConfigurer
             // move() move half a directory when a file is locked in the
             // source.   Stackoverflow wasn't helpful, so I'm assuming this is
             // better.
-            if (!oldDir.renameTo(newDir))
+            if (!oldDir.renameTo(newDir)) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 throw new IOException("Failed to rename directory " + oldName + " to " + newName);
             }
@@ -420,11 +420,11 @@ public class HomeDirectoryConfigurer
         }
         catch (IOException e)
         {
-            if (!Files.exists(oldPath))
+            if (!Files.exists(oldPath)) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 result = "Error - Couldn't find source directory.";
             }
-            else if (Files.exists(oldPath.resolve(newName)))
+            else if (Files.exists(oldPath.resolve(newName))) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 result = "Error - Destination directory already existed.";
             }
@@ -485,7 +485,7 @@ public class HomeDirectoryConfigurer
             File srcDir = src;
             File destDir = dest;
 
-            if (!destDir.exists())
+            if (!destDir.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 mAppDataMigrationLogMessage += depth + "Creating directory " + dest + "\r\n";
                 destDir.mkdir();
@@ -504,13 +504,13 @@ public class HomeDirectoryConfigurer
             // Just copy the file.
             mAppDataMigrationLogMessage += depth + "Manually copying file " + src + " -> " + dest + "\r\n";
 
-            Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(src.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         }
 
         // Clean up the old file, but swallow errors.
         try
         {
-            Files.delete(src.toPath());
+            Files.delete(src.toPath()); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             mAppDataMigrationLogMessage += depth + "  delete old success\r\n";
         }
         catch (Exception e)

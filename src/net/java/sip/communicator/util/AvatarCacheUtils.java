@@ -290,12 +290,12 @@ public class AvatarCacheUtils
                     .getFileAccessService()
                         .getPrivatePersistentActiveUserFile(avatarPath);
 
-            if(avatarFile.exists())
+            if(avatarFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 byte[] bs = null;
 
                 try (FileInputStream avatarInputStream = new FileInputStream(
-                        avatarFile))
+                        avatarFile)) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 {
                     int available = avatarInputStream.available();
 
@@ -403,14 +403,14 @@ public class AvatarCacheUtils
             // directory exists, whereas the file returned may not exist.
             //
             // Hence if the file does not exist, create it.
-            if(!avatarFile.exists() && !avatarFile.createNewFile())
+            if(!avatarFile.exists() && !avatarFile.createNewFile()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 throw new IOException("Failed to create file"
                     + sanitiseFilePath(avatarFile.getAbsolutePath()));
             }
 
             try (FileOutputStream fileOutStream = new FileOutputStream(
-                    avatarFile))
+                    avatarFile)) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 fileOutStream.write(byteArray);
                 fileOutStream.flush();
@@ -465,7 +465,7 @@ public class AvatarCacheUtils
                     UtilActivator.getFileAccessService().
                         getPrivatePersistentActiveUserFile(avatarPath);
 
-            if (avatarFile.exists())
+            if (avatarFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 boolean success = avatarFile.delete();
 

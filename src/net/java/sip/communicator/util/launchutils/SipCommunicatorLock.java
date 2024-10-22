@@ -210,7 +210,7 @@ public class SipCommunicatorLock
         try
         {
             lockFile.getParentFile().mkdirs();
-            lockFileAlreadyExists = !lockFile.createNewFile();
+            lockFileAlreadyExists = !lockFile.createNewFile(); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             lockAcquired = getLock();
         }
         catch (IOException e)
@@ -359,7 +359,7 @@ public class SipCommunicatorLock
     {
         File lockFile = getLockFile();
 
-        lockChannel = new RandomAccessFile(lockFile, "rw").getChannel();
+        lockChannel = new RandomAccessFile(lockFile, "rw").getChannel(); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
 
         FileLock lock = lockChannel.tryLock(Long.MAX_VALUE - 1L, 1L, false);
         return (lock != null);
@@ -641,7 +641,7 @@ public class SipCommunicatorLock
 
         try
         {
-            stream = new FileInputStream(lockFile);
+            stream = new FileInputStream(lockFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             lockProperties.load(stream);
         }
         catch (IOException e)
@@ -736,7 +736,7 @@ public class SipCommunicatorLock
 
         try
         {
-            stream = new FileOutputStream(lockFile);
+            stream = new FileOutputStream(lockFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
 
             lockProperties.store(stream,
                 "Jitsi lock file. This file will be automatically "

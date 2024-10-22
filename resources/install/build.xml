@@ -61,6 +61,9 @@
     <!-- Put here the Windows release directory -->
     <property name="windows.app.dir" value="${sc.basedir}/${release}/windows"/>
 
+    <!-- Put here the Windows WiX installer directory -->
+    <property name="light.dir" value="${windows.app.dir}/tmp/light" />
+
     <!-- The path to the dh_testdir tool -->
     <property name="dh_testdir" value="/usr/bin/dh_testdir"/>
 
@@ -73,7 +76,7 @@
     <target name="ant-usage"
             description="simply execute 'ant' to discover the most useful targets.">
         <echo message="Useful ant commands for the Jitsi Build Installer..." />
-        <echo message="'ant build-installation-wix' for building Windows x64 MSI installation file using WiX" />
+        <echo message="'ant build-installation-wix' for building Windows x64 MSI/EXE installation file using WiX" />
     </target>
 
     <target name="clean-install-windows">
@@ -83,18 +86,32 @@
     </target>
 
     <target name="build-installation-wix"
-            depends="version,load-properties">
+            depends="prepare-installation-wix,build-installation-wix-build-msi,build-installation-wix-exe"/>
+
+    <target name="prepare-installation-wix" depends="version,load-properties"
+            description="Prepares all files in ${light.dir} for packaging to MSI">
         <property name="windows_native_path" value="${sc.basedir}\lib\native\windows-64"/>
-        <property name="windows.jre.arch.file" value=""/>
         <condition property="windows.jre.arch.zip" value="${windows.jre.zip}">
             <isset property="windows.jre.zip" />
         </condition>
         <property name="windows.download.link" value="${link.download.windows64}"/>
-        <property name="windows.package.name.suffix" value="x64.exe"/>
+        <property name="mingw.home" value="C:/msys64/mingw64" />
+        <antcall target="build-installation-wix-base" />
+    </target>
+
+    <target name="build-installation-wix-msi" depends="version,load-properties"
+            description="Creates MSI installer file from files in ${light.dir}">
+        <property name="windows.jre.arch.file" value=""/>
         <property name="windows.msi.package.name.suffix" value="x64.msi"/>
         <property name="windows.arch" value="64"/>
-        <property name="mingw.home" value="C:/mingw/x64" />
-        <antcall target="build-installation-wix-base" />
+        <antcall target="build-installation-wix-build-msi" />
+    </target>
+
+    <target name="build-installation-wix-exe" depends="version,load-properties"
+            description="Create EXE installer file from compressed MSI file">
+        <property name="windows.package.name.suffix" value="x64.exe"/>
+        <property name="mingw.home" value="C:/msys64/mingw64" />
+        <antcall target="build-installation-wix-build-exe" />
     </target>
 
     <target name="unzip-windows-jre" if="windows.jre.arch.zip.isset">
@@ -159,32 +176,16 @@
         </exec>
     </target>
 
-    <target name="build-installation-wix-base"
-            depends="clean-install-windows,buildtools.init-ant-contrib" >
-        <property name="windows.package.name"
-            value="${package.name}-${sip-communicator.version}-${windows.package.name.suffix}"/>
-        <property name="windows.msi.package.name"
-            value="${package.name}-${sip-communicator.version}-${windows.msi.package.name.suffix}"/>
-
-        <!--
-            This versionupdate.properties file isn't of interest to the MSI but
-            is necessary for the site.
-        -->
-        <propertyfile file="${windows.app.dir}/${filename.updates.windows}">
-            <entry key="last_version" value="${sip-communicator.version}" />
-            <entry key="download_link"
-                   value="${windows.download.link}" />
-            <entry key="changes_html" value="updates/index.html" />
-        </propertyfile>
-
+    <!-- Shared target to setup wix.app.launcher.name for build-installation-wix-base and build-installation-wix-build-msi -->
+    <target name="setup-wix-app-launcher-name">
         <!-- removes spaces,-,_ and & from app.exe.filename if any -->
         <propertyregex property="app.exe.filename"
-            input="${application.name.ascii}"
-            regexp="[^\w.]"
-            replace=""
-            override="true"
-            global="true"
-            defaultValue="${application.name.ascii}"/>
+                       input="${application.name.ascii}"
+                       regexp="[^\w.]"
+                       replace=""
+                       override="true"
+                       global="true"
+                       defaultValue="${application.name.ascii}"/>
 
         <!-- if wix.app.launcher.name is not set use app.exe.filename
             If using wix.app.launcher.name make sure not to use spaces,-,_
@@ -196,12 +197,25 @@
                 <isset property="wix.app.launcher.name" />
             </not>
         </condition>
+    </target>
+
+    <target name="build-installation-wix-base"
+            depends="setup-wix-app-launcher-name, clean-install-windows,buildtools.init-ant-contrib" >
+        <!--
+            This versionupdate.properties file isn't of interest to the MSI but
+            is necessary for the site.
+        -->
+        <propertyfile file="${windows.app.dir}/${filename.updates.windows}">
+            <entry key="last_version" value="${sip-communicator.version}" />
+            <entry key="download_link"
+                   value="${windows.download.link}" />
+            <entry key="changes_html" value="updates/index.html" />
+        </propertyfile>
 
         <!--
             Prepare for the execution of heat.exe (which is part of the
             preparation for the execution of candle.exe).
         -->
-        <property name="light.dir" value="${windows.app.dir}/tmp/light" />
         <mkdir dir="${light.dir}" />
 
         <echo message="About to make run.exe with coverage set to ${env.ENABLE_COVERAGE}" />
@@ -348,11 +362,9 @@
                 todir="${light.dir}"
                 overwrite="true" />
 
-        <property name="wix.home" value="C:\Program Files (x86)\WiX Toolset v4.0" />
-
         <!-- Execute heat.exe -->
         <exec
-                executable="${user.home}\.nuget\packages\wixtoolset.heat\4.0.1\tools\net472\x64\heat.exe"
+                executable="${env.WIX_HEAT_HOME}/heat.exe"
                 dir="${light.dir}"
                 failonerror="true">
             <arg value="dir" />
@@ -386,24 +398,11 @@
                 out="${windows.app.dir}/tmp/component-refs.wxi"
                 style="${inst.resrc}/windows/heat-component-refs.xsl" />
 
-        <condition property="windows.is.64" value="yes" else="no">
-            <equals arg1="${windows.arch}" arg2="64" />
-        </condition>
+    </target>
 
-        <path id="files-to-sign">
-            <fileset dir="${light.dir}/native">
-                <include name="**/*.dll"/>
-                <include name="**/*.exe"/>
-            </fileset>
-            <file file="${light.dir}/${wix.app.launcher.name}.exe"/>
-            <fileset dir="${light.dir}/ui">
-                <include name="*.exe"/>
-            </fileset>
-        </path>
-
-        <antcall target="wix-sign-file">
-            <reference refid="files-to-sign" torefid="files.to.sign"/>
-        </antcall>
+    <target name="build-installation-wix-build-msi" depends="setup-wix-app-launcher-name">
+        <property name="windows.msi.package.name"
+                  value="${package.name}-${sip-communicator.version}-${windows.msi.package.name.suffix}"/>
 
         <!-- prepare properties for executing candle.exe -->
         <condition property="candle.var.Platform" value="x64" else="x86">
@@ -428,7 +427,7 @@
         <condition property="msi.var.store" value="true" else="false">
             <equals arg1="${wix.store.msi}" arg2="true" />
         </condition>
-        <antcall target="build-installation-wix-msi">
+        <antcall target="build-installation-wix-create-msi">
             <param name="msi.var.compress" value="high"/>
         </antcall>
         <move
@@ -437,11 +436,21 @@
                 preservelastmodified="true"
                 tofile="${windows.app.dir}\${windows.msi.package.name}" />
 
+        <!-- Set property for the script to update WiX template. -->
+        <condition property="windows.is.64" value="yes" else="no">
+            <equals arg1="${windows.arch}" arg2="64" />
+        </condition>
+
         <!-- now build msi needed for the exe distribution without compression -->
-        <antcall target="build-installation-wix-msi">
+        <antcall target="build-installation-wix-create-msi">
             <param name="msi.var.compress" value="none"/>
             <param name="wix.store.msi" value="true"/>
         </antcall>
+    </target>
+
+    <target name="build-installation-wix-build-exe">
+        <property name="windows.package.name"
+                  value="${package.name}-${sip-communicator.version}-${windows.package.name.suffix}"/>
 
         <!-- Bootstrap the MSI into an EXE. -->
         <exec
@@ -451,6 +460,7 @@
             <arg value="-zk0v" />
             <arg value="setup.msi" />
         </exec>
+
         <exec
                 dir="${src}/native/windows/setup"
                 executable="make.exe"
@@ -462,27 +472,17 @@
             <arg value="PRODUCTNAME=${application.name.ascii}" />
         </exec>
 
-        <path id="installer-to-sign">
-            <file file="${windows.app.dir}\tmp\setup.exe"/>
-        </path>
-        <antcall target="wix-sign-file">
-            <reference refid="installer-to-sign" torefid="files.to.sign"/>
-        </antcall>
-
         <move
                 file="${windows.app.dir}/tmp/setup.exe"
                 preservelastmodified="true"
                 tofile="${windows.app.dir}\${windows.package.name}" />
-
-        <!-- before deleting try building the deltas -->
-        <antcall target="build-wix-delta-updates"/>
 
         <delete dir="${light.dir}" />
         <!-- tmp folder can cause problems uploading gitlab artifacts and is no longer needed -->
         <delete dir="${windows.app.dir}/tmp" />
     </target>
 
-    <target name="build-installation-wix-msi" if="${wix.store.msi}">
+    <target name="build-installation-wix-create-msi" if="${wix.store.msi}">
 
         <!-- if application publisher is not set use application name -->
         <condition property="application.publisher"
@@ -695,7 +695,7 @@
                 <echo file="${windows.app.dir}\tmp\wix-locales.txt" append="true">@{locale.id}${line.separator}</echo>
             </sequential>
         </for>
-        <exec executable="python3.8.exe" outputproperty="wix.locales.without.cultures">
+        <exec executable="python3" outputproperty="wix.locales.without.cultures">
             <arg path="${ext}/scripts/calculate_set_xor.py"/>
             <arg value="${windows.app.dir}\tmp\wix-locales.txt" />
             <arg path="${windows.app.dir}\tmp\built-locales.txt" />
@@ -719,14 +719,6 @@
             <arg value="Package" />
             <arg value="${wix.locale.default.id},${wix.locale.list}" />
         </exec>
-
-        <!-- Once all locales have been built and put in the msi, sign it -->
-        <path id="msi-installer-to-sign">
-            <file file="${windows.app.dir}\tmp\setup.msi"/>
-        </path>
-        <antcall target="wix-sign-file">
-            <reference refid="msi-installer-to-sign" torefid="files.to.sign"/>
-        </antcall>
     </target>
 
     <!-- Creates localized msi installers and the resulting
@@ -932,37 +924,12 @@
             <arg value="PRODUCTBUILDVERSION=${sip-communicator.version}" />
         </exec>
 
-        <path id="delta-installer-to-sign">
-            <file file="${windows.app.dir}\tmp\setup.exe"/>
-        </path>
-        <antcall target="wix-sign-file">
-            <reference refid="delta-installer-to-sign" torefid="files.to.sign"/>
-        </antcall>
-
         <move
                 file="${windows.app.dir}/tmp/setup.exe"
                 preservelastmodified="true"
                 tofile="${windows.app.dir}\${package.name}-${sip-communicator.version}-delta-${old.wix.build}-${windows.package.name.suffix}" />
     </target>
 
-    <target name="wix-sign-file">
-        <if>
-            <and>
-                <equals arg1="${env.SKIP_NOTARIZATION}" arg2="true"/>
-                <not>
-                    <equals arg1="${env.SIGN_WINDOWS}" arg2="true"/>
-                </not>
-            </and>
-            <then>
-                <echo message="Skipping Windows signing"/>
-            </then>
-            <else>
-                <antcall target="signing.esrp-sign">
-                    <reference refid="files.to.sign"/>
-                </antcall>
-            </else>
-        </if>
-    </target>
     <!-- - - - - - - - - - - BUILDING RELEASE PACKAGES - - - - - - - - - - - -->
     <!-- Internal target called by the "clean target" - removes the macosx-specific file -->
     <!-- we only execute if at least one (in this case the first) of the links we are
@@ -1180,6 +1147,8 @@
 
             <!-- Specify SUBundleName in Info.plist to support app name change over upgrade -->
             <plistentry key="SUBundleName" value="${sparkle.bundle.name}" />
+            <!-- Plist entry to hide the app from the dock. Must be used with -Dapple.awt.UIElement=true above -->
+            <plistentry key="LSUIElement" value="true"/>
 
             <!-- Change this to include the right runtime object... -->
             <runtime dir="${env.JRE_HOME}" />
@@ -1596,6 +1565,33 @@
         </if>
     </target>
 
+    <target name="hdiutil-create-dmg">
+        <!-- Unmount any Disk Images before continuing or the build will fail -->
+        <exec executable="/bin/bash" os="Mac OS X" failonerror="false">
+            <arg value="${sc.basedir}/resources/install/unmountAll.sh"/>
+        </exec>
+        <!-- Delete previous attempt's created dmg if there was one -->
+        <if>
+            <available file="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
+            <then>
+                <delete file="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
+            </then>
+        </if>
+
+        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+            <arg value="create"/>
+            <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
+            <arg value="-srcfolder"/>
+            <arg value="${macosx.app.dir}/${application.name.ascii}.app"/>
+            <arg value="-volname"/>
+            <arg value="${application.name.ascii}"/>
+            <arg value="-ov"/>
+            <arg value="-format"/>
+            <arg value="UDRW"/>
+            <arg value="-verbose"/>
+        </exec>
+    </target>
+
     <!-- Create the DMG - This only works on MacOSX (need hdiutil) -->
     <target name="dmg" depends="macosx-sparkle,add-headset-lib,mac-electron"
             if="is.running.macos"
@@ -1619,42 +1615,39 @@
       available languages, so macosx can switch languages -->
       <antcall target="dmg-create-language-folders" />
 
-        <!-- sign before creating the image, so the signed app goes into it -->
+      <!-- sign before creating the image, so the signed app goes into it -->
       <retry retrycount="2" retrydelay="10000">
         <antcall target="macosx-sign-app"/>
       </retry>
 
-        <!-- Unmount any Disk Images before continuing or the build will fail -->
-      <exec executable="/bin/bash" os="Mac OS X" failonerror="false">
-        <arg value="${sc.basedir}/resources/install/unmountAll.sh"/>
-      </exec>
+      <!-- Create a temporary Disk Image
+        This often fails with the mysterious
+            hdiutil: create: returning 49168
+            hdiutil: create failed - Resource busy
+        It is not clear why. It is suspected that:
+          - "hdiutil create" has two steps, creating the new disk image , and copying in the new files
+          - In between these two steps, a security tool such as Defender or XProtect (Apple's security service) will scan the
+            image, thus locking the resource and preventing hdiutil from doing the 2nd step.
+        Hence the retries, and why we have to separate it into its own ant task.
+        -->
+      <retry retrycount="3" retrydelay="10000">
+        <antcall target="hdiutil-create-dmg" />
+      </retry>
 
-        <!-- Create a temporary Disk Image -->
-      <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-        <arg value="create"/>
-        <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
-        <arg value="-srcfolder"/>
-        <arg value="${macosx.app.dir}/${application.name.ascii}.app"/>
-        <arg value="-volname"/>
-        <arg value="${application.name.ascii}"/>
-        <arg value="-ov"/>
-        <arg value="-format"/>
-        <arg value="UDRW"/>
-        <arg value="-verbose"/>
-      </exec>
+      <!-- Attach the temporary image -->
+      <retry retrycount="3" retrydelay="10000">
+        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+            <arg value="attach"/>
+            <arg value="-readwrite"/>
+            <arg value="-noverify"/>
+            <arg value="-noautoopen"/>
+            <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
+            <arg value="-mountroot"/>
+            <arg value="${release}"/>
+        </exec>
+      </retry>
 
-        <!-- Attach the temporary image -->
-      <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-        <arg value="attach"/>
-        <arg value="-readwrite"/>
-        <arg value="-noverify"/>
-        <arg value="-noautoopen"/>
-        <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
-        <arg value="-mountroot"/>
-        <arg value="${release}"/>
-      </exec>
-
-        <!-- Copy the background and icon and deletes .DS_STORE file -->
+      <!-- Copy the background and icon and deletes .DS_STORE file -->
       <mkdir dir="${release}/${application.name.ascii}/.background"/>
       <copy file="${macosx.resrc.dir}/dmg-background.png"
               tofile="${release}/${application.name.ascii}/.background/background.png"
@@ -1683,56 +1676,63 @@
       <exec executable="sync" os="Mac OS X" failonerror="true">
       </exec>
 
+      <retry retrycount="3" retrydelay="10000">
         <!-- Compress it to a new read only image -->
-      <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-        <arg value="convert"/>
-        <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
-        <arg value="-format"/>
-        <arg value="UDZO"/>
-        <arg value="-o"/>
-        <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
-      </exec>
+        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+            <arg value="convert"/>
+            <arg value="${macosx.app.dir}/${macosx.dmg.tmpname}"/>
+            <arg value="-format"/>
+            <arg value="UDZO"/>
+            <arg value="-o"/>
+            <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
+        </exec>
+      </retry>
 
         <!-- Delete the temporary image -->
       <delete file="${macosx.app.dir}/${macosx.dmg.tmpname}"
               quiet="yes" failonerror="false"/>
 
-        <!-- Unlock the keychain with 20 minute timeout -->
-      <antcall target="macosx-unlock-keychain"/>
+        <!-- Sign the dmg if configured to do so -->
+        <if>
+            <isset property="env.MACOSX_SIGN_KEYCHAIN" />
+            <then>
+                <!-- Unlock the keychain with 20 minute timeout -->
+                <antcall target="macosx-unlock-keychain"/>
 
-        <!-- Sign the .dmg -->
-        <echo message="Codesigning .dmg disk image"/>
-        <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
-            <arg value="-f"/>
-            <arg value="-s"/>
-            <arg value="${macosx.sign.certid}"/>
-            <arg value="--timestamp"/>
-            <arg value="-i"/>
-            <arg value="${bundle.identifier}"/>
-            <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
-        </exec>
+                <!-- Sign the .dmg -->
+                <echo message="Codesigning .dmg disk image"/>
+                <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
+                    <arg value="-f"/>
+                    <arg value="-s"/>
+                    <arg value="${macosx.sign.certid}"/>
+                    <arg value="--timestamp"/>
+                    <arg value="-i"/>
+                    <arg value="${bundle.identifier}"/>
+                    <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
+                </exec>
 
-        <!-- Lock the keychain again -->
-      <antcall target="macosx-lock-keychain"/>
+                <!-- Lock the keychain again -->
+                <antcall target="macosx-lock-keychain"/>
+            </then>
+        </if>
 
         <!-- Notarize the app if required -->
       <if>
-        <equals arg1="${env.SKIP_NOTARIZATION}" arg2="true"/>
+        <equals arg1="${env.ENABLE_NOTARIZATION}" arg2="True"/>
         <then>
-            <echo message="Skipping notarization"/>
-        </then>
-        <else>
             <runtarget target="macosx-notarize-app"/>
 
                 <!-- Verify that the package has been notarised correctly -->
             <echo message="Assessing .app after notarisation"/>
                 <!-- Attach disk image -->
-            <exec executable="/usr/bin/hdiutil" failonerror="true">
-                <arg value="attach"/>
-                <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
-                <arg value="-mountroot"/>
-                <arg value="${macosx.app.dir}/Test"/>
-            </exec>
+            <retry retrycount="3" retrydelay="10000">
+                <exec executable="/usr/bin/hdiutil" failonerror="true">
+                    <arg value="attach"/>
+                    <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
+                    <arg value="-mountroot"/>
+                    <arg value="${macosx.app.dir}/Test"/>
+                </exec>
+            </retry>
                 <!-- Check the app passes Gatekeeper execution checks -->
             <exec executable="/usr/sbin/spctl" resultproperty="return-code" errorproperty="error-message">
                 <arg value="-a"/>
@@ -1742,10 +1742,12 @@
                 <arg value="${macosx.app.dir}/Test/${application.name.ascii}/${application.name.ascii}.app"/>
             </exec>
                 <!-- Detach disk image -->
-            <exec executable="/usr/bin/hdiutil" failonerror="true">
-                <arg value="detach"/>
-                <arg value="${macosx.app.dir}/Test/${application.name.ascii}"/>
-            </exec>
+            <retry retrycount="3" retrydelay="10000">
+                <exec executable="/usr/bin/hdiutil" failonerror="true">
+                    <arg value="detach"/>
+                    <arg value="${macosx.app.dir}/Test/${application.name.ascii}"/>
+                </exec>
+            </retry>
                 <!-- Remove temporary directory -->
             <delete dir="${macosx.app.dir}/Test"
                     quiet="yes" failonerror="false"/>
@@ -1754,6 +1756,9 @@
                 <condition><not><equals arg1="${return-code}" arg2="0"/></not></condition>
                 Gatekeeper check failed. Error: ${error-message}
             </fail>
+        </then>
+        <else>
+            <echo message="Skipping notarization"/>
         </else>
       </if>
 
@@ -1771,12 +1776,29 @@
               quiet="yes" failonerror="false"/>
     </target>
 
-    <!--
-        If there is a property enabling the keychain name
-        we can sign.
-     -->
-    <target name="macosx-sign-app" if="macosx.sign.keychain" unless="env.LOCAL_BUILD">
+    <target name="macosx-sign-app" if="env.MACOSX_SIGN_KEYCHAIN" unless="env.LOCAL_BUILD">
         <echo message="Signing application!"/>
+
+        <macrodef name="sign-lib">
+            <attribute name="source"/>
+            <attribute name="includes"/>
+            <sequential>
+                <apply executable="/usr/bin/codesign" parallel="false" os="Mac OS X" failonerror="true">
+                    <arg value="-v"/>
+                    <arg value="-f"/>
+                    <arg value="--options"/>
+                    <arg value="runtime"/>
+                    <arg value="--entitlements"/>
+                    <arg value="${sc.basedir}/resources/install/macosx/entitlements.xml"/>
+                    <arg value="-s"/>
+                    <arg value="${macosx.sign.certid}"/>
+                    <arg value="--timestamp"/>
+                    <srcfile/>
+                    <fileset dir="@{source}"
+                             includes="@{includes}"/>
+                </apply>
+            </sequential>
+        </macrodef>
 
         <!-- Unlock the keychain with 20 minute timeout -->
         <antcall target="macosx-unlock-keychain"/>
@@ -1805,22 +1827,23 @@
         -->
         <echo message="Codesigning all applicationinsights-agent .jnilib files"/>
         <antcall target="unpack-applicationinsights"/>
-        <apply executable="/usr/bin/codesign" parallel="false" os="Mac OS X" failonerror="true">
-            <arg value="-v"/>
-            <arg value="-f"/>
-            <arg value="--options"/>
-            <arg value="runtime"/>
-            <arg value="--entitlements"/>
-            <arg value="${sc.basedir}/resources/install/macosx/entitlements.xml"/>
-            <arg value="-s"/>
-            <arg value="${macosx.sign.certid}"/>
-            <arg value="--timestamp"/>
-            <srcfile/>
-            <fileset dir="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/ApplicationInsights"
-                     includes="**/*.jnilib"/>
-        </apply>
+        <sign-lib source="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/ApplicationInsights"
+                  includes="**/*.jnilib"/>
         <antcall target="purge-applicationsinisghts-signatures"/>
         <antcall target="repack-applicationinsights"/>
+
+        <echo message="Codesigning all netaddr .dylib files"/>
+        <antcall target="unpack-netaddr"/>
+        <sign-lib source="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/NetAddr"
+                  includes="**/*.dylib, *.dylib"/>
+        <antcall target="repack-netaddr"/>
+
+        <echo message="Codesigning specific libjitsi files"/>
+        <antcall target="unpack-libjitsi"/>
+        <sign-lib source="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java/LibJitsi"
+                  includes="**/*.dylib, org/bytedeco/ffmpeg/macosx-x86_64/ffmpeg"/>
+        <antcall target="repack-libjitsi"/>
+
 
         <echo message="Codesigning Sparkle/.../finish_installation.app/.../Autoupdate"/>
         <exec executable="/usr/bin/codesign" os="Mac OS X" failonerror="true">
@@ -1882,12 +1905,16 @@
     </target>
 
     <target name="macosx-sparkle-files" if="env.SPARKLE_EDDSA_KEY">
-        <!-- Now is as good a time as any to delete files from the sparkle_generate_app cache, which quickly takes up a huge space -->
-        <mkdir dir="~/Library/Caches/Sparkle_generate_appcast"/>
-        <exec executable="/bin/sh" failonerror="true">
-            <arg value="-c" />
-            <arg value="find ~/Library/Caches/Sparkle_generate_appcast -maxdepth 1 -name '*.dmg' -mtime +1 -exec rm -rf {} \;" />
-        </exec>
+
+        <if>
+            <not><available file="${env.SPARKLE_EDDSA_KEY}" /></not>
+            <then>
+                <fail message="No key file found at ${env.SPARKLE_EDDSA_KEY}"/>
+            </then>
+            <else>
+                <echo message="Key file found at ${env.SPARKLE_EDDSA_KEY}"/>
+            </else>
+        </if>
 
         <!-- Create basic appcast file using Sparkle's generate_appcast tool -->
         <exec executable="${ext}/scripts/generate_appcast" os="Mac OS X" failonerror="true">
@@ -2001,12 +2028,14 @@
         <mkdir dir="${macosx.app.dir}/tmp"/>
 
         <!-- Attach the current image -->
-        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-            <arg value="attach"/>
-            <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
-            <arg value="-mountroot"/>
-            <arg value="${macosx.app.dir}/tmp"/>
-        </exec>
+        <retry retrycount="3" retrydelay="10000">
+            <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+                <arg value="attach"/>
+                <arg value="${macosx.app.dir}/${macosx.dmg.name}"/>
+                <arg value="-mountroot"/>
+                <arg value="${macosx.app.dir}/tmp"/>
+            </exec>
+        </retry>
 
         <unzip src="${macosx.resrc.dir}/Sparkle.framework.zip"
                dest="${macosx.app.dir}/tmp"/>
@@ -2027,10 +2056,12 @@
         </foreach>
 
         <!-- Detach the temporary image -->
-        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-            <arg value="detach"/>
-            <arg value="${macosx.app.dir}/tmp/${application.name.ascii}"/>
-        </exec>
+        <retry retrycount="3" retrydelay="10000">
+            <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+                <arg value="detach"/>
+                <arg value="${macosx.app.dir}/tmp/${application.name.ascii}"/>
+            </exec>
+        </retry>
 
         <!-- delete the temp dir -->
         <delete dir="${macosx.app.dir}/tmp"/>
@@ -2054,12 +2085,14 @@
         <mkdir dir="${macosx.app.dir}/tmp/${old.sparkle.build}"/>
 
         <!-- Attach the  image -->
-        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-            <arg value="attach"/>
-            <arg value="${build-location}/${package.name.despaced}.dmg"/>
-            <arg value="-mountroot"/>
-            <arg value="${macosx.app.dir}/tmp/${old.sparkle.build}"/>
-        </exec>
+        <retry retrycount="3" retrydelay="10000">
+            <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+                <arg value="attach"/>
+                <arg value="${build-location}/${package.name.despaced}.dmg"/>
+                <arg value="-mountroot"/>
+                <arg value="${macosx.app.dir}/tmp/${old.sparkle.build}"/>
+            </exec>
+        </retry>
 
         <!-- make the actual diff -->
         <exec executable="${macosx.app.dir}/tmp/BinaryDelta"
@@ -2071,10 +2104,12 @@
         </exec>
 
         <!-- Detach the temporary image -->
-        <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
-            <arg value="detach"/>
-            <arg value="${macosx.app.dir}/tmp/${old.sparkle.build}/${application.name.ascii}"/>
-        </exec>
+        <retry retrycount="3" retrydelay="10000">
+            <exec executable="/usr/bin/hdiutil" os="Mac OS X" failonerror="true">
+                <arg value="detach"/>
+                <arg value="${macosx.app.dir}/tmp/${old.sparkle.build}/${application.name.ascii}"/>
+            </exec>
+        </retry>
 
         <!-- delete the temp dir -->
         <delete dir="${macosx.app.dir}/tmp/${old.sparkle.build}"/>
@@ -2144,19 +2179,20 @@
     <!-- Mac helper targets -->
 
     <!-- Unlock the login keychain on mac and set a long timeout (1200 seconds i.e. 20 minutes) -->
+    <!-- Password set as temporary value in .pipelines\steps-setup-macos-signing.yml -->
     <target name="macosx-unlock-keychain">
         <exec executable="/usr/bin/security" os="Mac OS X" failonerror="true">
             <arg value="unlock-keychain"/>
             <arg value="-p"/>
-            <arg value="${macosx.sign.password}"/>
-            <arg value="${macosx.sign.keychain}"/>
+            <arg value="${env.MACOSX_SIGN_KEYCHAIN_PASSWORD}"/>
+            <arg value="${env.MACOSX_SIGN_KEYCHAIN}"/>
         </exec>
 
         <exec executable="/usr/bin/security" os="Mac OS X" failonerror="true">
             <arg value="set-keychain-settings"/>
             <arg value="-t"/>
             <arg value="1800"/>
-            <arg value="${macosx.sign.keychain}"/>
+            <arg value="${env.MACOSX_SIGN_KEYCHAIN}"/>
         </exec>
     </target>
 
@@ -2164,7 +2200,7 @@
     <target name="macosx-lock-keychain">
         <exec executable="/usr/bin/security" os="Mac OS X" failonerror="true">
             <arg value="lock-keychain"/>
-            <arg value="${macosx.sign.keychain}"/>
+            <arg value="${env.MACOSX_SIGN_KEYCHAIN}"/>
         </exec>
     </target>
 
@@ -2217,5 +2253,45 @@
                 <include name="**/MSFTSIG.SF"/>
             </fileset>
         </delete>
+    </target>
+
+    <target name="unpack-netaddr" >
+        <property name="content.root" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
+
+        <echo message="Unpacking netaddr for signing"/>
+        <unzip dest="${content.root}/NetAddr" src="${content.root}/netaddr.jar"/>
+    </target>
+
+    <target name="repack-netaddr" >
+        <property name="content.root" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
+
+        <echo message="Repacking netaddr..."/>
+        <delete file="${content.root}/netaddr.jar" />
+        <jar destfile="${content.root}/netaddr.jar"
+             basedir="${content.root}/NetAddr"
+             manifest="${content.root}/NetAddr/META-INF/MANIFEST.MF"
+             update="false">
+        </jar>
+        <delete dir="${content.root}/NetAddr" />
+    </target>
+
+    <target name="unpack-libjitsi" >
+        <property name="content.root" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
+
+        <echo message="Unpacking libjitsi for signing"/>
+        <unzip dest="${content.root}/LibJitsi" src="${content.root}/libjitsi.jar"/>
+    </target>
+
+    <target name="repack-libjitsi" >
+        <property name="content.root" value="${macosx.app.dir}/${application.name.ascii}.app/Contents/Java"/>
+
+        <echo message="Repacking libjitsi..."/>
+        <delete file="${content.root}/libjitsi.jar" />
+        <jar destfile="${content.root}/libjitsi.jar"
+             basedir="${content.root}/LibJitsi"
+             manifest="${content.root}/LibJitsi/META-INF/MANIFEST.MF"
+             update="false">
+        </jar>
+        <delete dir="${content.root}/LibJitsi" />
     </target>
 </project>

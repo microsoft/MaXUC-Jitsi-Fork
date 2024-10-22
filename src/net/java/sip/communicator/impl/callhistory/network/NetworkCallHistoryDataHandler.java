@@ -27,6 +27,8 @@ import org.jitsi.service.resources.ResourceManagementService;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * A class for requesting and parsing the network call history from CommPortal.
  */
@@ -857,7 +859,6 @@ public class NetworkCallHistoryDataHandler implements CPDataGetterCallback, CPCo
         }
         else
         {
-            number = mNumberUtilsService.stripELC(number);
             number = mNumberUtilsService.formatNumberToE164(number);
         }
 
@@ -1371,9 +1372,10 @@ public class NetworkCallHistoryDataHandler implements CPDataGetterCallback, CPCo
      * @param direction The direction of the peer record.
      * @return The call record that matches the peer or null if not found
      */
-    private CallRecord findMatchingServerRecord(List<CallRecordImpl> serverRecords,
-                                                CallPeerRecord peerRecord,
-                                                String direction)
+    @VisibleForTesting
+    CallRecord findMatchingServerRecord(List<CallRecordImpl> serverRecords,
+                                        CallPeerRecord peerRecord,
+                                        String direction)
     {
         String peerNumber = getNumberFromAddress(peerRecord.getPeerAddress());
 

@@ -316,7 +316,7 @@ public class UpdateServiceWindowsImpl
                     {
                         tf = new File(tempDir, name);
                         if (!dryRun)
-                            tfos = new FileOutputStream(tf);
+                            tfos = new FileOutputStream(tf); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                     }
                 }
                 catch (FileNotFoundException | SecurityException fnfe)
@@ -798,7 +798,7 @@ public class UpdateServiceWindowsImpl
                  * down.
                  */
                 logger.info("Running command: " + sanitiseFilePath(command.toString()));
-                new ProcessBuilder(command).start();
+                new ProcessBuilder(command).start(); // CodeQL [SM00679] Not Exploitable. The command is not user provided.
 
                 logger.info("Closing app to install update. Installer properties:"
                         + "SIP_COMMUNICATOR_AUTOUPDATE_INSTALLDIR="

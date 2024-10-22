@@ -7,17 +7,23 @@
 // Portions (c) Microsoft Corporation. All rights reserved.
 package net.java.sip.communicator.impl.neomedia;
 
-import java.beans.*;
-import java.util.*;
+import java.beans.PropertyChangeEvent;
 
-import javax.media.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.jitsi.impl.neomedia.device.*;
-import org.jitsi.service.configuration.*;
-import org.jitsi.service.resources.*;
+import javax.media.CaptureDeviceInfo;
 
-import net.java.sip.communicator.service.gui.*;
-import net.java.sip.communicator.util.*;
+import org.jitsi.impl.neomedia.device.AudioSystem;
+import org.jitsi.impl.neomedia.device.CaptureDeviceListManager;
+import org.jitsi.impl.neomedia.device.DataFlow;
+import org.jitsi.impl.neomedia.device.DeviceConfiguration;
+import org.jitsi.impl.neomedia.device.NotifyDeviceListManager;
+import org.jitsi.impl.neomedia.device.PlaybackDeviceListManager;
+
+import net.java.sip.communicator.service.gui.ConfigurationForm;
+import net.java.sip.communicator.util.Logger;
 
 /**
  * A listener to the click on the popup message concerning audio
@@ -40,22 +46,16 @@ public class AudioDeviceConfigurationListener
         Logger.getLogger("jitsi.DeviceLogger");
 
     /**
-     * The last <tt>PropertyChangeEvent</tt> about an audio capture device which
-     * has been received.
+     * A map that holds batched changes to device configurations.
+     * Events are batched to display a single notification to the user
+     * based on information from multiple events.
+     * For example, if a device is disconnected, the event for the newly selected device
+     * (based on user preference) will be fired first and batched.
+     * Once the event for the disconnected device comes in, it will be processed
+     * along with the batched events. The user will then see a notification
+     * indicating the disconnected device and the newly selected device.
      */
-    private PropertyChangeEvent mCapturePropertyChangeEvent;
-
-    /**
-     * The last <tt>PropertyChangeEvent</tt> about an audio notification device
-     * which has been received.
-     */
-    private PropertyChangeEvent mNotifyPropertyChangeEvent;
-
-    /**
-     * The last <tt>PropertyChangeEvent</tt> about an audio playback device
-     * which has been received.
-     */
-    private PropertyChangeEvent mPlaybackPropertyChangeEvent;
+    private final Map<String, DevicePropertyChangeEvent> batchedDevicePropertyChangeEvents = new HashMap<>();
 
     /**
      * Creates a listener to the click on the popup message concerning audio
@@ -74,6 +74,12 @@ public class AudioDeviceConfigurationListener
      * devices has had its value changed and thus signals that an audio device
      * may have been plugged or unplugged.
      *
+     * This method relies on receiving the events for property changes
+     * related to the configuration of the changed devices
+     * i.e. the changes from PROP_DEVICE, which are batched, before receiving
+     * the change in the connected or disconnected audio device
+     * i.e. PROP_AUDIO_SYSTEM_DEVICES
+     *
      * @param ev a <tt>PropertyChangeEvent</tt> which describes the name of the
      * property whose value has changed and the old and new values of that
      * property
@@ -88,180 +94,13 @@ public class AudioDeviceConfigurationListener
          */
         if (DeviceConfiguration.PROP_AUDIO_SYSTEM_DEVICES.equals(propertyName))
         {
-            sLog.debug("Audio Device List was: " +
-                ev.getOldValue() + ", now: " + ev.getNewValue());
+            sLog.debug("Audio Device List was: " + ev.getOldValue() + ", now: " + ev.getNewValue());
 
-            @SuppressWarnings("unchecked")
-            List<CaptureDeviceInfo> oldDevices
-                = (List<CaptureDeviceInfo>) ev.getOldValue();
-            @SuppressWarnings("unchecked")
-            List<CaptureDeviceInfo> newDevices
-                = (List<CaptureDeviceInfo>) ev.getNewValue();
+            showNotificationIfDevicesHaveChanged(ev,
+                                                 new ArrayList<>(batchedDevicePropertyChangeEvents.values()),
+                                                 NeomediaActivator.AUDIO_CONFIG_DISABLED_PROP);
 
-            if (oldDevices.isEmpty())
-            {
-                oldDevices = null;
-            }
-            if (newDevices.isEmpty())
-            {
-                newDevices = null;
-            }
-
-            String title;
-            ResourceManagementService r = NeomediaActivator.getResources();
-            List<CaptureDeviceInfo> devices;
-            boolean removal;
-
-            // At least one new device has been connected.
-            if (newDevices != null)
-            {
-                title
-                    = r.getI18NString(
-                            "impl.media.configform.AUDIO_DEVICE_CONNECTED");
-                devices = newDevices;
-                removal = false;
-            }
-            /*
-             * At least one old device has been disconnected and no new device
-             * has been connected.
-             */
-            else if (oldDevices != null)
-            {
-                title
-                    = r.getI18NString(
-                            "impl.media.configform.AUDIO_DEVICE_DISCONNECTED");
-                devices = oldDevices;
-                removal = true;
-            }
-            else
-            {
-                /*
-                 * Neither a new device has been connected nor an old device has
-                 * been disconnected. Why are we even here in the first place
-                 * anyway?
-                 */
-                mCapturePropertyChangeEvent = null;
-                mNotifyPropertyChangeEvent = null;
-                mPlaybackPropertyChangeEvent = null;
-                return;
-            }
-
-            StringBuilder body = new StringBuilder();
-
-            for (CaptureDeviceInfo device : devices)
-            {
-                body.append(device.getName()).append("\r\n");
-                deviceLogger.debug("Audio Device " +
-                    (removal ? "Disconnected " : "Connected ") +
-                    device.getName());
-            }
-
-            DeviceConfiguration devConf = (DeviceConfiguration) ev.getSource();
-            AudioSystem audioSystem = devConf.getAudioSystem();
-            boolean selectedHasChanged = false;
-
-            if (audioSystem != null)
-            {
-                if (mCapturePropertyChangeEvent != null)
-                {
-                    CaptureDeviceInfo cdi
-                        = audioSystem.getAndRefreshSelectedDevice(
-                                DataFlow.CAPTURE);
-
-                    if ((cdi != null)
-                            && !cdi.equals(
-                                    mCapturePropertyChangeEvent.getOldValue()))
-                    {
-                        body.append("\r\n")
-                            .append(
-                                    r.getI18NString(
-                                            "impl.media.configform"
-                                                + ".AUDIO_DEVICE_SELECTED_AUDIO_IN"))
-                            .append("\r\n  ")
-                            .append(cdi.getName());
-                        selectedHasChanged = true;
-                        CaptureDeviceInfo oldDevice = (CaptureDeviceInfo)
-                            mCapturePropertyChangeEvent.getOldValue();
-                        deviceLogger.debug(
-                            "Selected Capture device changed: old=" +
-                            ((oldDevice == null) ? "null" : oldDevice.getName())
-                            + ", new=" + cdi.getName());
-                    }
-                }
-
-                if (mPlaybackPropertyChangeEvent != null)
-                {
-                    CaptureDeviceInfo cdi
-                        = audioSystem.getAndRefreshSelectedDevice(
-                                DataFlow.PLAYBACK);
-
-                    if ((cdi != null)
-                            && !cdi.equals(
-                                    mPlaybackPropertyChangeEvent.getOldValue()))
-                    {
-                        body.append("\r\n")
-                            .append(
-                                    r.getI18NString(
-                                            "impl.media.configform"
-                                                + ".AUDIO_DEVICE_SELECTED_AUDIO_OUT"))
-                            .append("\r\n  ")
-                            .append(cdi.getName());
-                        selectedHasChanged = true;
-                        CaptureDeviceInfo oldDevice = (CaptureDeviceInfo)
-                            mPlaybackPropertyChangeEvent.getOldValue();
-                        deviceLogger.debug(
-                            "Selected Playback device changed: old=" +
-                            ((oldDevice == null) ? "null" : oldDevice.getName())
-                            + ", new=" + cdi.getName());
-                    }
-                }
-
-                if (mNotifyPropertyChangeEvent != null)
-                {
-                    CaptureDeviceInfo cdi
-                        = audioSystem.getAndRefreshSelectedDevice(
-                                DataFlow.NOTIFY);
-
-                    if ((cdi != null)
-                            && !cdi.equals(
-                                    mNotifyPropertyChangeEvent.getOldValue()))
-                    {
-                        body.append("\r\n")
-                            .append(
-                                    r.getI18NString(
-                                            "impl.media.configform"
-                                                + ".AUDIO_DEVICE_SELECTED_AUDIO_NOTIFICATIONS"))
-                            .append("\r\n  ")
-                            .append(cdi.getName());
-                        selectedHasChanged = true;
-                        CaptureDeviceInfo oldDevice = (CaptureDeviceInfo)
-                            mNotifyPropertyChangeEvent.getOldValue();
-                        deviceLogger.debug(
-                            "Selected Notification device changed: old=" +
-                            ((oldDevice == null) ? "null" : oldDevice.getName())
-                            + ", new=" + cdi.getName());
-                    }
-                }
-            }
-            mCapturePropertyChangeEvent = null;
-            mNotifyPropertyChangeEvent = null;
-            mPlaybackPropertyChangeEvent = null;
-
-            /*
-             * If an old device has been disconnected and no new device has been
-             * connected, show a notification only if any selected device has
-             * changed.  Also, only show a notification if audio config is
-             * enabled.
-             */
-            ConfigurationService cfg = NeomediaActivator.getConfigurationService();
-            boolean audioConfigDisabled = cfg.user().getBoolean(
-                NeomediaActivator.AUDIO_CONFIG_DISABLED_PROP, false);
-            if ((!removal || selectedHasChanged) && !audioConfigDisabled)
-            {
-                showPopUpNotification(
-                        title,
-                        body.toString());
-            }
+            batchedDevicePropertyChangeEvents.clear();
 
             deviceLogger.debug("Finished processing device change");
         }
@@ -272,21 +111,71 @@ public class AudioDeviceConfigurationListener
          */
         else if (CaptureDeviceListManager.PROP_DEVICE.equals(propertyName))
         {
-            sLog.debug("Audio capture device was: " +
-                ev.getOldValue() + ", now: " + ev.getNewValue());
-            mCapturePropertyChangeEvent = ev;
+            sLog.debug("Audio capture device was: " + ev.getOldValue() + ", now: " + ev.getNewValue());
+            CapturePropertyChangeEvent captureEvent = new CapturePropertyChangeEvent(ev);
+            batchedDevicePropertyChangeEvents.put(captureEvent.getDataFlowType().toString(), captureEvent);
         }
         else if (NotifyDeviceListManager.PROP_DEVICE.equals(propertyName))
         {
-            sLog.debug("Audio notify device was: " +
-                ev.getOldValue() + ", now: " + ev.getNewValue());
-            mNotifyPropertyChangeEvent = ev;
+            sLog.debug("Audio notify device was: " + ev.getOldValue() + ", now: " + ev.getNewValue());
+            NotifyPropertyChangeEvent notifyEvent = new NotifyPropertyChangeEvent(ev);
+            batchedDevicePropertyChangeEvents.put(notifyEvent.getDataFlowType().toString(), notifyEvent);
         }
         else if (PlaybackDeviceListManager.PROP_DEVICE.equals(propertyName))
         {
-            sLog.debug("Audio playback device was: " +
-                ev.getOldValue() + ", now: " + ev.getNewValue());
-            mPlaybackPropertyChangeEvent = ev;
+            sLog.debug("Audio playback device was: " + ev.getOldValue() + ", now: " + ev.getNewValue());
+            PlaybackPropertyChangeEvent playbackEvent = new PlaybackPropertyChangeEvent(ev);
+            batchedDevicePropertyChangeEvents.put(playbackEvent.getDataFlowType().toString(), playbackEvent);
         }
+    }
+}
+
+/**
+ * This class provides common code for the different types of audio change events
+ */
+abstract class AbstractAudioPropertyChangeEvent extends DevicePropertyChangeEvent {
+    AbstractAudioPropertyChangeEvent(DataFlow type, String i18NString, PropertyChangeEvent event) {
+        super(type, i18NString, event);
+    }
+
+    public CaptureDeviceInfo refreshAndGetSelectedDevice(PropertyChangeEvent ev) {
+        DeviceConfiguration devConf = (DeviceConfiguration) ev.getSource();
+        AudioSystem audioSystem = devConf.getAudioSystem();
+        if(audioSystem != null)
+            return audioSystem.getAndRefreshSelectedDevice(getDataFlowType());
+        else return null;
+    }
+}
+
+/**
+ * This class keeps information about a capture device change event
+ */
+class CapturePropertyChangeEvent extends AbstractAudioPropertyChangeEvent
+{
+    CapturePropertyChangeEvent(PropertyChangeEvent event)
+    {
+        super(DataFlow.CAPTURE, "impl.media.configform.AUDIO_DEVICE_SELECTED_AUDIO_IN", event);
+    }
+}
+
+/**
+ *  This class keeps information about a playback device change event
+ */
+class PlaybackPropertyChangeEvent extends AbstractAudioPropertyChangeEvent
+{
+    PlaybackPropertyChangeEvent(PropertyChangeEvent event)
+    {
+        super(DataFlow.PLAYBACK, "impl.media.configform.AUDIO_DEVICE_SELECTED_AUDIO_OUT", event);
+    }
+}
+
+/**
+ * This class keeps information about a notify device change event
+ */
+class NotifyPropertyChangeEvent extends AbstractAudioPropertyChangeEvent
+{
+    NotifyPropertyChangeEvent(PropertyChangeEvent event)
+    {
+        super(DataFlow.NOTIFY, "impl.media.configform.AUDIO_DEVICE_SELECTED_AUDIO_NOTIFICATIONS", event);
     }
 }

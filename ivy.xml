@@ -10,7 +10,8 @@
         <conf name="fileloc" /> <!-- fileloc configuration downloads to [filelocation] as specified by the e:filelocation extra attribute. -->
         <conf name="instexcl" /> <!-- instexcl configuration downloads to jitsi/lib/installer-exclude folder. The build process copies these files to jitsi/lib/bundle. -->
         <conf name="jitsilib" /> <!-- jitsilib configuration downloads to jitsi/lib folder. -->
-        <conf name="jitsisrcnative" /> <!-- jitsisrcnative configuration downloads to [filelocation] as specified by the e:filelocation extra attribute when building native components such as AOS. -->
+        <conf name="jitsilibnative" /> <!-- jitsilibnative configuration downloads to [filelocation] as specified by the e:filelocation extra attribute, with filename [basename].[ext] as specified by the e:basename extra attribute. This is because we don't get a lot of control over artifact naming when manually uploading non-jars to AA Maven.-->
+        <conf name="jitsisrcnative" /> <!-- jitsisrcnative configuration downloads to [filelocation] as specified by the e:filelocation extra attribute when building native components such as AOS, with filename [basename].[ext] as specified by the e:basename extra attribute. This is because we don't get a lot of control over artifact naming when manually uploading non-jars to AA Maven.-->
         <conf name="osspecific" /> <!-- osspecific configuration downloads to jitsi/lib/installer-exclude/os-specific folder. -->
 
         <!-- Scopes -->
@@ -61,7 +62,7 @@
         </dependency>
         <dependency org="com.google.protobuf" name="protobuf-java" rev="3.25.2" conf="runtime,bundle->default" >
             <!-- This version should be kept in sync with the version used to create protobuf-wispa here:
-            https://git.datcon.co.uk/accession/Desktop/protobuf-wispa/-/blob/master/.gitlab-ci.yml -->
+            [indeterminate link] -->
             <!-- Provides protobuf-java.jar in jitsi/lib/bundle -->
         </dependency>
         <dependency org="com.microsoft" name="credential-secure-storage" rev="1.0.0" conf="runtime,instexcl->default" >
@@ -111,10 +112,10 @@
             <!-- Provides httpmime.jar and httpclient.jar in jitsi/lib/installer-exclude.
             This jar is bundled along with commons-codec@1.15 & httpclient@4.5.13 to make up httpclient-osgi jar. -->
         </dependency>
-        <dependency org="org.bouncycastle" name="bcpkix-jdk18on" rev="1.77" conf="runtime,instexcl->default" >
+        <dependency org="org.bouncycastle" name="bcpkix-jdk18on" rev="1.78.1" conf="runtime,instexcl->default" >
             <!-- Provides bcpkix-jdk18on.jar and transitive dependency bcprov-jdk18on.jar in jitsi/lib/installer-exclude -->
         </dependency>
-        <dependency org="org.bouncycastle" name="bcutil-jdk18on" rev="1.77" conf="runtime,instexcl->default" >
+        <dependency org="org.bouncycastle" name="bcutil-jdk18on" rev="1.78.1" conf="runtime,instexcl->default" >
             <!-- Provides bcutil-jdk18on.jar in jitsi/lib/installer-exclude -->
         </dependency>
 

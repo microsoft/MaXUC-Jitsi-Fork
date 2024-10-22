@@ -5,15 +5,15 @@
 # See terms of license at gnu.org.
 #
 
-BZ2_HOME ?= .
-LZMA_HOME ?= .
-MINGW_HOME ?= C:/mingw
+BZ2_HOME ?= C:/msys64/mingw64
+LZMA_HOME ?= C:/msys64/mingw64
+MINGW_HOME ?= C:/msys64/mingw64
 PRODUCTNAME ?= Jitsi
 PRODUCTBUILDVERSION ?= 1.0.0.0
 TARGET_BASENAME ?= setup
 TARGET_DIR ?= ../../../../release/windows/tmp
 
-ifeq ($(wildcard /bin/cygpath.*),/bin/cygpath.exe)
+ifneq ($(shell which cygpath),)
     target.dir := $(shell cygpath --mixed "$(TARGET_DIR)")
     cygwin.target.dir := $(shell cygpath --unix "$(TARGET_DIR)")
 else
@@ -26,16 +26,17 @@ ARCH = $(shell $(CC) -dumpmachine | sed.exe -e s/x86_64-.*/x64/ -e s/i.86-.*/x86
 
 CPPFLAGS = \
 	-O2 \
+	-static \
 	-Wall -Wreturn-type \
 	-DWINVER=0x0502 -D_WIN32_WINNT=0x0502 \
 	-I$(target.dir) \
 	-DBSPATCH_API_STATIC -DBZ2_API_STATIC -I. -I$(BZ2_HOME)/include -I$(BZ2_HOME) \
-	-DLZMA_API_STATIC -I$(LZMA_HOME)/include -I$(LZMA_HOME)/api \
+	-DLZMA_API_STATIC -I$(LZMA_HOME)/include -I$(LZMA_HOME)/include/lzma \
 	-I../run
 LDFLAGS = \
 	-mwindows \
-	-L$(BZ2_HOME)/lib/$(ARCH) -L$(BZ2_HOME) \
-	-L$(LZMA_HOME)/lib/$(ARCH) -L$(LZMA_HOME)/.libs
+	-L$(BZ2_HOME)/lib/$(ARCH) -L$(BZ2_HOME)/lib \
+	-L$(LZMA_HOME)/lib/$(ARCH) -L$(LZMA_HOME)/lib
 LIBS = -ladvapi32 -lbz2 -llzma -lole32 -lshell32
 
 MACHINE = $(shell $(CC) -dumpmachine)

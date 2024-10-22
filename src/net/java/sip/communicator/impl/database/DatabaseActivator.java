@@ -88,7 +88,7 @@ public class DatabaseActivator implements BundleActivator
 
         if (mDatabaseService != null)
         {
-            mDatabaseService.shutdown();
+            mDatabaseService.shutdownImmediately();
             mDatabaseService = null;
         }
     }

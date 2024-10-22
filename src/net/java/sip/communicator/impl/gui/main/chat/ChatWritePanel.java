@@ -932,9 +932,6 @@ public class ChatWritePanel
         else if (chatTransport instanceof SMSChatTransport)
         {
             String smsNumber = (String) chatTransport.getDescriptor();
-            // TODO: DUIR-5256 This is not correctly localized - the sms number should be a
-            // replaceable parameter in the resource string, not concatenated to it
-            // Code currently not used, ignoring this bug until this code is reinstated
             hintText =
                 resources.getI18NString("service.gui.SEND_SMS_TO") + " " + smsNumber;
             loggableHintText = resources.getI18NString("service.gui.SEND_SMS_TO") + " " + logHasher(smsNumber);

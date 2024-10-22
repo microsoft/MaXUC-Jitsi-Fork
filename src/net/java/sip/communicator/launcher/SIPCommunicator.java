@@ -133,7 +133,7 @@ public class SIPCommunicator
         File f = new File(System.getProperty(PNAME_SC_HOME_DIR_LOCATION),
                           System.getProperty(PNAME_SC_HOME_DIR_NAME) + File.separator + ".usednsjava");
 
-        if (f.exists())
+        if (f.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             System.setProperty("sun.net.spi.nameservice.provider.1", "dns,dnsjava");
         }

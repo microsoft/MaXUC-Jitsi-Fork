@@ -14,7 +14,8 @@ import net.java.sip.communicator.service.globalshortcut.*;
 import net.java.sip.communicator.service.gui.*;
 import net.java.sip.communicator.service.keybindings.*;
 import net.java.sip.communicator.util.*;
-// disambiguation
+
+import org.jitsi.util.ThreadUtils;
 
 /**
  * UI shortcut.
@@ -22,11 +23,10 @@ import net.java.sip.communicator.util.*;
  * @author Sebastien Vincent
  */
 public class UIShortcut
-    implements GlobalShortcutListener
+        implements GlobalShortcutListener
 {
     /**
-     * The <tt>Logger</tt> used by the <tt>UIShortcut</tt> class
-     * and its instances for logging output.
+     * The <tt>Logger</tt> used by the <tt>UIShortcut</tt> class and its instances for logging output.
      */
     private static final Logger logger = Logger.getLogger(UIShortcut.class);
 
@@ -34,7 +34,7 @@ public class UIShortcut
      * Keybindings service.
      */
     private KeybindingsService keybindingsService =
-        GlobalShortcutActivator.getKeybindingsService();
+            GlobalShortcutActivator.getKeybindingsService();
 
     /**
      * Callback when an shortcut is typed
@@ -47,28 +47,28 @@ public class UIShortcut
         logger.debug("Shortcut received " + keystroke);
         GlobalKeybindingSet set = keybindingsService.getGlobalBindings();
 
-        if(keystroke == null)
+        if (keystroke == null)
             return;
 
         try
         {
-            for(Map.Entry<String, List<AWTKeyStroke>> entry :
-                set.getBindings().entrySet())
+            for (Map.Entry<String, List<AWTKeyStroke>> entry :
+                    set.getBindings().entrySet())
             {
-                for(AWTKeyStroke ks : entry.getValue())
+                for (AWTKeyStroke ks : entry.getValue())
                 {
-                    if(ks == null)
+                    if (ks == null)
                         continue;
 
-                    if(entry.getKey().equals("contactlist") &&
+                    if (entry.getKey().equals("contactlist") &&
                         keystroke.getKeyCode() == ks.getKeyCode() &&
                         keystroke.getModifiers() == ks.getModifiers())
                     {
                         ExportedWindow window =
-                            GlobalShortcutActivator.getUIService().
-                                getExportedWindow(ExportedWindow.MAIN_WINDOW);
+                                GlobalShortcutActivator.getUIService().
+                                        getExportedWindow(ExportedWindow.MAIN_WINDOW);
 
-                        if(window == null)
+                        if (window == null)
                             return;
 
                         setVisible(window, window.isVisible());
@@ -76,7 +76,7 @@ public class UIShortcut
                 }
             }
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             if (t instanceof ThreadDeath)
                 throw (ThreadDeath) t;
@@ -88,24 +88,24 @@ public class UIShortcut
     /**
      * Set the window visible or not
      *
-     * @param window the <tt>ExportedWindow</tt> to set/unset visible.
+     * @param window  the <tt>ExportedWindow</tt> to set/unset visible.
      * @param visible enable or not the window to be visible
      */
     private void setVisible(final ExportedWindow window, final boolean visible)
     {
-        new Thread("MakeVisibleThread")
+        Thread makeVisibleThread = new Thread("MakeVisibleThread")
         {
             public void run()
             {
-                if(!visible)
+                if (!visible)
                 {
                     window.bringToFront();
                     window.setVisible(true);
 
-                    if(window instanceof Window)
+                    if (window instanceof Window)
                     {
-                        ((Window)window).setAlwaysOnTop(true);
-                        ((Window)window).setAlwaysOnTop(false);
+                        ((Window) window).setAlwaysOnTop(true);
+                        ((Window) window).setAlwaysOnTop(false);
                     }
                 }
                 else
@@ -113,6 +113,8 @@ public class UIShortcut
                     window.setVisible(false);
                 }
             }
-        }.start();
+        };
+
+        ThreadUtils.startThread(makeVisibleThread);
     }
 }

@@ -19,6 +19,7 @@ import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.util.*;
 
 import static net.java.sip.communicator.util.PrivacyUtils.sanitiseChatAddress;
+import static org.jitsi.util.Hasher.logHasher;
 
 /**
  * A dialog that shows all IM contacts. The user may select multiple contacts
@@ -143,6 +144,8 @@ public class AddChatParticipantsDialog
                   BorderFactory.createCompoundBorder(
                       BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR),
                       BorderFactory.createEmptyBorder(0, 7, 11, 7))));
+
+        setModalityType(ModalityType.MODELESS);
         setTopPanel(panel);
         setAlwaysOnTop(true);
     }
@@ -286,7 +289,7 @@ public class AddChatParticipantsDialog
                 catch (OperationFailedException e)
                 {
                     logger.error(
-                        "Failed to set chat room subject: " + subject, e);
+                        "Failed to set chat room subject: " + logHasher(subject), e);
                 }
 
                 ChatWindowManager chatWindowManager = uiService.getChatWindowManager();

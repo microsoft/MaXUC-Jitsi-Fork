@@ -34,44 +34,6 @@ public class AvatarStackManager
         + "userimages" + File.separator;
 
     /**
-     * Load the image at the defined index from user directory
-     * @param index the image index
-     * @return the image
-     */
-    public static BufferedImage loadImage(int index)
-    {
-        File imageFile;
-
-        try
-        {
-            String imagePath = STORE_DIR + index + ".png";
-
-            imageFile
-                = GuiActivator.getFileAccessService().getPrivatePersistentActiveUserFile(
-                        imagePath);
-        }
-        catch (Exception e)
-        {
-            logger.error("Unable to access stored image at index " + index, e);
-            return null;
-        }
-
-        // If the file don't exists, there is no more images to get
-        if (!imageFile.exists())
-            return null;
-
-        try
-        {
-            return ImageIO.read(imageFile);
-        }
-        catch (IOException ioe)
-        {
-            logger.error("Failed to read file " + imageFile, ioe);
-            return null;
-        }
-    }
-
-    /**
      * Moves images.
      * @param oldIndex the old index.
      * @param newIndex the new index.
@@ -86,11 +48,11 @@ public class AvatarStackManager
             FileAccessService fas = GuiActivator.getFileAccessService();
             File oldFile = fas.getPrivatePersistentActiveUserFile(oldImagePath);
 
-            if (oldFile.exists())
+            if (oldFile.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             {
                 File newFile = fas.getPrivatePersistentFile(newImagePath);
 
-                oldFile.renameTo(newFile);
+                oldFile.renameTo(newFile); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             }
         }
         catch (Exception e)

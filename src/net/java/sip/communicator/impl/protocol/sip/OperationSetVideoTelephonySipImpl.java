@@ -15,6 +15,8 @@ import javax.sip.address.*;
 import javax.sip.header.*;
 import javax.sip.message.*;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.media.*;
 import net.java.sip.communicator.util.*;
@@ -241,7 +243,8 @@ public class OperationSetVideoTelephonySipImpl
      *
      * @author Lyubomir Marinov
      */
-    private class PictureFastUpdateMethodProcessor
+    @VisibleForTesting
+    public class PictureFastUpdateMethodProcessor
         extends MethodProcessorAdapter
     {
         /**

@@ -65,6 +65,7 @@ public class NewAccountDialog
     private static NewAccountDialog newAccountDialog;
 
     private JTextArea errorMessagePane;
+    private TransparentPanel mainPanel;
 
     /**
      * The config service.
@@ -96,7 +97,7 @@ public class NewAccountDialog
 
         ResourceManagementService resources = GuiActivator.getResources();
 
-        TransparentPanel mainPanel
+        mainPanel
             = new TransparentPanel(new BorderLayout(5, 5));
         TransparentPanel rightButtonPanel
             = new TransparentPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -107,6 +108,7 @@ public class NewAccountDialog
         if ((title != null) && title.endsWith("..."))
             title = title.substring(0, title.length() - 3);
         this.setTitle(title);
+        this.setResizable(false);
 
         this.getContentPane().add(mainPanel);
 
@@ -335,14 +337,10 @@ public class NewAccountDialog
     private void loadSelectedWizard(AccountRegistrationWizard wizard)
     {
         accountPanel.removeAll();
-
-        TransparentPanel fixedWidthPanel = new TransparentPanel();
-        Dimension fixedWidthSize = new Dimension(430, 3);
-
-        fixedWidthPanel.setPreferredSize(fixedWidthSize);
-        fixedWidthPanel.setMinimumSize(fixedWidthSize);
-        fixedWidthPanel.setMaximumSize(fixedWidthSize);
-        this.accountPanel.add(fixedWidthPanel, BorderLayout.SOUTH);
+        // We must first remove the account panel from the main panel, and then
+        // add it back again after replacing the wizard form, otherwise, the
+        // height of the dialog is sometimes much bigger then it's content.
+        mainPanel.remove(accountPanel);
 
         JComponent simpleWizardForm = (JComponent) wizard.getSimpleForm(false);
         simpleWizardForm.setOpaque(false);
@@ -360,6 +358,10 @@ public class NewAccountDialog
         accountPanel.revalidate();
         accountPanel.repaint();
 
+        mainPanel.add(accountPanel, BorderLayout.CENTER);
+        mainPanel.revalidate();
+
+        this.validate();
         this.pack();
     }
 

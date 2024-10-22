@@ -63,7 +63,7 @@ public class OperationSetBasicTelephonySipImpl
                OperationSetSecureSDesTelephony
 {
     private static final Logger logger = Logger.getLogger(OperationSetBasicTelephonySipImpl.class);
-    private static final ConfigurationService configService = SipActivator.getConfigurationService();
+    private final ConfigurationService configService = SipActivator.getConfigurationService();
 
     /**
      * Config key for whether the user has accepted the latest version of all

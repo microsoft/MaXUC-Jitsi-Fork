@@ -363,7 +363,7 @@ public class CallRecording implements PropertyChangeListener, Recorder.Listener
         String callsDirectory = resources.getI18NString("service.gui.RECORDED_CALLS");
         File savedCallsFolder = new File(recordingsPath + File.separator + callsDirectory);
 
-        if (!savedCallsFolder.exists())
+        if (!savedCallsFolder.exists()) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             logger.debug("Call recording folder does " +
                          "not exist, so will now be created.");
@@ -389,7 +389,7 @@ public class CallRecording implements PropertyChangeListener, Recorder.Listener
 
         try
         {
-            Files.move(mTempFile.toPath(), target.toPath());
+            Files.move(mTempFile.toPath(), target.toPath()); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             showSavedNotification(filename, new File(savedCallsFolder.getPath()));
             logger.info("Recording for call " + mCall.getCallID() +
                         " saved to " + sanitiseFilePath(target.getAbsolutePath()));
@@ -637,7 +637,7 @@ public class CallRecording implements PropertyChangeListener, Recorder.Listener
             + File.separator + cfg.user().getScHomeDirName()
             + File.separator);
 
-        return File.createTempFile("call", ".wav", path);
+        return File.createTempFile("call", ".wav", path); // CodeQL [SM00698] Not Exploitable. The file/path is not user provided. // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
     }
 
     /**

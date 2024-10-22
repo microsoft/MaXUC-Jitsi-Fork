@@ -29,7 +29,7 @@ import org.jitsi.service.resources.*;
  * Note that any of the right, left and middle images can be null - in this
  * case they won't be drawn.  But at least one should be non-null.
  */
-public class SIPCommSnakeButton extends JButton implements MouseListener
+public class SIPCommSnakeButton extends JButton implements MouseListener, FocusListener
 {
     private static final long serialVersionUID = 1L;
     private static int textPadding = ScaleUtils.scaleInt(3);
@@ -53,6 +53,8 @@ public class SIPCommSnakeButton extends JButton implements MouseListener
     // Mouse states:
     private boolean mMouseOver = false;
     private boolean mMouseClicked = false;
+    // Is keyboard focusing on an element
+    private boolean mKeyboardFocus = false;
 
     /**
      * The text we are displaying
@@ -137,6 +139,7 @@ public class SIPCommSnakeButton extends JButton implements MouseListener
         setBorder(BorderFactory.createEmptyBorder());
 
         addMouseListener(this);
+        addFocusListener(this);
 
         // Lower the opacity of the button to dim its appearance.
         if (dimmed)
@@ -226,7 +229,7 @@ public class SIPCommSnakeButton extends JButton implements MouseListener
                 rightImageFuture = mRightPressed;
                 middleImageFuture = mMiddlePressed;
             }
-            else if (mMouseOver)
+            else if (mMouseOver || mKeyboardFocus)
             {
                 leftImageFuture = mLeftRollover;
                 rightImageFuture = mRightRollover;
@@ -404,6 +407,20 @@ public class SIPCommSnakeButton extends JButton implements MouseListener
     public void mouseReleased(MouseEvent e)
     {
         mMouseClicked = false;
+        repaint();
+    }
+
+    @Override
+    public void focusGained(FocusEvent e)
+    {
+        mKeyboardFocus = true;
+        repaint();
+    }
+
+    @Override
+    public void focusLost(FocusEvent e)
+    {
+        mKeyboardFocus = false;
         repaint();
     }
 

@@ -307,17 +307,6 @@ public class ContactSipImpl
     }
 
     /**
-     * Determines whether or not this contact represents our own identity.
-     *
-     * @return true in case this is a contact that represents ourselves and
-     *   false otherwise.
-     */
-    public boolean isLocal()
-    {
-        return false;
-    }
-
-    /**
      * Returns the group that contains this contact.
      * @return a reference to the <tt>ContactGroupSipImpl</tt> that
      * contains this contact.

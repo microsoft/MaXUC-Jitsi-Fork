@@ -98,7 +98,7 @@ public class DefaultFileHandler
         // If a pattern is passed to java.util.logging.FileHandler, then it
         // will ignore the limit and count from logging.properties, so we must
         // get those values here and pass them in.
-        super(getPattern(clazz, defaultPattern),
+        super(getPattern(clazz, defaultPattern), // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
               getLimit(clazz),
               getCount(clazz));
 

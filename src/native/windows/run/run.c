@@ -586,7 +586,7 @@ Run_getJavaVMOptionStrings
             = {
                 _T("lib\\org.apache.felix.main.jar"),
                 _T("lib\\bcprovider.jar"),
-                _T("lib\\bundle\\metaswitch-protobuf.jar"),
+                _T("lib\\bundle\\protobuf-wispa.jar"),
                 _T("lib\\bundle\\protobuf-java.jar"),
                 _T("lib\\bundle\\maxanalytics-desktop.jar"),
                 _T("lib\\bundle\\kotlin-stdlib.jar"),

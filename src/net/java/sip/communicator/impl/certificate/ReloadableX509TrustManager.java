@@ -561,7 +561,7 @@ class ReloadableX509TrustManager implements X509TrustManager
         String fileName = "tempCert.pem";
         String filePath = certDirectoryLocation + File.separator + fileName;
 
-        try (JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter(filePath)))
+        try (JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter(filePath))) // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
         {
             pemWriter.writeObject(certificate);
         }
@@ -641,7 +641,7 @@ class ReloadableX509TrustManager implements X509TrustManager
             return false;
         }
 
-        return Files.exists(path) && !Files.isDirectory(path);
+        return Files.exists(path) && !Files.isDirectory(path); // CodeQL [SM00697] Not Exploitable. The file/path is not user provided. // CodeQL [SM00679] Not Exploitable. The command is not user provided.
     }
 
     private void cleanUpTempCertificate(String filePath)

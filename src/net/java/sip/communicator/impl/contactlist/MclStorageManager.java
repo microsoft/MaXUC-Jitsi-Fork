@@ -279,7 +279,7 @@ public class MclStorageManager
             logger.info("Using contact list file name " + DEFAULT_FILE_NAME);
             contactlistFile = new File(fileName);
 
-            if (!contactlistFile.exists() && !contactlistFile.createNewFile())
+            if (!contactlistFile.exists() && !contactlistFile.createNewFile()) // CodeQL [SM00698] Not Exploitable. The file/path is not user provided. // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                 throw new IOException("Failed to create file"
                                           + contactlistFile.getName());
         }
@@ -313,7 +313,7 @@ public class MclStorageManager
             {
                 try
                 {
-                    Document rawParsedDocument = builder.parse(contactlistFile);
+                    Document rawParsedDocument = builder.parse(contactlistFile); // CodeQL [SM00704] Not Exploitable. The XML is not user provided.
                     // Remove all the indentation and newlines added to make
                     // the file look nice - otherwise they'll all be written
                     // out again as if they are real content, and themselves
@@ -330,7 +330,7 @@ public class MclStorageManager
 
                     // re-create and re-init the new document
                     contactlistFile.delete();
-                    contactlistFile.createNewFile();
+                    contactlistFile.createNewFile(); // CodeQL [SM00698] Not Exploitable. The file/path is not user provided. // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
                     contactListDocument = builder.newDocument();
                     initVirginDocument(mclServImpl, contactListDocument);
 
@@ -636,7 +636,7 @@ public class MclStorageManager
             File dest = new File(contactlistFile.getAbsolutePath() + ".copy");
             try
             {
-                Files.copy(contactlistFile.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(contactlistFile.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING); // CodeQL [SM00698] Not Exploitable. The file/path is not user provided. // CodeQL [SM00697] Not Exploitable. The file/path is not user provided.
             }
             catch (IOException e)
             {

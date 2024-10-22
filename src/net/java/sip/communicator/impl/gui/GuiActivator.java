@@ -48,6 +48,7 @@ import net.java.sip.communicator.service.contactlist.MetaContactListService;
 import net.java.sip.communicator.service.contactsource.ContactSourceService;
 import net.java.sip.communicator.service.contactsource.SourceContact;
 import net.java.sip.communicator.service.credentialsstorage.CredentialsStorageService;
+import net.java.sip.communicator.service.database.DatabaseService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsService;
 import net.java.sip.communicator.service.diagnostics.DiagnosticsServiceRegistrar;
 import net.java.sip.communicator.service.diagnostics.StateDumper;
@@ -155,7 +156,7 @@ public class GuiActivator implements BundleActivator, StateDumper
     private static Boolean enterDialsNumber = null;
 
     private static GlobalDisplayDetailsService globalDisplayDetailsService;
-
+    private static DatabaseService databaseService;
     private static PhoneNumberUtilsService phoneNumberUtils;
 
     private static HeadsetManagerService headsetManager;
@@ -778,6 +779,15 @@ public class GuiActivator implements BundleActivator, StateDumper
                         GlobalDisplayDetailsService.class);
         }
         return globalDisplayDetailsService;
+    }
+
+    public static DatabaseService getDatabaseService()
+    {
+        if (databaseService == null)
+        {
+            databaseService = ServiceUtils.getService(bundleContext, DatabaseService.class);
+        }
+        return databaseService;
     }
 
     /**

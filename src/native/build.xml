@@ -105,6 +105,7 @@
 
   <target name="init-native" depends="buildtools.init-cpptasks" description="Initialize native stuff" >
     <mkdir dir="${obj}" />
+    <mkdir dir="${native_install_dir}" />
   </target>
 
   <!-- compile LocalhostRetriever library -->
@@ -130,66 +131,18 @@
   <!-- compile AEGetURLEventHandler library for Mac OS X (32-bit/64-bit/ppc) -->
   <target name="aegeturleventhandler" description="Build AEGetURLEventHandler shared library for Mac OS X" if="is.running.macos"
     depends="init-native">
-    <cc outtype="shared" name="gcc" outfile="${native_install_dir}/AEGetURLEventHandler" objdir="${obj}">
+    <cc outtype="shared" name="gcc" outfile="${native_install_dir}/AEGetURLEventHandlerAgent" objdir="${obj}">
       <compilerarg value="-Wall" />
       <compilerarg value="-O2" />
       <compilerarg value="-arch" />
       <compilerarg value="x86_64" />
-      <compilerarg value="-arch" />
-      <compilerarg value="i386" />
-      <compilerarg value="-arch" />
-      <compilerarg value="ppc" />
-      <compilerarg value="-I/System/Library/Frameworks/JavaVM.framework/Headers" />
+      <compilerarg value="-I${system.JAVA_HOME}/include" />
+      <compilerarg value="-I${system.JAVA_HOME}/include/darwin" />
 
-      <linkerarg value="-o" location="end" />
-      <linkerarg value="libAEGetURLEventHandlerAgent.jnilib" location="end" />
-      <linkerarg value="-arch" />
-      <linkerarg value="x86_64" />
-      <linkerarg value="-arch" />
-      <linkerarg value="i386" />
-      <linkerarg value="-arch" />
-      <linkerarg value="ppc" />
       <linkerarg value="-framework" />
       <linkerarg value="Foundation" />
 
       <fileset dir="${src}/native/macosx/launcharghandler" includes="*.m"/>
-    </cc>
-  </target>
-
-  <!-- compile sparkle library for Mac OS X (32-bit/64-bit/ppc)
-  make sure you do export MACOSX_DEPLOYMENT_TARGET=10.5
-  and also:
-  install_name_tool -change "@loader_path/../Frameworks/Sparkle.framework/Versions/B/Sparkle" "@executable_path/../Frameworks/Sparkle.framework/Versions/B/Sparkle" libsparkle_init.dylib
-  -->
-  <target name="sparkle" description="Build sparkle shared library for Mac OS X" if="is.running.macos"
-    depends="init-native">
-    <cc outtype="shared" name="gcc" outfile="${native_install_dir}/sparkle_init" objdir="${obj}">
-      <compilerarg value="-Wall" />
-      <compilerarg value="-O2" />
-      <compilerarg value="-mmacosx-version-min=10.5" if="is.running.macos"/>
-      <compilerarg value="-arch" />
-      <compilerarg value="x86_64" />
-      <compilerarg value="-arch" />
-      <compilerarg value="i386" />
-      <compilerarg value="-arch" />
-      <compilerarg value="ppc" />
-      <compilerarg value="-I/System/Library/Frameworks/JavaVM.framework/Headers" />
-      <compilerarg value="-I/System/Library/Frameworks/Sparkle.framework/Versions/B/Headers/" />
-
-      <linkerarg value="-arch" />
-      <linkerarg value="x86_64" />
-      <linkerarg value="-arch" />
-      <linkerarg value="i386" />
-      <linkerarg value="-arch" />
-      <linkerarg value="ppc" />
-      <linkerarg value="-framework" />
-      <linkerarg value="AppKit" />
-      <linkerarg value="-framework" />
-      <linkerarg value="Foundation" />
-      <linkerarg value="-framework" />
-      <linkerarg value="Sparkle" />
-
-      <fileset dir="${src}/native/macosx/sparkle" includes="*.m"/>
     </cc>
   </target>
 
@@ -198,36 +151,17 @@
     <cc outtype="shared" name="gcc" outfile="${native_install_dir}/sysactivitynotifications" objdir="${obj}">
         <!-- Common compiler flags -->
         <compilerarg value="-D_JNI_IMPLEMENTATION_" />
-        <compilerarg value="-m32" if="cross_32" unless="is.running.macos" />
-        <compilerarg value="-m64" if="cross_64" unless="is.running.macos" />
         <compilerarg value="-O2" />
         <compilerarg value="-Wall" />
         <compilerarg value="-Wextra" />
-
-        <!-- Common linker flags -->
-        <linkerarg value="-m32" if="cross_32" unless="is.running.macos" />
-        <linkerarg value="-m64" if="cross_64" unless="is.running.macos" />
 
         <!-- Mac OS X-specific flags -->
         <compilerarg value="-mmacosx-version-min=10.5" if="is.running.macos"/>
         <compilerarg value="-arch" if="is.running.macos"/>
         <compilerarg value="x86_64" if="is.running.macos"/>
-        <compilerarg value="-arch" if="is.running.macos"/>
-        <compilerarg value="i386" if="is.running.macos"/>
-        <compilerarg value="-arch" if="is.running.macos"/>
-        <compilerarg value="ppc" if="is.running.macos"/>
-        <compilerarg value="-I/System/Library/Frameworks/JavaVM.framework/Headers"
-                   if="is.running.macos"/>
+        <compilerarg value="-I${system.JAVA_HOME}/include" if="is.running.macos" />
+        <compilerarg value="-I${system.JAVA_HOME}/include/darwin" if="is.running.macos" />
 
-        <linkerarg value="-o" location="end" if="is.running.macos"/>
-        <linkerarg value="libsysactivitynotifications.jnilib" location="end"
-                   if="is.running.macos"/>
-        <linkerarg value="-arch" if="is.running.macos"/>
-        <linkerarg value="x86_64" if="is.running.macos"/>
-        <linkerarg value="-arch" if="is.running.macos"/>
-        <linkerarg value="i386" if="is.running.macos"/>
-        <linkerarg value="-arch" if="is.running.macos"/>
-        <linkerarg value="ppc" if="is.running.macos"/>
         <linkerarg value="-framework" if="is.running.macos"/>
         <linkerarg value="AppKit" if="is.running.macos"/>
         <linkerarg value="-framework" if="is.running.macos"/>
@@ -264,28 +198,14 @@
         <compilerarg value="-Wextra" />
         <compilerarg value="-Wno-unused-parameter" />
 
-        <compilerarg value="-m32" if="cross_32" unless="is.running.macos" />
-        <compilerarg value="-m64" if="cross_64" unless="is.running.macos" />
-        <linkerarg value="-m32" if="cross_32" unless="is.running.macos" />
-        <linkerarg value="-m64" if="cross_64" unless="is.running.macos" />
-
         <!-- Mac OS X specific flags -->
         <compilerarg value="-mmacosx-version-min=10.5" if="is.running.macos"/>
         <compilerarg value="-O2" if="is.running.macos"/>
         <compilerarg value="-arch" if="is.running.macos"/>
         <compilerarg value="x86_64" if="is.running.macos"/>
-        <compilerarg value="-arch" if="is.running.macos"/>
-        <compilerarg value="i386" if="is.running.macos"/>
-        <compilerarg value="-I/System/Library/Frameworks/JavaVM.framework/Headers"
-                   if="is.running.macos"/>
+        <compilerarg value="-I${system.JAVA_HOME}/include" if="is.running.macos" />
+        <compilerarg value="-I${system.JAVA_HOME}/include/darwin" if="is.running.macos" />
 
-        <linkerarg value="-o" location="end" if="is.running.macos"/>
-        <linkerarg value="libglobalshortcut.jnilib" location="end"
-                   if="is.running.macos"/>
-        <linkerarg value="-arch" if="is.running.macos"/>
-        <linkerarg value="x86_64" if="is.running.macos"/>
-        <linkerarg value="-arch" if="is.running.macos"/>
-        <linkerarg value="i386" if="is.running.macos"/>
         <linkerarg value="-framework" if="is.running.macos"/>
         <linkerarg value="Foundation" if="is.running.macos"/>
         <linkerarg value="-framework" if="is.running.macos"/>
@@ -314,7 +234,7 @@
 
         <linkerarg value="-m64" if="is.running.windows" />
         <linkerarg value="-liphlpapi" location="end" if="is.running.windows" />
-        <linkerarg value="-static-libgcc" />
+        <linkerarg value="-static-libgcc" if="is.running.windows" />
         <linkerarg value="-Wl,-Bstatic" location="end" if="is.running.windows" />
         <linkerarg value="-lstdc++" location="end" if="is.running.windows" />
         <linkerarg value="-Wl,--kill-at" if="is.running.windows" />
@@ -334,7 +254,7 @@
   <!-- Build all object files and shared libraries -->
   <target name="build-native" description="Build all object files and libraries."
           depends="globalshortcut, sysactivity, localhostretriever, msoutlookaddrbook64, msoutlookaddrbookcomserver64,
-          aegeturleventhandler, sparkle">
+          aegeturleventhandler">
       <echo message="All object files and libraries have been built." />
   </target>
 
@@ -347,7 +267,6 @@
     <echo message="'ant globalshortcut' to compile globalshortcut shared library" />
     <echo message="'ant localhostretriever' (Windows only) to compile LocalhostRetriever shared library" />
     <echo message="'ant aegeturleventhandler' (Mac OS X only) to compile AEGetURLEventHandler shared library" />
-    <echo message="'ant sparkle' (Mac OS X only) to compile sparkle shared library" />
     <echo message="'ant msoutlookaddrbook64' (Windows only) to compile the 64 bit jmsoutlookaddrbook shared library and the jmsoutlookaddrbook 64 bit COM server" />
     <echo message="'ant msoutlookaddrbookcomserver32' (Windows only) to compile Accession Outlook Server for Windows 32 bit" />
     <echo message="'ant msoutlookaddrbookcomserver64' (Windows only) to compile Accession Outlook Server for Windows 64 bit" />
@@ -412,8 +331,10 @@
   -->
   <target name="resolve-native-dependencies" description="Get native dependencies." unless="${offlineBuild}" depends="buildtools.init-ivy">
     <ivy:settings file="${ext}/ivysettings.xml" />
-    <ivy:resolve file="${ext}/jitsi/ivy.xml" transitive="true" />
-    <ivy:retrieve conf="jitsisrcnative" pattern="${ext}/[filelocation]/[artifact].[ext]" overwriteMode="different" />
+    <retry retrycount="3" retrydelay="5000">
+      <ivy:resolve file="${ext}/jitsi/ivy.xml" transitive="true" />
+    </retry>
+    <ivy:retrieve conf="jitsisrcnative" pattern="${ext}/[filelocation]/[basename].[ext]" overwriteMode="different" />
   </target>
 
   <!-- Build AOS: AccessionOutlookServer32.exe

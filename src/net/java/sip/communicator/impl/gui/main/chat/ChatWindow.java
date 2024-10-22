@@ -1082,7 +1082,6 @@ public class ChatWindow
     @Override
     public void setVisible(final boolean isVisible)
     {
-        // Hidden for DUIR - prevent showing group chat window
         // if (isVisible)
         // {
         //     mManager.mWindowStacker.addWindow(ChatWindow.this);

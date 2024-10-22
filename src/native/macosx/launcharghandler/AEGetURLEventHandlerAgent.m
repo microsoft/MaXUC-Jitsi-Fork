@@ -9,6 +9,8 @@
 
 #include <jvmti.h>
 #include <stdlib.h>
+#import <Cocoa/Cocoa.h>
+#import <Carbon/Carbon.h>
 #import <Foundation/Foundation.h>
 
 @interface AEGetURLEventHandler : NSObject

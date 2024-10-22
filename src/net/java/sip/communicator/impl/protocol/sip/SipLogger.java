@@ -89,6 +89,7 @@ public class SipLogger
                                                               "To",
                                                               "Contact",
                                                               "Referred-By",
+                                                              "Refer-To",
                                                               "Diversion");
 
     private static final List<String> ROUTE_TAGS  = List.of("Call-ID",
@@ -171,7 +172,7 @@ public class SipLogger
      * Regex to pick out the subscriber DN from content messages of the form
      * "o={subscriber_dn} ..."
      */
-    private static final Pattern SUBSCRIBER_DN_PATTERN = Pattern.compile("(?<=o=)([0-9]+)");
+    private static final Pattern SUBSCRIBER_DN_PATTERN = Pattern.compile("(?<=o=)\\+?([0-9]+)");
 
     /**
      * Regex to pick out the branch from content messages of the form

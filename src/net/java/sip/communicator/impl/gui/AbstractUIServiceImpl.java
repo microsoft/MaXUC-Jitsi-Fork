@@ -53,6 +53,7 @@ import net.java.sip.communicator.plugin.desktoputil.lookandfeel.SIPCommLookAndFe
 import net.java.sip.communicator.service.conference.ConferenceService;
 import net.java.sip.communicator.service.contactlist.MetaContact;
 import net.java.sip.communicator.service.contactsource.SourceContact;
+import net.java.sip.communicator.service.database.DatabaseService;
 import net.java.sip.communicator.service.diagnostics.ReportReason;
 import net.java.sip.communicator.service.gui.Chat;
 import net.java.sip.communicator.service.gui.ConfigurationContainer;
@@ -85,6 +86,7 @@ import net.java.sip.communicator.service.wispaservice.WISPANamespace;
 import net.java.sip.communicator.service.wispaservice.WISPAService;
 import net.java.sip.communicator.util.ConfigurationUtils;
 import net.java.sip.communicator.util.Logger;
+import net.java.sip.communicator.util.SystemUtils;
 import net.java.sip.communicator.util.account.AccountUtils;
 import net.java.sip.communicator.util.account.LoginManager;
 import net.java.sip.communicator.util.skin.Skinnable;
@@ -107,7 +109,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
     /**
      * The configuration service.
      */
-    public static final ConfigurationService sConfigService =
+    public final ConfigurationService sConfigService =
             GuiActivator.getConfigurationService();
 
     protected AbstractMainFrame mainFrame;
@@ -291,6 +293,13 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
                     ", Triggered by Electron? " + electronTriggered +
                     ", Mac QuitResponse: " + macQuitResponse);
 
+        // We have an explicit call to shutdown the DB service, even though it should be shutdown
+        // by Felix when the bundle is stopped. This is because it's particularly important it
+        // happens, because when it doesn't there is a chance the DB will become corrupted, which
+        // will prevent the client from starting up again (and cause loss of chat history etc.).
+        // Relying on the Felix bundle shutdown code has proved unreliable.
+        GuiActivator.getThreadingService().submit("shutdownDatabaseService", ()-> shutdownDatabaseService());
+
         //  We need the Java backend and the Electron UI to start up and shut
         //  down together, so when either app shuts down it must ask the
         //  other to do the same.  Therefore, unless we're shutting down now
@@ -462,7 +471,7 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
             // Just exit. The shutdown hook in felix ensures that we stop
             // everything nicely.
             logger.info("Calling system exit now");
-            System.exit(0);
+            SystemUtils.exit(0);
         }
     }
 
@@ -517,6 +526,16 @@ public abstract class AbstractUIServiceImpl implements UIService, PropertyChange
         {
             logger.info("Cancelling Mac shut down");
             quitResponse.cancelQuit();
+        }
+    }
+
+    private void shutdownDatabaseService()
+    {
+        DatabaseService db = GuiActivator.getDatabaseService();
+        if (db != null)
+        {
+            logger.info("Shutdown DatabaseService");
+            db.shutdown();
         }
     }
 
