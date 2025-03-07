@@ -1,5 +1,7 @@
 <!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
 
+This repository has now been archived due to Microsoft no longer being responsible for MaX UC Clients.
+
 # jitsi
 
 # Requirements
